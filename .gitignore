@@ -1,7 +1,8 @@
 jit
 socket
+protobuf
 dkjson.lua
 ltn12.lua
 mime.lua
 socket.lua
-
+pubsub_pb.lua
