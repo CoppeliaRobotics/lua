@@ -1,2 +1,3 @@
-local ompl={}
-return ompl
+local simOMPL={}
+
+return simOMPL
