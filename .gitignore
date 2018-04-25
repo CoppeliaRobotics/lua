@@ -6,3 +6,5 @@ ltn12.lua
 mime.lua
 socket.lua
 pubsub_pb.lua
+messagePack.lua
+cbor.lua

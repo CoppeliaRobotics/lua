@@ -75,13 +75,13 @@ function onlegendclick(ui,id,curveName)
         end
 
         local xml=[[
-        <button text="Copy curve to clipboard" onclick="toClipboardClick_callback"/>
+        <button text="Copy curve to clipboard" on-click="toClipboardClick_callback"/>
                 <label text="" style="* {margin-left: 350px;font-size: 1px;}"/>
         ]]
         if c[2]=='(STATIC)' then
-            xml=xml..'<button text="Remove static curve" onclick="removeStaticClick_callback"/>'
+            xml=xml..'<button text="Remove static curve" on-click="removeStaticClick_callback"/>'
         else
-            xml=xml..'<button text="Duplicate curve to static curve" onclick="toStaticClick_callback"/>'
+            xml=xml..'<button text="Duplicate curve to static curve" on-click="toStaticClick_callback"/>'
         end
         modalDlg=utils.createCustomUi(xml,"Operation on Selected Curve","center",true,"onCloseModal_callback",true)
     end
@@ -366,7 +366,7 @@ function createPlot()
         if (sim.boolAnd32(c['bitCoded'],4)~=0) then
             xml=xml..[[
             <tab title="Time graph">
-            <plot id="1" onclick="onclickCurve" onlegendclick="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"/>
+            <plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"/>
             </tab>
             ]]
             plots={1}
@@ -378,7 +378,7 @@ function createPlot()
             end
             xml=xml..[[
             <tab title="X/Y graph">
-            <plot id="2" onclick="onclickCurve" onlegendclick="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"]]..squareAttribute..[[/>
+            <plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"]]..squareAttribute..[[/>
             </tab>
             ]]
             plots[#plots+1]=2

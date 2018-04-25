@@ -541,7 +541,7 @@ function utils.createCustomUi(nakedXml,title,dlgPos,closeable,onCloseFunction,mo
     local xml='<ui title="'..title..'" closeable="'
     if closeable then
         if onCloseFunction and onCloseFunction~='' then
-            xml=xml..'true" onclose="'..onCloseFunction..'"'
+            xml=xml..'true" on-close="'..onCloseFunction..'"'
         else
             xml=xml..'true"'
         end
