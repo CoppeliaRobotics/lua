@@ -361,12 +361,22 @@ function createPlot()
     if not plotUi then
         local c=readInfo()
         plots={}
+        
+        local bgCol='25,25,25'
+        local fgCol='150,150,150'
+        if version>30500 or (version==30500 and revision>6) then
+            local bitCoded,colA,colB=sim.getGraphInfo(model)
+            bgCol=(math.floor(colA[1]*255.1))..','..(math.floor(colA[2]*255.1))..','..(math.floor(colA[3]*255.1))
+            fgCol=(math.floor(colB[1]*255.1))..','..(math.floor(colB[2]*255.1))..','..(math.floor(colB[3]*255.1))
+            print(bgCol)
+            print(fgCol)
+        end
 
         local xml='<tabs id="77">'
         if (sim.boolAnd32(c['bitCoded'],4)~=0) then
             xml=xml..[[
             <tab title="Time graph">
-            <plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"/>
+            <plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="]]..bgCol..[[" foreground-color="]]..fgCol..[["/>
             </tab>
             ]]
             plots={1}
@@ -378,7 +388,7 @@ function createPlot()
             end
             xml=xml..[[
             <tab title="X/Y graph">
-            <plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="25,25,25" foreground-color="150,150,150"]]..squareAttribute..[[/>
+            <plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="]]..bgCol..[[" foreground-color="]]..fgCol..[[" ]]..squareAttribute..[[/>
             </tab>
             ]]
             plots[#plots+1]=2
@@ -446,6 +456,8 @@ function sysCall_init()
     plotTabIndex=0
     lastT=sim.getSystemTimeInMs(-1)
     model=sim.getObjectAssociatedWithScript(sim.handle_self)
+    version=sim.getInt32Parameter(sim.intparam_program_version)
+    revision=sim.getInt32Parameter(sim.intparam_program_revision)
     sim.setScriptAttribute(sim.handle_self,sim.customizationscriptattribute_activeduringsimulation,true)
     previousPlotDlgPos,previousPlotDlgSize,previousDlgPos=utils.readSessionPersistentObjectData(model,"dlgPosAndSize")
     createOrRemovePlotIfNeeded()
@@ -458,6 +470,7 @@ end
 
 function sysCall_beforeSimulation()
     removeDlg()
+    removePlot()
     createOrRemovePlotIfNeeded(true)
     prepareCurves()
     clearCurves()
