@@ -466,48 +466,76 @@ function is_array(t)
     return true
 end
 
-function table_tostring(tt, visitedTables, indent)
+function table_tostring(tt,visitedTables,maxLevel,indent)
 	indent = indent or 0
+    maxLevel=maxLevel-1
 	if type(tt) == 'table' then
-        if  visitedTables[tt] then
-            return tostring(tt)..' (already visited)'
+        if maxLevel<=0 then
+            return tostring(tt)
         else
-            visitedTables[tt]=true
-            local sb = {}
-            if is_array(tt) then
-                table.insert(sb, '{')
-                for i = 1, #tt do
-                    table.insert(sb, any_tostring(tt[i], visitedTables, indent))
-                    if i < #tt then table.insert(sb, ', ') end
-                end
-                table.insert(sb, '}')
+            if  visitedTables[tt] then
+                return tostring(tt)..' (already visited)'
             else
-                table.insert(sb, '{\n')
-                for key, value in pairs(tt) do
-                    table.insert(sb, string.rep(' ', indent+4))
-                    table.insert(sb, tostring(key))
-                    table.insert(sb, '=')
-                    table.insert(sb, any_tostring(value, visitedTables, indent+4))
-                    table.insert(sb, ',\n')
+                visitedTables[tt]=true
+                local sb = {}
+                if is_array(tt) then
+                    table.insert(sb, '{')
+                    for i = 1, #tt do
+                        table.insert(sb, any_tostring(tt[i], visitedTables,maxLevel, indent))
+                        if i < #tt then table.insert(sb, ', ') end
+                    end
+                    table.insert(sb, '}')
+                else
+                    table.insert(sb, '{\n')
+                    -- Print the map content ordered according to type, then key:
+                    local a = {}
+                    for n in pairs(tt) do table.insert(a, n) end
+                    table.sort(a)
+                    local tp={'boolean','number','string','function','userdata','thread','table'}
+                    for j=1,#tp,1 do
+                        for i,n in ipairs(a) do
+                            if type(tt[n])==tp[j] then
+                                table.insert(sb, string.rep(' ', indent+4))
+                                table.insert(sb, tostring(n))
+                                table.insert(sb, '=')
+                                table.insert(sb, any_tostring(tt[n], visitedTables,maxLevel, indent+4))
+                                table.insert(sb, ',\n')
+                            end
+                        end                
+                    end
+                    table.insert(sb, string.rep(' ', indent))
+                    table.insert(sb, '}')
                 end
-                table.insert(sb, string.rep(' ', indent))
-                table.insert(sb, '}')
+                visitedTables[tt]=false -- siblings pointing onto a same table should still be explored!
+                return table.concat(sb)
             end
-            return table.concat(sb)
         end
     else
-        return any_tostring(tt, visitedTables, indent)
+        return any_tostring(tt, visitedTables,maxLevel, indent)
     end
 end
 
-function any_tostring(x, visitedTables,tblindent)
+function any_tostring(x, visitedTables,maxLevel,tblindent)
     local tblindent = tblindent or 0
     if 'nil' == type(x) then
         return tostring(nil)
     elseif 'table' == type(x) then
-        return table_tostring(x, visitedTables, tblindent)
+        return table_tostring(x, visitedTables,maxLevel, tblindent)
     elseif 'string' == type(x) then
-        return string.format('"%s"', x)
+        if string.find(x,"\0") then
+            return "<buffer string>"
+        else
+            local a,b=string.gsub(x,"[%a%d%p%s]", "@")
+            if b~=#x then
+                return "<string containing special chars>"
+            else
+                if #x>160 then
+                    return "<long string>"
+                else
+                    return string.format('"%s"', x)
+                end
+            end
+        end
     else
         return tostring(x)
     end
@@ -516,14 +544,18 @@ end
 function print(...)
     local a={...}
     local t=''
-    for i=1,#a,1 do
-        if i~=1 then
-            t=t..','
-        end
-        if type(a[i])=='table' then
-            t=t..table_tostring(a[i],{})
-        else
-            t=t..tostring(a[i])
+    if #a==1 and type(a[1])=='string' then
+        t=string.format('"%s"', a[1])
+    else
+        for i=1,#a,1 do
+            if i~=1 then
+                t=t..','
+            end
+            if type(a[i])=='table' then
+                t=t..table_tostring(a[i],{},99)
+            else
+                t=t..any_tostring(a[i],{},99)
+            end
         end
     end
     sim.addStatusbarMessage(t)
@@ -533,10 +565,30 @@ function printf(fmt,...)
     local a={...}
     for i=1,#a do
         if type(a[i])=='table' then
-            a[i]=any_tostring(a[i],{})
+            a[i]=any_tostring(a[i],{},99)
         end
     end
     print(string.format(fmt,unpack(a)))
+end
+
+function printSimple(...)
+    local a={...}
+    local t=''
+    if #a==1 and type(a[1])=='string' then
+        t=string.format('"%s"', a[1])
+    else
+        for i=1,#a,1 do
+            if i~=1 then
+                t=t..','
+            end
+            if type(a[i])=='table' then
+                t=t..table_tostring(a[i],{},2)
+            else
+                t=t..any_tostring(a[i],{},2)
+            end
+        end
+    end
+    sim.addStatusbarMessage(t)
 end
 
 return sim
