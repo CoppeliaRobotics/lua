@@ -571,24 +571,48 @@ function printf(fmt,...)
     print(string.format(fmt,unpack(a)))
 end
 
-function printSimple(...)
-    local a={...}
+function printL(var,level)
+    local level = level or 1
     local t=''
-    if #a==1 and type(a[1])=='string' then
-        t=string.format('"%s"', a[1])
+    if type(var)=='string' then
+        t=string.format('"%s"', var)
     else
-        for i=1,#a,1 do
-            if i~=1 then
-                t=t..','
-            end
-            if type(a[i])=='table' then
-                t=t..table_tostring(a[i],{},2)
-            else
-                t=t..any_tostring(a[i],{},2)
-            end
+        if type(var)=='table' then
+            t=t..table_tostring(var,{},level+1)
+        else
+            t=t..any_tostring(var,{},level+1)
         end
     end
     sim.addStatusbarMessage(t)
+end
+
+function _mG()
+    _userG={}
+    for key,val in pairs(_G) do
+        _userG[key]=true
+    end
+    _userG._mG=nil
+    _mG=nil
+end
+
+function getUserGlobals()
+    local ng={}
+    if _userG then
+        for key,val in pairs(_G) do
+            if not _userG[key] then
+                ng[key]=val
+            end
+        end
+    else
+        ng=_G
+    end
+    -- hide a few additional system variables:
+    ng.sim_current_script_id=nil
+    ng.sim_call_type=nil
+    ng.sim_code_function_to_run=nil
+    ng.__notFirst__=nil
+    ng.__scriptCodeToRun__=nil
+    return ng
 end
 
 return sim
