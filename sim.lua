@@ -457,6 +457,10 @@ end
 
 printToConsole=print
 
+function comparable_tables(t1,t2)
+    return ( is_array(t1)==is_array(t2) ) or ( is_array(t1) and #t1==0 ) or ( is_array(t2) and #t2==0 )
+end
+
 function is_array(t)
     local i = 0
     for _ in pairs(t) do
@@ -522,6 +526,14 @@ function any_tostring(x, visitedTables,maxLevel,tblindent)
     elseif 'table' == type(x) then
         return table_tostring(x, visitedTables,maxLevel, tblindent)
     elseif 'string' == type(x) then
+        return getShortString(x)
+    else
+        return tostring(x)
+    end
+end
+
+function getShortString(x)
+    if type(x)=='string' then
         if string.find(x,"\0") then
             return "<buffer string>"
         else
@@ -536,9 +548,8 @@ function any_tostring(x, visitedTables,maxLevel,tblindent)
                 end
             end
         end
-    else
-        return tostring(x)
     end
+    return "<not a string>"
 end
 
 function print(...)
@@ -595,6 +606,135 @@ function _mG()
     _mG=nil
 end
 
+function __DEBUG__(info)
+    local scriptName=info[1]
+    local funcName=info[2]
+    local funcType=info[3]
+    local callIn=info[4]
+    local debugLevel=info[5]
+    local sysCall=info[6]
+    local simTime=info[7]
+    local simTimeStr=''
+    if sim.getSimulationState()~=sim.simulation_stopped then
+        simTimeStr=simTime..' '
+    end
+    if debugLevel>=sim.scriptdebug_vars then
+        local prefix='DEBUG: '..simTimeStr..'['..scriptName..'] '
+        local t=__DEBUG_getChanges(prefix)
+        if t then
+            sim.addStatusbarMessage(t)
+        end
+    end
+    if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
+        local t='DEBUG: '..simTimeStr..'['..scriptName..']'
+        if callIn then
+            t=t..' --> '
+        else
+            t=t..' <-- '
+        end
+        t=t..funcName..' ('..funcType..')'
+        sim.addStatusbarMessage(t)
+    end
+end
+
+function __DEBUG_getChanges(pref)
+    local t=''
+    local usrLast=__DEBUG_userVariablesLast
+    __DEBUG_userVariablesLast=sim.unpackTable(sim.packTable(getUserGlobals())) -- deep copy
+    if usrLast then
+        t=__DEBUG_getDiff(pref,'',usrLast,__DEBUG_userVariablesLast)
+    end
+    if #t>0 then
+        t=t:sub(1,-2) -- remove last linefeed
+        return t
+    end
+end
+
+function __DEBUG_getDiff(pref,varName,oldV,newV)
+    local t=''
+    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or comparable_tables(oldV,newV) )  then  -- comparable_tables: an empty map is seen as an array
+        if type(newV)~='table' then
+            if newV~=oldV then
+                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '..getShortString(tostring(newV))..'\n'
+            end
+        else
+            if is_array(oldV) and is_array(newV) then -- an empty map is seen as an array
+                -- removed items:
+                if #oldV>#newV then
+                    for i=1,#oldV-#newV,1 do
+                        t=t..__DEBUG_getDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
+                    end
+                end
+                -- added items:
+                if #newV>#oldV then
+                    for i=1,#newV-#oldV,1 do
+                        t=t..__DEBUG_getDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
+                    end
+                end
+                -- modified items:
+                local l=math.min(#newV,#oldV)
+                for i=1,l,1 do
+                    t=t..__DEBUG_getDiff(pref,varName..'['..i..']',oldV[i],newV[i])
+                end
+            else
+                local nvarName=varName
+                if nvarName~='' then nvarName=nvarName..'.' end
+                -- removed items:
+                for k,vo in pairs(oldV) do
+                    if newV[k]==nil then
+                        t=t..__DEBUG_getDiff(pref,nvarName..k,vo,nil)
+                    end
+                end
+                
+                -- added items:
+                for k,vn in pairs(newV) do
+                    if oldV[k]==nil then
+                        t=t..__DEBUG_getDiff(pref,nvarName..k,nil,vn)
+                    end
+                end
+                
+                -- modified items:
+                for k,vo in pairs(oldV) do
+                    if newV[k] then
+                        t=t..__DEBUG_getDiff(pref,nvarName..k,vo,newV[k])
+                    end
+                end
+            end
+        end
+    else
+        if oldV==nil then
+            if type(newV)~='table' then
+                t=t..pref..'new: '..varName..' ('..type(newV)..'): '..getShortString(tostring(newV))..'\n'
+            else
+                t=t..pref..'new: '..varName..' ('..type(newV)..')\n'
+                if is_array(newV) then
+                    for i=1,#newV,1 do
+                        t=t..__DEBUG_getDiff(pref,varName..'['..i..']',nil,newV[i])
+                    end
+                else
+                    local nvarName=varName
+                    if nvarName~='' then nvarName=nvarName..'.' end
+                    for k,v in pairs(newV) do
+                        t=t..__DEBUG_getDiff(pref,nvarName..k,nil,v)
+                    end
+                end
+            end
+        elseif newV==nil then
+            if type(oldV)~='table' then
+                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '..getShortString(tostring(oldV))..'\n'
+            else
+                t=t..pref..'del: '..varName..' ('..type(oldV)..')\n'
+            end
+        else
+            -- variable changed type.. register that as del and new:
+            t=t..__DEBUG_getDiff(pref,varName,oldV,nil)
+            t=t..__DEBUG_getDiff(pref,varName,nil,newV)
+        end
+    end
+    return t
+end
+
+
 function getUserGlobals()
     local ng={}
     if _userG then
@@ -612,6 +752,7 @@ function getUserGlobals()
     ng.sim_code_function_to_run=nil
     ng.__notFirst__=nil
     ng.__scriptCodeToRun__=nil
+    ng.__DEBUG_userVariablesLast=nil
     return ng
 end
 
