@@ -1,4 +1,6 @@
 local sim={}
+__HIDDEN__={}
+__HIDDEN__.debug={}
 
 function sim.include(relativePathAndFile,cmd)
     -- Relative to the V-REP path
@@ -109,19 +111,13 @@ function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
     return retVal
 end
 
-function __loadTheString__()
-    local f=loadstring(__theStringToLoad__)
-    return f
-end
-
 function sim.executeLuaCode(theCode)
-    __theStringToLoad__=theCode -- variable needs to be global here
-    local bla,f=pcall(__loadTheString__)
+    local f=loadstring(theCode)
     if f then
-        local res,theReturn=xpcall(f,function(err) return debug.traceback(err) end)
-        if res then
-            return theReturn
-        end
+        local a,b=pcall(f)
+        return a,b
+    else
+        return false,'compilation error'
     end
 end
 
@@ -455,8 +451,6 @@ function sim.isPluginLoaded(pluginName)
     return(false)
 end
 
-printToConsole=print
-
 function comparable_tables(t1,t2)
     return ( is_array(t1)==is_array(t2) ) or ( is_array(t1) and #t1==0 ) or ( is_array(t2) and #t2==0 )
 end
@@ -552,26 +546,6 @@ function getShortString(x)
     return "<not a string>"
 end
 
-function print(...)
-    local a={...}
-    local t=''
-    if #a==1 and type(a[1])=='string' then
-        t=string.format('"%s"', a[1])
-    else
-        for i=1,#a,1 do
-            if i~=1 then
-                t=t..','
-            end
-            if type(a[i])=='table' then
-                t=t..table_tostring(a[i],{},99)
-            else
-                t=t..any_tostring(a[i],{},99)
-            end
-        end
-    end
-    sim.addStatusbarMessage(t)
-end
-
 function printf(fmt,...)
     local a={...}
     for i=1,#a do
@@ -597,16 +571,7 @@ function printL(var,level)
     sim.addStatusbarMessage(t)
 end
 
-function _mG()
-    _userG={}
-    for key,val in pairs(_G) do
-        _userG[key]=true
-    end
-    _userG._mG=nil
-    _mG=nil
-end
-
-function __DEBUG__(info)
+function __HIDDEN__.debug.entryFunc(info)
     local scriptName=info[1]
     local funcName=info[2]
     local funcType=info[3]
@@ -615,42 +580,69 @@ function __DEBUG__(info)
     local sysCall=info[6]
     local simTime=info[7]
     local simTimeStr=''
-    if sim.getSimulationState()~=sim.simulation_stopped then
-        simTimeStr=simTime..' '
-    end
-    if debugLevel>=sim.scriptdebug_vars then
-        local prefix='DEBUG: '..simTimeStr..'['..scriptName..'] '
-        local t=__DEBUG_getChanges(prefix)
-        if t then
+    if (debugLevel~=sim.scriptdebug_vars_interval) or (not __HIDDEN__.debug.lastInterval) or (sim.getSystemTimeInMs(-1)>__HIDDEN__.debug.lastInterval+1000) then
+        __HIDDEN__.debug.lastInterval=sim.getSystemTimeInMs(-1)
+        if sim.getSimulationState()~=sim.simulation_stopped then
+            simTimeStr=simTime..' '
+        end
+        if (debugLevel>=sim.scriptdebug_vars) or (debugLevel==sim.scriptdebug_vars_interval) then
+            local prefix='DEBUG: '..simTimeStr..'['..scriptName..'] '
+            local t=__HIDDEN__.debug.getVarChanges(prefix)
+            if t then
+                sim.addStatusbarMessage(t)
+            end
+        end
+        if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
+            local t='DEBUG: '..simTimeStr..'['..scriptName..']'
+            if callIn then
+                t=t..' --> '
+            else
+                t=t..' <-- '
+            end
+            t=t..funcName..' ('..funcType..')'
             sim.addStatusbarMessage(t)
         end
     end
-    if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
-        local t='DEBUG: '..simTimeStr..'['..scriptName..']'
-        if callIn then
-            t=t..' --> '
-        else
-            t=t..' <-- '
-        end
-        t=t..funcName..' ('..funcType..')'
-        sim.addStatusbarMessage(t)
-    end
 end
 
-function __DEBUG_getChanges(pref)
+function __HIDDEN__.debug.getVarChanges(pref)
     local t=''
-    local usrLast=__DEBUG_userVariablesLast
-    __DEBUG_userVariablesLast=sim.unpackTable(sim.packTable(getUserGlobals())) -- deep copy
-    if usrLast then
-        t=__DEBUG_getDiff(pref,'',usrLast,__DEBUG_userVariablesLast)
+    __HIDDEN__.debug.userVarsOld=__HIDDEN__.debug.userVars
+    __HIDDEN__.debug.userVars=sim.unpackTable(sim.packTable(sim.getUserVariables())) -- deep copy
+    if __HIDDEN__.debug.userVarsOld then
+        if __HIDDEN__.debug.watchList and type(__HIDDEN__.debug.watchList)=='table' and #__HIDDEN__.debug.watchList>0 then
+            for i=1,#__HIDDEN__.debug.watchList,1 do
+                local str=__HIDDEN__.debug.watchList[i]
+                if type(str)=='string' then
+                    local var1=__HIDDEN__.debug.getVar('__HIDDEN__.debug.userVarsOld.'..str)
+                    local var2=__HIDDEN__.debug.getVar('__HIDDEN__.debug.userVars.'..str)
+                    if var1~=nil or var2~=nil then
+                        t=__HIDDEN__.debug.getVarDiff(pref,str,var1,var2)
+                    end
+                end
+            end
+        else
+            t=__HIDDEN__.debug.getVarDiff(pref,'',__HIDDEN__.debug.userVarsOld,__HIDDEN__.debug.userVars)
+        end
     end
+    __HIDDEN__.debug.userVarsOld=nil
     if #t>0 then
         t=t:sub(1,-2) -- remove last linefeed
         return t
     end
 end
 
-function __DEBUG_getDiff(pref,varName,oldV,newV)
+function __HIDDEN__.debug.getVar(varName)
+    local f=loadstring('return '..varName)
+    if f then
+        local res,val=pcall(f)
+        if res and val then
+            return val
+        end
+    end
+end
+
+function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
     local t=''
     if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or comparable_tables(oldV,newV) )  then  -- comparable_tables: an empty map is seen as an array
         if type(newV)~='table' then
@@ -662,19 +654,19 @@ function __DEBUG_getDiff(pref,varName,oldV,newV)
                 -- removed items:
                 if #oldV>#newV then
                     for i=1,#oldV-#newV,1 do
-                        t=t..__DEBUG_getDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
                     end
                 end
                 -- added items:
                 if #newV>#oldV then
                     for i=1,#newV-#oldV,1 do
-                        t=t..__DEBUG_getDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
                     end
                 end
                 -- modified items:
                 local l=math.min(#newV,#oldV)
                 for i=1,l,1 do
-                    t=t..__DEBUG_getDiff(pref,varName..'['..i..']',oldV[i],newV[i])
+                    t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i..']',oldV[i],newV[i])
                 end
             else
                 local nvarName=varName
@@ -682,21 +674,21 @@ function __DEBUG_getDiff(pref,varName,oldV,newV)
                 -- removed items:
                 for k,vo in pairs(oldV) do
                     if newV[k]==nil then
-                        t=t..__DEBUG_getDiff(pref,nvarName..k,vo,nil)
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,vo,nil)
                     end
                 end
                 
                 -- added items:
                 for k,vn in pairs(newV) do
                     if oldV[k]==nil then
-                        t=t..__DEBUG_getDiff(pref,nvarName..k,nil,vn)
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,nil,vn)
                     end
                 end
                 
                 -- modified items:
                 for k,vo in pairs(oldV) do
                     if newV[k] then
-                        t=t..__DEBUG_getDiff(pref,nvarName..k,vo,newV[k])
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,vo,newV[k])
                     end
                 end
             end
@@ -709,13 +701,13 @@ function __DEBUG_getDiff(pref,varName,oldV,newV)
                 t=t..pref..'new: '..varName..' ('..type(newV)..')\n'
                 if is_array(newV) then
                     for i=1,#newV,1 do
-                        t=t..__DEBUG_getDiff(pref,varName..'['..i..']',nil,newV[i])
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i..']',nil,newV[i])
                     end
                 else
                     local nvarName=varName
                     if nvarName~='' then nvarName=nvarName..'.' end
                     for k,v in pairs(newV) do
-                        t=t..__DEBUG_getDiff(pref,nvarName..k,nil,v)
+                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,nil,v)
                     end
                 end
             end
@@ -727,19 +719,22 @@ function __DEBUG_getDiff(pref,varName,oldV,newV)
             end
         else
             -- variable changed type.. register that as del and new:
-            t=t..__DEBUG_getDiff(pref,varName,oldV,nil)
-            t=t..__DEBUG_getDiff(pref,varName,nil,newV)
+            t=t..__HIDDEN__.debug.getVarDiff(pref,varName,oldV,nil)
+            t=t..__HIDDEN__.debug.getVarDiff(pref,varName,nil,newV)
         end
     end
     return t
 end
 
+function sim.setDebugWatchList(l)
+    __HIDDEN__.debug.watchList=l
+end
 
-function getUserGlobals()
+function sim.getUserVariables()
     local ng={}
-    if _userG then
+    if __HIDDEN__.initGlobals then
         for key,val in pairs(_G) do
-            if not _userG[key] then
+            if not __HIDDEN__.initGlobals[key] then
                 ng[key]=val
             end
         end
@@ -752,8 +747,41 @@ function getUserGlobals()
     ng.sim_code_function_to_run=nil
     ng.__notFirst__=nil
     ng.__scriptCodeToRun__=nil
-    ng.__DEBUG_userVariablesLast=nil
+    ng.__HIDDEN__=nil
     return ng
+end
+
+function __HIDDEN__.executeAfterLuaStateInit()
+    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
+    sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
+    __HIDDEN__.initGlobals={}
+    for key,val in pairs(_G) do
+        __HIDDEN__.initGlobals[key]=true
+    end
+    __HIDDEN__.initGlobals.__HIDDEN__=nil
+    __HIDDEN__.executeAfterLuaStateInit=nil
+end
+
+printToConsole=print -- keep this in front of the new print definition!
+
+function print(...)
+    local a={...}
+    local t=''
+    if #a==1 and type(a[1])=='string' then
+        t=string.format('"%s"', a[1])
+    else
+        for i=1,#a,1 do
+            if i~=1 then
+                t=t..','
+            end
+            if type(a[i])=='table' then
+                t=t..table_tostring(a[i],{},99)
+            else
+                t=t..any_tostring(a[i],{},99)
+            end
+        end
+    end
+    sim.addStatusbarMessage(t)
 end
 
 return sim
