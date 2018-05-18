@@ -2,469 +2,46 @@ local sim={}
 __HIDDEN__={}
 __HIDDEN__.debug={}
 
+-- Old stuff, mainly for backward compatibility:
+----------------------------------------------------------
 function sim.include(relativePathAndFile,cmd)
-    -- Relative to the V-REP path
-    if not __notFirst__ then
-        local appPath=sim.getStringParameter(sim.stringparam_application_path)
-        if sim.getInt32Parameter(sim.intparam_platform)==1 then
-            appPath=appPath.."/../../.."
-        end
-        sim.includeAbs(appPath..relativePathAndFile,cmd)
-    else
-        if __scriptCodeToRun__ then
-            __scriptCodeToRun__()
-        end
-    end
+    require("sim_old")
+    return sim.include(relativePathAndFile,cmd)
 end
-
 function sim.includeRel(relativePathAndFile,cmd)
-    -- Relative to the current scene path
-    if not __notFirst__ then
-        local scenePath=sim.getStringParameter(sim.stringparam_scene_path)
-        sim.includeAbs(scenePath..relativePathAndFile,cmd)
-    else
-        if __scriptCodeToRun__ then
-            __scriptCodeToRun__()
-        end
-    end
+    require("sim_old")
+    return sim.includeRel(relativePathAndFile,cmd)
 end
-
 function sim.includeAbs(absPathAndFile,cmd)
-    -- Absolute path
-    if not __notFirst__ then
-        __notFirst__=true
-        __scriptCodeToRun__=assert(loadfile(absPathAndFile))
-        if cmd then
-            local tmp=assert(loadstring(cmd))
-            if tmp then
-                tmp()
-            end
-        end
-    end
-    if __scriptCodeToRun__ then
-        __scriptCodeToRun__()
-    end
+    require("sim_old")
+    return sim.includeAbs(absPathAndFile,cmd)
 end
-
-function sim.getObjectsWithTag(tagName,justModels)
-    local retObjs={}
-    local objs=sim.getObjectsInTree(sim.handle_scene)
-    for i=1,#objs,1 do
-        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
-            local dat=sim.readCustomDataBlockTags(objs[i])
-            if dat then
-                for j=1,#dat,1 do
-                    if dat[j]==tagName then
-                        retObjs[#retObjs+1]=objs[i]
-                        break
-                    end
-                end
-            end
-        end
-    end
-    return retObjs
-end
-
-function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array)
-    local _itemsTxt={}
-    local _itemsMap={}
-    for i=1,#items_array,1 do
-        local txt=items_array[i][1]
-        if (not exceptItems_map) or (not exceptItems_map[txt]) then
-            _itemsTxt[#_itemsTxt+1]=txt
-            _itemsMap[txt]=items_array[i][2]
-        end
-    end
-    if sort then
-        table.sort(_itemsTxt)
-    end
-    local tableToReturn={}
-    if additionalItemsToTop_array then
-        for i=1,#additionalItemsToTop_array,1 do
-            tableToReturn[#tableToReturn+1]={additionalItemsToTop_array[i][1],additionalItemsToTop_array[i][2]}
-        end
-    end
-    for i=1,#_itemsTxt,1 do
-        tableToReturn[#tableToReturn+1]={_itemsTxt[i],_itemsMap[_itemsTxt[i]]}
-    end
-    if additionalItemsToTop_array then
-        for i=1,#additionalItemsToTop_array,1 do
-            table.insert(_itemsTxt,i,additionalItemsToTop_array[i][1])
-        end
-    end
-    local index=0
-    for i=1,#_itemsTxt,1 do
-        if _itemsTxt[i]==currentItem then
-            index=i-1
-            break
-        end
-    end
-    simUI.setComboboxItems(ui,id,_itemsTxt,index,true)
-    return tableToReturn,index
-end
-
-function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
-    local suff=sim.getNameSuffix(nil)
-    sim.setNameSuffix(-1)
-    local retVal=sim.getObjectHandle(name..'@silentError')
-    sim.setNameSuffix(suff)
-    return retVal
-end
-
-function sim.executeLuaCode(theCode)
-    local f=loadstring(theCode)
-    if f then
-        local a,b=pcall(f)
-        return a,b
-    else
-        return false,'compilation error'
-    end
-end
-
 function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
-    local xIsY=(math.abs(1-math.abs(scaleAxisX/scaleAxisY))<0.001)
-    local xIsZ=(math.abs(1-math.abs(scaleAxisX/scaleAxisZ))<0.001)
-    local xIsYIsZ=(xIsY and xIsZ)
-    if xIsYIsZ then
-        return true -- iso scaling in this case
-    end
-    local t=sim.getObjectType(objHandle)
-    if t==sim.object_joint_type then
-        return true
-    end
-    if t==sim.object_dummy_type then
-        return true
-    end
-    if t==sim.object_camera_type then
-        return true
-    end
-    if t==sim.object_mirror_type then
-        return true
-    end
-    if t==sim.object_light_type then
-        return true
-    end
-    if t==sim.object_forcesensor_type then
-        return true
-    end
-    if t==sim.object_path_type then
-        return true
-    end
-    if t==sim.object_pointcloud_type then
-        return false
-    end
-    if t==sim.object_octree_type then
-        return false
-    end
-    if t==sim.object_graph_type then
-        return false
-    end
-    if t==sim.object_proximitysensor_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.proxintparam_volume_type)
-        if p==sim.volume_cylinder then
-            return xIsY
-        end
-        if p==sim.volume_disc then
-            return xIsZ
-        end
-        if p==sim.volume_cone then
-            return false
-        end
-        if p==sim.volume_randomizedray then
-            return false
-        end
-        return true
-    end
-    if t==sim.object_mill_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.millintparam_volume_type)
-        if p==sim.volume_cylinder then
-            return xIsY
-        end
-        if p==sim.volume_disc then
-            return xIsZ
-        end
-        if p==sim.volume_cone then
-            return false
-        end
-        return true
-    end
-    if t==sim.object_visionsensor_type then
-        return xIsY
-    end
-    if t==sim.object_shape_type then
-        local r,pt=sim.getShapeGeomInfo(objHandle)
-        if sim.boolAnd32(r,1)~=0 then
-            return false -- compound
-        end
-        if pt==sim.pure_primitive_spheroid then
-            return false
-        end
-        if pt==sim.pure_primitive_disc then
-            return xIsY
-        end
-        if pt==sim.pure_primitive_cylinder then
-            return xIsY
-        end
-        if pt==sim.pure_primitive_cone then
-            return xIsY
-        end
-        if pt==sim.pure_primitive_heightfield then
-            return xIsY
-        end
-        return true
-    end
+    require("sim_old")
+    return sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
 end
-
 function sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems)
-    local xIsY=(math.abs(1-math.abs(scaleAxisX/scaleAxisY))<0.001)
-    local xIsZ=(math.abs(1-math.abs(scaleAxisX/scaleAxisZ))<0.001)
-    local yIsZ=(math.abs(1-math.abs(scaleAxisY/scaleAxisZ))<0.001)
-    local xIsYIsZ=(xIsY and xIsZ)
-    if xIsYIsZ then
-        return true -- iso scaling in this case
-    end
-    local allDescendents=sim.getObjectsInTree(modelHandle,sim.handle_all,1)
-    -- First the model base:
-    local t=sim.getObjectType(modelHandle)
-    if (t==sim.object_pointcloud_type) or (t==sim.object_pointcloud_type) or (t==sim.object_pointcloud_type) then
-        if not ignoreNonScalableItems then
-            if not sim.canScaleObjectNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) then
-                return false
-            end
-        end
-    else
-        if not sim.canScaleObjectNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) then
-            return false
-        end
-    end
-    -- Ok, we can scale the base, now check the descendents:
-    local baseFrameScalingFactors={scaleAxisX,scaleAxisY,scaleAxisZ}
-    for i=1,#allDescendents,1 do
-        local h=allDescendents[i]
-        t=sim.getObjectType(h)
-        if ( (t~=sim.object_pointcloud_type) and (t~=sim.object_pointcloud_type) and (t~=sim.object_pointcloud_type) ) or (not ignoreNonScalableItems) then
-            local m=sim.getObjectMatrix(h,modelHandle)
-            local axesMapping={-1,-1,-1} -- -1=no mapping
-            local matchingAxesCnt=0
-            local objFrameScalingFactors={nil,nil,nil}
-            local singleMatchingAxisIndex
-            for j=1,3,1 do
-                local newAxis={m[j],m[j+4],m[j+8]}
-                local x={math.abs(newAxis[1]),math.abs(newAxis[2]),math.abs(newAxis[3])}
-                local v=math.max(math.max(x[1],x[2]),x[3])
-                if v>0.99 then
-                    matchingAxesCnt=matchingAxesCnt+1
-                    if x[1]>0.9 then
-                        axesMapping[j]=1
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                        singleMatchingAxisIndex=j
-                    end
-                    if x[2]>0.9 then
-                        axesMapping[j]=2
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                        singleMatchingAxisIndex=j
-                    end
-                    if x[3]>0.9 then
-                        axesMapping[j]=3
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                        singleMatchingAxisIndex=j
-                    end
-                end
-            end
-            if matchingAxesCnt==0 then
-                -- the child frame is not aligned at all with the model frame. And scaling is not iso-scaling
-                -- Dummies, cameras, lights and force sensors do not mind:
-                local t=sim.getObjectType(h)
-                if (t~=sim.object_dummy_type) and (t~=sim.object_camera_type) and (t~=sim.object_light_type) and (t~=sim.object_forcesensor_type) then
-                    return false
-                end
-            else
-                if matchingAxesCnt==3 then
-                    if not sim.canScaleObjectNonIsometrically(h,objFrameScalingFactors[1],objFrameScalingFactors[2],objFrameScalingFactors[3]) then
-                        return false
-                    end
-                else
-                    -- We have only one axis that matches. We can scale the object only if the two non-matching axes have the same scaling factor:
-                    local otherFactors={nil,nil}
-                    for j=1,3,1 do
-                        if j~=axesMapping[singleMatchingAxisIndex] then
-                            if otherFactors[1] then
-                                otherFactors[2]=baseFrameScalingFactors[j]
-                            else
-                                otherFactors[1]=baseFrameScalingFactors[j]
-                            end
-                        end
-                    end
-                    if (math.abs(1-math.abs(otherFactors[1]/otherFactors[2]))<0.001) then
-                        local fff={otherFactors[1],otherFactors[1],otherFactors[1]}
-                        fff[singleMatchingAxisIndex]=objFrameScalingFactors[singleMatchingAxisIndex]
-                        if not sim.canScaleObjectNonIsometrically(h,fff[1],fff[2],fff[3]) then
-                            return false
-                        end
-                    else
-                        return false
-                    end
-                end
-            end
-        end
-    end
-    return true
+    require("sim_old")
+    return sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems)
 end
-
 function sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
-    local xIsY=(math.abs(1-math.abs(scaleAxisX/scaleAxisY))<0.001)
-    local xIsZ=(math.abs(1-math.abs(scaleAxisX/scaleAxisZ))<0.001)
-    local xIsYIsZ=(xIsY and xIsZ)
-    if xIsYIsZ then
-        sim.scaleObjects({modelHandle},scaleAxisX,false) -- iso scaling in this case
-    else
-        local avgScaling=(scaleAxisX+scaleAxisY+scaleAxisZ)/3
-        local allDescendents=sim.getObjectsInTree(modelHandle,sim.handle_all,1)
-        -- First the model base:
-        sim.scaleObject(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,0)
-        -- Now scale all the descendents:
-        local baseFrameScalingFactors={scaleAxisX,scaleAxisY,scaleAxisZ}
-        for i=1,#allDescendents,1 do
-            local h=allDescendents[i]
-            -- First scale the object itself:
-            local m=sim.getObjectMatrix(h,modelHandle)
-            local axesMapping={-1,-1,-1} -- -1=no mapping
-            local matchingAxesCnt=0
-            local objFrameScalingFactors={nil,nil,nil}
-            for j=1,3,1 do
-                local newAxis={m[j],m[j+4],m[j+8]}
-                local x={math.abs(newAxis[1]),math.abs(newAxis[2]),math.abs(newAxis[3])}
-                local v=math.max(math.max(x[1],x[2]),x[3])
-                if v>0.99 then
-                    matchingAxesCnt=matchingAxesCnt+1
-                    if x[1]>0.9 then
-                        axesMapping[j]=1
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                    end
-                    if x[2]>0.9 then
-                        axesMapping[j]=2
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                    end
-                    if x[3]>0.9 then
-                        axesMapping[j]=3
-                        objFrameScalingFactors[j]=baseFrameScalingFactors[axesMapping[j]]
-                    end
-                end
-            end
-            if matchingAxesCnt==0 then
-                -- the child frame is not aligned at all with the model frame.
-                sim.scaleObject(h,avgScaling,avgScaling,avgScaling,0)
-            end
+    require("sim_old")
+    return sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
+end
+function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array)
+    require("sim_old")
+    return sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array)
+end
+----------------------------------------------------------
 
-            if matchingAxesCnt==3 then
-                -- the child frame is orthogonally aligned with the model frame
-                sim.scaleObject(h,objFrameScalingFactors[1],objFrameScalingFactors[2],objFrameScalingFactors[3],0)
-            else
-                -- We have only one axis that is aligned with the model frame
-                local objFactor,objIndex
-                for j=1,3,1 do
-                    if objFrameScalingFactors[j]~=nil then
-                        objFactor=objFrameScalingFactors[j]
-                        objIndex=j
-                        break
-                    end
-                end
-                local otherFactors={nil,nil}
-                for j=1,3,1 do
-                    if baseFrameScalingFactors[j]~=objFactor then
-                        if otherFactors[1]==nil then
-                            otherFactors[1]=baseFrameScalingFactors[j]
-                        else
-                            otherFactors[2]=baseFrameScalingFactors[j]
-                        end
-                    end
-                end
-                if (math.abs(1-math.abs(otherFactors[1]/otherFactors[2]))<0.001) then
-                    local fff={otherFactors[1],otherFactors[1],otherFactors[1]}
-                    fff[objIndex]=objFactor
-                    sim.scaleObject(h,fff[1],fff[2],fff[3],0)
-                else
-                    local of=(otherFactors[1]+otherFactors[2])/2
-                    local fff={of,of,of}
-                    fff[objIndex]=objFactor
-                    sim.scaleObject(h,fff[1],fff[2],fff[3],0)
-                end
-            end
-            -- Now scale also the position of that object:
-            local parentObjH=sim.getObjectParent(h)
-            local m=sim.getObjectMatrix(parentObjH,modelHandle)
-            m[4]=0
-            m[8]=0
-            m[12]=0
-            local mi={}
-            for j=1,12,1 do
-                mi[j]=m[j]
-            end
-            sim.invertMatrix(mi)
-            local p=sim.getObjectPosition(h,parentObjH)
-            p=sim.multiplyVector(m,p)
-            p[1]=p[1]*scaleAxisX
-            p[2]=p[2]*scaleAxisY
-            p[3]=p[3]*scaleAxisZ
-            p=sim.multiplyVector(mi,p)
-            sim.setObjectPosition(h,parentObjH,p)
-        end
-    end
+
+-- Hidden, internal functions:
+----------------------------------------------------------
+function __HIDDEN__.comparableTables(t1,t2)
+    return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
 
-function sim.fastIdleLoop(enable)
-    local data=sim.readCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__')
-    local stage=0
-    local defaultIdleFps
-    if data then
-        data=sim.unpackInt32Table(data)
-        stage=data[1]
-        defaultIdleFps=data[2]
-    else
-        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
-    end
-    if enable then
-        stage=stage+1
-    else
-        if stage>0 then
-            stage=stage-1
-        end
-    end
-    if stage>0 then
-        sim.setInt32Parameter(sim.intparam_idle_fps,0)
-    else
-        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
-    end
-    sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
-end
-
-function sim.isPluginLoaded(pluginName)
-    local index=0
-    local moduleName=''
-    while moduleName do
-        moduleName=sim.getModuleName(index)
-        if (moduleName==pluginName) then
-            return(true)
-        end
-        index=index+1
-    end
-    return(false)
-end
-
-function comparable_tables(t1,t2)
-    return ( is_array(t1)==is_array(t2) ) or ( is_array(t1) and #t1==0 ) or ( is_array(t2) and #t2==0 )
-end
-
-function is_array(t)
-    local i = 0
-    for _ in pairs(t) do
-        i = i + 1
-        if t[i] == nil then return false end
-    end
-    return true
-end
-
-function table_tostring(tt,visitedTables,maxLevel,indent)
+function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
 	indent = indent or 0
     maxLevel=maxLevel-1
 	if type(tt) == 'table' then
@@ -476,10 +53,10 @@ function table_tostring(tt,visitedTables,maxLevel,indent)
             else
                 visitedTables[tt]=true
                 local sb = {}
-                if is_array(tt) then
+                if isArray(tt) then
                     table.insert(sb, '{')
                     for i = 1, #tt do
-                        table.insert(sb, any_tostring(tt[i], visitedTables,maxLevel, indent))
+                        table.insert(sb, __HIDDEN__.anyToString(tt[i], visitedTables,maxLevel, indent))
                         if i < #tt then table.insert(sb, ', ') end
                     end
                     table.insert(sb, '}')
@@ -496,7 +73,7 @@ function table_tostring(tt,visitedTables,maxLevel,indent)
                                 table.insert(sb, string.rep(' ', indent+4))
                                 table.insert(sb, tostring(n))
                                 table.insert(sb, '=')
-                                table.insert(sb, any_tostring(tt[n], visitedTables,maxLevel, indent+4))
+                                table.insert(sb, __HIDDEN__.anyToString(tt[n], visitedTables,maxLevel, indent+4))
                                 table.insert(sb, ',\n')
                             end
                         end                
@@ -509,24 +86,24 @@ function table_tostring(tt,visitedTables,maxLevel,indent)
             end
         end
     else
-        return any_tostring(tt, visitedTables,maxLevel, indent)
+        return __HIDDEN__.anyToString(tt, visitedTables,maxLevel, indent)
     end
 end
 
-function any_tostring(x, visitedTables,maxLevel,tblindent)
+function __HIDDEN__.anyToString(x, visitedTables,maxLevel,tblindent)
     local tblindent = tblindent or 0
     if 'nil' == type(x) then
         return tostring(nil)
     elseif 'table' == type(x) then
-        return table_tostring(x, visitedTables,maxLevel, tblindent)
+        return __HIDDEN__.tableToString(x, visitedTables,maxLevel, tblindent)
     elseif 'string' == type(x) then
-        return getShortString(x)
+        return __HIDDEN__.getShortString(x)
     else
         return tostring(x)
     end
 end
 
-function getShortString(x)
+function __HIDDEN__.getShortString(x)
     if type(x)=='string' then
         if string.find(x,"\0") then
             return "<buffer string>"
@@ -546,31 +123,20 @@ function getShortString(x)
     return "<not a string>"
 end
 
-function printf(fmt,...)
-    local a={...}
-    for i=1,#a do
-        if type(a[i])=='table' then
-            a[i]=any_tostring(a[i],{},99)
-        end
+function __HIDDEN__.executeAfterLuaStateInit()
+    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
+    sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
+    __HIDDEN__.initGlobals={}
+    for key,val in pairs(_G) do
+        __HIDDEN__.initGlobals[key]=true
     end
-    print(string.format(fmt,unpack(a)))
+    __HIDDEN__.initGlobals.__HIDDEN__=nil
+    __HIDDEN__.executeAfterLuaStateInit=nil
 end
+----------------------------------------------------------
 
-function printL(var,level)
-    local level = level or 1
-    local t=''
-    if type(var)=='string' then
-        t=string.format('"%s"', var)
-    else
-        if type(var)=='table' then
-            t=t..table_tostring(var,{},level+1)
-        else
-            t=t..any_tostring(var,{},level+1)
-        end
-    end
-    sim.addStatusbarMessage(t)
-end
-
+-- Hidden, debugging functions:
+----------------------------------------------------------
 function __HIDDEN__.debug.entryFunc(info)
     local scriptName=info[1]
     local funcName=info[2]
@@ -589,17 +155,23 @@ function __HIDDEN__.debug.entryFunc(info)
             local prefix='DEBUG: '..simTimeStr..'['..scriptName..'] '
             local t=__HIDDEN__.debug.getVarChanges(prefix)
             if t then
+                t="<font color='#44B'>"..t.."</font>@html"
                 sim.addStatusbarMessage(t)
             end
         end
         if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
             local t='DEBUG: '..simTimeStr..'['..scriptName..']'
             if callIn then
-                t=t..' --> '
+                t=t..' --&gt; '
             else
-                t=t..' <-- '
+                t=t..' &lt;-- '
             end
             t=t..funcName..' ('..funcType..')'
+            if callIn then
+                t="<font color='#44B'>"..t.."</font>@html"
+            else
+                t="<font color='#44B'>"..t.."</font>@html"
+            end
             sim.addStatusbarMessage(t)
         end
     end
@@ -627,7 +199,8 @@ function __HIDDEN__.debug.getVarChanges(pref)
     end
     __HIDDEN__.debug.userVarsOld=nil
     if #t>0 then
-        t=t:sub(1,-2) -- remove last linefeed
+--        t=t:sub(1,-2) -- remove last linefeed
+        t=t:sub(1,-4) -- remove last linefeed
         return t
     end
 end
@@ -644,13 +217,14 @@ end
 
 function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
     local t=''
-    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or comparable_tables(oldV,newV) )  then  -- comparable_tables: an empty map is seen as an array
+    local lf='<br>'--'\n'
+    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or __HIDDEN__.comparableTables(oldV,newV) )  then  -- comparableTables: an empty map is seen as an array
         if type(newV)~='table' then
             if newV~=oldV then
-                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '..getShortString(tostring(newV))..'\n'
+                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '..__HIDDEN__.getShortString(tostring(newV))..lf
             end
         else
-            if is_array(oldV) and is_array(newV) then -- an empty map is seen as an array
+            if isArray(oldV) and isArray(newV) then -- an empty map is seen as an array
                 -- removed items:
                 if #oldV>#newV then
                     for i=1,#oldV-#newV,1 do
@@ -696,10 +270,10 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
     else
         if oldV==nil then
             if type(newV)~='table' then
-                t=t..pref..'new: '..varName..' ('..type(newV)..'): '..getShortString(tostring(newV))..'\n'
+                t=t..pref..'new: '..varName..' ('..type(newV)..'): '..__HIDDEN__.getShortString(tostring(newV))..lf
             else
-                t=t..pref..'new: '..varName..' ('..type(newV)..')\n'
-                if is_array(newV) then
+                t=t..pref..'new: '..varName..' ('..type(newV)..')'..lf
+                if isArray(newV) then
                     for i=1,#newV,1 do
                         t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i..']',nil,newV[i])
                     end
@@ -713,9 +287,9 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
             end
         elseif newV==nil then
             if type(oldV)~='table' then
-                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '..getShortString(tostring(oldV))..'\n'
+                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '..__HIDDEN__.getShortString(tostring(oldV))..lf
             else
-                t=t..pref..'del: '..varName..' ('..type(oldV)..')\n'
+                t=t..pref..'del: '..varName..' ('..type(oldV)..')'..lf
             end
         else
             -- variable changed type.. register that as del and new:
@@ -724,6 +298,94 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
         end
     end
     return t
+end
+----------------------------------------------------------
+
+-- Various useful functions:
+----------------------------------------------------------
+function sim.getObjectsWithTag(tagName,justModels)
+    local retObjs={}
+    local objs=sim.getObjectsInTree(sim.handle_scene)
+    for i=1,#objs,1 do
+        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
+            local dat=sim.readCustomDataBlockTags(objs[i])
+            if dat then
+                for j=1,#dat,1 do
+                    if dat[j]==tagName then
+                        retObjs[#retObjs+1]=objs[i]
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return retObjs
+end
+
+function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
+    local suff=sim.getNameSuffix(nil)
+    sim.setNameSuffix(-1)
+    local retVal=sim.getObjectHandle(name..'@silentError')
+    sim.setNameSuffix(suff)
+    return retVal
+end
+
+function sim.executeLuaCode(theCode)
+    local f=loadstring(theCode)
+    if f then
+        local a,b=pcall(f)
+        return a,b
+    else
+        return false,'compilation error'
+    end
+end
+
+function sim.fastIdleLoop(enable)
+    local data=sim.readCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__')
+    local stage=0
+    local defaultIdleFps
+    if data then
+        data=sim.unpackInt32Table(data)
+        stage=data[1]
+        defaultIdleFps=data[2]
+    else
+        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
+    end
+    if enable then
+        stage=stage+1
+    else
+        if stage>0 then
+            stage=stage-1
+        end
+    end
+    if stage>0 then
+        sim.setInt32Parameter(sim.intparam_idle_fps,0)
+    else
+        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
+    end
+    sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
+end
+
+function sim.isPluginLoaded(pluginName)
+    local index=0
+    local moduleName=''
+    while moduleName do
+        moduleName=sim.getModuleName(index)
+        if (moduleName==pluginName) then
+            return(true)
+        end
+        index=index+1
+    end
+    return(false)
+end
+
+function isArray(t)
+    local i = 0
+    for _ in pairs(t) do
+        i = i + 1
+        if t[i] == nil then return false end
+    end
+    return true
 end
 
 function sim.setDebugWatchList(l)
@@ -751,17 +413,6 @@ function sim.getUserVariables()
     return ng
 end
 
-function __HIDDEN__.executeAfterLuaStateInit()
-    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
-    sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
-    __HIDDEN__.initGlobals={}
-    for key,val in pairs(_G) do
-        __HIDDEN__.initGlobals[key]=true
-    end
-    __HIDDEN__.initGlobals.__HIDDEN__=nil
-    __HIDDEN__.executeAfterLuaStateInit=nil
-end
-
 printToConsole=print -- keep this in front of the new print definition!
 
 function print(...)
@@ -775,13 +426,25 @@ function print(...)
                 t=t..','
             end
             if type(a[i])=='table' then
-                t=t..table_tostring(a[i],{},99)
+                t=t..__HIDDEN__.tableToString(a[i],{},99)
             else
-                t=t..any_tostring(a[i],{},99)
+                t=t..__HIDDEN__.anyToString(a[i],{},99)
             end
         end
     end
     sim.addStatusbarMessage(t)
 end
+
+function printf(fmt,...)
+    local a={...}
+    for i=1,#a do
+        if type(a[i])=='table' then
+            a[i]=__HIDDEN__.anyToString(a[i],{},99)
+        end
+    end
+    print(string.format(fmt,unpack(a)))
+end
+
+----------------------------------------------------------
 
 return sim

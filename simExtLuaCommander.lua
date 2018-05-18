@@ -29,6 +29,7 @@ html_help = [[
                     tk: sort by type, then by key;
                     off: don't sort at all.
             </li>
+            <li><b>escape</b>: (0/1) enable/disable special character escaping.</li>
         </ul>
 ]]
 
