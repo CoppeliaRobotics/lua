@@ -1,42 +1,155 @@
 local sim={}
-__HIDDEN__={}
-__HIDDEN__.debug={}
 
--- Old stuff, mainly for backward compatibility:
+-- Various useful functions:
 ----------------------------------------------------------
-function sim.include(relativePathAndFile,cmd)
-    require("sim_old")
-    return sim.include(relativePathAndFile,cmd)
+function sim.getObjectsWithTag(tagName,justModels)
+    local retObjs={}
+    local objs=sim.getObjectsInTree(sim.handle_scene)
+    for i=1,#objs,1 do
+        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
+            local dat=sim.readCustomDataBlockTags(objs[i])
+            if dat then
+                for j=1,#dat,1 do
+                    if dat[j]==tagName then
+                        retObjs[#retObjs+1]=objs[i]
+                        break
+                    end
+                end
+            end
+        end
+    end
+    return retObjs
 end
-function sim.includeRel(relativePathAndFile,cmd)
-    require("sim_old")
-    return sim.includeRel(relativePathAndFile,cmd)
+
+function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
+    local suff=sim.getNameSuffix(nil)
+    sim.setNameSuffix(-1)
+    local retVal=sim.getObjectHandle(name..'@silentError')
+    sim.setNameSuffix(suff)
+    return retVal
 end
-function sim.includeAbs(absPathAndFile,cmd)
-    require("sim_old")
-    return sim.includeAbs(absPathAndFile,cmd)
+
+function sim.executeLuaCode(theCode)
+    local f=loadstring(theCode)
+    if f then
+        local a,b=pcall(f)
+        return a,b
+    else
+        return false,'compilation error'
+    end
 end
-function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
-    require("sim_old")
-    return sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
+
+function sim.fastIdleLoop(enable)
+    local data=sim.readCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__')
+    local stage=0
+    local defaultIdleFps
+    if data then
+        data=sim.unpackInt32Table(data)
+        stage=data[1]
+        defaultIdleFps=data[2]
+    else
+        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
+    end
+    if enable then
+        stage=stage+1
+    else
+        if stage>0 then
+            stage=stage-1
+        end
+    end
+    if stage>0 then
+        sim.setInt32Parameter(sim.intparam_idle_fps,0)
+    else
+        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
+    end
+    sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
 end
-function sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems)
-    require("sim_old")
-    return sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems)
+
+function sim.isPluginLoaded(pluginName)
+    local index=0
+    local moduleName=''
+    while moduleName do
+        moduleName=sim.getModuleName(index)
+        if (moduleName==pluginName) then
+            return(true)
+        end
+        index=index+1
+    end
+    return(false)
 end
-function sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
-    require("sim_old")
-    return sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ)
+
+function isArray(t)
+    local i = 0
+    for _ in pairs(t) do
+        i = i + 1
+        if t[i] == nil then return false end
+    end
+    return true
 end
-function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array)
-    require("sim_old")
-    return sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array)
+
+function sim.setDebugWatchList(l)
+    __HIDDEN__.debug.watchList=l
 end
+
+function sim.getUserVariables()
+    local ng={}
+    if __HIDDEN__.initGlobals then
+        for key,val in pairs(_G) do
+            if not __HIDDEN__.initGlobals[key] then
+                ng[key]=val
+            end
+        end
+    else
+        ng=_G
+    end
+    -- hide a few additional system variables:
+    ng.sim_current_script_id=nil
+    ng.sim_call_type=nil
+    ng.sim_code_function_to_run=nil
+    ng.__notFirst__=nil
+    ng.__scriptCodeToRun__=nil
+    ng.__HIDDEN__=nil
+    return ng
+end
+
+printToConsole=print -- keep this in front of the new print definition!
+
+function print(...)
+    local a={...}
+    local t=''
+    if #a==1 and type(a[1])=='string' then
+        t=string.format('"%s"', a[1])
+    else
+        for i=1,#a,1 do
+            if i~=1 then
+                t=t..','
+            end
+            if type(a[i])=='table' then
+                t=t..__HIDDEN__.tableToString(a[i],{},99)
+            else
+                t=t..__HIDDEN__.anyToString(a[i],{},99)
+            end
+        end
+    end
+    sim.addStatusbarMessage(t)
+end
+
+function printf(fmt,...)
+    local a={...}
+    for i=1,#a do
+        if type(a[i])=='table' then
+            a[i]=__HIDDEN__.anyToString(a[i],{},99)
+        end
+    end
+    print(string.format(fmt,unpack(a)))
+end
+
 ----------------------------------------------------------
 
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
+__HIDDEN__={}
 function __HIDDEN__.comparableTables(t1,t2)
     return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
@@ -137,6 +250,7 @@ end
 
 -- Hidden, debugging functions:
 ----------------------------------------------------------
+__HIDDEN__.debug={}
 function __HIDDEN__.debug.entryFunc(info)
     local scriptName=info[1]
     local funcName=info[2]
@@ -301,150 +415,15 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
 end
 ----------------------------------------------------------
 
--- Various useful functions:
+-- Old stuff, mainly for backward compatibility:
 ----------------------------------------------------------
-function sim.getObjectsWithTag(tagName,justModels)
-    local retObjs={}
-    local objs=sim.getObjectsInTree(sim.handle_scene)
-    for i=1,#objs,1 do
-        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
-            local dat=sim.readCustomDataBlockTags(objs[i])
-            if dat then
-                for j=1,#dat,1 do
-                    if dat[j]==tagName then
-                        retObjs[#retObjs+1]=objs[i]
-                        break
-                    end
-                end
-            end
-        end
-    end
-    return retObjs
-end
-
-function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
-    local suff=sim.getNameSuffix(nil)
-    sim.setNameSuffix(-1)
-    local retVal=sim.getObjectHandle(name..'@silentError')
-    sim.setNameSuffix(suff)
-    return retVal
-end
-
-function sim.executeLuaCode(theCode)
-    local f=loadstring(theCode)
-    if f then
-        local a,b=pcall(f)
-        return a,b
-    else
-        return false,'compilation error'
-    end
-end
-
-function sim.fastIdleLoop(enable)
-    local data=sim.readCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__')
-    local stage=0
-    local defaultIdleFps
-    if data then
-        data=sim.unpackInt32Table(data)
-        stage=data[1]
-        defaultIdleFps=data[2]
-    else
-        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
-    end
-    if enable then
-        stage=stage+1
-    else
-        if stage>0 then
-            stage=stage-1
-        end
-    end
-    if stage>0 then
-        sim.setInt32Parameter(sim.intparam_idle_fps,0)
-    else
-        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
-    end
-    sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
-end
-
-function sim.isPluginLoaded(pluginName)
-    local index=0
-    local moduleName=''
-    while moduleName do
-        moduleName=sim.getModuleName(index)
-        if (moduleName==pluginName) then
-            return(true)
-        end
-        index=index+1
-    end
-    return(false)
-end
-
-function isArray(t)
-    local i = 0
-    for _ in pairs(t) do
-        i = i + 1
-        if t[i] == nil then return false end
-    end
-    return true
-end
-
-function sim.setDebugWatchList(l)
-    __HIDDEN__.debug.watchList=l
-end
-
-function sim.getUserVariables()
-    local ng={}
-    if __HIDDEN__.initGlobals then
-        for key,val in pairs(_G) do
-            if not __HIDDEN__.initGlobals[key] then
-                ng[key]=val
-            end
-        end
-    else
-        ng=_G
-    end
-    -- hide a few additional system variables:
-    ng.sim_current_script_id=nil
-    ng.sim_call_type=nil
-    ng.sim_code_function_to_run=nil
-    ng.__notFirst__=nil
-    ng.__scriptCodeToRun__=nil
-    ng.__HIDDEN__=nil
-    return ng
-end
-
-printToConsole=print -- keep this in front of the new print definition!
-
-function print(...)
-    local a={...}
-    local t=''
-    if #a==1 and type(a[1])=='string' then
-        t=string.format('"%s"', a[1])
-    else
-        for i=1,#a,1 do
-            if i~=1 then
-                t=t..','
-            end
-            if type(a[i])=='table' then
-                t=t..__HIDDEN__.tableToString(a[i],{},99)
-            else
-                t=t..__HIDDEN__.anyToString(a[i],{},99)
-            end
-        end
-    end
-    sim.addStatusbarMessage(t)
-end
-
-function printf(fmt,...)
-    local a={...}
-    for i=1,#a do
-        if type(a[i])=='table' then
-            a[i]=__HIDDEN__.anyToString(a[i],{},99)
-        end
-    end
-    print(string.format(fmt,unpack(a)))
-end
-
+function sim.include(relativePathAndFile,cmd) require("sim_old") return sim.include(relativePathAndFile,cmd) end
+function sim.includeRel(relativePathAndFile,cmd) require("sim_old") return sim.includeRel(relativePathAndFile,cmd) end
+function sim.includeAbs(absPathAndFile,cmd) require("sim_old") return sim.includeAbs(absPathAndFile,cmd) end
+function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ) require("sim_old") return sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ) end
+function sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems) require("sim_old") return sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems) end
+function sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) require("sim_old") return sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) end
+function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array) require("sim_old") return sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array) end
 ----------------------------------------------------------
 
 return sim
