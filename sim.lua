@@ -112,6 +112,16 @@ function sim.getUserVariables()
     return ng
 end
 
+function sim.getMatchingPersistentDataTags(pattern)
+    local result = {}
+    for index, value in ipairs(sim.getPersistentDataTags()) do
+        if value:match(pattern) then
+            result[#result + 1] = value
+        end
+    end
+    return result
+end
+
 printToConsole=print -- keep this in front of the new print definition!
 
 function print(...)
@@ -239,6 +249,8 @@ end
 function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
     sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
+    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(pattern)')
+    
     __HIDDEN__.initGlobals={}
     for key,val in pairs(_G) do
         __HIDDEN__.initGlobals[key]=true
