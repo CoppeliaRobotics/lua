@@ -1,3 +1,5 @@
+-- DEPRECATED. Do not use anymore if possible
+
 local utils={}
 
 function asserttype(x,t,name)
@@ -119,7 +121,7 @@ function getObjectsWithTag(tagName,justModels)
     return retObjs
 end
 
-createOpenBox=function(size,baseThickness,wallThickness,density,inertiaCorrectionFact,static,respondable,color)
+function createOpenBox(size,baseThickness,wallThickness,density,inertiaCorrectionFact,static,respondable,color)
     local parts={}
     local dim={size[1],size[2],baseThickness}
     parts[1]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
