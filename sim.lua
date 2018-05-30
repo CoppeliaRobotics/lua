@@ -144,14 +144,20 @@ function print(...)
     sim.addStatusbarMessage(t)
 end
 
+function table.pack(...)
+    return {n=select("#", ...); ...}
+end
+
 function printf(fmt,...)
-    local a={...}
-    for i=1,#a do
+    local a=table.pack(...)
+    for i=1,a.n do
         if type(a[i])=='table' then
             a[i]=__HIDDEN__.anyToString(a[i],{},99)
+        elseif type(a[i])=='nil' then
+            a[i]='nil'
         end
     end
-    print(string.format(fmt,unpack(a)))
+    print(string.format(fmt,unpack(a,1,a.n)))
 end
 
 ----------------------------------------------------------
