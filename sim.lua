@@ -1,4 +1,7 @@
 local sim={}
+__HIDDEN__={}
+__HIDDEN__.dlg={}
+printToConsole=print
 
 -- Various useful functions:
 ----------------------------------------------------------
@@ -122,9 +125,11 @@ function sim.getMatchingPersistentDataTags(pattern)
     return result
 end
 
-printToConsole=print -- keep this in front of the new print definition!
-
 function print(...)
+    sim.addStatusbarMessage(getAsString(...))
+end
+
+function getAsString(...)
     local a={...}
     local t=''
     if #a==1 and type(a[1])=='string' then
@@ -141,7 +146,7 @@ function print(...)
             end
         end
     end
-    sim.addStatusbarMessage(t)
+    return(t)
 end
 
 function table.pack(...)
@@ -160,12 +165,151 @@ function printf(fmt,...)
     print(string.format(fmt,unpack(a,1,a.n)))
 end
 
+
+function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,prevPos,dlgHandle)
+    if type(title)=='string' and type(mainTxt)=='string' and type(style)=='number' and type(modal)=='boolean' then
+        if type(initTxt)~='string' then
+            initTxt=''
+        end
+        local retVal=-1
+        local center=true
+        if sim.boolAnd32(style,sim.dlgstyle_dont_center)>0 then
+            center=false
+            style=style-sim.dlgstyle_dont_center
+        end
+        if not modal or sim.isScriptExecutionThreaded() then
+            if modal and style==sim.dlgstyle_message then
+                modal=false
+            end
+            local xml='<ui title="'..title..'" closeable="false" resizable="false"'
+            if modal then
+                xml=xml..' modal="true"'
+            else
+                xml=xml..' modal="false"'
+            end
+
+            if prevPos then
+                xml=xml..' placement="absolute" position="'..prevPos[1]..','..prevPos[2]..'">'
+            else
+                if center then
+                    xml=xml..' placement="center">'
+                else
+                    xml=xml..' placement="relative" position="-50,50">'
+                end
+            end
+            mainTxt=string.gsub(mainTxt,"&&n","\n")
+            xml=xml..'<label text="'..mainTxt..'"/>'
+            if style==sim.dlgstyle_input then
+                xml=xml..'<edit on-editing-finished="__HIDDEN__.dlg.input_callback" id="1"/>'
+            end
+            if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
+                xml=xml..'<group layout="hbox" flat="true">'
+                xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
+                xml=xml..'</group>'
+            end
+            if style==sim.dlgstyle_ok_cancel then
+                xml=xml..'<group layout="hbox" flat="true">'
+                xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
+                xml=xml..'<button text="Cancel" on-click="__HIDDEN__.dlg.cancel_callback"/>'
+                xml=xml..'</group>'
+            end
+            if style==sim.dlgstyle_yes_no then
+                xml=xml..'<group layout="hbox" flat="true">'
+                xml=xml..'<button text="Yes" on-click="__HIDDEN__.dlg.yes_callback"/>'
+                xml=xml..'<button text="No" on-click="__HIDDEN__.dlg.no_callback"/>'
+                xml=xml..'</group>'
+            end
+            xml=xml..'</ui>'
+            local ui=simUI.create(xml)
+            if style==sim.dlgstyle_input then
+                simUI.setEditValue(ui,1,initTxt)
+            end
+            if not __HIDDEN__.dlg.openDlgs then
+                __HIDDEN__.dlg.openDlgs={}
+                __HIDDEN__.dlg.openDlgsUi={}
+            end
+            if not __HIDDEN__.dlg.nextHandle then
+                __HIDDEN__.dlg.nextHandle=0
+            end
+            if dlgHandle then
+                retVal=dlgHandle
+            else
+                retVal=__HIDDEN__.dlg.nextHandle
+                __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
+            end
+            __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt,titleCols=titleCols,dlgCols=dlgCols}
+            __HIDDEN__.dlg.openDlgsUi[ui]=retVal
+            
+            if modal then
+                while __HIDDEN__.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
+                    sim.switchThread()
+                end
+            end
+        end
+        return retVal
+    end
+end
+
+function sim.endDialog(dlgHandle)
+    local retVal=-1
+    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
+        if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
+            __HIDDEN__.dlg.removeUi(dlgHandle)
+        end
+        if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
+            __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
+        end
+        __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
+        retVal=0
+    end
+    return retVal
+end
+
+function sim.getDialogInput(dlgHandle)
+    local retVal
+    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
+        retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
+    end
+    return retVal
+end
+
+function sim.getDialogResult(dlgHandle)
+    local retVal=-1
+    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
+        retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
+    end
+    return retVal
+end
+
+function sysCallEx_beforeInstanceSwitch()
+    __HIDDEN__.dlg.switch()
+end
+
+function sysCallEx_afterInstanceSwitch()
+    __HIDDEN__.dlg.switchBack()
+end
+
+function sysCallEx_addOnScriptSuspend()
+    __HIDDEN__.dlg.switch()
+end
+
+function sysCallEx_addOnScriptResume()
+    __HIDDEN__.dlg.switchBack()
+end
+
+function sysCallEx_cleanup()
+    if __HIDDEN__.dlg.openDlgsUi then
+        for key,val in pairs(__HIDDEN__.dlg.openDlgsUi) do
+            simUI.destroy(key)
+        end
+    end
+end
+
 ----------------------------------------------------------
 
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
-__HIDDEN__={}
 function __HIDDEN__.comparableTables(t1,t2)
     return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
@@ -235,27 +379,32 @@ end
 function __HIDDEN__.getShortString(x)
     if type(x)=='string' then
         if string.find(x,"\0") then
-            return "<buffer string>"
+            return "[buffer string]"
         else
             local a,b=string.gsub(x,"[%a%d%p%s]", "@")
             if b~=#x then
-                return "<string containing special chars>"
+                return "[string containing special chars]"
             else
                 if #x>160 then
-                    return "<long string>"
+                    return "[long string]"
                 else
                     return string.format('"%s"', x)
                 end
             end
         end
     end
-    return "<not a string>"
+    return "[not a string]"
 end
 
 function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
     sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
     sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(pattern)')
+
+    sim.registerScriptFunction('sim.displayDialog@sim','number dlgHandle=sim.displayDialog(string title,string mainText,number style,\nboolean modal,string initTxt)')
+    sim.registerScriptFunction('sim.getDialogResult@sim','number result=sim.getDialogResult(number dlgHandle)')
+    sim.registerScriptFunction('sim.getDialogInput@sim','string input=sim.getDialogInput(number dlgHandle)')
+    sim.registerScriptFunction('sim.endDialog@sim','number result=sim.endDialog(number dlgHandle)')
     
     __HIDDEN__.initGlobals={}
     for key,val in pairs(_G) do
@@ -263,6 +412,69 @@ function __HIDDEN__.executeAfterLuaStateInit()
     end
     __HIDDEN__.initGlobals.__HIDDEN__=nil
     __HIDDEN__.executeAfterLuaStateInit=nil
+end
+
+function __HIDDEN__.dlg.ok_callback(ui)
+    local h=__HIDDEN__.dlg.openDlgsUi[ui]
+    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_ok
+    if __HIDDEN__.dlg.openDlgs[h].style==sim.dlgstyle_input then
+        __HIDDEN__.dlg.openDlgs[h].input=simUI.getEditValue(ui,1)
+    end
+    __HIDDEN__.dlg.removeUi(h)
+end
+
+function __HIDDEN__.dlg.cancel_callback(ui)
+    local h=__HIDDEN__.dlg.openDlgsUi[ui]
+    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_cancel
+    __HIDDEN__.dlg.removeUi(h)
+end
+
+function __HIDDEN__.dlg.input_callback(ui,id,val)
+    local h=__HIDDEN__.dlg.openDlgsUi[ui]
+    __HIDDEN__.dlg.openDlgs[h].input=val
+end
+
+function __HIDDEN__.dlg.yes_callback(ui)
+    local h=__HIDDEN__.dlg.openDlgsUi[ui]
+    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_yes
+    __HIDDEN__.dlg.removeUi(h)
+end
+
+function __HIDDEN__.dlg.no_callback(ui)
+    local h=__HIDDEN__.dlg.openDlgsUi[ui]
+    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_no
+    __HIDDEN__.dlg.removeUi(h)
+end
+
+function __HIDDEN__.dlg.removeUi(handle)
+    local ui=__HIDDEN__.dlg.openDlgs[handle].ui
+    local x,y=simUI.getPosition(ui)
+    __HIDDEN__.dlg.openDlgs[handle].previousPos={x,y}
+    simUI.destroy(ui)
+    __HIDDEN__.dlg.openDlgsUi[ui]=nil
+    __HIDDEN__.dlg.openDlgs[handle].ui=nil
+end
+
+function __HIDDEN__.dlg.switch()
+    if __HIDDEN__.dlg.openDlgsUi then
+        for key,val in pairs(__HIDDEN__.dlg.openDlgsUi) do
+            local ui=key
+            local h=val
+            __HIDDEN__.dlg.removeUi(h)
+        end
+    end
+end
+
+function __HIDDEN__.dlg.switchBack()
+    if __HIDDEN__.dlg.openDlgsUi then
+        local dlgs=sim.unpackTable(sim.packTable(__HIDDEN__.dlg.openDlgs)) -- make a deep copy
+        for key,val in pairs(dlgs) do
+            if val.state==sim.dlgret_still_open then
+                __HIDDEN__.dlg.openDlgs[key]=nil
+                sim.displayDialog(val.title,val.mainTxt,val.style,false,val.input,val.titleCols,val.dlgCols,val.previousPos,key)
+            end
+        end
+    end
 end
 ----------------------------------------------------------
 

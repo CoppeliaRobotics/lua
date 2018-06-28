@@ -1,39 +1,272 @@
-function AddStatusbarMessage(txt)
+---------------------------------
+-- Add your custom function here:
+---------------------------------
+
+function AuxiliaryConsoleClose(...)
+    debugFunc("AuxiliaryConsoleClose",...)
+    local consoleHandle=...
+    return sim.auxiliaryConsoleClose(consoleHandle)
+end
+
+function AuxiliaryConsoleOpen(...)
+    debugFunc("AuxiliaryConsoleOpen",...)
+    local title,maxLines,mode,position,size,textColor,backgroundColor=...
+    return sim.auxiliaryConsoleOpen(title,maxLines,mode,position,size,textColor,backgroundColor)
+end
+
+function AuxiliaryConsolePrint(...)
+    debugFunc("AuxiliaryConsolePrint",...)
+    local consoleHandle,text=...
+    return sim.auxiliaryConsolePrint(consoleHandle,text)
+end
+
+function AuxiliaryConsoleShow(...)
+    debugFunc("AuxiliaryConsoleShow",...)
+    local consoleHandle,showState=...
+    return sim.auxiliaryConsoleShow(consoleHandle,showState)
+end
+
+function AddDrawingObject_points(...)
+    debugFunc("AddDrawingObject_points",...)
+    local size,color,coords=...
+    local obj=sim.addDrawingObject(sim.drawing_points,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    for i=0,math.floor(#coords/3)-1,1 do
+        sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3]})
+    end
+    return obj
+end
+
+function AddDrawingObject_spheres(...)
+    debugFunc("AddDrawingObject_spheres",...)
+    local size,color,coords=...
+    local obj=sim.addDrawingObject(sim.drawing_spherepoints,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    for i=0,math.floor(#coords/3)-1,1 do
+        sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3]})
+    end
+    return obj
+end
+
+function AddDrawingObject_cubes(...)
+    debugFunc("AddDrawingObject_cubes",...)
+    local size,color,coords=...
+    local obj=sim.addDrawingObject(sim.drawing_cubepoints,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    for i=0,math.floor(#coords/3)-1,1 do
+        sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3],0,0,1})
+    end
+    return obj
+end
+
+function AddDrawingObject_lines(...)
+    debugFunc("AddDrawingObject_lines",...)
+    local lineSize,color,segments=...
+    local obj=sim.addDrawingObject(sim.drawing_lines,lineSize,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    for i=0,math.floor(#segments/6)-1,1 do
+        sim.addDrawingObjectItem(obj,{segments[6*i+1],segments[6*i+2],segments[6*i+3],segments[6*i+4],segments[6*i+5],segments[6*i+6]})
+    end
+    return obj
+end
+
+function AddDrawingObject_triangles(...)
+    debugFunc("AddDrawingObject_triangles",...)
+    local color,triangles=...
+    local obj=sim.addDrawingObject(sim.drawing_triangles,0,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    for i=0,math.floor(#triangles/9)-1,1 do
+        sim.addDrawingObjectItem(obj,{triangles[9*i+1],triangles[9*i+2],triangles[9*i+3],triangles[9*i+4],triangles[9*i+5],triangles[9*i+6],triangles[9*i+7],triangles[9*i+8],triangles[9*i+9]})
+    end
+    return obj
+end
+
+function RemoveDrawingObject(...)
+    debugFunc("RemoveDrawingObject",...)
+    local handle=...
+    return sim.removeDrawingObject(handle)
+end
+
+function CallScriptFunction(...)
+    debugFunc("CallScriptFunction",...)
+    local funcAtObjName,scriptType,arg1,arg2,arg3,arg4=...
+    return sim.callScriptFunction(funcAtObjName,scriptType,arg1,arg2,arg3,arg4)
+end
+
+function CheckCollision(...)
+    debugFunc("CheckCollision",...)
+    local entity1,entity2=...
+    return sim.checkCollision(entity1,entity2)
+end
+
+function GetCollisionHandle(...)
+    debugFunc("GetCollisionHandle",...)
+    local name=...
+    return sim.getCollisionHandle(name)
+end
+
+function ReadCollision(...)
+    debugFunc("ReadCollision",...)
+    local handle=...
+    return sim.readCollision(handle)
+end
+
+function CheckDistance(...)
+    debugFunc("CheckDistance",...)
+    local entity1,entity2,threshold=...
+    return sim.checkDistance(entity1,entity2,threshold)
+end
+
+function GetDistanceHandle(...)
+    debugFunc("GetDistanceHandle",...)
+    local name=...
+    return sim.getDistanceHandle(name)
+end
+
+function ReadDistance(...)
+    debugFunc("ReadDistance",...)
+    local handle=...
+    return sim.readDistance(handle)
+end
+
+function CheckProximitySensor(...)
+    debugFunc("CheckProximitySensor",...)
+    local sensor,entity=...
+    return sim.checkProximitySensor(sensor,entity)
+end
+
+function ReadProximitySensor(...)
+    debugFunc("ReadProximitySensor",...)
+    local handle=...
+    return sim.readProximitySensor(handle)
+end
+
+function CheckVisionSensor(...)
+    debugFunc("CheckVisionSensor",...)
+    local sensor,entity=...
+    return sim.checkVisionSensor(sensor,entity)
+end
+
+function ReadVisionSensor(...)
+    debugFunc("ReadVisionSensor",...)
+    local handle=...
+    return sim.readVisionSensor(handle)
+end
+
+function ReadForceSensor(...)
+    debugFunc("ReadForceSensor",...)
+    local handle=...
+    return sim.readForceSensor(handle)
+end
+
+function BreakForceSensor(...)
+    debugFunc("BreakForceSensor",...)
+    local handle=...
+    return sim.breakForceSensor(handle)
+end
+
+function ClearFloatSignal(...)
+    debugFunc("ClearFloatSignal",...)
+    local sig=...
+    return sim.clearFloatSignal(sig)
+end
+
+function ClearIntegerSignal(...)
+    debugFunc("ClearIntegerSignal",...)
+    local sig=...
+    return sim.clearIntegerSignal(sig)
+end
+
+function ClearStringSignal(...)
+    debugFunc("ClearStringSignal",...)
+    local sig=...
+    return sim.clearStringSignal(sig)
+end
+
+function SetFloatSignal(...)
+    debugFunc("SetFloatSignal",...)
+    local sig,v=...
+    return sim.setFloatSignal(sig,v)
+end
+
+function SetIntegerSignal(...)
+    debugFunc("SetIntegerSignal",...)
+    local sig,v=...
+    return sim.setIntegerSignal(sig,v)
+end
+
+function SetStringSignal(...)
+    debugFunc("SetStringSignal",...)
+    local sig,v=...
+    return sim.setStringSignal(sig,v)
+end
+
+function GetFloatSignal(...)
+    debugFunc("GetFloatSignal",...)
+    local sig=...
+    return sim.getFloatSignal(sig)
+end
+
+function GetIntegerSignal(...)
+    debugFunc("GetIntegerSignal",...)
+    local sig=...
+    return sim.getIntegerSignal(sig)
+end
+
+function GetStringSignal(...)
+    debugFunc("GetStringSignal",...)
+    local sig=...
+    return sim.getStringSignal(sig)
+end
+
+function AddStatusbarMessage(...)
+    debugFunc("AddStatusbarMessage",...)
+    local txt=...
     return sim.addStatusbarMessage(txt)
 end
 
-function GetObjectPosition(objHandle,relObjHandle)
+function GetObjectPosition(...)
+    debugFunc("GetObjectPosition",...)
+    local objHandle,relObjHandle=...
     return sim.getObjectPosition(objHandle,relObjHandle)
 end
 
-function GetObjectHandle(objName)
+function GetObjectHandle(...)
+    debugFunc("GetObjectHandle",...)
+    local objName=...
     return sim.getObjectHandle(objName..'#')
 end
 
-function StartSimulation()
+function StartSimulation(...)
+    debugFunc("StartSimulation",...)
     return sim.startSimulation()
 end
 
-function StopSimulation()
+function StopSimulation(...)
+    debugFunc("StopSimulation",...)
     return sim.stopSimulation()
 end
 
-function GetVisionSensorImage(objHandle,greyScale)
+function GetVisionSensorImage(...)
+    debugFunc("GetVisionSensorImage",...)
+    local objHandle,greyScale=...
     if greyScale then
         objHandle=objHandle+sim.handleflag_greyscale
     end
     local img,x,y=sim.getVisionSensorCharImage(objHandle)
-    return {{x,y},img}
+    return {x,y},img
 end
 
-function SetVisionSensorImage(objHandle,greyScale,img)
+function SetVisionSensorImage(...)
+    debugFunc("SetVisionSensorImage",...)
+    local objHandle,greyScale,img=...
     if greyScale then
         objHandle=objHandle+sim.handleflag_greyscale
     end
     return sim.setVisionSensorCharImage(objHandle,img)
 end
 
-function Synchronous(enable)
+-----------------------------------------
+-----------------------------------------
+
+function Synchronous(...)
+    debugFunc("Synchronous",...)
+    local enable=...
     if enable and not syncMode then
         syncModeWait=true
     end
@@ -41,24 +274,29 @@ function Synchronous(enable)
     return true
 end
 
-function SynchronousTrigger()
+function SynchronousTrigger(...)
+    debugFunc("SynchronousTrigger",...)
     syncModeWait=false
     return true
 end
 
-function GetSimulationStepDone()
+function GetSimulationStepDone(...)
+--    debugFunc("GetSimulationStepDone",...)
     local retVal={}
     retVal.simulationTime=sim.getSimulationTime()
     return retVal
 end
 
-function GetSimulationStepStarted()
+function GetSimulationStepStarted(...)
+--    debugFunc("GetSimulationStepStarted",...)
     local retVal={}
     retVal.simulationTime=sim.getSimulationTime()
     return retVal
 end
 
-function DisconnectClient(clientId)
+function DisconnectClient(...)
+    debugFunc("DisconnectClient",...)
+    local clientId=...
     local val=allPublishers[clientId]
     if val then
         for topic,value in pairs(val) do
@@ -80,22 +318,57 @@ function DisconnectClient(clientId)
     allClients[clientId]=nil
 end
 
-function Ping()
+function Ping(...)
+    debugFunc("Ping",...)
     return 'Pong'
 end
 
-
 -----------------------------------------
 -----------------------------------------
 
-function PCALL(func,...)
-    local res=true
-    local val
-    res,val=pcall(func,...)
-    if val==nil then val=true end -- make sure we have 2 ret arguments
---    val=func(...)
---    print(res,val)
-    return res,val
+function debugFunc(funcName,...)
+    lastFuncName=funcName
+    if modelData and modelData.debugLevel>=3 then
+        local arg=getAsString(...)
+        if arg=='' then
+            arg='none'
+        end
+        local a=b0RemoteApiServerNameDebug..": calling function '"..funcName.."' with following arguments: "..arg
+        a="<font color='#4B4'>"..a.."</font>@html"
+        sim.addStatusbarMessage(a)
+    end
+end
+
+function PCALL(func,printErrors,...)
+    local res,a,b,c,d,e,f,g,h,i,j,k=pcall(func,...)
+    
+    if modelData and modelData.debugLevel>=1 and (not res) and printErrors then
+        local a=string.format(b0RemoteApiServerNameDebug..": error while calling function '%s': %s",lastFuncName,a)
+        a="<font color='#a00'>"..a.."</font>@html"
+        sim.addStatusbarMessage(a)
+    end
+    
+    return res,a,b,c,d,e,f,g,h,i,j,k
+    
+--    res,val1,val2,val3,val4,val5,val6,val7,val8=pcall(func,...)
+--    if val1==nil then val1='__##LUANIL##__' end -- make sure we have 2 ret arguments
+---    val=func(...)
+---    print(res,val)
+--    return res,val1,val2,val3,val4,val5,val6,val7,val8
+end
+
+function PACKPUBMSG(topic,res,...)
+    local a={...}
+    local b={topic,{res}}
+    for i=1,#a,1 do
+        b[2][#b[2]+1]=a[i]
+    end
+    return messagePack.pack(b)
+end
+
+function PACKSERVMSG(...)
+    local a={...}
+    return messagePack.pack(a)
 end
 
 function createNode()
@@ -107,7 +380,7 @@ function createNode()
                     </ui> ]]
             local ui=simUI.create(xml)
             if not simB0.pingResolver() then
-                print('B0 Remote API: B0 resolver was not detected. Launching it from here...')
+                sim.addStatusbarMessage("<font color='#070'>B0 Remote API: B0 resolver was not detected. Launching it from here...</font>@html")
                 sim.launchExecutable('b0_resolver','',1)
             end
             simUI.destroy(ui)
@@ -122,7 +395,7 @@ function createNode()
                 initStg=1
             else
                 initStg=0
-                print(b0RemoteApiServerNameDebug..': B0 resolver could not be launched.')
+                sim.addStatusbarMessage("<font color='#070'>"..b0RemoteApiServerNameDebug..": B0 resolver could not be launched.".."</font>@html")
             end
         end
 
@@ -163,13 +436,10 @@ function destroyNode()
 end
 
 function sendAndSpin(calledMoment)
-
     local retVal=true
     local publishSimulationStepFinished_ClientAnddata={}
     local publishSimulationStepStarted_ClientAnddata={}
     local publisherCntForClients={}
-    local executedFunctions=''
-    local manyExecutedFunctions=false
         
     if b0Node then
         -- Handle subscriber(s) and service calls:
@@ -205,35 +475,19 @@ function sendAndSpin(calledMoment)
                             cmd.triggerIntervalCnt=cmd.triggerIntervalCnt-1
                             if cmd.triggerIntervalCnt<=0 then
                                 cmd.triggerIntervalCnt=triggerInterval
-                                if not manyExecutedFunctions then
-                                    if #executedFunctions>0 then
-                                        executedFunctions=executedFunctions..'|'
-                                    end
-                                    if #executedFunctions<130 then
-                                        executedFunctions=executedFunctions..cmd.func
-                                    else
-                                        executedFunctions=executedFunctions..'...'
-                                        manyExecutedFunctions=true
-                                    end
-                                end
-                                local result,retVal=PCALL(_G[cmd.func],unpack(cmd.args))
-                                retVal=messagePack.pack({topic,{result,retVal}})
+--                                local result,retVal=PCALL(_G[cmd.func],unpack(cmd.args))
+--                                retVal=messagePack.pack({topic,{result,retVal}})
+                                local retVal=PACKPUBMSG(topic,PCALL(_G[cmd.func],true,unpack(cmd.args)))
+                                
                                 if cmd.func=='GetSimulationStepDone' then
                                     publishSimulationStepFinished_ClientAnddata[clientId]={publisher,retVal} -- publish this one last! (further down)
                                 else
                                     if cmd.func=='GetSimulationStepStarted' then
                                         publishSimulationStepStarted_ClientAnddata[clientId]={publisher,retVal} -- publish this one last! (further down)
                                     else
-                                        if not publisherCntForClients[clientId] then
-                                            publisherCntForClients[clientId]=1
-                                        else
-                                            publisherCntForClients[clientId]=publisherCntForClients[clientId]+1
-                                        end
-                                        simB0.publish(publisher,retVal)
+                                        publish(clientId,publisher,cmd.func,retVal,publisherCntForClients)
                                     end
                                 end
-                            
-                            
                             end
                         end
                     end
@@ -248,8 +502,10 @@ function sendAndSpin(calledMoment)
         for i=1,#clientsToRemove,1 do
             local clientId=clientsToRemove[i]
             DisconnectClient(clientId)
-            if modelData.debugMessages then
-                print(string.format(b0RemoteApiServerNameDebug..": destroyed all streaming commands for client [%s] after detection of inactivity",clientId))
+            if modelData.debugLevel>=1 then
+                local a=string.format(b0RemoteApiServerNameDebug..": destroyed all streaming function for client '%s' after detection of inactivity",clientId)
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
             end
         end
     end
@@ -258,12 +514,8 @@ function sendAndSpin(calledMoment)
         if nextSimulationStepUnderway then
             -- Handle publishing of simulationStepFinished here (special):
             for key,value in pairs(publishSimulationStepFinished_ClientAnddata) do
-                if not publisherCntForClients[key] then
-                    publisherCntForClients[key]=1
-                else
-                    publisherCntForClients[key]=publisherCntForClients[key]+1
-                end
-                simB0.publish(value[1],value[2])
+                debugFunc('GetSimulationStepDone',nil)
+                publish(key,value[1],'GetSimulationStepDone',value[2],publisherCntForClients)
             end
         end
     
@@ -278,29 +530,57 @@ function sendAndSpin(calledMoment)
             nextSimulationStepUnderway=true
             -- Handle publishing of simulationStepStarted here (special):
             for key,value in pairs(publishSimulationStepStarted_ClientAnddata) do
-                if not publisherCntForClients[key] then
-                    publisherCntForClients[key]=1
-                else
-                    publisherCntForClients[key]=publisherCntForClients[key]+1
-                end
-                simB0.publish(value[1],value[2])
+                debugFunc('GetSimulationStepStarted',nil)
+                publish(key,value[1],'GetSimulationStepStarted',value[2],publisherCntForClients)
             end
         else
             nextSimulationStepUnderway=false
         end
     end
     
-    local msgCnt=0
-    local clientCnt=0
-    for key,value in pairs(publisherCntForClients) do
-        clientCnt=clientCnt+1
-        msgCnt=msgCnt+value
+    for publisher,client in pairs(publisherCntForClients) do
+        local append
+        if publisher==defaultPublisher then
+            append=' (default publisher)'
+        else
+            append=' (dedicated publisher)'
+        end
+        
+        local msgCnt=0
+        local clientCnt=0
+        local funcs=''
+        for key,value in pairs(client) do
+            clientCnt=clientCnt+1
+            msgCnt=msgCnt+value.cnt
+            if funcs=='' then
+                funcs=value.funcs
+            else
+                funcs=funcs..'|'..value.funcs
+            end
+        end
+        if msgCnt>0 and modelData and modelData.debugLevel>=2 then
+            local a=string.format(b0RemoteApiServerNameDebug..": published %i message(s) to %i client(s): %s",msgCnt,clientCnt,funcs)
+            a="<font color='#070'>"..a..append.."</font>@html"
+            sim.addStatusbarMessage(a)
+        end
     end
-    if msgCnt>0 and modelData.debugMessages then
-        print(string.format(b0RemoteApiServerNameDebug..": published %i message(s) to %i client(s): %s",msgCnt,clientCnt,executedFunctions))
-    end
-
+    
     return retVal
+end
+
+function publish(clientId,publisher,func,retVal,publisherCntForClients)
+    simB0.publish(publisher,retVal)
+    
+    if not publisherCntForClients[publisher] then
+        publisherCntForClients[publisher]={}
+    end
+    
+    if not publisherCntForClients[publisher][clientId] then
+        publisherCntForClients[publisher][clientId]={cnt=1,funcs=func}
+    else
+        publisherCntForClients[publisher][clientId].cnt=publisherCntForClients[publisher][clientId].cnt+1
+        publisherCntForClients[publisher][clientId].funcs=publisherCntForClients[publisher][clientId].funcs..'|'..func
+    end
 end
 
 function updateClientLastActivityTime(clientId)
@@ -322,71 +602,54 @@ function hasClientReachedMaxInactivityTime(clientId)
 end
 
 function serviceServer_callback(receiveMsg)
-    local result=true
-    local data=true
+    local retVal=PACKSERVMSG(true)
+ --   local result=true
+ --   local data=true
     receiveMsg=messagePack.unpack(receiveMsg)
     local funcName=receiveMsg[1][1]
     local clientId=receiveMsg[1][2]
     local topic=receiveMsg[1][3]
+    local task=receiveMsg[1][4] -- 0=normal serviceCall, 1=received on default subscriber, 2=register streaming cmd on default publisher, 3=received on dedicated subscriber, 4=register streaming cmd on dedicated publisher
     local funcArgs=receiveMsg[2]
     updateClientLastActivityTime(clientId)
     
-    if funcName=='createSubscriber' then
-        local subscr=simB0.createSubscriber(b0Node,funcArgs[1],'dedicatedSubscriber_callback',false,true)
-   --     simB0.setSocketOption(subscr,'conflate',1)
-        simB0.initSocket(subscr);
-        if not dedicatedSubscribers[clientId] then
-            dedicatedSubscribers[clientId]={}
+    if not handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs) then
+        if funcName=='createSubscriber' then
+            local subscr=simB0.createSubscriber(b0Node,funcArgs[1],'dedicatedSubscriber_callback',false,true)
+       --     simB0.setSocketOption(subscr,'conflate',1)
+            simB0.initSocket(subscr);
+            if not dedicatedSubscribers[clientId] then
+                dedicatedSubscribers[clientId]={}
+            end
+            dedicatedSubscribers[clientId][funcArgs[1]]={handle=subscr,dropMessages=funcArgs[2]}
+            if modelData.debugLevel>=1 then
+                local a=string.format(b0RemoteApiServerNameDebug..": creating dedicated subscriber for client '%s' with topic '%s'",clientId,funcArgs[1])
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
+            end
+        elseif funcName=='inactivityTolerance' then
+            setClientMaxInactivityTime(clientId,funcArgs[1])
+            if modelData.debugLevel>=2 then
+                local a=string.format(b0RemoteApiServerNameDebug..": setting max. inactivity tolerance for client '%s'",clientId)
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
+            end
+        else
+            retVal=PACKSERVMSG(PCALL(_G[funcName],true,unpack(funcArgs)))
+    --        result,data=PCALL(_G[funcName],unpack(funcArgs))
+            if modelData.debugLevel>=2 then
+                local a=string.format(b0RemoteApiServerNameDebug..": called function for client '%s': %s (service call)",clientId,receiveMsg[1][1])
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
+            end
         end
-        dedicatedSubscribers[clientId][funcArgs[1]]={handle=subscr,dropMessages=funcArgs[2]}
-        if modelData.debugMessages then
-            print(string.format(b0RemoteApiServerNameDebug..": creating subscriber for client [%s] with topic [%s]",clientId,funcArgs[1]))
-        end
-    elseif funcName=='createPublisher' then
-        local pub=simB0.createPublisher(b0Node,funcArgs[1],false,true)
-    --    simB0.setSocketOption(pub,'conflate',1)
-        simB0.initSocket(pub);
-        if not allPublishers[clientId] then
-            allPublishers[clientId]={}
-        end
-        allPublishers[clientId][funcArgs[1]]={handle=pub,cmds={},triggerInterval=funcArgs[2]}
-        if modelData.debugMessages then
-            print(string.format(b0RemoteApiServerNameDebug..": creating publisher for client [%s] with topic [%s]",clientId,funcArgs[1]))
-        end
-    elseif funcName=='setDefaultPublisherPubInterval' then
-        if not allPublishers[clientId] then
-            allPublishers[clientId]={}
-        end
-        if not allPublishers[clientId][funcArgs[1]] then
-            allPublishers[clientId][funcArgs[1]]={handle=defaultPublisher,cmds={},triggerInterval=funcArgs[2]}
-        end
-    elseif funcName=='inactivityTolerance' then
-        setClientMaxInactivityTime(clientId,funcArgs[1])
-    else
-        if modelData.debugMessages then
-            print(string.format(b0RemoteApiServerNameDebug..": service call from client [%s]: %s",clientId,receiveMsg[1][1]))
-        end
-        result,data=PCALL(_G[funcName],unpack(funcArgs))
     end
-    return messagePack.pack({result,data})
+--    return messagePack.pack({result,data})
+    return retVal
 end
 
-function defaultSubscriber_callback(msg)
-    msg=messagePack.unpack(msg)
-    local funcName=msg[1][1]
-    local clientId=msg[1][2]
-    local task=msg[1][4] -- 0=serviceCall, 1=received on default subscriber, 2=register streaming cmd on default publisher, 3=received on dedicated subscriber, 4=register streaming cmd on dedicated publisher
-    local topic=msg[1][3]
-    local funcArgs=msg[2]
-    updateClientLastActivityTime(clientId)
-    
-    if task==1 then
-        -- We simply want to execute the function and forget (no return)
-        if modelData.debugMessages then
-            print(string.format(b0RemoteApiServerNameDebug..": command message from client [%s]: %s",clientId,funcName))
-        end
-        PCALL(_G[funcName],unpack(funcArgs))
-    elseif task==2 then
+function handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs)
+    if task==2 then
         -- We want to register a command to be constantly executed on the default publisher:
         if not allPublishers[clientId] then
             allPublishers[clientId]={}
@@ -396,8 +659,10 @@ function defaultSubscriber_callback(msg)
         end
         local val=allPublishers[clientId][topic]
         val.cmds[#val.cmds+1]={func=funcName,args=funcArgs,triggerIntervalCnt=1}
-        if modelData.debugMessages then
-            print(string.format(b0RemoteApiServerNameDebug..": registering streaming command [%s] for client [%s] on topic [%s] (default publisher)",funcName,clientId,topic))
+        if modelData.debugLevel>=1 then
+            local a=string.format(b0RemoteApiServerNameDebug..": registering streaming function '%s' for client '%s' on topic '%s' (default publisher)",funcName,clientId,topic)
+            a="<font color='#070'>"..a.."</font>@html"
+            sim.addStatusbarMessage(a)
         end
     elseif task==4 then
         -- We want to register a command to be constantly executed on a dedicated publisher:
@@ -405,12 +670,67 @@ function defaultSubscriber_callback(msg)
             local val=allPublishers[clientId][topic]
             allCmds=val.cmds
             allCmds[#allCmds+1]={func=funcName,args=funcArgs,triggerIntervalCnt=1}
-            if modelData.debugMessages then
-                print(string.format(b0RemoteApiServerNameDebug..": registering streaming command [%s] for client [%s] on topic [%s] (dedicated publisher)",funcName,clientId,topic))
+            if modelData.debugLevel>=1 then
+                local a=string.format(b0RemoteApiServerNameDebug..": registering streaming function '%s' for client '%s' on topic '%s' (dedicated publisher)",funcName,clientId,topic)
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
             end
         end
     else
+        if funcName=='createPublisher' then
+            local pub=simB0.createPublisher(b0Node,funcArgs[1],false,true)
+        --    simB0.setSocketOption(pub,'conflate',1)
+            simB0.initSocket(pub);
+            if not allPublishers[clientId] then
+                allPublishers[clientId]={}
+            end
+            local targetTopic=funcArgs[1]
+            local trigInterv=funcArgs[2]
+            allPublishers[clientId][targetTopic]={handle=pub,cmds={},triggerInterval=trigInterv}
+            if modelData.debugLevel>=1 then
+                local a=string.format(b0RemoteApiServerNameDebug..": creating dedicated publisher for client '%s' with topic '%s'",clientId,targetTopic)
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
+            end
+            return true
+        elseif funcName=='setDefaultPublisherPubInterval' then
+            if not allPublishers[clientId] then
+                allPublishers[clientId]={}
+            end
+            local targetTopic=funcArgs[1]
+            local trigInterv=funcArgs[2]
+            if not allPublishers[clientId][targetTopic] then
+                allPublishers[clientId][targetTopic]={handle=defaultPublisher,cmds={},triggerInterval=trigInterv}
+            end
+            if modelData.debugLevel>=2 then
+                local a=string.format(b0RemoteApiServerNameDebug..": setting default publisher interval for client '%s' with topic '%s'",clientId,targetTopic)
+                a="<font color='#070'>"..a.."</font>@html"
+                sim.addStatusbarMessage(a)
+            end
+            return true
+        end
+    end
     
+    return false
+end
+
+function defaultSubscriber_callback(msg)
+    msg=messagePack.unpack(msg)
+    local funcName=msg[1][1]
+    local clientId=msg[1][2]
+    local task=msg[1][4] -- 0=normal serviceCall, 1=received on default subscriber, 2=register streaming cmd on default publisher, 3=received on dedicated subscriber, 4=register streaming cmd on dedicated publisher
+    local topic=msg[1][3]
+    local funcArgs=msg[2]
+    updateClientLastActivityTime(clientId)
+    
+    -- We simply want to execute the function and forget (no return)
+    if not handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs) then
+        PCALL(_G[funcName],true,unpack(funcArgs))
+        if modelData.debugLevel>=2 then
+            local a=string.format(b0RemoteApiServerNameDebug..": called function for client '%s': %s (default subscriber)",clientId,funcName)
+            a="<font color='#070'>"..a.."</font>@html"
+            sim.addStatusbarMessage(a)
+        end
     end
 end    
     
@@ -422,12 +742,13 @@ function dedicatedSubscriber_callback(msg)
     local topic=msg[1][3]
     local funcArgs=msg[2]
     updateClientLastActivityTime(clientId)
-    print("Hello from dedicated subscriber")
     -- We simply want to execute the function and forget (no return)
-    if modelData.debugMessages then
-        print(string.format(b0RemoteApiServerNameDebug..": command message from client [%s]: %s",clientId,funcName))
+    PCALL(_G[funcName],true,unpack(funcArgs))
+    if modelData.debugLevel>=2 then
+        local a=string.format(b0RemoteApiServerNameDebug..": called function for client '%s': %s (dedicated subscriber)",clientId,funcName)
+        a="<font color='#070'>"..a.."</font>@html"
+        sim.addStatusbarMessage(a)
     end
-    PCALL(_G[funcName],unpack(funcArgs))
 end    
 
 function onConfigNodeNameChanged(ui,id,newVal)
@@ -462,11 +783,17 @@ function onConfigChannelNameChanged(ui,id,newVal)
     simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
 end
 
-function onDebugMsgChanged(ui,id,newval)
-    configUiData.debugMsg=not configUiData.debugMsg
-    modelData.debugMessages=not modelData.debugMessages
+function onDebugLevelChanged(uiHandle,id,newIndex)
+    configUiData.debugLevel=newIndex
+    modelData.debugLevel=newIndex
     sim.writeCustomDataBlock(model,modelTag,sim.packTable(modelData))
 end
+
+function updateDebugLevelCombobox()
+    local items={'none','basic','extended','full'}
+    simUI.setComboboxItems(configUiData.dlg,3,items,modelData.debugLevel)
+end
+
 
 function onSimOnlyChanged(ui,id,newval)
     configUiData.duringSimulationOnly=not configUiData.duringSimulationOnly
@@ -516,8 +843,8 @@ function createConfigDlg()
         <checkbox text="" on-change="onPackStrAsBinChanged" id="4" />
         <label text="Enabled during simulation only"/>
         <checkbox text="" on-change="onSimOnlyChanged" id="5" />
-        <label text="Debug messages"/>
-        <checkbox text="" on-change="onDebugMsgChanged" id="3" />
+        <label text="Debug level"/>
+        <combobox id="3" on-change="onDebugLevelChanged"></combobox>
         </group>
         </ui>
         ]]
@@ -528,14 +855,14 @@ function createConfigDlg()
         end
         configUiData.nodeName=modelData.nodeName
         configUiData.channelName=modelData.channelName
-        configUiData.debugMsg=modelData.debugMessages
+        configUiData.debugLevel=modelData.debugLevel
         configUiData.packStrAsBin=modelData.packStrAsBin
         configUiData.duringSimulationOnly=modelData.duringSimulationOnly
         simUI.setEditValue(configUiData.dlg,1,configUiData.nodeName)
         simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
-        simUI.setCheckboxValue(configUiData.dlg,3,configUiData.debugMsg and 2 or 0)
         simUI.setCheckboxValue(configUiData.dlg,4,configUiData.packStrAsBin and 2 or 0)
         simUI.setCheckboxValue(configUiData.dlg,5,configUiData.duringSimulationOnly and 2 or 0)
+        updateDebugLevelCombobox()
     end
 end
 
@@ -550,19 +877,19 @@ end
 
 function sysCall_init()
     local res
-    res,model=PCALL(sim.getObjectAssociatedWithScript,sim.handle_self) -- if call made directly, will fail with add-on script
+    res,model=PCALL(sim.getObjectAssociatedWithScript,false,sim.handle_self) -- if call made directly, will fail with add-on script
     local abort=false
     if not res or model==-1 then
         -- We are running this script via an Add-On script
         
         model=-1
         b0RemoteApiServerNameDebug='B0 Remote API (add-on)'
-        modelData={nodeName='b0RemoteApi_V-REP-addOn',channelName='b0RemoteApiAddOn',debugMessages=false,packStrAsBin=false,duringSimulationOnly=false}
+        modelData={nodeName='b0RemoteApi_V-REP-addOn',channelName='b0RemoteApiAddOn',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}
     else
         -- We are probably running this script via a customization script
         modelTag='b0-remoteApi'
         b0RemoteApiServerNameDebug='B0 Remote API'
---        sim.writeCustomDataBlock(model,modelTag,sim.packTable({nodeName='b0RemoteApi_V-REP',channelName='b0RemoteApi',debugMessages=true,packStrAsBin=false,duringSimulationOnly=false}))
+--        sim.writeCustomDataBlock(model,modelTag,sim.packTable({nodeName='b0RemoteApi_V-REP',channelName='b0RemoteApi',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}))
         
         local objs=sim.getObjectsWithTag(modelTag,true)
         if #objs>1 then
