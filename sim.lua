@@ -146,6 +146,9 @@ function getAsString(...)
             end
         end
     end
+    if #a==0 then
+        t='nil'
+    end
     return(t)
 end
 
