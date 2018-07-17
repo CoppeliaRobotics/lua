@@ -133,7 +133,8 @@ function getAsString(...)
     local a={...}
     local t=''
     if #a==1 and type(a[1])=='string' then
-        t=string.format('"%s"', a[1])
+--        t=string.format('"%s"', a[1])
+        t=string.format('%s', a[1])
     else
         for i=1,#a,1 do
             if i~=1 then

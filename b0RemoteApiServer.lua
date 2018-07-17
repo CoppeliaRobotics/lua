@@ -503,7 +503,7 @@ function sendAndSpin(calledMoment)
             local clientId=clientsToRemove[i]
             DisconnectClient(clientId)
             if modelData.debugLevel>=1 then
-                local a=string.format(b0RemoteApiServerNameDebug..": destroyed all streaming function for client '%s' after detection of inactivity",clientId)
+                local a=string.format(b0RemoteApiServerNameDebug..": destroyed all streaming functions for client '%s' after detection of inactivity",clientId)
                 a="<font color='#070'>"..a.."</font>@html"
                 sim.addStatusbarMessage(a)
             end
