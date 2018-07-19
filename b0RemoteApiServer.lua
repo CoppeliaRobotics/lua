@@ -1,6 +1,6 @@
----------------------------------
--- Add your custom function here:
----------------------------------
+----------------------------------
+-- Add your custom functions here:
+----------------------------------
 
 function AuxiliaryConsoleClose(...)
     debugFunc("AuxiliaryConsoleClose",...)
@@ -56,8 +56,8 @@ function AddDrawingObject_cubes(...)
     return obj
 end
 
-function AddDrawingObject_lines(...)
-    debugFunc("AddDrawingObject_lines",...)
+function AddDrawingObject_segments(...)
+    debugFunc("AddDrawingObject_segments",...)
     local lineSize,color,segments=...
     local obj=sim.addDrawingObject(sim.drawing_lines,lineSize,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
     for i=0,math.floor(#segments/6)-1,1 do
@@ -276,6 +276,68 @@ function SetVisionSensorImage(...)
     return sim.setVisionSensorCharImage(objHandle,img)
 end
 
+function SetObjectPosition(...)
+    debugFunc("SetObjectPosition",...)
+    local objHandle,relObjHandle,pos=...
+    return sim.setObjectPosition(objHandle,relObjHandle,pos)
+end
+
+function GetObjectOrientation(...)
+    debugFunc("GetObjectOrientation",...)
+    local objHandle,relObjHandle=...
+    return sim.getObjectOrientation(objHandle,relObjHandle)
+end
+
+function SetObjectOrientation(...)
+    debugFunc("SetObjectOrientation",...)
+    local objHandle,relObjHandle,euler=...
+    return sim.setObjectOrientation(objHandle,relObjHandle,euler)
+end
+
+function GetObjectQuaternion(...)
+    debugFunc("GetObjectQuaternion",...)
+    local objHandle,relObjHandle=...
+    return sim.getObjectQuaternion(objHandle,relObjHandle)
+end
+
+function SetObjectQuaternion(...)
+    debugFunc("SetObjectQuaternion",...)
+    local objHandle,relObjHandle,quat=...
+    return sim.setObjectQuaternion(objHandle,relObjHandle,quat)
+end
+
+function GetObjectPose(...)
+    debugFunc("GetObjectPose",...)
+    local objHandle,relObjHandle=...
+    local pose=sim.getObjectPosition(objHandle,relObjHandle)
+    local quat=sim.getObjectQuaternion(objHandle,relObjHandle)
+    pose[4]=quat[1]
+    pose[5]=quat[2]
+    pose[6]=quat[3]
+    pose[7]=quat[4]
+    return pose
+end
+
+function SetObjectPose(...)
+    debugFunc("SetObjectPose",...)
+    local objHandle,relObjHandle,pose=...
+    sim.setObjectPosition(objHandle,relObjHandle,pose)
+    sim.setObjectQuaternion(objHandle,relObjHandle,{pose[4],pose[5],pose[6],pose[7]})
+    return 1
+end
+
+function GetObjectMatrix(...)
+    debugFunc("GetObjectMatrix",...)
+    local objHandle,relObjHandle=...
+    return sim.getObjectMatrix(objHandle,relObjHandle)
+end
+
+function SetObjectMatrix(...)
+    debugFunc("SetObjectMatrix",...)
+    local objHandle,relObjHandle,matr=...
+    return sim.setObjectMatrix(objHandle,relObjHandle,matr)
+end
+
 -----------------------------------------
 -----------------------------------------
 
@@ -296,8 +358,6 @@ function timeStr()
     end
     return t
 end
------------------------------------------
------------------------------------------
 
 function Synchronous(...)
     debugFunc("Synchronous",...)
