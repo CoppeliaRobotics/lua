@@ -188,6 +188,9 @@ function getDefaultInfoForNonExistingFields(info)
     if not info['bitCoded'] then
         info['bitCoded']=1+2+4+8 -- 1=visible during simulation, 2=visible during non-simul, 4=show time plots, 8=show xy plots, 16=1:1 proportion for xy plots
     end
+    if not info['graphPos'] then
+        info['graphPos']=0 -- 0=bottom right, 1=top right, 2=top left, 3=bottom left, 4=center
+    end
 end
 
 function readInfo()
@@ -218,6 +221,10 @@ function setDlgItemContent()
         simUI.setCheckboxValue(ui,3,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],4)~=0),true)
         simUI.setCheckboxValue(ui,4,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],8)~=0),true)
         simUI.setCheckboxValue(ui,5,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],16)~=0),true)
+        
+        local items={'bottom right','top right','top left','bottom left','center'}
+        simUI.setComboboxItems(ui,6,items,config['graphPos'])
+        
         utils.setSelectedEditWidget(ui,sel)
     end
 end
@@ -295,6 +302,19 @@ function squareXy_callback(ui,id,newVal)
     updateEnabledDisabledItemsDlg()
 end
 
+function graphPosChanged_callback(ui,id,newIndex)
+    local c=readInfo()
+    c['graphPos']=newIndex
+    modified=true
+    writeInfo(c)
+    removePlot()
+    previousPlotDlgPos=nil
+    previousPlotDlgSize=nil
+    createOrRemovePlotIfNeeded(false)
+    setDlgItemContent()
+    updateEnabledDisabledItemsDlg()
+end
+
 function createDlg()
     if (not ui) then
         local xml=[[
@@ -311,7 +331,10 @@ function createDlg()
                 <checkbox text="" onchange="xyOnly_callback" id="4" />
 
                 <label text="X/Y plots keep 1:1 aspect ratio"/>
-                <checkbox text="" onchange="squareXy_callback" id="5" />
+                <checkbox text="" onchange="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+                
+                <label text="Preferred graph position"/>
+                <combobox id="6" on-change="graphPosChanged_callback"></combobox>
         ]]
         ui=utils.createCustomUi(xml,sim.getObjectName(model),previousDlgPos,false,nil,false,false,false,'layout="form"')
         setDlgItemContent()
@@ -368,8 +391,6 @@ function createPlot()
             local bitCoded,colA,colB=sim.getGraphInfo(model)
             bgCol=(math.floor(colA[1]*255.1))..','..(math.floor(colA[2]*255.1))..','..(math.floor(colA[3]*255.1))
             fgCol=(math.floor(colB[1]*255.1))..','..(math.floor(colB[2]*255.1))..','..(math.floor(colB[3]*255.1))
-            print(bgCol)
-            print(fgCol)
         end
 
         local xml='<tabs id="77">'
@@ -398,13 +419,15 @@ function createPlot()
         <br/>
         <label id="3" />
         ]]
-
+        
         if not previousPlotDlgPos then
-            previousPlotDlgPos="bottomRight"
-            if graphDlgNumber==2 then
-                previousPlotDlgPos="bottomLeft"
-            end
+            if c['graphPos']==0 then previousPlotDlgPos='bottomRight' end
+            if c['graphPos']==1 then previousPlotDlgPos='topRight' end
+            if c['graphPos']==2 then previousPlotDlgPos='topLeft' end
+            if c['graphPos']==3 then previousPlotDlgPos='bottomLeft' end
+            if c['graphPos']==4 then previousPlotDlgPos='center' end
         end
+        
         plotUi=utils.createCustomUi(xml,sim.getObjectName(model),previousPlotDlgPos,true,"onClosePlot_callback",false,true,false,'layout="grid"',previousPlotDlgSize)
         if (sim.boolAnd32(c['bitCoded'],4)~=0) then
             simUI.setPlotLabels(plotUi,1,"Time (seconds)","")
