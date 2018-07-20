@@ -83,12 +83,13 @@ function RemoveDrawingObject(...)
 end
 
 function CallScriptFunction(...)
-    debugFunc("CallScriptFunction",...)
-    local funcAtObjName,scriptType,arg1,arg2,arg3,arg4=...
+    local funcAtObjName,scriptType,packedArg=...
+    local arg=messagePack.unpack(packedArg)
+    debugFunc("CallScriptFunction",funcAtObjName,scriptType,arg)
     if type(scriptType)=='string' then
         scriptType=evalStr(scriptType)
     end
-    return sim.callScriptFunction(funcAtObjName,scriptType,arg1,arg2,arg3,arg4)
+    return sim.callScriptFunction(funcAtObjName,scriptType,arg)
 end
 
 function CheckCollision(...)
