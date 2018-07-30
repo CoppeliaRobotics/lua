@@ -101,12 +101,6 @@ function CheckCollision(...)
     return sim.checkCollision(entity1,entity2)
 end
 
-function GetCollisionHandle(...)
-    debugFunc("GetCollisionHandle",...)
-    local name=...
-    return sim.getCollisionHandle(name)
-end
-
 function ReadCollision(...)
     debugFunc("ReadCollision",...)
     local handle=...
@@ -120,12 +114,6 @@ function CheckDistance(...)
         entity2=evalStr(entity2)
     end
     return sim.checkDistance(entity1,entity2,threshold)
-end
-
-function GetDistanceHandle(...)
-    debugFunc("GetDistanceHandle",...)
-    local name=...
-    return sim.getDistanceHandle(name)
 end
 
 function ReadDistance(...)
@@ -239,12 +227,18 @@ end
 function GetObjectPosition(...)
     debugFunc("GetObjectPosition",...)
     local objHandle,relObjHandle=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.getObjectPosition(objHandle,relObjHandle)
 end
 
 function GetObjectHandle(...)
     debugFunc("GetObjectHandle",...)
     local objName=...
+    if string.find(objName,'#')==nil then
+        objName=objName..'#'
+    end
     return sim.getObjectHandle(objName..'#')
 end
 
@@ -268,6 +262,19 @@ function GetVisionSensorImage(...)
     return {x,y},img
 end
 
+function GetVisionSensorResolution(...)
+    debugFunc("GetVisionSensorResolution",...)
+    local objHandle=...
+    return sim.getVisionSensorResolution(objHandle)
+end
+
+function GetVisionSensorDepthBuffer(...)
+    debugFunc("GetVisionSensorDepthBuffer",...)
+    local objHandle=...
+    local buff=sim.getVisionSensorDepthBuffer(objHandle)
+    return {x,y},img
+end
+
 function SetVisionSensorImage(...)
     debugFunc("SetVisionSensorImage",...)
     local objHandle,greyScale,img=...
@@ -280,36 +287,54 @@ end
 function SetObjectPosition(...)
     debugFunc("SetObjectPosition",...)
     local objHandle,relObjHandle,pos=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.setObjectPosition(objHandle,relObjHandle,pos)
 end
 
 function GetObjectOrientation(...)
     debugFunc("GetObjectOrientation",...)
     local objHandle,relObjHandle=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.getObjectOrientation(objHandle,relObjHandle)
 end
 
 function SetObjectOrientation(...)
     debugFunc("SetObjectOrientation",...)
     local objHandle,relObjHandle,euler=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.setObjectOrientation(objHandle,relObjHandle,euler)
 end
 
 function GetObjectQuaternion(...)
     debugFunc("GetObjectQuaternion",...)
     local objHandle,relObjHandle=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.getObjectQuaternion(objHandle,relObjHandle)
 end
 
 function SetObjectQuaternion(...)
     debugFunc("SetObjectQuaternion",...)
     local objHandle,relObjHandle,quat=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.setObjectQuaternion(objHandle,relObjHandle,quat)
 end
 
 function GetObjectPose(...)
     debugFunc("GetObjectPose",...)
     local objHandle,relObjHandle=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     local pose=sim.getObjectPosition(objHandle,relObjHandle)
     local quat=sim.getObjectQuaternion(objHandle,relObjHandle)
     pose[4]=quat[1]
@@ -322,6 +347,9 @@ end
 function SetObjectPose(...)
     debugFunc("SetObjectPose",...)
     local objHandle,relObjHandle,pose=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     sim.setObjectPosition(objHandle,relObjHandle,pose)
     sim.setObjectQuaternion(objHandle,relObjHandle,{pose[4],pose[5],pose[6],pose[7]})
     return 1
@@ -330,13 +358,340 @@ end
 function GetObjectMatrix(...)
     debugFunc("GetObjectMatrix",...)
     local objHandle,relObjHandle=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.getObjectMatrix(objHandle,relObjHandle)
 end
 
 function SetObjectMatrix(...)
     debugFunc("SetObjectMatrix",...)
     local objHandle,relObjHandle,matr=...
+    if type(relObjHandle)=='string' then
+        relObjHandle=evalStr(relObjHandle)
+    end
     return sim.setObjectMatrix(objHandle,relObjHandle,matr)
+end
+
+function CopyPasteObjects(...)
+    debugFunc("CopyPasteObjects",...)
+    local objHandles,options=...
+    return sim.copyPasteObjects(objHandles,options)
+end
+
+function RemoveObjects(...)
+    debugFunc("RemoveObjects",...)
+    local objHandles,options=...
+    local allObjs1=sim.getObjectsInTree(sim.handle_scene,sim.handle_all,0)
+    if sim.boolAnd32(options,2)>0 then
+        sim.removeObject(sim.handle_all)
+    else
+        if sim.boolAnd32(options,1)>0 then
+            for i=1,#objHandles,1 do
+                local h=objHandles[i]
+                if sim.isHandleValid(h)>0 then
+                    local mp=sim.getModelProperty(h)
+                    if sim.boolAnd32(mp,sim.modelproperty_not_model)>0 then
+                        sim.removeObject(objHandles[i])
+                    else
+                        sim.removeModel(objHandles[i])
+                    end
+                end
+            end
+        else
+            for i=1,#objHandles,1 do
+                sim.removeObject(objHandles[i])
+            end
+        end
+    end
+    local allObjs2=sim.getObjectsInTree(sim.handle_scene,sim.handle_all,0)
+    return #allObjs1-#allObjs2
+end
+
+function CloseScene(...)
+    debugFunc("CloseScene",...)
+    return sim.closeScene()
+end
+
+function CreateDummy(...)
+    debugFunc("CreateDummy",...)
+    local size,col=...
+    return sim.createDummy(size,col)
+end
+
+function SetShapeColor(...)
+    debugFunc("SetShapeColor",...)
+    local shapeHandle,colName,colComponent,rgb=...
+    if type(colComponent)=='string' then
+        colComponent=evalStr(colComponent)
+    end
+    return sim.setShapeColor(shapeHandle,colName,colComponent,rgb)
+end
+
+function SetStringParameter(...)
+    debugFunc("SetStringParameter",...)
+    local paramId,val=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setStringParameter(paramId,val)
+end
+
+function GetStringParameter(...)
+    debugFunc("GetStringParameter",...)
+    local paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.getStringParameter(paramId)
+end
+
+function SetFloatParameter(...)
+    debugFunc("SetFloatParameter",...)
+    local paramId,val=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setFloatParameter(paramId,val)
+end
+
+function GetFloatParameter(...)
+    debugFunc("GetFloatParameter",...)
+    local paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.getFloatParameter(paramId)
+end
+
+function SetInt32Parameter(...)
+    debugFunc("SetInt32Parameter",...)
+    local paramId,val=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setInt32Parameter(paramId,val)
+end
+
+function GetInt32Parameter(...)
+    debugFunc("GetInt32Parameter",...)
+    local paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.getInt32Parameter(paramId)
+end
+
+function SetBoolParameter(...)
+    debugFunc("SetBoolParameter",...)
+    local paramId,val=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setBoolParameter(paramId,val)
+end
+
+function GetBoolParameter(...)
+    debugFunc("GetBoolParameter",...)
+    local paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.getBoolParameter(paramId)
+end
+
+function DisplayDialog(...)
+    debugFunc("DisplayDialog",...)
+    local titleText,mainText,dlgType,initText=...
+    if type(dlgType)=='string' then
+        dlgType=evalStr(dlgType)
+    end
+    return sim.displayDialog(titleText,mainText,dlgType,initText)
+end
+
+function GetDialogResult(...)
+    debugFunc("GetDialogResult",...)
+    local dlgHandle=...
+    return tostring(sim.getDialogResult(dlgHandle))
+end
+
+function GetDialogInput(...)
+    debugFunc("GetDialogInput",...)
+    local dlgHandle=...
+    return sim.getDialogInput(dlgHandle)
+end
+
+function EndDialog(...)
+    debugFunc("EndDialog",...)
+    local dlgHandle=...
+    return sim.endDialog(dlgHandle)
+end
+
+function ExecuteScriptString(...)
+    debugFunc("ExecuteScriptString",...)
+    local str=...
+    return evalStr(str)
+end
+
+function GetCollectionHandle(...)
+    debugFunc("GetCollectionHandle",...)
+    local objName=...
+    if string.find(objName,'#')==nil then
+        objName=objName..'#'
+    end
+    return sim.getCollectionHandle(objName..'#')
+end
+
+function GetCollisionHandle(...)
+    debugFunc("GetCollisionHandle",...)
+    local name=...
+    if string.find(name,'#')==nil then
+        name=name..'#'
+    end
+    return sim.getCollisionHandle(name)
+end
+
+function GetDistanceHandle(...)
+    debugFunc("GetDistanceHandle",...)
+    local name=...
+    if string.find(name,'#')==nil then
+        name=name..'#'
+    end
+    return sim.getDistanceHandle(name)
+end
+
+function GetJointForce(...)
+    debugFunc("GetJointForce",...)
+    local handle=...
+    return sim.getJointForce(handle)
+end
+
+function GetJointPosition(...)
+    debugFunc("GetJointPosition",...)
+    local handle=...
+    return sim.getJointPosition(handle)
+end
+
+function GetJointTargetPosition(...)
+    debugFunc("GetJointTargetPosition",...)
+    local handle=...
+    return sim.getJointTargetPosition(handle)
+end
+
+function GetJointTargetVelocity(...)
+    debugFunc("GetJointTargetVelocity",...)
+    local handle=...
+    return sim.getJointTargetVelocity(handle)
+end
+
+function GetObjectChild(...)
+    debugFunc("GetObjectChild",...)
+    local handle,index=...
+    return sim.getObjectChild(handle,index)
+end
+
+function GetObjectParent(...)
+    debugFunc("GetObjectParent",...)
+    local handle=...
+    return sim.getObjectParent(handle)
+end
+
+function GetObjectName(...)
+    debugFunc("GetObjectName",...)
+    local handle,altName=...
+    if altName then
+        handle=handle+sim.handleflag_altname
+    end
+    return sim.getObjectName(handle)
+end
+
+function GetObjectsInTree(...)
+    debugFunc("GetObjectsInTree",...)
+    local treeBase,objType,options=...
+    if type(treeBase)=='string' then
+        treeBase=evalStr(treeBase)
+    end
+    if type(objType)=='string' then
+        objType=evalStr(objType)
+    end
+    return sim.getObjectsInTree(treeBase,objType,options)
+end
+
+function GetObjectFloatParameter(...)
+    debugFunc("GetObjectFloatParameter",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local r,retV=sim.getObjectFloatParameter(handle,paramId)
+    return retV
+end
+
+function GetObjectInt32Parameter(...)
+    debugFunc("GetObjectInt32Parameter",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local r,retV=sim.getObjectInt32Parameter(handle,paramId)
+    return retV
+end
+
+function GetObjectStringParameter(...)
+    debugFunc("GetObjectStringParameter",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local r,retV=sim.getObjectStringParameter(handle,paramId)
+    return retV
+end
+
+function SetObjectFloatParameter(...)
+    debugFunc("SetObjectFloatParameter",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectFloatParameter(handle,paramId,v)
+end
+
+function SetObjectInt32Parameter(...)
+    debugFunc("SetObjectInt32Parameter",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectInt32Parameter(handle,paramId,v)
+end
+
+function SetObjectStringParameter(...)
+    debugFunc("SetObjectStringParameter",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectStringParameter(handle,paramId,v)
+end
+
+function GetSimulationState(...)
+    debugFunc("GetSimulationState",...)
+    return tostring(sim.getSimulationState())
+end
+
+function GetSimulationTime(...)
+    debugFunc("GetSimulationTime",...)
+    return sim.getSimulationTime()
+end
+
+function GetSimulationTimeStep(...)
+    debugFunc("GetSimulationTimeStep",...)
+    return sim.getSimulationTimeStep()
+end
+
+function GetServerTimeInMs(...)
+    debugFunc("GetServerTimeInMs",...)
+    return sim.getSystemTimeInMs(-2)
 end
 
 -----------------------------------------
@@ -380,6 +735,8 @@ function GetSimulationStepDone(...)
 --    debugFunc("GetSimulationStepDone",...)
     local retVal={}
     retVal.simulationTime=sim.getSimulationTime()
+    retVal.simulationState=tostring(sim.getSimulationState())
+    retVal.simulationTimeStep=sim.getSimulationTimeStep()
     return retVal
 end
 
@@ -387,6 +744,8 @@ function GetSimulationStepStarted(...)
 --    debugFunc("GetSimulationStepStarted",...)
     local retVal={}
     retVal.simulationTime=sim.getSimulationTime()
+    retVal.simulationState=tostring(sim.getSimulationState())
+    retVal.simulationTimeStep=sim.getSimulationTimeStep()
     return retVal
 end
 
