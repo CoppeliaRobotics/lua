@@ -171,117 +171,112 @@ end
 
 
 function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,prevPos,dlgHandle)
-    if type(title)=='string' and type(mainTxt)=='string' and type(style)=='number' and type(modal)=='boolean' then
-        if type(initTxt)~='string' then
-            initTxt=''
-        end
-        local retVal=-1
-        local center=true
-        if sim.boolAnd32(style,sim.dlgstyle_dont_center)>0 then
-            center=false
-            style=style-sim.dlgstyle_dont_center
-        end
-        if not modal or sim.isScriptExecutionThreaded() then
-            if modal and style==sim.dlgstyle_message then
-                modal=false
-            end
-            local xml='<ui title="'..title..'" closeable="false" resizable="false"'
-            if modal then
-                xml=xml..' modal="true"'
-            else
-                xml=xml..' modal="false"'
-            end
-
-            if prevPos then
-                xml=xml..' placement="absolute" position="'..prevPos[1]..','..prevPos[2]..'">'
-            else
-                if center then
-                    xml=xml..' placement="center">'
-                else
-                    xml=xml..' placement="relative" position="-50,50">'
-                end
-            end
-            mainTxt=string.gsub(mainTxt,"&&n","\n")
-            xml=xml..'<label text="'..mainTxt..'"/>'
-            if style==sim.dlgstyle_input then
-                xml=xml..'<edit on-editing-finished="__HIDDEN__.dlg.input_callback" id="1"/>'
-            end
-            if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
-                xml=xml..'<group layout="hbox" flat="true">'
-                xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
-                xml=xml..'</group>'
-            end
-            if style==sim.dlgstyle_ok_cancel then
-                xml=xml..'<group layout="hbox" flat="true">'
-                xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
-                xml=xml..'<button text="Cancel" on-click="__HIDDEN__.dlg.cancel_callback"/>'
-                xml=xml..'</group>'
-            end
-            if style==sim.dlgstyle_yes_no then
-                xml=xml..'<group layout="hbox" flat="true">'
-                xml=xml..'<button text="Yes" on-click="__HIDDEN__.dlg.yes_callback"/>'
-                xml=xml..'<button text="No" on-click="__HIDDEN__.dlg.no_callback"/>'
-                xml=xml..'</group>'
-            end
-            xml=xml..'</ui>'
-            local ui=simUI.create(xml)
-            if style==sim.dlgstyle_input then
-                simUI.setEditValue(ui,1,initTxt)
-            end
-            if not __HIDDEN__.dlg.openDlgs then
-                __HIDDEN__.dlg.openDlgs={}
-                __HIDDEN__.dlg.openDlgsUi={}
-            end
-            if not __HIDDEN__.dlg.nextHandle then
-                __HIDDEN__.dlg.nextHandle=0
-            end
-            if dlgHandle then
-                retVal=dlgHandle
-            else
-                retVal=__HIDDEN__.dlg.nextHandle
-                __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
-            end
-            __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt,titleCols=titleCols,dlgCols=dlgCols}
-            __HIDDEN__.dlg.openDlgsUi[ui]=retVal
-            
-            if modal then
-                while __HIDDEN__.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
-                    sim.switchThread()
-                end
-            end
-        end
-        return retVal
+    assert(type(title)=='string' and type(mainTxt)=='string' and type(style)=='number' and type(modal)=='boolean',"One of the function's argument type is not correct")
+    if type(initTxt)~='string' then
+        initTxt=''
     end
+    local retVal=-1
+    local center=true
+    if sim.boolAnd32(style,sim.dlgstyle_dont_center)>0 then
+        center=false
+        style=style-sim.dlgstyle_dont_center
+    end
+    assert(not modal or sim.isScriptExecutionThreaded()>0,"Can't use modal operation with non-threaded scripts")
+    if modal and style==sim.dlgstyle_message then
+        modal=false
+    end
+    local xml='<ui title="'..title..'" closeable="false" resizable="false"'
+    if modal then
+        xml=xml..' modal="true"'
+    else
+        xml=xml..' modal="false"'
+    end
+
+    if prevPos then
+        xml=xml..' placement="absolute" position="'..prevPos[1]..','..prevPos[2]..'">'
+    else
+        if center then
+            xml=xml..' placement="center">'
+        else
+            xml=xml..' placement="relative" position="-50,50">'
+        end
+    end
+    mainTxt=string.gsub(mainTxt,"&&n","\n")
+    xml=xml..'<label text="'..mainTxt..'"/>'
+    if style==sim.dlgstyle_input then
+        xml=xml..'<edit on-editing-finished="__HIDDEN__.dlg.input_callback" id="1"/>'
+    end
+    if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
+        xml=xml..'</group>'
+    end
+    if style==sim.dlgstyle_ok_cancel then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
+        xml=xml..'<button text="Cancel" on-click="__HIDDEN__.dlg.cancel_callback"/>'
+        xml=xml..'</group>'
+    end
+    if style==sim.dlgstyle_yes_no then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Yes" on-click="__HIDDEN__.dlg.yes_callback"/>'
+        xml=xml..'<button text="No" on-click="__HIDDEN__.dlg.no_callback"/>'
+        xml=xml..'</group>'
+    end
+    xml=xml..'</ui>'
+    local ui=simUI.create(xml)
+    if style==sim.dlgstyle_input then
+        simUI.setEditValue(ui,1,initTxt)
+    end
+    if not __HIDDEN__.dlg.openDlgs then
+        __HIDDEN__.dlg.openDlgs={}
+        __HIDDEN__.dlg.openDlgsUi={}
+    end
+    if not __HIDDEN__.dlg.nextHandle then
+        __HIDDEN__.dlg.nextHandle=0
+    end
+    if dlgHandle then
+        retVal=dlgHandle
+    else
+        retVal=__HIDDEN__.dlg.nextHandle
+        __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
+    end
+    __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt,titleCols=titleCols,dlgCols=dlgCols}
+    __HIDDEN__.dlg.openDlgsUi[ui]=retVal
+    
+    if modal then
+        while __HIDDEN__.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
+            sim.switchThread()
+        end
+    end
+    return retVal
 end
 
 function sim.endDialog(dlgHandle)
     local retVal=-1
-    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
-        if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
-            __HIDDEN__.dlg.removeUi(dlgHandle)
-        end
-        if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
-            __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
-        end
-        __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
-        retVal=0
+    assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
+    if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
+        __HIDDEN__.dlg.removeUi(dlgHandle)
     end
+    if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
+        __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
+    end
+    __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
+    retVal=0
     return retVal
 end
 
 function sim.getDialogInput(dlgHandle)
     local retVal
-    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
-        retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
-    end
+    assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
+    retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
     return retVal
 end
 
 function sim.getDialogResult(dlgHandle)
     local retVal=-1
-    if type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle] then
-        retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
-    end
+    assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
+    retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
     return retVal
 end
 
