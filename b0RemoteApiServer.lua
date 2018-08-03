@@ -11,12 +11,19 @@ end
 function AuxiliaryConsoleOpen(...)
     debugFunc("AuxiliaryConsoleOpen",...)
     local title,maxLines,mode,position,size,textColor,backgroundColor=...
+    for i=1,3,1 do
+        textColor[i]=textColor[i]/255
+        backgroundColor[i]=backgroundColor[i]/255
+    end
     return sim.auxiliaryConsoleOpen(title,maxLines,mode,position,size,textColor,backgroundColor)
 end
 
 function AuxiliaryConsolePrint(...)
     debugFunc("AuxiliaryConsolePrint",...)
     local consoleHandle,text=...
+    if #text==0 then
+        text=nil
+    end
     return sim.auxiliaryConsolePrint(consoleHandle,text)
 end
 
@@ -113,7 +120,8 @@ function CheckDistance(...)
     if type(entity2)=='string' then
         entity2=evalStr(entity2)
     end
-    return sim.checkDistance(entity1,entity2,threshold)
+    local r,d=sim.checkDistance(entity1,entity2,threshold)
+    return r,d[7],{d[1],d[2],d[3]},{d[4],d[5],d[6]}
 end
 
 function ReadDistance(...)
@@ -270,9 +278,15 @@ end
 
 function GetVisionSensorDepthBuffer(...)
     debugFunc("GetVisionSensorDepthBuffer",...)
-    local objHandle=...
+    local objHandle,toMeters,asByteArray=...
+    if toMeters then
+        objHandle=objHandle+sim.handleflag_depthbuffermeters
+    end
+    if asByteArray then
+        objHandle=objHandle+sim.handleflag_codedstring
+    end
     local buff=sim.getVisionSensorDepthBuffer(objHandle)
-    return {x,y},img
+    return {x,y},buff
 end
 
 function SetVisionSensorImage(...)
@@ -413,21 +427,6 @@ function CloseScene(...)
     return sim.closeScene()
 end
 
-function CreateDummy(...)
-    debugFunc("CreateDummy",...)
-    local size,col=...
-    return sim.createDummy(size,col)
-end
-
-function SetShapeColor(...)
-    debugFunc("SetShapeColor",...)
-    local shapeHandle,colName,colComponent,rgb=...
-    if type(colComponent)=='string' then
-        colComponent=evalStr(colComponent)
-    end
-    return sim.setShapeColor(shapeHandle,colName,colComponent,rgb)
-end
-
 function SetStringParameter(...)
     debugFunc("SetStringParameter",...)
     local paramId,val=...
@@ -464,8 +463,8 @@ function GetFloatParameter(...)
     return sim.getFloatParameter(paramId)
 end
 
-function SetInt32Parameter(...)
-    debugFunc("SetInt32Parameter",...)
+function SetIntParameter(...)
+    debugFunc("SetIntParameter",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -473,8 +472,8 @@ function SetInt32Parameter(...)
     return sim.setInt32Parameter(paramId,val)
 end
 
-function GetInt32Parameter(...)
-    debugFunc("GetInt32Parameter",...)
+function GetIntParameter(...)
+    debugFunc("GetIntParameter",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -566,10 +565,22 @@ function GetJointForce(...)
     return sim.getJointForce(handle)
 end
 
+function SetJointForce(...)
+    debugFunc("SetJointForce",...)
+    local handle,f=...
+    return sim.setJointForce(handle,f)
+end
+
 function GetJointPosition(...)
     debugFunc("GetJointPosition",...)
     local handle=...
     return sim.getJointPosition(handle)
+end
+
+function SetJointPosition(...)
+    debugFunc("SetJointPosition",...)
+    local handle,p=...
+    return sim.setJointPosition(handle,p)
 end
 
 function GetJointTargetPosition(...)
@@ -578,10 +589,22 @@ function GetJointTargetPosition(...)
     return sim.getJointTargetPosition(handle)
 end
 
+function SetJointTargetPosition(...)
+    debugFunc("SetJointTargetPosition",...)
+    local handle,tp=...
+    return sim.setJointTargetPosition(handle,tp)
+end
+
 function GetJointTargetVelocity(...)
     debugFunc("GetJointTargetVelocity",...)
     local handle=...
     return sim.getJointTargetVelocity(handle)
+end
+
+function SetJointTargetVelocity(...)
+    debugFunc("SetJointTargetVelocity",...)
+    local handle,tv=...
+    return sim.setJointTargetVelocity(handle,tv)
 end
 
 function GetObjectChild(...)
