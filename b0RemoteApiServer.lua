@@ -499,6 +499,23 @@ function GetBoolParameter(...)
     return sim.getBoolParameter(paramId)
 end
 
+function SetArrayParameter(...)
+    debugFunc("SetArrayParameter",...)
+    local paramId,val=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setArrayParameter(paramId,val)
+end
+
+function GetArrayParameter(...)
+    debugFunc("GetArrayParameter",...)
+    local paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.getArrayParameter(paramId)
+end
 function DisplayDialog(...)
     debugFunc("DisplayDialog",...)
     local titleText,mainText,dlgType,initText=...
@@ -619,15 +636,6 @@ function GetObjectParent(...)
     return sim.getObjectParent(handle)
 end
 
-function GetObjectName(...)
-    debugFunc("GetObjectName",...)
-    local handle,altName=...
-    if altName then
-        handle=handle+sim.handleflag_altname
-    end
-    return sim.getObjectName(handle)
-end
-
 function GetObjectsInTree(...)
     debugFunc("GetObjectsInTree",...)
     local treeBase,objType,options=...
@@ -640,6 +648,15 @@ function GetObjectsInTree(...)
     return sim.getObjectsInTree(treeBase,objType,options)
 end
 
+function GetObjectName(...)
+    debugFunc("GetObjectName",...)
+    local handle,altName=...
+    if altName then
+        handle=handle+sim.handleflag_altname
+    end
+    return sim.getObjectName(handle)
+end
+
 function GetObjectFloatParameter(...)
     debugFunc("GetObjectFloatParameter",...)
     local handle,paramId=...
@@ -650,8 +667,8 @@ function GetObjectFloatParameter(...)
     return retV
 end
 
-function GetObjectInt32Parameter(...)
-    debugFunc("GetObjectInt32Parameter",...)
+function GetObjectIntParameter(...)
+    debugFunc("GetObjectIntParameter",...)
     local handle,paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -679,8 +696,8 @@ function SetObjectFloatParameter(...)
     return sim.setObjectFloatParameter(handle,paramId,v)
 end
 
-function SetObjectInt32Parameter(...)
-    debugFunc("SetObjectInt32Parameter",...)
+function SetObjectIntParameter(...)
+    debugFunc("SetObjectIntParameter",...)
     local handle,paramId,v=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -697,11 +714,6 @@ function SetObjectStringParameter(...)
     return sim.setObjectStringParameter(handle,paramId,v)
 end
 
-function GetSimulationState(...)
-    debugFunc("GetSimulationState",...)
-    return tostring(sim.getSimulationState())
-end
-
 function GetSimulationTime(...)
     debugFunc("GetSimulationTime",...)
     return sim.getSimulationTime()
@@ -715,6 +727,40 @@ end
 function GetServerTimeInMs(...)
     debugFunc("GetServerTimeInMs",...)
     return sim.getSystemTimeInMs(-2)
+end
+
+function GetSimulationState(...)
+    debugFunc("GetSimulationState",...)
+    local s=sim.getSimulationState()
+    if s~=sim.simulation_stopped and s~=sim.simulation_paused then
+        s=sim.simulation_advancing
+    end
+    return s
+end
+
+function EvaluateToInt(...)
+    debugFunc("EvaluateToInt",...)
+    local str=...
+    return evalStr(str)
+end
+
+function EvaluateToStr(...)
+    debugFunc("EvaluateToStr",...)
+    local str=...
+    return evalStr(str)
+end
+
+function GetObjects(...)
+    debugFunc("GetObjects",...)
+    local objType=...
+    local retVal={}
+    local i=0
+    local h=sim.getObjects(i,objType)
+    while h>=0 then
+        retVal[#retVal+1]=handle
+        h=sim.getObjects(i,objType)
+    end
+    return retVal
 end
 
 -----------------------------------------
