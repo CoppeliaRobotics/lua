@@ -247,7 +247,7 @@ function GetObjectHandle(...)
     if string.find(objName,'#')==nil then
         objName=objName..'#'
     end
-    return sim.getObjectHandle(objName..'#')
+    return sim.getObjectHandle(objName)
 end
 
 function StartSimulation(...)
