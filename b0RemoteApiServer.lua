@@ -36,7 +36,14 @@ end
 function AddDrawingObject_points(...)
     debugFunc("AddDrawingObject_points",...)
     local size,color,coords=...
-    local obj=sim.addDrawingObject(sim.drawing_points,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    local adCol={0,0,0}
+    local eCol={0,0,0}
+    if color[1]>=0 then
+        adCol={color[1]/255,color[2]/255,color[3]/255}
+    else
+        eCol={-color[1]/255,-color[2]/255,-color[3]/255}
+    end
+    local obj=sim.addDrawingObject(sim.drawing_points,size,0,-1,10000,adCol,nil,nil,eCol)
     for i=0,math.floor(#coords/3)-1,1 do
         sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3]})
     end
@@ -46,7 +53,14 @@ end
 function AddDrawingObject_spheres(...)
     debugFunc("AddDrawingObject_spheres",...)
     local size,color,coords=...
-    local obj=sim.addDrawingObject(sim.drawing_spherepoints,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    local adCol={0,0,0}
+    local eCol={0,0,0}
+    if color[1]>=0 then
+        adCol={color[1]/255,color[2]/255,color[3]/255}
+    else
+        eCol={-color[1]/255,-color[2]/255,-color[3]/255}
+    end
+    local obj=sim.addDrawingObject(sim.drawing_spherepoints,size,0,-1,10000,adCol,nil,nil,eCol)
     for i=0,math.floor(#coords/3)-1,1 do
         sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3]})
     end
@@ -56,7 +70,14 @@ end
 function AddDrawingObject_cubes(...)
     debugFunc("AddDrawingObject_cubes",...)
     local size,color,coords=...
-    local obj=sim.addDrawingObject(sim.drawing_cubepoints,size,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    local adCol={0,0,0}
+    local eCol={0,0,0}
+    if color[1]>=0 then
+        adCol={color[1]/255,color[2]/255,color[3]/255}
+    else
+        eCol={-color[1]/255,-color[2]/255,-color[3]/255}
+    end
+    local obj=sim.addDrawingObject(sim.drawing_cubepoints,size,0,-1,10000,adCol,nil,nil,eCol)
     for i=0,math.floor(#coords/3)-1,1 do
         sim.addDrawingObjectItem(obj,{coords[3*i+1],coords[3*i+2],coords[3*i+3],0,0,1})
     end
@@ -66,7 +87,14 @@ end
 function AddDrawingObject_segments(...)
     debugFunc("AddDrawingObject_segments",...)
     local lineSize,color,segments=...
-    local obj=sim.addDrawingObject(sim.drawing_lines,lineSize,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    local adCol={0,0,0}
+    local eCol={0,0,0}
+    if color[1]>=0 then
+        adCol={color[1]/255,color[2]/255,color[3]/255}
+    else
+        eCol={-color[1]/255,-color[2]/255,-color[3]/255}
+    end
+    local obj=sim.addDrawingObject(sim.drawing_lines,lineSize,0,-1,10000,adCol,nil,nil,eCol)
     for i=0,math.floor(#segments/6)-1,1 do
         sim.addDrawingObjectItem(obj,{segments[6*i+1],segments[6*i+2],segments[6*i+3],segments[6*i+4],segments[6*i+5],segments[6*i+6]})
     end
@@ -76,7 +104,14 @@ end
 function AddDrawingObject_triangles(...)
     debugFunc("AddDrawingObject_triangles",...)
     local color,triangles=...
-    local obj=sim.addDrawingObject(sim.drawing_triangles,0,0,-1,10000,{color[1]/255,color[2]/255,color[3]/255})
+    local adCol={0,0,0}
+    local eCol={0,0,0}
+    if color[1]>=0 then
+        adCol={color[1]/255,color[2]/255,color[3]/255}
+    else
+        eCol={-color[1]/255,-color[2]/255,-color[3]/255}
+    end
+    local obj=sim.addDrawingObject(sim.drawing_triangles,0,0,-1,10000,adCol,nil,nil,eCol)
     for i=0,math.floor(#triangles/9)-1,1 do
         sim.addDrawingObjectItem(obj,{triangles[9*i+1],triangles[9*i+2],triangles[9*i+3],triangles[9*i+4],triangles[9*i+5],triangles[9*i+6],triangles[9*i+7],triangles[9*i+8],triangles[9*i+9]})
     end
@@ -258,6 +293,11 @@ end
 function StopSimulation(...)
     debugFunc("StopSimulation",...)
     return sim.stopSimulation()
+end
+
+function PauseSimulation(...)
+    debugFunc("PauseSimulation",...)
+    return sim.pauseSimulation()
 end
 
 function GetVisionSensorImage(...)
@@ -636,6 +676,15 @@ function GetObjectParent(...)
     return sim.getObjectParent(handle)
 end
 
+function SetObjectParent(...)
+    debugFunc("SetObjectParent",...)
+    local handle,parentHandle,assembly,keepInPlace=...
+    if assembly then
+        handle=handle+sim.handleflag_assembly
+    end
+    return sim.setObjectParent(handle,parentHandle,keepInPlace)
+end
+
 function GetObjectsInTree(...)
     debugFunc("GetObjectsInTree",...)
     local treeBase,objType,options=...
@@ -761,6 +810,62 @@ function GetObjects(...)
         h=sim.getObjects(i,objType)
     end
     return retVal
+end
+
+function CreateDummy(...)
+    debugFunc("CreateDummy",...)
+    local cols={0,0,0,0,0,0,0.5,0.5,0.5,0,0,0}
+    local size,color=...
+    if color[1]>=0 then
+        cols[1]=color[1]/255
+        cols[2]=color[2]/255
+        cols[3]=color[3]/255
+    else
+        cols[10]=-color[1]/255
+        cols[11]=-color[2]/255
+        cols[12]=-color[3]/255
+    end
+    return sim.createDummy(size,cols)
+end
+
+function GetObjectSelection(...)
+    debugFunc("GetObjectSelection",...)
+    local t=sim.getObjectSelection()
+    if t==nil then
+        t={}
+    end
+    return t
+end
+
+function SetObjectSelection(...)
+    debugFunc("SetObjectSelection",...)
+    local sel=...
+    sim.removeObjectFromSelection(sim.handle_all,-1);
+    return sim.addObjectToSelection(sel)
+end
+
+function GetObjectVelocity(...)
+    debugFunc("GetObjectVelocity",...)
+    local handle=...
+    return sim.getObjectVelocity(handle+sim.handleflag_axis)
+end
+
+function LoadModel(...)
+    debugFunc("LoadModel",...)
+    local filename=...
+    local s=sim.getObjectSelection()
+    local h=sim.loadModel(filename)
+    sim.removeObjectFromSelection(sim.handle_all,-1);
+    if s then
+        sim.addObjectToSelection(s)
+    end
+    return h
+end
+
+function LoadScene(...)
+    debugFunc("LoadScene",...)
+    local filename=...
+    return sim.loadScene(filename)
 end
 
 -----------------------------------------
