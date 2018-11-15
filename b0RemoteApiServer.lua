@@ -805,7 +805,7 @@ function GetObjects(...)
     local retVal={}
     local i=0
     local h=sim.getObjects(i,objType)
-    while h>=0 then
+    while h>=0 do
         retVal[#retVal+1]=handle
         h=sim.getObjects(i,objType)
     end
