@@ -1,7 +1,7 @@
 local sim={}
 __HIDDEN__={}
 __HIDDEN__.dlg={}
-printToConsole=print
+printToConsole=print -- will be overwritten further down
 
 -- Various useful functions:
 ----------------------------------------------------------
@@ -278,6 +278,29 @@ function sim.getDialogResult(dlgHandle)
     assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
     retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
     return retVal
+end
+
+function math.random2(lower,upper)
+    -- same as math.random, but each script has its own generator
+    local r=sim.getRandom()
+    if lower then
+        local b=1
+        local d
+        if upper then
+            b=lower
+            d=upper-b
+        else
+            d=lower-b
+        end
+        local e=d/(d+1)
+        r=b+math.floor(r*d/e)
+    end
+    return r
+end
+
+function math.randomseed2(seed)
+    -- same as math.randomseed, but each script has its own generator
+    sim.getRandom(seed)
 end
 
 function sysCallEx_beforeInstanceSwitch()
