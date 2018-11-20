@@ -231,8 +231,8 @@ function SetFloatSignal(...)
     return sim.setFloatSignal(sig,v)
 end
 
-function SetIntegerSignal(...)
-    debugFunc("SetIntegerSignal",...)
+function SetIntSignal(...)
+    debugFunc("SetIntSignal",...)
     local sig,v=...
     return sim.setIntegerSignal(sig,v)
 end
@@ -249,8 +249,8 @@ function GetFloatSignal(...)
     return sim.getFloatSignal(sig)
 end
 
-function GetIntegerSignal(...)
-    debugFunc("GetIntegerSignal",...)
+function GetIntSignal(...)
+    debugFunc("GetIntSignal",...)
     local sig=...
     return sim.getIntegerSignal(sig)
 end
