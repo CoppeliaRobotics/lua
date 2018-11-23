@@ -1003,10 +1003,12 @@ end
 function createNode()
     if not b0Node then
         if modelData.debugLevel>=1 then
-            local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": creating BlueZero node and associated publisher, subscriber and service server")
+            local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": creating BlueZero node '%s' and associated publisher, subscriber and service server (on channel '%s')",modelData.nodeName,modelData.channelName)
             a="<font color='#070'>"..a.."</font>@html"
             sim.addStatusbarMessage(a)
         end
+        modelData.currentNodeName=modelData.nodeName
+        modelData.currentChannelName=modelData.channelName
         if not initStg then
             local xml = [[ <ui closeable="false" resizable="false" title="BlueZero" modal="true">
                     <label text="Looking for BlueZero resolver..." style="* {font-size: 20px; font-weight: bold; margin-left: 20px; margin-right: 20px;}"/>
@@ -1050,10 +1052,12 @@ end
 function destroyNode()
     if b0Node then
         if modelData.debugLevel>=1 then
-            local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": destroying BlueZero node and associated publisher, subscriber and service server")
+            local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": destroying BlueZero node '%s' and associated publisher, subscriber and service server (on channel '%s')",modelData.currentNodeName,modelData.currentChannelName)
             a="<font color='#070'>"..a.."</font>@html"
             sim.addStatusbarMessage(a)
         end
+        modelData.currentNodeName=nil
+        modelData.currentChannelName=nil
         local clients={}
         for key,val in pairs(allClients) do
             clients[#clients+1]=key
