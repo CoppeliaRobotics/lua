@@ -1065,7 +1065,7 @@ function destroyNode()
         for i=1,#clients,1 do
             DisconnectClient(clients[i])
         end
-        simB0.shutDown(b0Node)
+        --simB0.shutdown(b0Node)
         simB0.cleanup(b0Node)
         simB0.destroyPublisher(defaultPublisher)
         simB0.destroySubscriber(defaultSubscriber)
