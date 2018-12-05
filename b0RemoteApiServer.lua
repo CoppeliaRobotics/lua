@@ -930,8 +930,8 @@ function DisconnectClient(...)
     if val then
         for topic,value in pairs(val) do
             if value.handle~=defaultPublisher then
-                simB0.cleanupSocket(value.handle)
-                simB0.destroyPublisher(value.handle)
+                simB0.socketCleanup(value.handle)
+                simB0.publisherDestroy(value.handle)
             end
         end
         allPublishers[clientId]=nil
@@ -939,8 +939,8 @@ function DisconnectClient(...)
     local val=dedicatedSubscribers[clientId]
     if val then
         for topic,value in pairs(val) do
-            simB0.cleanupSocket(value.handle)
-            simB0.destroySubscriber(value.handle)
+            simB0.socketCleanup(value.handle)
+            simB0.subscriberDestroy(value.handle)
         end
         dedicatedSubscribers[clientId]=nil
     end
@@ -1036,13 +1036,13 @@ function createNode()
         end
 
         if initStg==1 then
-            b0Node=simB0.create(modelData.nodeName)
-            serviceServer=simB0.createServiceServer(b0Node,modelData.channelName..'SerX','serviceServer_callback')
-            defaultPublisher=simB0.createPublisher(b0Node,modelData.channelName..'PubX')
-            defaultSubscriber=simB0.createSubscriber(b0Node,modelData.channelName..'SubX','defaultSubscriber_callback')
+            b0Node=simB0.nodeCreate(modelData.nodeName)
+            serviceServer=simB0.serviceServerCreate(b0Node,modelData.channelName..'SerX','serviceServer_callback')
+            defaultPublisher=simB0.publisherCreate(b0Node,modelData.channelName..'PubX')
+            defaultSubscriber=simB0.subscriberCreate(b0Node,modelData.channelName..'SubX','defaultSubscriber_callback')
             dedicatedSubscribers={} -- key is clientId, value is a map with: key is subscriberTopic, value is another map: handle
             allPublishers={} -- key is clientId, value is a map with: key is publisherTopic, value is another map: pubHandle, cmds=listOfRegisteredCmds 
-            simB0.init(b0Node)
+            simB0.nodeInit(b0Node)
             allClients={}
             allSubscribers={}
         end
@@ -1066,11 +1066,11 @@ function destroyNode()
             DisconnectClient(clients[i])
         end
         --simB0.shutdown(b0Node)
-        simB0.cleanup(b0Node)
-        simB0.destroyPublisher(defaultPublisher)
-        simB0.destroySubscriber(defaultSubscriber)
-        simB0.destroyServiceServer(serviceServer)
-        simB0.destroy(b0Node)
+        simB0.nodeCleanup(b0Node)
+        simB0.publisherDestroy(defaultPublisher)
+        simB0.subscriberDestroy(defaultSubscriber)
+        simB0.serviceServerDestroy(serviceServer)
+        simB0.nodeDestroy(b0Node)
     end
     allPublishers={}
     dedicatedSubscribers={}
@@ -1086,12 +1086,12 @@ function sendAndSpin(calledMoment)
         
     if b0Node then
         -- Handle subscriber(s) and service calls:
-        simB0.spinOnce(b0Node)
+        simB0.nodeSpinOnce(b0Node)
         for clientId,val in pairs(dedicatedSubscribers) do
             for topic,value in pairs(val) do
                 local msg=''
-                while simB0.pollSocket(value.handle) do
-                    msg=simB0.readSocket(value.handle)
+                while simB0.socketPoll(value.handle) do
+                    msg=simB0.socketRead(value.handle)
                     if not value.dropMessages then
                         dedicatedSubscriber_callback(msg)
                     end
@@ -1099,7 +1099,7 @@ function sendAndSpin(calledMoment)
                 if value.dropMessages and #msg>0 then
                     dedicatedSubscriber_callback(msg)
                 end
---                simB0.spinOnceSocket(value.handle)
+--                simB0.socketSpinOnce(value.handle)
             end
         end
 
@@ -1212,7 +1212,7 @@ function sendAndSpin(calledMoment)
 end
 
 function publish(clientId,publisher,func,retVal,publisherCntForClients)
-    simB0.publish(publisher,retVal)
+    simB0.publisherPublish(publisher,retVal)
     
     if not publisherCntForClients[publisher] then
         publisherCntForClients[publisher]={}
@@ -1258,9 +1258,9 @@ function serviceServer_callback(receiveMsg)
     
     if not handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs) then
         if funcName=='createSubscriber' then
-            local subscr=simB0.createSubscriber(b0Node,funcArgs[1],'dedicatedSubscriber_callback',false,true)
-       --     simB0.setSocketOption(subscr,'conflate',1)
-            simB0.initSocket(subscr);
+            local subscr=simB0.subscriberCreate(b0Node,funcArgs[1],'dedicatedSubscriber_callback',false,true)
+       --     simB0.socketSetOption(subscr,'conflate',1)
+            simB0.socketInit(subscr);
             if not dedicatedSubscribers[clientId] then
                 dedicatedSubscribers[clientId]={}
             end
@@ -1321,9 +1321,9 @@ function handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs)
         end
     else
         if funcName=='createPublisher' then
-            local pub=simB0.createPublisher(b0Node,funcArgs[1],false,true)
-        --    simB0.setSocketOption(pub,'conflate',1)
-            simB0.initSocket(pub);
+            local pub=simB0.publisherCreate(b0Node,funcArgs[1],false,true)
+        --    simB0.socketSetOption(pub,'conflate',1)
+            simB0.socketInit(pub);
             if not allPublishers[clientId] then
                 allPublishers[clientId]={}
             end
