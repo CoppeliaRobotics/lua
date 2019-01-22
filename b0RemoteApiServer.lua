@@ -1022,7 +1022,7 @@ function createNode()
             simUI.destroy(ui)
             
             if simB0.pingResolver() then
-                messagePack=require('MessagePack')
+                messagePack=require('messagePack')
                 if modelData.packStrAsBin then
                     messagePack.set_string('binary')
                 else
