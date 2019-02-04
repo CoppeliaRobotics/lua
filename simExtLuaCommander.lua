@@ -23,6 +23,7 @@ html_help = [[
         <ul>
             <li><b>depth</b>: (integer) limit the maximum depth when rendering a map-table.</li>
             <li><b>precision</b>: (integer) number of floating point digits.</li>
+            <li><b>retvals</b>: (1, *) print all the returned values (*) or only the first (1).</li>
             <li><b>sort</b>: (k, t, tk, off) how to sort map-table entries:
                     k: sort by keys;
                     t: sort by type;

@@ -1,6 +1,6 @@
 local simUI={}
 
---@fun insertTableRow
+--@fun insertTableRow insert a row in a table widget
 --@arg int ui the ui handle
 --@arg int widget the widget identifier
 --@arg int index the index (0-based) where the new row will appear
@@ -15,7 +15,7 @@ function simUI.insertTableRow(ui,widget,index)
     end
 end
 
---@fun removeTableRow
+--@fun removeTableRow remove a row from a table widget
 --@arg int ui the ui handle
 --@arg int widget the widget identifier
 --@arg int index the row index (0-based) to remove
@@ -30,7 +30,7 @@ function simUI.removeTableRow(ui,widget,index)
     simUI.setRowCount(ui,widget,rows-1)
 end
 
---@fun insertTableColumn
+--@fun insertTableColumn insert a column in a table widget
 --@arg int ui the ui handle
 --@arg int widget the widget identifier
 --@arg int index the index (0-based) where the new column will appear
@@ -45,7 +45,7 @@ function simUI.insertTableColumn(ui,widget,index)
     end
 end
 
---@fun removeTableColumn
+--@fun removeTableColumn remove a column from a table widget
 --@arg int ui the ui handle
 --@arg int widget the widget identifier
 --@arg int index the column index (0-based) to remove
@@ -58,6 +58,34 @@ function simUI.removeTableColumn(ui,widget,index)
         end
     end
     simUI.setColumnCount(ui,widget,cols-1)
+end
+
+--@fun setScene3DNodeParam polymorphic version of the onSetScene3DNodeXXXParam() functions
+--@arg int ui the ui handle
+--@arg int widget the widget identifier
+--@arg int nodeId the node id
+--@arg string paramName the parameter name
+--@arg anything paramValue the parameter value
+function simUI.setScene3DNodeParam(ui,widget,nodeId,paramName,paramValue)
+    if type(paramValue)=='number' then
+        if math.floor(paramValue)==paramValue then
+            simUI.setScene3DNodeIntParam(ui,widget,nodeId,paramName,paramValue)
+        else
+            simUI.setScene3DNodeFloatParam(ui,widget,nodeId,paramName,paramValue)
+        end
+    elseif type(paramValue)=='string' then
+        simUI.setScene3DNodeStringParam(ui,widget,nodeId,paramName,paramValue)
+    elseif type(paramValue)=='table' then
+        if #paramValue==2 then
+            simUI.setScene3DNodeParam(ui,widget,nodeId,paramName,paramValue[1],paramValue[2])
+        elseif #paramValue==3 then
+            simUI.setScene3DNodeParam(ui,widget,nodeId,paramName,paramValue[1],paramValue[2],paramValue[3])
+        elseif #paramValue==4 then
+            simUI.setScene3DNodeParam(ui,widget,nodeId,paramName,paramValue[1],paramValue[2],paramValue[3],paramValue[4])
+        end
+    else
+        error(string.format('unsupported value type: %s', type(paramValue)))
+    end
 end
 
 return simUI
