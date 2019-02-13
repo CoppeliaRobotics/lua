@@ -319,19 +319,19 @@ function createDlg()
     if (not ui) then
         local xml=[[
                 <label text="Visible while simulation not running"/>
-                <checkbox text="" onchange="visibleDuringNonSimulation_callback" id="1" />
+                <checkbox text="" on-change="visibleDuringNonSimulation_callback" id="1" />
 
                 <label text="Visible while simulation running"/>
-                <checkbox text="" onchange="visibleDuringSimulation_callback" id="2" />
+                <checkbox text="" on-change="visibleDuringSimulation_callback" id="2" />
 
                 <label text="Show time plots"/>
-                <checkbox text="" onchange="timeOnly_callback" id="3" />
+                <checkbox text="" on-change="timeOnly_callback" id="3" />
 
                 <label text="Show X/Y plots"/>
-                <checkbox text="" onchange="xyOnly_callback" id="4" />
+                <checkbox text="" on-change="xyOnly_callback" id="4" />
 
                 <label text="X/Y plots keep 1:1 aspect ratio"/>
-                <checkbox text="" onchange="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+                <checkbox text="" on-change="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
                 
                 <label text="Preferred graph position"/>
                 <combobox id="6" on-change="graphPosChanged_callback"></combobox>
