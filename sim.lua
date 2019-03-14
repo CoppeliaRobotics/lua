@@ -428,6 +428,13 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getDialogInput@sim','string input=sim.getDialogInput(number dlgHandle)')
     sim.registerScriptFunction('sim.endDialog@sim','number result=sim.endDialog(number dlgHandle)')
     
+    if __initFunctions then
+        for i=1,#__initFunctions,1 do
+            __initFunctions[i]()
+        end
+        __initFunctions=nil
+    end
+    
     __HIDDEN__.initGlobals={}
     for key,val in pairs(_G) do
         __HIDDEN__.initGlobals[key]=true
