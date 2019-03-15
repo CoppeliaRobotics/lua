@@ -23,6 +23,7 @@ function simAssimp.importShapesDlg(filenames)
         if configUiData.keepIdenticalVertices then options=options+16 end
         if configUiData.generateOneShape then options=options+32 end
         if configUiData.alignedOrientations then options=options+64 end
+        if configUiData.ignoreFileformatUp then options=options+128 end
         simAssimp.importShapes(configUiData.filenames,configUiData.maxRes,scaling,configUiData.upVector,options)
         configUiData=nil
         simUI.destroy(waitUi)
@@ -102,6 +103,10 @@ function simAssimp.importShapesDlg(filenames)
         configUiData.alignedOrientations=not configUiData.alignedOrientations
     end
     
+    function configUiData.onIgnoreFileformatUpChanged(ui,id,newval)
+        configUiData.ignoreFileformatUp=not configUiData.ignoreFileformatUp
+    end
+    
     local maxTextures=1024
     local scaling=0
     local vectorUp=simAssimp.upVector.auto
@@ -130,6 +135,8 @@ function simAssimp.importShapesDlg(filenames)
     <checkbox text="" on-change="configUiData.onGenerateOneShapeChanged" id="10" />
     <label text="Shapes have aligned orientations"/>
     <checkbox text="" on-change="configUiData.onAlignedOrientationsChanged" id="11" />
+    <label text="Ignore up-vector coded in fileformat"/>
+    <checkbox text="" on-change="configUiData.onIgnoreFileformatUpChanged" id="12" />
     <label text="Up-vector"/>
     <combobox id="6" on-change="configUiData.onUpVectorChanged"></combobox>
 
@@ -150,6 +157,7 @@ function simAssimp.importShapesDlg(filenames)
     configUiData.keepIdenticalVertices=false
     configUiData.generateOneShape=false
     configUiData.alignedOrientations=false
+    configUiData.ignoreFileformatUp=false
     configUiData.upVector=0
     configUiData.autoScaling=true
     configUiData.filenames=filenames
@@ -163,6 +171,7 @@ function simAssimp.importShapesDlg(filenames)
     simUI.setCheckboxValue(configUiData.dlg,9,configUiData.keepIdenticalVertices and 2 or 0)
     simUI.setCheckboxValue(configUiData.dlg,10,configUiData.generateOneShape and 2 or 0)
     simUI.setCheckboxValue(configUiData.dlg,11,configUiData.alignedOrientations and 2 or 0)
+    simUI.setCheckboxValue(configUiData.dlg,12,configUiData.ignoreFileformatUp and 2 or 0)
     simUI.setEnabled(configUiData.dlg,2,not configUiData.autoScaling)
     configUiData.updateUpVectorCombobox()
 end
