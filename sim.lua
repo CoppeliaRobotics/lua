@@ -419,6 +419,10 @@ function __HIDDEN__.getShortString(x)
 end
 
 function __HIDDEN__.executeAfterLuaStateInit()
+    quit=sim.quitSimulator
+    exit=sim.quitSimulator
+    sim.registerScriptFunction('quit@sim','quit()')
+    sim.registerScriptFunction('exit@sim','exit()')
     sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
     sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
     sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(pattern)')
