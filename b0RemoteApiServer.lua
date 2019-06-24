@@ -1255,7 +1255,7 @@ function serviceServer_callback(receiveMsg)
     local task=receiveMsg[1][4] -- 0=normal serviceCall, 1=received on default subscriber, 2=register streaming cmd on default publisher, 3=received on dedicated subscriber, 4=register streaming cmd on dedicated publisher
     local funcArgs=receiveMsg[2]
     updateClientLastActivityTime(clientId)
-    
+
     if not handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs) then
         if funcName=='createSubscriber' then
             local subscr=simB0.subscriberCreate(b0Node,funcArgs[1],'dedicatedSubscriber_callback',false,true)
@@ -1349,6 +1349,53 @@ function handlePublisherSetupFunctions(task,funcName,clientId,topic,funcArgs)
                 local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": setting default publisher interval for client '%s' with topic '%s'",clientId,targetTopic)
                 a="<font color='#070'>"..a.."</font>@html"
                 sim.addStatusbarMessage(a)
+            end
+            return true
+        elseif funcName=='stopDefaultPublisher' or funcName=='stopPublisher' then
+            local topic=funcArgs[1]
+            if allPublishers[clientId] then
+                if allPublishers[clientId][topic] then
+                    local nn='default'
+                    if funcName=='stopPublisher' then
+                        simB0.socketCleanup(allPublishers[clientId][topic].handle)
+                        simB0.publisherDestroy(allPublishers[clientId][topic].handle)
+                        nn='dedicated'
+                    end
+                    local cmds=allPublishers[clientId][topic].cmds
+                    allPublishers[clientId][topic]=nil
+                    if modelData.debugLevel>=1 then
+                        local cm=''
+                        if #cmds>0 then
+                            cm='. Following streaming functions on that topic will be unregistered:'
+                            for i=1,#cmds,1 do
+                                if i==1 then
+                                    cm=cm..' '
+                                else
+                                    cm=cm..', '
+                                end
+                                cm=cm..cmds[i].func
+                            end
+                        end
+                        local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": stopping %s publisher for client '%s' with topic '%s'. All Streaming functions on that topic will be unregistered%s",nn,clientId,topic,cm)
+                        a="<font color='#070'>"..a.."</font>@html"
+                        sim.addStatusbarMessage(a)
+                    end
+                end
+            end
+            return true
+        elseif funcName=='stopSubscriber' then
+            local topic=funcArgs[1]
+            if dedicatedSubscribers[clientId] then
+                if dedicatedSubscribers[clientId][topic] then
+                    simB0.socketCleanup(dedicatedSubscribers[clientId][topic].handle)
+                    simB0.subscriberDestroy(dedicatedSubscribers[clientId][topic].handle)
+                    dedicatedSubscribers[clientId][topic]=nil
+                    if modelData.debugLevel>=1 then
+                        local a=string.format(timeStr()..b0RemoteApiServerNameDebug..": stopping dedicated subscriber for client '%s' with topic '%s'",clientId,topic)
+                        a="<font color='#070'>"..a.."</font>@html"
+                        sim.addStatusbarMessage(a)
+                    end
+                end
             end
             return true
         end
