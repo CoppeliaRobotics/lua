@@ -171,6 +171,9 @@ end
 
 
 function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,prevPos,dlgHandle)
+    if sim.getBoolParameter(sim_boolparam_headless) then
+        return -1
+    end
     assert(type(title)=='string' and type(mainTxt)=='string' and type(style)=='number' and type(modal)=='boolean',"One of the function's argument type is not correct")
     if type(initTxt)~='string' then
         initTxt=''
@@ -253,6 +256,9 @@ function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,p
 end
 
 function sim.endDialog(dlgHandle)
+    if sim.getBoolParameter(sim_boolparam_headless) then
+        return -1
+    end
     local retVal=-1
     assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
     if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
@@ -267,6 +273,9 @@ function sim.endDialog(dlgHandle)
 end
 
 function sim.getDialogInput(dlgHandle)
+    if sim.getBoolParameter(sim_boolparam_headless) then
+        return ''
+    end
     local retVal
     assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
     retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
@@ -274,6 +283,9 @@ function sim.getDialogInput(dlgHandle)
 end
 
 function sim.getDialogResult(dlgHandle)
+    if sim.getBoolParameter(sim_boolparam_headless) then
+        return -1
+    end
     local retVal=-1
     assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
     retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
