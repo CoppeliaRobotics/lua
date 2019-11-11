@@ -5,10 +5,13 @@ copying, etc.) contained in the same directory if it is present, or
 under the same terms of the files in the parent directory otherwise.
 
 -----------------------------------------------------------------------
-BSD License 2.0
+lua files, based on the lua files from Coppelia Robotics GmbH on
+September 2019
 
-Copyright (c) 2019, Coppelia Robotics GmbH
-All rights reserved.
+Copyright (C) 2013-2020 Coppelia Robotics GmbH / Marc Freese
+Copyright (C) 2019 Robot Nordic ApS
+
+BSD License 2.0
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:

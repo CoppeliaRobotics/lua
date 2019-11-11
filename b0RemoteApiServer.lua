@@ -1574,12 +1574,12 @@ function sysCall_init()
         
         model=-1
         b0RemoteApiServerNameDebug='B0 Remote API (add-on)'
-        modelData={nodeName='b0RemoteApi_V-REP-addOn',channelName='b0RemoteApiAddOn',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}
+        modelData={nodeName='b0RemoteApi_CoppeliaSim-addOn',channelName='b0RemoteApiAddOn',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}
     else
         -- We are probably running this script via a customization script
         modelTag='b0-remoteApi'
         b0RemoteApiServerNameDebug='B0 Remote API'
---        sim.writeCustomDataBlock(model,modelTag,sim.packTable({nodeName='b0RemoteApi_V-REP',channelName='b0RemoteApi',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}))
+--        sim.writeCustomDataBlock(model,modelTag,sim.packTable({nodeName='b0RemoteApi_CoppeliaSim',channelName='b0RemoteApi',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}))
         
         local objs=sim.getObjectsWithTag(modelTag,true)
         if #objs>1 then

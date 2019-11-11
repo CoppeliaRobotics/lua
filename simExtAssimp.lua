@@ -5,15 +5,10 @@ local simAssimp={}
 --@ret table handles The handles of the imported shapes
 function simAssimp.importShapesDlg(filenames)
     configUiData={}
-    function configUiData.onImportCancel(ui,id,newVal)
-        simUI.destroy(configUiData.dlg)
-        configUiData=nil
-        print("Import canceled.")
-    end
     function configUiData.onImport(ui,id,newVal)
         simUI.destroy(configUiData.dlg)
         local xml = [[
-        <ui title="Importing..." closeable="false" resizable="false" activate="false" modal="true">
+        <ui title="Importing..." closeable="true" resizable="false" activate="false" modal="true">
         <label text="Please wait a few seconds..."/>
         </ui>
         ]]
@@ -118,8 +113,8 @@ function simAssimp.importShapesDlg(filenames)
     local options=0
     
     local xml = [[
-    <ui title="Import Options" closeable="true" resizable="false" activate="false" modal="true" on-close="configUiData.onImportCancel">
-    <group layout="form" flat="true" >
+    <ui title="Import Options" closeable="false" resizable="false" activate="false" modal="true">
+    <group layout="form" flat="true">
     <label text="Textures max. resolution"/>
     <edit on-editing-finished="configUiData.onMaxResolutionChanged" id="1"/>
     <label text="Auto scaling"/>
@@ -186,12 +181,6 @@ end
 --@arg table shapeHandles The handles of the shapes to export
 function simAssimp.exportShapesDlg(filename,shapeHandles)
     configUiData={}
-    function configUiData.onExportCancel(ui,id,newVal)
-        simUI.destroy(configUiData.dlg)
-        configUiData=nil
-        print("Export canceled.")
-        sim.removeObjectFromSelection(sim.handle_all,-1)
-    end
     function configUiData.onExport(ui,id,newVal)
         simUI.destroy(configUiData.dlg)
         local fformat=''
@@ -202,7 +191,7 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
         if string.find(fn,'.dae') then fformat='collada' end
         if fformat~='' then
             local xml = [[
-            <ui title="Exporting..." closeable="false" resizable="false" activate="false" modal="true">
+            <ui title="Exporting..." closeable="true" resizable="false" activate="false" modal="true">
             <label text="Please wait a few seconds..."/>
             </ui>
             ]]
@@ -255,7 +244,7 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
     local options=0
     
     local xml = [[
-    <ui title="Export Options" closeable="true" resizable="false" activate="false" modal="true" on-close="configUiData.onExportCancel">
+    <ui title="Export Options" closeable="false" resizable="false" activate="false" modal="true">
     <group layout="form" flat="true">
     <label text="Scaling"/>
     <edit on-editing-finished="configUiData.onScalingChanged" id="2"/>

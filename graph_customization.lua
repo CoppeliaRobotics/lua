@@ -98,6 +98,11 @@ updateCurves=function()
                 if not label then
                     break
                 end
+                local legendVisible=true
+                if sim.boolAnd32(curveType,4)~=0 then
+                    legendVisible=false
+                    curveType=curveType-4
+                end
                 minMax=getMinMax(minMax,minMaxT)
                 if curves[ii][label] then
                     simUI.clearCurve(plotUi,ii,label)
@@ -143,42 +148,53 @@ prepareCurves=function()
             end
             curves[ii]={}
             local index=0
+            local legendVisibleCnt=0
             while true do
                 local label,curveType,curveColor,xData,yData,minMaxT=sim.getGraphCurve(model,ii-1,index)
                 if not label then
                     break
                 end
+                local legendVisible=true
+                if sim.boolAnd32(curveType,4)~=0 then
+                    legendVisible=false
+                    curveType=curveType-4
+                end
                 local curveStyle
-                local scatterShape
+                local curveOptions
                 if curveType==0 then
                     -- Non-static line
                     curveStyle=simUI.curve_style.line
-                    scatterShape={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1}
+                    curveOptions={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1}
                 end
                 if curveType==1 then
                     -- Non-static scatter
                     curveStyle=simUI.curve_style.scatter
-                    scatterShape={scatter_shape=simUI.curve_scatter_shape.square,scatter_size=4,line_size=1}
+                    curveOptions={scatter_shape=simUI.curve_scatter_shape.square,scatter_size=4,line_size=1}
                 end
                 if curveType==2 then
                     -- Static line
                     curveStyle=simUI.curve_style.line
-                    scatterShape={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1,line_style=simUI.line_style.dashed}
+                    curveOptions={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1,line_style=simUI.line_style.dashed}
                 end
                 if curveType==3 then
                     -- Static scatter
                     curveStyle=simUI.curve_style.scatter
-                    scatterShape={scatter_shape=simUI.curve_scatter_shape.plus,scatter_size=4,line_size=1}
+                    curveOptions={scatter_shape=simUI.curve_scatter_shape.plus,scatter_size=4,line_size=1}
+                end
+                if legendVisible then
+                    legendVisibleCnt=legendVisibleCnt+1
+                else
+                    curveOptions.add_to_legend=false
                 end
                 if ii==1 then
-                    simUI.addCurve(plotUi,ii,simUI.curve_type.time,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,scatterShape)
+                    simUI.addCurve(plotUi,ii,simUI.curve_type.time,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
                 else
-                    simUI.addCurve(plotUi,ii,simUI.curve_type.xy,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,scatterShape)
+                    simUI.addCurve(plotUi,ii,simUI.curve_type.xy,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
                 end
-                simUI.setLegendVisibility(plotUi,ii,true)
                 curves[ii][label]=true
                 index=index+1
             end
+            simUI.setLegendVisibility(plotUi,ii,legendVisibleCnt>0)
         end
     end
     updateCurves()

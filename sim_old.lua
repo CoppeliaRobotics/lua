@@ -1,5 +1,5 @@
 function sim.include(relativePathAndFile,cmd)
-    -- Relative to the V-REP path
+    -- Relative to the CoppeliaSimLib path
     if not __notFirst__ then
         local appPath=sim.getStringParameter(sim.stringparam_application_path)
         if sim.getInt32Parameter(sim.intparam_platform)==1 then
