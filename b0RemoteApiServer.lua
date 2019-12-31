@@ -595,7 +595,7 @@ function GetCollectionHandle(...)
     if string.find(objName,'#')==nil then
         objName=objName..'#'
     end
-    return sim.getCollectionHandle(objName..'#')
+    return sim.getCollectionHandle(objName)
 end
 
 function GetCollisionHandle(...)
