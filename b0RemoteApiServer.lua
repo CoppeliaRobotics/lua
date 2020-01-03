@@ -1010,16 +1010,21 @@ function createNode()
         modelData.currentNodeName=modelData.nodeName
         modelData.currentChannelName=modelData.channelName
         if not initStg then
-            local xml = [[ <ui closeable="false" resizable="false" title="BlueZero" modal="true">
-                    <label text="Looking for BlueZero resolver..." style="* {font-size: 20px; font-weight: bold; margin-left: 20px; margin-right: 20px;}"/>
-                    <label text="This can take several seconds." style="* {font-size: 20px; font-weight: bold; margin-left: 20px; margin-right: 20px;}"/>
-                    </ui> ]]
-            local ui=simUI.create(xml)
+            local ui
+            if simUI then
+                local xml = [[ <ui closeable="false" resizable="false" title="BlueZero" modal="true">
+                        <label text="Looking for BlueZero resolver..." style="* {font-size: 20px; font-weight: bold; margin-left: 20px; margin-right: 20px;}"/>
+                        <label text="This can take several seconds." style="* {font-size: 20px; font-weight: bold; margin-left: 20px; margin-right: 20px;}"/>
+                        </ui> ]]
+                ui=simUI.create(xml)
+            end
             if not simB0.pingResolver() then
                 sim.addStatusbarMessage("<font color='#070'>B0 Remote API: B0 resolver was not detected. Launching it from here...</font>@html")
                 sim.launchExecutable('b0_resolver','',1)
             end
-            simUI.destroy(ui)
+            if simUI then
+                simUI.destroy(ui)
+            end
             
             if simB0.pingResolver() then
                 messagePack=require('messagePack')
@@ -1518,50 +1523,54 @@ function onConfigRestartNode(ui,id,newVal)
 end
 
 function createConfigDlg()
-    if not configUiData then
-        local xml = [[
-        <ui title="BlueZero-based remote API, server-side configuration" closeable="false" resizable="false" activate="false">
-        <group layout="form" flat="true">
-        <label text="Node name"/>
-        <edit on-editing-finished="onConfigNodeNameChanged" id="1"/>
-        <label text="Channel name"/>
-        <edit on-editing-finished="onConfigChannelNameChanged" id="2"/>
-        <label text=""/>
-        <button text="Restart node with above names" checked="false" on-click="onConfigRestartNode" />
-        
-        <label text="Pack strings as binary"/>
-        <checkbox text="" on-change="onPackStrAsBinChanged" id="4" />
-        <label text="Enabled during simulation only"/>
-        <checkbox text="" on-change="onSimOnlyChanged" id="5" />
-        <label text="Debug level"/>
-        <combobox id="3" on-change="onDebugLevelChanged"></combobox>
-        </group>
-        </ui>
-        ]]
-        configUiData={}
-        configUiData.dlg=simUI.create(xml)
-        if previousConfigDlgPos then
-            simUI.setPosition(configUiData.dlg,previousConfigDlgPos[1],previousConfigDlgPos[2],true)
+    if simUI then
+        if not configUiData then
+            local xml = [[
+            <ui title="BlueZero-based remote API, server-side configuration" closeable="false" resizable="false" activate="false">
+            <group layout="form" flat="true">
+            <label text="Node name"/>
+            <edit on-editing-finished="onConfigNodeNameChanged" id="1"/>
+            <label text="Channel name"/>
+            <edit on-editing-finished="onConfigChannelNameChanged" id="2"/>
+            <label text=""/>
+            <button text="Restart node with above names" checked="false" on-click="onConfigRestartNode" />
+            
+            <label text="Pack strings as binary"/>
+            <checkbox text="" on-change="onPackStrAsBinChanged" id="4" />
+            <label text="Enabled during simulation only"/>
+            <checkbox text="" on-change="onSimOnlyChanged" id="5" />
+            <label text="Debug level"/>
+            <combobox id="3" on-change="onDebugLevelChanged"></combobox>
+            </group>
+            </ui>
+            ]]
+            configUiData={}
+            configUiData.dlg=simUI.create(xml)
+            if previousConfigDlgPos then
+                simUI.setPosition(configUiData.dlg,previousConfigDlgPos[1],previousConfigDlgPos[2],true)
+            end
+            configUiData.nodeName=modelData.nodeName
+            configUiData.channelName=modelData.channelName
+            configUiData.debugLevel=modelData.debugLevel
+            configUiData.packStrAsBin=modelData.packStrAsBin
+            configUiData.duringSimulationOnly=modelData.duringSimulationOnly
+            simUI.setEditValue(configUiData.dlg,1,configUiData.nodeName)
+            simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
+            simUI.setCheckboxValue(configUiData.dlg,4,configUiData.packStrAsBin and 2 or 0)
+            simUI.setCheckboxValue(configUiData.dlg,5,configUiData.duringSimulationOnly and 2 or 0)
+            updateDebugLevelCombobox()
         end
-        configUiData.nodeName=modelData.nodeName
-        configUiData.channelName=modelData.channelName
-        configUiData.debugLevel=modelData.debugLevel
-        configUiData.packStrAsBin=modelData.packStrAsBin
-        configUiData.duringSimulationOnly=modelData.duringSimulationOnly
-        simUI.setEditValue(configUiData.dlg,1,configUiData.nodeName)
-        simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
-        simUI.setCheckboxValue(configUiData.dlg,4,configUiData.packStrAsBin and 2 or 0)
-        simUI.setCheckboxValue(configUiData.dlg,5,configUiData.duringSimulationOnly and 2 or 0)
-        updateDebugLevelCombobox()
     end
 end
 
 function removeConfigDlg()
-    if configUiData then
-        local x,y=simUI.getPosition(configUiData.dlg)
-        previousConfigDlgPos={x,y}
-        simUI.destroy(configUiData.dlg)
-        configUiData=nil
+    if simUI then
+        if configUiData then
+            local x,y=simUI.getPosition(configUiData.dlg)
+            previousConfigDlgPos={x,y}
+            simUI.destroy(configUiData.dlg)
+            configUiData=nil
+        end
     end
 end
 
