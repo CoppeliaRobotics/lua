@@ -622,10 +622,22 @@ function GetJointForce(...)
     return sim.getJointForce(handle)
 end
 
+function GetJointMaxForce(...)
+    debugFunc("GetJointMaxForce",...)
+    local handle=...
+    return sim.getJointMaxForce(handle)
+end
+
 function SetJointForce(...)
     debugFunc("SetJointForce",...)
     local handle,f=...
     return sim.setJointForce(handle,f)
+end
+
+function SetJointMaxForce(...)
+    debugFunc("SetJointMaxForce",...)
+    local handle,f=...
+    return sim.setJointMaxForce(handle,f)
 end
 
 function GetJointPosition(...)
