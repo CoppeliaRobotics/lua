@@ -1033,6 +1033,8 @@ function createNode()
             if not simB0.pingResolver() then
                 sim.addStatusbarMessage("<font color='#070'>B0 Remote API: B0 resolver was not detected. Launching it from here...</font>@html")
                 sim.launchExecutable('b0_resolver','',1)
+                local st=sim.getSystemTimeInMs(-1)
+                while sim.getSystemTimeInMs(st)<1000 do end
             end
             if simUI then
                 simUI.destroy(ui)
