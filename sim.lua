@@ -5,7 +5,7 @@ printToConsole=print -- will be overwritten further down
 
 -- Various useful functions:
 ----------------------------------------------------------
-function sim.yawPitchRoll2alphaBetaGamma(yawAngle,pitchAngle,rollAngle)
+function sim.yawPitchRollToAlphaBetaGamma(yawAngle,pitchAngle,rollAngle)
     local Rx=sim.buildMatrix({0,0,0},{rollAngle,0,0})
     local Ry=sim.buildMatrix({0,0,0},{0,pitchAngle,0})
     local Rz=sim.buildMatrix({0,0,0},{0,0,yawAngle})
@@ -18,7 +18,7 @@ function sim.yawPitchRoll2alphaBetaGamma(yawAngle,pitchAngle,rollAngle)
     return alpha,beta,gamma
 end
 
-function sim.alphaBetaGamma2yawPitchRoll(alpha,beta,gamma)
+function sim.alphaBetaGammaToYawPitchRoll(alpha,beta,gamma)
     local m=sim.buildMatrix({0,0,0},{alpha,beta,gamma})
     local v=m[9]
     if v>1 then v=1 end
@@ -474,8 +474,8 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getDialogResult@sim','number result=sim.getDialogResult(number dlgHandle)')
     sim.registerScriptFunction('sim.getDialogInput@sim','string input=sim.getDialogInput(number dlgHandle)')
     sim.registerScriptFunction('sim.endDialog@sim','number result=sim.endDialog(number dlgHandle)')
-    sim.registerScriptFunction('sim.yawPitchRoll2alphaBetaGamma@sim','number alphaAngle,number betaAngle,number gammaAngle=sim.yawPitchRoll2alphaBetaGamma(\nnumber yawAngle,number pitchAngle,number rollAngle)')
-    sim.registerScriptFunction('sim.alphaBetaGamma2yawPitchRoll@sim','number yawAngle,number pitchAngle,number rollAngle=sim.alphaBetaGamma2yawPitchRoll(\nnumber alphaAngle,number betaAngle,number gammaAngle)')
+    sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','number alphaAngle,number betaAngle,number gammaAngle=sim.yawPitchRollToAlphaBetaGamma(\nnumber yawAngle,number pitchAngle,number rollAngle)')
+    sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','number yawAngle,number pitchAngle,number rollAngle=sim.alphaBetaGammaToYawPitchRoll(\nnumber alphaAngle,number betaAngle,number gammaAngle)')
     
     
     if __initFunctions then
