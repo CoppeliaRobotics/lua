@@ -201,6 +201,8 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
             local options=0
             if configUiData.dropTextures then options=options+1 end
             if configUiData.dropColors then options=options+2 end
+            if configUiData.dropNormals then options=options+4 end
+            if configUiData.onlyVisible then options=options+8 end
             simAssimp.exportShapes(shapeHandles,filename,fformat,scaling,configUiData.upVector+1,options)
             configUiData=nil
             simUI.destroy(waitUi)
@@ -239,6 +241,14 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
         configUiData.dropColors=not configUiData.dropColors
     end
     
+    function configUiData.onDropNormalsChanged(ui,id,newval)
+        configUiData.dropNormals=not configUiData.dropNormals
+    end
+    
+    function configUiData.onOnlyVisibleChanged(ui,id,newval)
+        configUiData.onlyVisible=not configUiData.onlyVisible
+    end
+    
     local scaling=1
     local vectorUp=0
     local options=0
@@ -252,6 +262,10 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
     <checkbox text="" on-change="configUiData.onDropTexturesChanged" id="3" />
     <label text="Drop colors"/>
     <checkbox text="" on-change="configUiData.onDropColorsChanged" id="4" />
+    <label text="Drop normals"/>
+    <checkbox text="" on-change="configUiData.onDropNormalsChanged" id="5" />
+    <label text="Export only what is visible"/>
+    <checkbox text="" on-change="configUiData.onOnlyVisibleChanged" id="7" />
     <label text="Up-vector"/>
     <combobox id="6" on-change="configUiData.onUpVectorChanged"></combobox>
 
@@ -265,11 +279,15 @@ function simAssimp.exportShapesDlg(filename,shapeHandles)
     configUiData.scaling=1
     configUiData.dropTextures=false
     configUiData.dropColors=false
+    configUiData.dropNormals=false
+    configUiData.onlyVisible=true
     configUiData.upVector=0
     configUiData.filename=filename
     simUI.setEditValue(configUiData.dlg,2,tostring(configUiData.scaling))
     simUI.setCheckboxValue(configUiData.dlg,3,configUiData.dropTextures and 2 or 0)
     simUI.setCheckboxValue(configUiData.dlg,4,configUiData.dropColors and 2 or 0)
+    simUI.setCheckboxValue(configUiData.dlg,5,configUiData.dropNormals and 2 or 0)
+    simUI.setCheckboxValue(configUiData.dlg,7,configUiData.onlyVisible and 2 or 0)
     configUiData.updateUpVectorCombobox()
 end
 

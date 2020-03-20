@@ -5,6 +5,37 @@ printToConsole=print -- will be overwritten further down
 
 -- Various useful functions:
 ----------------------------------------------------------
+function sim.yawPitchRoll2alphaBetaGamma(yawAngle,pitchAngle,rollAngle)
+    local Rx=sim.buildMatrix({0,0,0},{rollAngle,0,0})
+    local Ry=sim.buildMatrix({0,0,0},{0,pitchAngle,0})
+    local Rz=sim.buildMatrix({0,0,0},{0,0,yawAngle})
+    local m=sim.multiplyMatrices(Ry,Rx)
+    m=sim.multiplyMatrices(Rz,m)
+    local alphaBetaGamma=sim.getEulerAnglesFromMatrix(m)
+    local alpha=alphaBetaGamma[1]
+    local beta=alphaBetaGamma[2]
+    local gamma=alphaBetaGamma[3]
+    return alpha,beta,gamma
+end
+
+function sim.alphaBetaGamma2yawPitchRoll(alpha,beta,gamma)
+    local m=sim.buildMatrix({0,0,0},{alpha,beta,gamma})
+    local v=m[9]
+    if v>1 then v=1 end
+    if v<-1 then v=-1 end
+    local pitchAngle=math.asin(-v)
+    local yawAngle,rollAngle
+    if math.abs(v)<0.999999 then
+        rollAngle=math.atan2(m[10],m[11])
+        yawAngle=math.atan2(m[5],m[1])
+    else
+        -- Gimbal lock
+        rollAngle=math.atan2(-m[7],m[6])
+        yawAngle=0
+    end
+    return yawAngle,pitchAngle,rollAngle
+end
+
 function sim.getObjectsWithTag(tagName,justModels)
     local retObjs={}
     local objs=sim.getObjectsInTree(sim.handle_scene)
@@ -443,6 +474,9 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getDialogResult@sim','number result=sim.getDialogResult(number dlgHandle)')
     sim.registerScriptFunction('sim.getDialogInput@sim','string input=sim.getDialogInput(number dlgHandle)')
     sim.registerScriptFunction('sim.endDialog@sim','number result=sim.endDialog(number dlgHandle)')
+    sim.registerScriptFunction('sim.yawPitchRoll2alphaBetaGamma@sim','number alphaAngle,number betaAngle,number gammaAngle=sim.yawPitchRoll2alphaBetaGamma(\nnumber yawAngle,number pitchAngle,number rollAngle)')
+    sim.registerScriptFunction('sim.alphaBetaGamma2yawPitchRoll@sim','number yawAngle,number pitchAngle,number rollAngle=sim.alphaBetaGamma2yawPitchRoll(\nnumber alphaAngle,number betaAngle,number gammaAngle)')
+    
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
