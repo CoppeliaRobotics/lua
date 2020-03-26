@@ -862,11 +862,23 @@ function GetObjectVelocity(...)
     return sim.getObjectVelocity(handle+sim.handleflag_axis)
 end
 
-function LoadModel(...)
-    debugFunc("LoadModel",...)
+function LoadModelFromFile(...)
+    debugFunc("LoadModelFromFile",...)
     local filename=...
     local s=sim.getObjectSelection()
     local h=sim.loadModel(filename)
+    sim.removeObjectFromSelection(sim.handle_all,-1);
+    if s then
+        sim.addObjectToSelection(s)
+    end
+    return h
+end
+
+function LoadModelFromBuffer(...)
+    debugFunc("LoadModelFromBuffer",...)
+    local buff=...
+    local s=sim.getObjectSelection()
+    local h=sim.loadModel(buff)
     sim.removeObjectFromSelection(sim.handle_all,-1);
     if s then
         sim.addObjectToSelection(s)
