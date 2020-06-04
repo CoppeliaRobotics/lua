@@ -13,7 +13,6 @@ function log(l,fmt,...)
     if l.level>=loglevel.level then
         local txt=string.format('[%s] ',l.str)..string.formatex(fmt,unpack(arg))
         print(txt)
-        sim.addStatusbarMessage(txt)
     end
 end
 

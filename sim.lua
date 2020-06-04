@@ -157,7 +157,7 @@ function sim.getMatchingPersistentDataTags(pattern)
 end
 
 function print(...)
-    sim.addStatusbarMessage(getAsString(...))
+    sim.addLog(sim.verbosity_msgs+sim.verbosity_undecorated,getAsString(...))
 end
 
 function getAsString(...)
@@ -575,27 +575,21 @@ function __HIDDEN__.debug.entryFunc(info)
             simTimeStr=simTime..' '
         end
         if (debugLevel>=sim.scriptdebug_vars) or (debugLevel==sim.scriptdebug_vars_interval) then
-            local prefix='DEBUG: '..simTimeStr..'['..scriptName..'] '
+            local prefix='DEBUG: '..simTimeStr..' '
             local t=__HIDDEN__.debug.getVarChanges(prefix)
             if t then
-                t="<font color='#44B'>"..t.."</font>@html"
-                sim.addStatusbarMessage(t)
+                sim.addLog(sim.verbosity_msgs,t)
             end
         end
         if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
-            local t='DEBUG: '..simTimeStr..'['..scriptName..']'
+            local t='DEBUG: '..simTimeStr
             if callIn then
-                t=t..' --&gt; '
+                t=t..' --> '
             else
-                t=t..' &lt;-- '
+                t=t..' <-- '
             end
             t=t..funcName..' ('..funcType..')'
-            if callIn then
-                t="<font color='#44B'>"..t.."</font>@html"
-            else
-                t="<font color='#44B'>"..t.."</font>@html"
-            end
-            sim.addStatusbarMessage(t)
+            sim.addLog(sim.verbosity_msgs,t)
         end
     end
 end
