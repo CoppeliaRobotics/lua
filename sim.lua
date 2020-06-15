@@ -157,7 +157,7 @@ function sim.getMatchingPersistentDataTags(pattern)
 end
 
 function print(...)
-    sim.addLog(sim.verbosity_msgs+sim.verbosity_undecorated,getAsString(...))
+    sim.addLog(sim.verbosity_scriptinfos+sim.verbosity_undecorated,getAsString(...))
 end
 
 function getAsString(...)

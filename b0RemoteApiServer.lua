@@ -1266,6 +1266,8 @@ end
 
 function hasClientReachedMaxInactivityTime(clientId)
     local val=allClients[clientId]
+    if val.maxInactivityTimeMs==0
+        return false
     return sim.getSystemTimeInMs(val.lastActivityTimeMs)>val.maxInactivityTimeMs
 end
 
