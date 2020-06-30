@@ -346,6 +346,16 @@ function math.randomseed2(seed)
     sim.getRandom(seed)
 end
 
+function sim.throttle(t,f)
+    if __HIDDEN__.lastExecTime==nil then __HIDDEN__.lastExecTime={} end
+    local h=string.dump(f)
+    local now=sim.getSystemTime()
+    if __HIDDEN__.lastExecTime[h]==nil or __HIDDEN__.lastExecTime[h]+t<now then
+        f()
+        __HIDDEN__.lastExecTime[h]=now
+    end
+end
+
 function sysCallEx_beforeInstanceSwitch()
     __HIDDEN__.dlg.switch()
 end
