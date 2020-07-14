@@ -814,11 +814,15 @@ end
 function GetObjects(...)
     debugFunc("GetObjects",...)
     local objType=...
+    if type(objType)=='string' then
+        objType=evalStr(objType)
+    end
     local retVal={}
     local i=0
     local h=sim.getObjects(i,objType)
     while h>=0 do
-        retVal[#retVal+1]=handle
+        retVal[#retVal+1]=h
+        i=i+1
         h=sim.getObjects(i,objType)
     end
     return retVal
