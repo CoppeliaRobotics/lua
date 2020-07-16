@@ -289,20 +289,16 @@ function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,p
 end
 
 function sim.endDialog(dlgHandle)
-    if sim.getBoolParameter(sim_boolparam_headless) then
-        return -1
+    if not sim.getBoolParameter(sim_boolparam_headless) then
+        assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
+        if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
+            __HIDDEN__.dlg.removeUi(dlgHandle)
+        end
+        if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
+            __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
+        end
+        __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
     end
-    local retVal=-1
-    assert(type(dlgHandle)=='number' and __HIDDEN__.dlg.openDlgs and __HIDDEN__.dlg.openDlgs[dlgHandle],"Argument 1 is not a valid dialog handle")
-    if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
-        __HIDDEN__.dlg.removeUi(dlgHandle)
-    end
-    if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
-        __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
-    end
-    __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
-    retVal=0
-    return retVal
 end
 
 function sim.getDialogInput(dlgHandle)
