@@ -1,8 +1,5 @@
 local simAssimp={}
 
---@fun importDlg Offers import parameters via dialog, before calling simAssimp.import
---@arg string filename The filename (including extension) of the CAD data
---@ret table handles The handles of the imported shapes
 function simAssimp.importShapesDlg(filenames)
     configUiData={}
     function configUiData.onImport(ui,id,newVal)
@@ -176,9 +173,6 @@ function simAssimp.importShapesDlg(filenames)
     configUiData.updateUpVectorCombobox()
 end
 
---@fun exportDlg Offers export parameters via dialog, before calling simAssimp.export
---@arg string filename The filename (including extension) of the CAD data
---@arg table shapeHandles The handles of the shapes to export
 function simAssimp.exportShapesDlg(filename,shapeHandles)
     configUiData={}
     function configUiData.onExport(ui,id,newVal)

@@ -6,6 +6,7 @@ printToConsole=print -- will be overwritten further down
 -- Various useful functions:
 ----------------------------------------------------------
 function sim.yawPitchRollToAlphaBetaGamma(yawAngle,pitchAngle,rollAngle)
+    sim.setThreadAutomaticSwitch(false)
     local Rx=sim.buildMatrix({0,0,0},{rollAngle,0,0})
     local Ry=sim.buildMatrix({0,0,0},{0,pitchAngle,0})
     local Rz=sim.buildMatrix({0,0,0},{0,0,yawAngle})
@@ -15,10 +16,12 @@ function sim.yawPitchRollToAlphaBetaGamma(yawAngle,pitchAngle,rollAngle)
     local alpha=alphaBetaGamma[1]
     local beta=alphaBetaGamma[2]
     local gamma=alphaBetaGamma[3]
+    sim.setThreadAutomaticSwitch(true)
     return alpha,beta,gamma
 end
 
 function sim.alphaBetaGammaToYawPitchRoll(alpha,beta,gamma)
+    sim.setThreadAutomaticSwitch(false)
     local m=sim.buildMatrix({0,0,0},{alpha,beta,gamma})
     local v=m[9]
     if v>1 then v=1 end
@@ -33,6 +36,7 @@ function sim.alphaBetaGammaToYawPitchRoll(alpha,beta,gamma)
         rollAngle=math.atan2(-m[7],m[6])
         yawAngle=0
     end
+    sim.setThreadAutomaticSwitch(true)
     return yawAngle,pitchAngle,rollAngle
 end
 
@@ -163,6 +167,7 @@ function print(...)
 end
 
 function getAsString(...)
+    sim.setThreadAutomaticSwitch(false)
     local a={...}
     local t=''
     if #a==1 and type(a[1])=='string' then
@@ -183,6 +188,7 @@ function getAsString(...)
     if #a==0 then
         t='nil'
     end
+    sim.setThreadAutomaticSwitch(true)
     return(t)
 end
 
@@ -378,11 +384,293 @@ function sysCallEx_cleanup()
     end
 end
 
+function sim.getAlternateConfigs(jointHandles,inputConfig,tipHandle,lowLimits,ranges)
+    local retVal={}
+    sim.setThreadAutomaticSwitch(false)
+    local initConfig={}
+    local x={}
+    local confS={}
+    local err=false
+    for i=1,#jointHandles,1 do
+        initConfig[i]=sim.getJointPosition(jointHandles[i])
+        local c,interv=sim.getJointInterval(jointHandles[i])
+        local t=sim.getJointType(jointHandles[i])
+        local res,sp=sim.getObjectFloatParameter(jointHandles[i],sim.jointfloatparam_screw_pitch)
+        if t==sim.joint_revolute_subtype and not c then
+            if res==1 and sp==0 then
+                if inputConfig[i]-math.pi*2>=interv[1] or inputConfig[i]+math.pi*2<=interv[1]+interv[2] then
+                    -- We use the low and range values from the joint's settings
+                    local y=inputConfig[i]
+                    while y-math.pi*2>=interv[1] do
+                        y=y-math.pi*2
+                    end
+                    x[i]={y,interv[1]+interv[2]}
+                end
+            end
+        end
+        if x[i] then
+            if lowLimits and ranges then
+                -- the user specified low and range values. Use those instead:
+                local l=lowLimits[i]
+                local r=ranges[i]
+                if r~=0 then
+                    if r>0 then
+                        if l<interv[1] then
+                            -- correct for user bad input
+                            r=r-(interv[1]-l)
+                            l=interv[1] 
+                        end
+                        if l>interv[1]+interv[2] then
+                            -- bad user input. No alternative position for this joint
+                            x[i]={inputConfig[i],inputConfig[i]}
+                            err=true
+                        else
+                            if l+r>interv[1]+interv[2] then
+                                -- correct for user bad input
+                                r=interv[1]+interv[2]-l
+                            end
+                            if inputConfig[i]-math.pi*2>=l or inputConfig[i]+math.pi*2<=l+r then
+                                local y=inputConfig[i]
+                                while y<l do
+                                    y=y+math.pi*2
+                                end
+                                while y-math.pi*2>=l do
+                                    y=y-math.pi*2
+                                end
+                                x[i]={y,l+r}
+                            else
+                                -- no alternative position for this joint
+                                x[i]={inputConfig[i],inputConfig[i]}
+                                err=(inputConfig[i]<l) or (inputConfig[i]>l+r)
+                            end
+                        end
+                    else
+                        r=-r
+                        l=inputConfig[i]-r*0.5
+                        if l<x[i][1] then
+                            l=x[i][1]
+                        end
+                        local u=inputConfig[i]+r*0.5
+                        if u>x[i][2] then
+                            u=x[i][2]
+                        end
+                        x[i]={l,u}
+                    end
+                end
+            end
+        else
+            -- there's no alternative position for this joint
+            x[i]={inputConfig[i],inputConfig[i]}
+        end
+        confS[i]=x[i][1]
+    end
+    local configs={}
+    if not err then
+        for i=1,#jointHandles,1 do
+            sim.setJointPosition(jointHandles[i],inputConfig[i])
+        end
+        local desiredPose=0
+        if not tipHandle then
+            tipHandle=-1
+        end
+        if tipHandle~=-1 then
+            desiredPose=sim.getObjectMatrix(tipHandle,-1)
+        end
+        configs=__HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,1,tipHandle)
+    end
+    
+    for i=1,#jointHandles,1 do
+        sim.setJointPosition(jointHandles[i],initConfig[i])
+    end
+    sim.setThreadAutomaticSwitch(true)
+    return configs
+end
+
+function sim.setObjectSelection(handles)
+    sim.removeObjectFromSelection(sim.handle_all)
+    sim.addObjectToSelection(handles)
+end
+
+function sim.moveToPose(flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix,callback,auxData,metric)
+    sim.setThreadAutomaticSwitch(false)
+    local outMatrix=sim.unpackDoubleTable(sim.packDoubleTable(currentMatrix))
+    local axis,angle=sim.getRotationAxis(currentMatrix,targetMatrix)
+    if metric then
+        -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
+        -- the start and goal pose. This always results in straight line movement paths
+        local dx={(targetMatrix[4]-currentMatrix[4])*metric[1],(targetMatrix[8]-currentMatrix[8])*metric[2],(targetMatrix[12]-currentMatrix[12])*metric[3],angle*metric[4]}
+        local distance=math.sqrt(dx[1]*dx[1]+dx[2]*dx[2]+dx[3]*dx[3]+dx[4]*dx[4])
+        if distance>0.000001 then
+            local currentPosVelAccel={0,0,0}
+            local maxVelAccelJerk={maxVel[1],maxAccel[1],maxJerk[1]}
+            local targetPosVel={distance,0}
+            local rmlObject=sim.rmlPos(1,0.0001,-1,currentPosVelAccel,maxVelAccelJerk,{1},targetPosVel)
+            local result=0
+            while result==0 do
+                result,newPosVelAccel=sim.rmlStep(rmlObject,sim.getSimulationTimeStep())
+                if result~=-1 then
+                    local t=newPosVelAccel[1]/distance
+                    local mi=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                    local nv={newPosVelAccel[2]}
+                    local na={newPosVelAccel[3]}
+                    callback(mi,nv,na,auxData)
+                end
+                sim.switchThread()
+            end
+            sim.rmlRemove(rmlObject)
+        end
+    else
+        -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
+        -- is handled and controlled individually. This can result in non-straight line movement paths,
+        -- due to how the RML functions operate depending on 'flags'
+        local dx={targetMatrix[4]-currentMatrix[4],targetMatrix[8]-currentMatrix[8],targetMatrix[12]-currentMatrix[12],angle}
+        local currentPosVelAccel={0,0,0,0,0,0,0,0,0,0,0,0}
+        local maxVelAccelJerk={maxVel[1],maxVel[2],maxVel[3],maxVel[4],maxAccel[1],maxAccel[2],maxAccel[3],maxAccel[4],maxJerk[1],maxJerk[2],maxJerk[3],maxJerk[4]}
+        local targetPosVel={dx[1],dx[2],dx[3],dx[4],0,0,0,0,0}
+        local rmlObject=sim.rmlPos(4,0.0001,-1,currentPosVelAccel,maxVelAccelJerk,{1,1,1,1},targetPosVel)
+        local result=0
+        while result==0 do
+            result,newPosVelAccel=sim.rmlStep(rmlObject,sim.getSimulationTimeStep())
+            if result~=-1 then
+                local t=0
+                if math.abs(angle)>math.pi*0.00001 then
+                    t=newPosVelAccel[4]/angle
+                end
+                local mi=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                mi[4]=currentMatrix[4]+newPosVelAccel[1]
+                mi[8]=currentMatrix[8]+newPosVelAccel[2]
+                mi[12]=currentMatrix[12]+newPosVelAccel[3]
+                local nv={newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7],newPosVelAccel[8]}
+                local na={newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11],newPosVelAccel[12]}
+                callback(mi,nv,na,auxData)
+            end
+            sim.switchThread()
+        end
+        sim.rmlRemove(rmlObject)
+    end
+    sim.setThreadAutomaticSwitch(true)
+    return outMatrix
+end
+
+function sim.moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints)
+    sim.setThreadAutomaticSwitch(false)
+    local currentPosVelAccel={}
+    local maxVelAccelJerk={}
+    local targetPosVel={}
+    local sel={}
+    local outPos={}
+    local outVel={}
+    local outAccel={}
+    for i=1,#currentPos,1 do
+        local v=currentPos[i]
+        currentPosVelAccel[i]=v
+        outPos[i]=v
+        maxVelAccelJerk[i]=maxVel[i]
+        local w=targetPos[i]
+        if cyclicJoints and cyclicJoints[i] then
+            while w-v>=math.pi*2 do
+                w=w-math.pi*2
+            end
+            while w-v<0 do
+                w=w+math.pi*2
+            end
+            if w-v>math.pi then
+                w=w-math.pi*2
+            end            
+        end
+        targetPosVel[i]=w
+        sel[i]=1
+    end
+    for i=#currentPos+1,#currentPos*2 do
+        if currentVel then
+            currentPosVelAccel[i]=currentVel[i-#currentPos]
+            outVel[i-#currentPos]=currentVel[i-#currentPos]
+        else
+            currentPosVelAccel[i]=0
+            outVel[i-#currentPos]=0
+        end
+        maxVelAccelJerk[i]=maxAccel[i-#currentPos]
+        if targetVel then
+            targetPosVel[i]=targetVel[i-#currentPos]
+        else
+            targetPosVel[i]=0
+        end
+    end
+    for i=#currentPos*2+1,#currentPos*3 do
+        if currentAccel then
+            currentPosVelAccel[i]=currentAccel[i-#currentPos*2]
+            outAccel[i-#currentPos*2]=currentAccel[i-#currentPos*2]
+        else
+            currentPosVelAccel[i]=0
+            outAccel[i-#currentPos*2]=0
+        end
+        maxVelAccelJerk[i]=maxJerk[i-#currentPos*2]
+    end
+
+    local rmlObject=sim.rmlPos(#currentPos,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
+    local result=0
+    while result==0 do
+        result,newPosVelAccel=sim.rmlStep(rmlObject,sim.getSimulationTimeStep())
+        if result~=-1 then
+            for i=1,#currentPos,1 do
+                outPos[i]=newPosVelAccel[i]
+                outVel[i]=newPosVelAccel[#currentPos+i]
+                outAccel[i]=newPosVelAccel[#currentPos*2+i]
+            end
+            callback(outPos,outVel,outAccel,auxData)
+        end
+        sim.switchThread()
+    end
+    sim.rmlRemove(rmlObject)
+    sim.setThreadAutomaticSwitch(true)
+    return outPos,outVel,outAccel
+end
+
+function sim.switchThread()
+    if sim.isScriptRunningInThread()==1 then
+        sim._switchThread()
+    else
+        coroutine.yield()
+    end
+end
 ----------------------------------------------------------
 
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
+function __HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index,tipHandle)
+    if index>#jointHandles then
+        if tipHandle==-1 then
+            return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+        else
+            for i=1,#jointHandles,1 do
+                sim.setJointPosition(jointHandles[i],confS[i])
+            end
+            local p=sim.getObjectMatrix(tipHandle,-1)
+            local axis,angle=sim.getRotationAxis(desiredPose,p)
+            if math.abs(angle)<0.1*180/math.pi then -- checking is needed in case some joints are dependent on others
+                return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+            else
+                return {}
+            end
+        end
+    else
+        local c={}
+        for i=1,#jointHandles,1 do
+            c[i]=confS[i]
+        end
+        local solutions={}
+        while c[index]<=x[index][2] do
+            local s=__HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,c,x,index+1,tipHandle)
+            for i=1,#s,1 do
+                solutions[#solutions+1]=s[i]
+            end
+            c[index]=c[index]+math.pi*2
+        end
+        return solutions
+    end
+end
+
 function __HIDDEN__.comparableTables(t1,t2)
     return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
@@ -476,7 +764,7 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('exit@sim','exit()')
     sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars)')
     sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
-    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(pattern)')
+    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(string pattern)')
 
     sim.registerScriptFunction('sim.displayDialog@sim','number dlgHandle=sim.displayDialog(string title,string mainText,number style,\nboolean modal,string initTxt)')
     sim.registerScriptFunction('sim.getDialogResult@sim','number result=sim.getDialogResult(number dlgHandle)')
@@ -484,7 +772,12 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.endDialog@sim','number result=sim.endDialog(number dlgHandle)')
     sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','number alphaAngle,number betaAngle,number gammaAngle=sim.yawPitchRollToAlphaBetaGamma(\nnumber yawAngle,number pitchAngle,number rollAngle)')
     sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','number yawAngle,number pitchAngle,number rollAngle=sim.alphaBetaGammaToYawPitchRoll(\nnumber alphaAngle,number betaAngle,number gammaAngle)')
+    sim.registerScriptFunction('sim.getAlternateConfigs@sim','table configs=sim.getAlternateConfigs(table jointHandles,\ntable inputConfig,number tipHandle=-1,table lowLimits=nil,table ranges=nil)')
+    sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(number handles)')
     
+    sim.registerScriptFunction('sim.moveToPose@sim','table_12 endMatrix=sim.moveToPose(number flags,table_12 currentMatrix,\ntable maxVel,table maxAccel,table maxJerk,table_12 targetMatrix,\nfunction callback,auxData,table_4 metric=nil)')
+    sim.registerScriptFunction('sim.moveToConfig@sim','table endPos,table endVel,table endAccel=sim.moveToConfig(number flags,\ntable currentPos,table currentVel,table currentAccel,table maxVel,table maxAccel,\ntable maxJerk,table targetPos,table targetVel,function callback,auxData,table cyclicJoints=nil)')
+    sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
