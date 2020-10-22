@@ -1,5 +1,38 @@
 local utils=require('utils')
 
+function sysCall_userConfig()
+    local simStopped=sim.getSimulationState()==sim.simulation_stopped
+    local xml=[[
+            <label text="Visible while simulation not running"/>
+            <checkbox text="" on-change="visibleDuringNonSimulation_callback" id="1" />
+
+            <label text="Visible while simulation running"/>
+            <checkbox text="" on-change="visibleDuringSimulation_callback" id="2" />
+
+            <label text="Show time plots"/>
+            <checkbox text="" on-change="timeOnly_callback" id="3" />
+
+            <label text="Show X/Y plots"/>
+            <checkbox text="" on-change="xyOnly_callback" id="4" />
+
+            <label text="X/Y plots keep 1:1 aspect ratio"/>
+            <checkbox text="" on-change="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+            
+            <label text="Preferred graph position"/>
+            <combobox id="6" on-change="graphPosChanged_callback"></combobox>
+    ]]
+    ui=utils.createCustomUi(xml,sim.getObjectName(model),previousDlgPos,true,'removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
+    setDlgItemContent()
+    updateEnabledDisabledItemsDlg()
+end
+
+function removeDlg()
+    local x,y=simUI.getPosition(ui)
+    previousDlgPos={x,y}
+    simUI.destroy(ui)
+    ui=nil
+end
+
 getMinMax=function(minMax1,minMax2)
     if not minMax1 then
         return minMax2
@@ -331,55 +364,13 @@ function graphPosChanged_callback(ui,id,newIndex)
     updateEnabledDisabledItemsDlg()
 end
 
-function createDlg()
-    if (not ui) then
-        local xml=[[
-                <label text="Visible while simulation not running"/>
-                <checkbox text="" on-change="visibleDuringNonSimulation_callback" id="1" />
-
-                <label text="Visible while simulation running"/>
-                <checkbox text="" on-change="visibleDuringSimulation_callback" id="2" />
-
-                <label text="Show time plots"/>
-                <checkbox text="" on-change="timeOnly_callback" id="3" />
-
-                <label text="Show X/Y plots"/>
-                <checkbox text="" on-change="xyOnly_callback" id="4" />
-
-                <label text="X/Y plots keep 1:1 aspect ratio"/>
-                <checkbox text="" on-change="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
-                
-                <label text="Preferred graph position"/>
-                <combobox id="6" on-change="graphPosChanged_callback"></combobox>
-        ]]
-        ui=utils.createCustomUi(xml,sim.getObjectName(model),previousDlgPos,false,nil,false,false,false,'layout="form"')
-        setDlgItemContent()
-        updateEnabledDisabledItemsDlg()
-    end
-end
-
-function showDlg()
-    if not ui then
-        createDlg()
-    end
-end
-
-function removeDlg()
-    if ui then
-        local x,y=simUI.getPosition(ui)
-        previousDlgPos={x,y}
-        simUI.destroy(ui)
-        ui=nil
-    end
-end
-
 function removePlot()
     if plotUi then
         local x,y=simUI.getPosition(plotUi)
         previousPlotDlgPos={x,y}
         local x,y=simUI.getSize(plotUi)
         previousPlotDlgSize={x,y}
-        plotTabIndex=simUI.getCurrentTab(plotUi,77)
+        plotTabIndex=#plots>1 and simUI.getCurrentTab(plotUi,77) or 0
         simUI.destroy(plotUi)
         plotUi=nil
     end
@@ -409,32 +400,27 @@ function createPlot()
             fgCol=(math.floor(colB[1]*255.1))..','..(math.floor(colB[2]*255.1))..','..(math.floor(colB[3]*255.1))
         end
 
-        local xml='<tabs id="77">'
+        if (sim.boolAnd32(c['bitCoded'],4)~=0) then table.insert(plots, 1) end
+        if (sim.boolAnd32(c['bitCoded'],8)~=0) then table.insert(plots, 2) end
+
+        local xml=''
+        if #plots>1 then xml=xml..'<tabs id="77">' end
         if (sim.boolAnd32(c['bitCoded'],4)~=0) then
-            xml=xml..[[
-            <tab title="Time graph">
-            <plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="]]..bgCol..[[" foreground-color="]]..fgCol..[["/>
-            </tab>
-            ]]
-            plots={1}
+            if #plots>1 then xml=xml..'<tab title="Time graph">' end
+            xml=xml..'<plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'"/>'
+            if #plots>1 then xml=xml..'</tab>' end
         end
         if (sim.boolAnd32(c['bitCoded'],8)~=0) then
             local squareAttribute=''
             if (sim.boolAnd32(c['bitCoded'],16)~=0) then
                 squareAttribute='square="true"'
             end
-            xml=xml..[[
-            <tab title="X/Y graph">
-            <plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="]]..bgCol..[[" foreground-color="]]..fgCol..[[" ]]..squareAttribute..[[/>
-            </tab>
-            ]]
-            plots[#plots+1]=2
+            if #plots>1 then xml=xml..'<tab title="X/Y graph">' end
+            xml=xml..'<plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'" '..squareAttribute..'/>'
+            if #plots>1 then xml=xml..'</tab>' end
         end
-        xml=xml..[[
-        </tabs>
-        <br/>
-        <label id="3" />
-        ]]
+        if #plots>1 then xml=xml..'</tabs><br/>' end
+        xml=xml..'<label id="3" />'
         
         if not previousPlotDlgPos then
             if c['graphPos']==0 then previousPlotDlgPos='bottomRight' end
@@ -454,7 +440,10 @@ function createPlot()
         if #plots==1 then
             plotTabIndex=0
         end
-        simUI.setCurrentTab(plotUi,77,plotTabIndex,true)
+        if #plots>1 then
+            xml=xml..'</tabs><br/>'
+            simUI.setCurrentTab(plotUi,77,plotTabIndex,true)
+        end
 
         curves={{},{}}
         prepareCurves()
@@ -481,20 +470,11 @@ createOrRemovePlotIfNeeded=function(forSimulation)
     end
 end
 
-showOrHideUiIfNeeded=function()
-    local s=sim.getObjectSelection()
-    if s and #s>=1 and s[#s]==model then
-        showDlg()
-    else
-        removeDlg()
-    end
-end
-
 function sysCall_init()
     modified=false
     plotTabIndex=0
     lastT=sim.getSystemTimeInMs(-1)
-    model=sim.getObjectAssociatedWithScript(sim.handle_self)
+    model=sim.getObjectHandle(sim.handle_self)
     version=sim.getInt32Parameter(sim.intparam_program_version)
     revision=sim.getInt32Parameter(sim.intparam_program_revision)
     sim.setScriptAttribute(sim.handle_self,sim.customizationscriptattribute_activeduringsimulation,true)
@@ -508,7 +488,6 @@ function sysCall_afterSimulation()
 end
 
 function sysCall_beforeSimulation()
-    removeDlg()
     removePlot()
     createOrRemovePlotIfNeeded(true)
     prepareCurves()
@@ -530,7 +509,6 @@ end
 
 
 function sysCall_nonSimulation()
-    showOrHideUiIfNeeded()
     if sim.getSystemTimeInMs(lastT)>3000 then
         lastT=sim.getSystemTimeInMs(-1)
         if modified then
@@ -541,7 +519,6 @@ function sysCall_nonSimulation()
 end
 
 function sysCall_beforeInstanceSwitch()
-    removeDlg()
     removePlot()
 end
 
@@ -551,6 +528,5 @@ end
 
 function sysCall_cleanup()
     removePlot()
-    removeDlg()
     utils.writeSessionPersistentObjectData(model,"dlgPosAndSize",previousPlotDlgPos,previousPlotDlgSize,previousDlgPos)
 end

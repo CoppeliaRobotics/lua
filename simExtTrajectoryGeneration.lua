@@ -1,0 +1,3 @@
+local simTraj={}
+
+return simTraj

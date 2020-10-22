@@ -21,8 +21,12 @@ function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandle
 end
 
 function simIK.getAlternateConfigs(ikEnvironment,jointHandles,lowLimits,ranges)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='table',size=1,subtype='number'},{type='table',size=-2,subtype='number',opt=true},{type='table',size=-2,subtype='number',opt=true}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnvironment,jointHandles,lowLimits,ranges)
+    if err then error(err) end
+
     local retVal={}
-    sim.setThreadAutomaticSwitch(false)
     local ikEnv=simIK.duplicateEnvironment(ikEnvironment)
     local x={}
     local confS={}
@@ -110,11 +114,16 @@ function simIK.getAlternateConfigs(ikEnvironment,jointHandles,lowLimits,ranges)
         configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnv,jointHandles,desiredPose,confS,x,1)
     end
     simIK.eraseEnvironment(ikEnv)
-    sim.setThreadAutomaticSwitch(true)
+    sim.setThreadAutomaticSwitch(lb)
     return configs
 end
 
 function simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='number'}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup)
+    if err then error(err) end
+    
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
     if groupData.notYetApplied then
         -- Joint dependencies can go across IK elements. So apply them the first time here:
@@ -143,10 +152,15 @@ function simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     for i=1,#groupData.targetBasePairs,1 do
         simIK.setObjectMatrix(ikEnv,groupData.targetBasePairs[i][3],groupData.targetBasePairs[i][4],sim.getObjectMatrix(groupData.targetBasePairs[i][1],groupData.targetBasePairs[i][2]))
     end
+    sim.setThreadAutomaticSwitch(lb)
 end
 
 function simIK.applyIkToScene(ikEnv,ikGroup,applyOnlyWhenSuccessful)
-    sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='number'},{type='boolean',opt=true}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,applyOnlyWhenSuccessful)
+    if err then error(err) end
+    
     simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
     local res=simIK.handleIkGroup(ikEnv,ikGroup)
@@ -168,12 +182,16 @@ function simIK.applyIkToScene(ikEnv,ikGroup,applyOnlyWhenSuccessful)
             end
         end
     end
-    sim.setThreadAutomaticSwitch(true)
+    sim.setThreadAutomaticSwitch(lb)
     return res
 end
 
 function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,constraints)
-    sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='number'},{type='number'},{type='number'},{type='number'},{type='number'}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,simBase,simTip,simTarget,constraints)
+    if err then error(err) end
+    
     if not __HIDDEN__.ikEnvs then
         __HIDDEN__.ikEnvs={}
     end
@@ -182,13 +200,16 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     end
     if not __HIDDEN__.ikEnvs[ikEnv].ikGroups then
         __HIDDEN__.ikEnvs[ikEnv].ikGroups={}
+        __HIDDEN__.ikEnvs[ikEnv].allObjects={}
     end
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
+    -- allObjects, i.e. the mapping, need to be scoped by ik env, and not ik group,
+    -- otherwise we may have duplicates:
+    local allObjects=__HIDDEN__.ikEnvs[ikEnv].allObjects
     if not groupData then
         groupData={}
         groupData.passiveJoints={}
         groupData.joints={}
-        groupData.objects={}
         groupData.bases={}
         groupData.targets={}
         groupData.targetBasePairs={}
@@ -197,27 +218,27 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     end
     local ikBase=-1
     if simBase~=-1 then
-        ikBase=groupData.objects[simBase] -- maybe already there
+        ikBase=allObjects[simBase] -- maybe already there
         if not ikBase then
-            ikBase=simIK.createDummy(ikEnv)
+            ikBase=simIK.createDummy(ikEnv,sim.getObjectName(simBase))
             simIK.setObjectMatrix(ikEnv,ikBase,-1,sim.getObjectMatrix(simBase,-1))
-            groupData.objects[simBase]=ikBase
+            allObjects[simBase]=ikBase
         end
         groupData.bases[simBase]=ikBase
     end
     
-    local ikTip=groupData.objects[simTip] -- maybe already there
+    local ikTip=allObjects[simTip] -- maybe already there
     if not ikTip then
-        ikTip=simIK.createDummy(ikEnv)
+        ikTip=simIK.createDummy(ikEnv,sim.getObjectName(simTip))
         simIK.setObjectMatrix(ikEnv,ikTip,-1,sim.getObjectMatrix(simTip,-1))
-        groupData.objects[simTip]=ikTip
+        allObjects[simTip]=ikTip
     end
 
-    local ikTarget=groupData.objects[simTarget] -- maybe already there
+    local ikTarget=allObjects[simTarget] -- maybe already there
     if not ikTarget then
-        ikTarget=simIK.createDummy(ikEnv)
+        ikTarget=simIK.createDummy(ikEnv,sim.getObjectName(simTarget))
         simIK.setObjectMatrix(ikEnv,ikTarget,-1,sim.getObjectMatrix(simTarget,-1))
-        groupData.objects[simTarget]=ikTarget
+        allObjects[simTarget]=ikTarget
     end
     groupData.targets[simTarget]=ikTarget
     groupData.targetBasePairs[#groupData.targetBasePairs+1]={simTarget,simBase,ikTarget,ikBase}
@@ -229,15 +250,15 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     local ikPrevIterator=ikTip
     local ikIterator=-1
     while simIterator~=simBase do
-        if groupData.objects[simIterator] then
+        if allObjects[simIterator] then
             -- object already added, and parenting to child done
-            ikIterator=groupData.objects[simIterator]
+            ikIterator=allObjects[simIterator]
         else
             if sim.getObjectType(simIterator)~=sim.object_joint_type then
-                ikIterator=simIK.createDummy(ikEnv)
+                ikIterator=simIK.createDummy(ikEnv,sim.getObjectName(simIterator))
             else
                 local t=sim.getJointType(simIterator)
-                ikIterator=simIK.createJoint(ikEnv,t)
+                ikIterator=simIK.createJoint(ikEnv,t,sim.getObjectName(simIterator))
                 local c,interv=sim.getJointInterval(simIterator)
                 simIK.setJointInterval(ikEnv,ikIterator,c,interv)
                 local res,sp=sim.getObjectFloatParameter(simIterator,sim.jointfloatparam_screw_pitch)
@@ -251,16 +272,13 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
                 else
                     simIK.setJointPosition(ikEnv,ikIterator,sim.getJointPosition(simIterator))
                 end
-                local excl=false
-                if excl then
-                    simIK.setJointMode(ikEnv,ikIterator,simIK.jointmode_passive)
-                    groupData.passiveJoints[simIterator]=ikIterator
-                end
-                groupData.joints[simIterator]=ikIterator
             end
-            groupData.objects[simIterator]=ikIterator
+            allObjects[simIterator]=ikIterator
             simIK.setObjectMatrix(ikEnv,ikIterator,-1,sim.getObjectMatrix(simIterator,-1))
-        end    
+        end 
+        if sim.getObjectType(simIterator)==sim.object_joint_type then
+            groupData.joints[simIterator]=ikIterator
+        end
         simIK.setObjectParent(ikEnv,ikPrevIterator,ikIterator)
         simPrevIterator=simIterator
         ikPrevIterator=ikIterator
@@ -273,21 +291,29 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     local ikElement=simIK.addIkElement(ikEnv,ikGroup,ikTip)
     simIK.setIkElementBase(ikEnv,ikGroup,ikElement,ikBase,-1)
     simIK.setIkElementConstraints(ikEnv,ikGroup,ikElement,constraints)
-    sim.setThreadAutomaticSwitch(true)
-    return ikElement,groupData.objects
+    sim.setThreadAutomaticSwitch(lb)
+    return ikElement,allObjects
 end
 
 function simIK.eraseEnvironment(ikEnv)
-    sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv)
+    if err then error(err) end
+    
     if __HIDDEN__.ikEnvs then
         __HIDDEN__.ikEnvs[ikEnv]=nil
     end
     simIK._eraseEnvironment(ikEnv)
-    sim.setThreadAutomaticSwitch(true)
+    sim.setThreadAutomaticSwitch(lb)
 end
 
 function simIK.getConfigForTipPose(ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
-    sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='number'},{type='table',size=1,subtype='number'},{type='number',opt=true},{type='number',opt=true},{type='table',size=4,subtype='number',opt=true},{type='function',opt=true},{type='any',opt=true},{type='table',size=-3,subtype='number',opt=true},{type='table',size=-3,subtype='number',opt=true},{type='table',size=-3,subtype='number',opt=true}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
+    if err then error(err) end
+
     local env=simIK.duplicateEnvironment(ikEnv)
     if thresholdDist==nil then thresholdDist=0.1 end
     if maxTime==nil then maxTime=0.5 end
@@ -319,12 +345,16 @@ function simIK.getConfigForTipPose(ikEnv,ikGroup,joints,thresholdDist,maxTime,me
         retVal=simIK._getConfigForTipPose(env,ikGroup,joints,thresholdDist,-maxTime*1000,metric,funcNm,t,jointOptions,lowLimits,ranges)
     end
     simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(true)
+    sim.setThreadAutomaticSwitch(lb)
     return retVal
 end
 
 function simIK.generatePath(ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData)
-    sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setThreadAutomaticSwitch(false)
+    local args={{type='number'},{type='number'},{type='table',size=1,subtype='number'},{type='number'},{type='number'},{type='function',opt=true},{type='any',opt=true}}
+    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData)
+    if err then error(err) end
+
     local env=simIK.duplicateEnvironment(ikEnv)
     local targetHandle=simIK.getLinkedDummy(env,tip)
     local startMatrix=simIK.getObjectMatrix(env,tip,-1)
@@ -362,7 +392,7 @@ function simIK.generatePath(ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData)
         retPath={}
     end
     simIK.eraseEnvironment(env)
-    sim.setThreadAutomaticSwitch(true)
+    sim.setThreadAutomaticSwitch(lb)
     return retPath
 end
 
