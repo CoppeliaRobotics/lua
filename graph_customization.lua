@@ -1,4 +1,26 @@
-local utils=require('utils')
+function sysCall_cleanup()
+    cleanup()
+end
+
+function sysCall_init()
+    init()
+end
+
+function sysCall_sensing()
+    sensing()
+end
+
+function sysCall_nonSimulation()
+    nonSimulation()
+end
+
+function sysCall_afterSimulation()
+    afterSimulation()
+end
+
+function sysCall_beforeSimulation()
+    beforeSimulation()
+end
 
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
@@ -470,45 +492,19 @@ createOrRemovePlotIfNeeded=function(forSimulation)
     end
 end
 
-function sysCall_init()
-    modified=false
-    plotTabIndex=0
-    lastT=sim.getSystemTimeInMs(-1)
-    model=sim.getObjectHandle(sim.handle_self)
-    version=sim.getInt32Parameter(sim.intparam_program_version)
-    revision=sim.getInt32Parameter(sim.intparam_program_revision)
-    sim.setScriptAttribute(sim.handle_self,sim.customizationscriptattribute_activeduringsimulation,true)
-    previousPlotDlgPos,previousPlotDlgSize,previousDlgPos=utils.readSessionPersistentObjectData(model,"dlgPosAndSize")
-    createOrRemovePlotIfNeeded()
-end
-
-function sysCall_afterSimulation()
-    createOrRemovePlotIfNeeded(false)
-    enableMouseInteractions(true)
-end
-
-function sysCall_beforeSimulation()
-    removePlot()
-    createOrRemovePlotIfNeeded(true)
-    prepareCurves()
-    clearCurves()
-    enableMouseInteractions(false)
-end
-
 function sysCall_suspend()
-    enableMouseInteractions(true)
+    if sim.getExplicitHandling(model)==0 then
+        enableMouseInteractions(true)
+    end
 end
 
 function sysCall_resume()
-    enableMouseInteractions(false)
+    if sim.getExplicitHandling(model)==0 then
+        enableMouseInteractions(false)
+    end
 end
 
-function sysCall_sensing()
-    updateCurves()
-end
-
-
-function sysCall_nonSimulation()
+function nonSimulation()
     if sim.getSystemTimeInMs(lastT)>3000 then
         lastT=sim.getSystemTimeInMs(-1)
         if modified then
@@ -519,6 +515,7 @@ function sysCall_nonSimulation()
 end
 
 function sysCall_beforeInstanceSwitch()
+    stopRecording()
     removePlot()
 end
 
@@ -526,7 +523,60 @@ function sysCall_afterInstanceSwitch()
     createOrRemovePlotIfNeeded()
 end
 
-function sysCall_cleanup()
+function init()
+    utils=require('utils')
+    modified=false
+    plotTabIndex=0
+    lastT=sim.getSystemTimeInMs(-1)
+    model=sim.getObjectHandle(sim.handle_self)
+    version=sim.getInt32Parameter(sim.intparam_program_version)
+    revision=sim.getInt32Parameter(sim.intparam_program_revision)
+    sim.setScriptAttribute(sim.handle_self,sim.customizationscriptattribute_activeduringsimulation,true)
+    previousPlotDlgPos,previousPlotDlgSize,previousDlgPos=utils.readSessionPersistentObjectData(model,"dlgPosAndSize")
+    simulationGraph=true
+    createOrRemovePlotIfNeeded()
+end
+
+function cleanup()
+    stopRecording()
     removePlot()
     utils.writeSessionPersistentObjectData(model,"dlgPosAndSize",previousPlotDlgPos,previousPlotDlgSize,previousDlgPos)
+end
+
+function startRecording()
+    removePlot()
+    createOrRemovePlotIfNeeded(true)
+    prepareCurves()
+    clearCurves()
+    enableMouseInteractions(false)
+end
+
+function stopRecording()
+    createOrRemovePlotIfNeeded(false)
+    enableMouseInteractions(true)
+end
+
+function afterSimulation()
+    if sim.getExplicitHandling(model)==0 then
+        stopRecording()
+    end
+end
+
+function beforeSimulation()
+    if sim.getExplicitHandling(model)==0 then
+        startRecording()
+    else
+        sim.resetGraph(model)
+        sim.handleGraph(model,0)
+        startRecording()
+    end
+end
+
+function sensing()
+    if sim.getExplicitHandling(model)==0 then
+        updateCurves()
+    else
+        sim.handleGraph(model,sim.getSimulationTime())
+        updateCurves()
+    end
 end
