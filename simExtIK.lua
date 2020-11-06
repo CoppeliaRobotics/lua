@@ -20,11 +20,14 @@ function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandle
     end
 end
 
-function simIK.getAlternateConfigs(ikEnvironment,jointHandles,lowLimits,ranges)
+function simIK.getAlternateConfigs(...)
+    local ikEnvironment,jointHandles,lowLimits,ranges=sim.checkargs({{type='int'},{type='table',min_size=1,item_type='int'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local dof=#jointHandles
+    if (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
+        error("Bad table size.")
+    end
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='table',size=1,subtype='number'},{type='table',size=-2,subtype='number',opt=true},{type='table',size=-2,subtype='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnvironment,jointHandles,lowLimits,ranges)
-    if err then error(err) end
 
     local retVal={}
     local ikEnv=simIK.duplicateEnvironment(ikEnvironment)
@@ -118,11 +121,10 @@ function simIK.getAlternateConfigs(ikEnvironment,jointHandles,lowLimits,ranges)
     return configs
 end
 
-function simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
+function simIK.applySceneToIkEnvironment(...)
+    local ikEnv,ikGroup=sim.checkargs({{type='int'},{type='int'}},...)
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup)
-    if err then error(err) end
     
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
     if groupData.notYetApplied then
@@ -155,16 +157,14 @@ function simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.applyIkToScene(ikEnv,ikGroup,applyOnlyWhenSuccessful)
+function simIK.applyIkToScene(...)
+    local ikEnv,ikGroup,applyOnlyWhenSuccessful=sim.checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='number'},{type='boolean',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,applyOnlyWhenSuccessful)
-    if err then error(err) end
     
     simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
     local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
     local res=simIK.handleIkGroup(ikEnv,ikGroup)
-    if applyOnlyWhenSuccessful==nil then applyOnlyWhenSuccessful=false end
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         for k,v in pairs(groupData.joints) do
             if not groupData.passiveJoints[k] then
@@ -186,11 +186,10 @@ function simIK.applyIkToScene(ikEnv,ikGroup,applyOnlyWhenSuccessful)
     return res
 end
 
-function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,constraints)
+function simIK.addIkElementFromScene(...)
+    local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=sim.checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
+    
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='number'},{type='number'},{type='number'},{type='number'},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,simBase,simTip,simTarget,constraints)
-    if err then error(err) end
     
     if not __HIDDEN__.ikEnvs then
         __HIDDEN__.ikEnvs={}
@@ -295,11 +294,10 @@ function simIK.addIkElementFromScene(ikEnv,ikGroup,simBase,simTip,simTarget,cons
     return ikElement,allObjects
 end
 
-function simIK.eraseEnvironment(ikEnv)
+function simIK.eraseEnvironment(...)
+    local ikEnv=sim.checkargs({{type='int'}},...)
+    
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv)
-    if err then error(err) end
     
     if __HIDDEN__.ikEnvs then
         __HIDDEN__.ikEnvs[ikEnv]=nil
@@ -308,15 +306,17 @@ function simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.getConfigForTipPose(ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
+function simIK.getConfigForTipPose(...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=sim.checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',min_size=1,item_type='int',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local dof=#joints
+
+    if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
+        error("Bad table size.")
+    end
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='number'},{type='table',size=1,subtype='number'},{type='number',opt=true},{type='number',opt=true},{type='table',size=4,subtype='number',opt=true},{type='function',opt=true},{type='any',opt=true},{type='table',size=-3,subtype='number',opt=true},{type='table',size=-3,subtype='number',opt=true},{type='table',size=-3,subtype='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges)
-    if err then error(err) end
 
     local env=simIK.duplicateEnvironment(ikEnv)
-    if thresholdDist==nil then thresholdDist=0.1 end
-    if maxTime==nil then maxTime=0.5 end
     if metric==nil then metric={1,1,1,0.1} end
     if jointOptions==nil then jointOptions={} end
     if lowLimits==nil then lowLimits={} end
@@ -349,11 +349,11 @@ function simIK.getConfigForTipPose(ikEnv,ikGroup,joints,thresholdDist,maxTime,me
     return retVal
 end
 
-function simIK.generatePath(ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData)
+function simIK.generatePath(...)
+    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=sim.checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
+    local dof=#joints
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    local args={{type='number'},{type='number'},{type='table',size=1,subtype='number'},{type='number'},{type='number'},{type='function',opt=true},{type='any',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData)
-    if err then error(err) end
 
     local env=simIK.duplicateEnvironment(ikEnv)
     local targetHandle=simIK.getLinkedDummy(env,tip)

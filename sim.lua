@@ -1,6 +1,29 @@
 local sim={}
+sim.checkarg={}
+NIL={}
 __HIDDEN__={}
 __HIDDEN__.dlg={}
+
+if unpack then
+    -- Lua5.1
+    table.pack = function(...) return { n = select("#", ...), ... } end
+    table.unpack = unpack
+else
+    unpack = table.unpack
+end
+
+math.atan2 = math.atan2 or math.atan
+math.pow = math.pow or function(a,b) return a^b end
+if _VERSION~='Lua 5.1' then
+    loadstring = load
+end
+
+function unpackx(arg,n,i)
+    i=i or 1
+    if i<=n then
+        return arg[i],unpackx(arg,n,i+1)
+    end
+end
 
 printToConsole=print
 function print(...)
@@ -22,7 +45,7 @@ function printf(fmt,...)
             a[i]='nil'
         end
     end
-    print(string.format(fmt,unpack(a,1,a.n)))
+    print(string.format(fmt,table.unpack(a,1,a.n)))
 end
 
 __HIDDEN__.require=require
@@ -35,7 +58,7 @@ function require(...)
     if fl then 
         sim.setThreadSwitchAllowed(fl) 
     end
-    return unpack(retVals)
+    return table.unpack(retVals)
 end
 
 __HIDDEN__.pcall=pcall
@@ -48,7 +71,7 @@ function pcall(...)
     if fl then 
         sim.setThreadSwitchAllowed(fl) 
     end
-    return unpack(retVals)
+    return table.unpack(retVals)
 end
 
 function sim.switchThread()
@@ -63,79 +86,202 @@ function sim.switchThread()
     end
 end
 
-function sim.checkArgs(...)
-    -- Usage:
-    -- local args={{type='number',opt=true},{type='table',size=3,opt=true,subtype='number'},{type='table',size=-2,opt=true,subtype='number'}}
-    -- local err=sim.checkArgs(debug.getinfo(1,"n").name,args,...)
-    -- if err then error(err) end
-    --
-    -- Neg. table size n refers to the arg. index -n: it must be the same size as that argument
+function sim.checkarg.any(v,t)
+    return true
+end
 
-    local retVal
-    for i=1,#arg[2],1 do
-        local d=arg[2][i]
-        local v=arg[i+2]
-        if d.type=='table' then
-            local reqSize=0
-            if d.size then
-                reqSize=d.size
-            end
-            if v==nil then
-                if not d.opt then
-                    retVal="Argument #"..i.." is not optional."
-                    break
-                end
+function sim.checkarg.float(v,t)
+    return type(v)=='number'
+end
+
+function sim.checkarg.int(v,t)
+    return type(v)=='number' and math.floor(v)==v, nil
+end
+
+function sim.checkarg.string(v,t)
+    return type(v)=='string'
+end
+
+function sim.checkarg.bool(v,t)
+    return type(v)=='boolean'
+end
+
+function sim.checkarg.table(v,t)
+    if type(v)~='table' then
+        return false, 'must be a table'
+    end
+    if #v>0 and t.item_type~=nil then
+        if not sim.checkarg[t.item_type](v[1]) or not sim.checkarg[t.item_type](v[#v]) then
+            return false, 'must be a table of elements of type '..t.item_type
+        end
+    end
+    if t.size and #v~=t.size then
+        return false, 'must have exactly '..t.size..' elements'
+    end
+    if t.min_size and #v<t.min_size then
+        return false, 'must have at least '..t.min_size..' elements'
+    end
+    if t.max_size and #v>t.max_size then
+        return false, 'must have at most '..t.max_size..' elements'
+    end
+    return true, nil
+end
+
+function sim.checkarg.func(v,t)
+    return type(v)=='function'
+end
+
+--[[
+function sim.checkarg.handle(v,t)
+    -- mockup: a handle is valid if it is a multiple of 100
+    return type(v)=='number' and math.fmod(v,100)==0
+end
+--]]
+
+function sim.checkargs(types,...)
+    local fn=''
+    local arg=table.pack(...)
+    -- check how many arguments are required (default arguments must come last):
+    local minArgs=0
+    for i=1,#types do
+        if minArgs<(i-1) and types[i].default==nil then
+            error('sim.checkargs: bad types spec: non-default arg cannot follow a default arg',2)
+        elseif types[i].default==nil then
+            minArgs=minArgs+1
+        end
+    end
+    -- validate number of arguments:
+    if arg.n<minArgs then
+        error(fn..'not enough arguments',2)
+    elseif arg.n>#types then
+        error(fn..'too many arguments',2)
+    end
+    -- check types:
+    for i=1,#types do
+        local t=types[i]
+        -- fill default value:
+        if arg.n<i and t.default~=nil then
+            if t.default==NIL then
+                arg[i]=nil
             else
-                if type(v)~='table' then
-                    retVal="Type of argument #"..i.." is not correct (expected a table)." 
-                    break
-                else
-                    if reqSize<0 then
-                        if arg[2-reqSize]~=nil then
-                            reqSize=#(arg[2-reqSize])
-                        else
-                            reqSize=-1
-                        end
-                    end
-                    if reqSize>#v then
-                        retVal="Size of table argument #"..i.." is not correct (expected a table of size "..reqSize..")." 
-                        break
-                    else
-                        if d.subtype then
-                            for j=1,#v,1 do
-                                if type(v[j])~=d.subtype then
-                                    retVal="Table argument #"..i.." contains invalid values (expected only "..d.subtype.."s)." 
-                                    break
-                                end
-                            end
-                        end
-                    end
-                end
+                arg[i]=t.default
             end
+        end
+        -- nil is ok if field is nullable:
+        if t.nullable and arg[i]==nil then
         else
-            if v==nil then
-                if not d.opt then
-                    retVal="Argument #"..i.." is not optional."
-                    break
-                end
-            else
-                if d.type~=type(v) and d.type~='any' then
-                    retVal="Type of argument #"..i.." is not correct (expected a "..d.type..")." 
-                    break
-                end
+            -- do the type check, using one of the sim.checkarg.type() functions
+            local checkFunc=sim.checkarg[t.type]
+            if checkFunc==nil then
+                error(string.format('function sim.checkarg.%s does not exist',t.type),2)
+            end
+            local ok,err=checkFunc(arg[i],t)
+            if not ok then
+                error(string.format('%s: argument %d %s',debug.getinfo(2,'n').name,i,err or string.format('must be a %s',t.type)),2)
             end
         end
     end
-    if retVal then
-        retVal=retVal.." (in function '"..arg[1].."')"
-    end
-    return retVal
+    return unpackx(arg,#types)
 end
 
-function sim.yawPitchRollToAlphaBetaGamma(yawAngle,pitchAngle,rollAngle)
-    local args={{type='number'},{type='number'},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,yawAngle,pitchAngle,rollAngle)
-    if err then error(err) end
+--[[
+-- tests:
+if arg[1]=='test' then
+    function f(...)
+        local i,s,ti=sim.checkargs({{type='int'},{type='string'},{type='table',item_type='int',size=3}},...)
+    end
+
+    function g(x)
+        sim.checkargs({{type='table',item_type='string',min_size=3}},x)
+    end
+
+    function h(...)
+        local b=sim.checkargs({{type='bool',default=false}},...)
+        return b
+    end
+
+    function z(...)
+        -- test wrong default type: will fail when called without arg
+        sim.checkargs({{type='int',default=3.5}},...)
+    end
+
+    function y(...)
+        local handle=sim.checkargs({{type='handle'}},...)
+    end
+
+    function x(...)
+        local i,t=sim.checkargs({{type='int'},{type='table',item_type='float',nullable=true}},...)
+    end
+
+    function w(...)
+        local i1,cb,i2=sim.checkargs({{type='int'},{type='func',nullable=true,default=NIL},{type='int',default=0}},...)
+    end
+
+    function v(...)
+        local t=sim.checkargs({{type='table'}},...)
+    end
+
+    local fail,succeed=false,true
+    function test(name,expectedResult,f)
+        print(string.format('running test %s...',name))
+        local result,err=pcall(f)
+        if result~=expectedResult then
+            print(string.format('test %s failed: %s',name,err or '-'))
+        end
+    end
+    test(1, succeed, function() f(3,'a',{1,2,3}) end)
+    test(2, fail, function() f('x','b',{4,5,6}) end)
+    test(3, fail, function() f(5,10,{7,8,9}) end)
+    test(4, fail, function() f(6,'d','a') end)
+    test(5, fail, function() f(7,'e',{10,20}) end)
+    test(6, fail, function() f(8,'e',{10,20,40,80}) end)
+    test(7, fail, function() f(9,'f',{'a','b','c'}) end)
+    test(8, fail, function() f() end)
+    test(9, fail, function() f(11,'h',{50,60,70},56) end)
+    test(10, fail, function() f(12,'i',{80,90,100},nil) end)
+    test(11, fail, function() f(12.5,'i',{80,90,100}) end)
+    test(20, succeed, function() g{'x','x','x'} end)
+    test(21, succeed, function() g{'x','y','z','z','z','z'} end)
+    test(22, fail, function() g{'x'} end)
+    test(23, fail, function() g{} end)
+    test(24, fail, function() g() end)
+    test(25, fail, function() g(1) end)
+    test(26, fail, function() g(1,2) end)
+    test(30, succeed, function() h() end)
+    test(31, succeed, function() h(true) end)
+    test(32, succeed, function() h(false) end)
+    test(33, fail, function() h(5) end)
+    test(34, fail, function() h(nil) end)
+    test(35, succeed, function() assert(h()==false) end)
+    test(50, fail, function() z() end)
+    test(60, fail, function() y(22) end)
+    test(61, succeed, function() y(200) end)
+    test(70, succeed, function() x(1,{}) end)
+    test(80, succeed, function() w(0,function() return 1 end) end)
+    test(81, succeed, function() w(0,nil) end)
+    test(82, succeed, function() w(0) end)
+    test(83, succeed, function() w(0,function() return 1 end,1) end)
+    test(84, succeed, function() w(0,nil,1) end)
+    test(85, fail, function() w(0,'f',1) end)
+    test(90, fail, function() v(9) end)
+    test(91, succeed, function() v({'a',1,true,{}}) end)
+
+    function m(...)
+        local a,b,c=sim.checkargs({{type='int',default=1},{type='table',default=NIL,nullable=true},{type='int',default=2}},...)
+        return a,b,c
+    end
+    test(100, succeed, function()
+        local v1,v2,v3=m()
+        assert(v1==1)
+        assert(v2==nil)
+        assert(v3==2)
+    end)
+    print('tests done')
+end
+--]]
+
+function sim.yawPitchRollToAlphaBetaGamma(...)
+    local yawAngle,pitchAngle,rollAngle=sim.checkargs({{type='float'},{type='float'},{type='float'}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     local Rx=sim.buildMatrix({0,0,0},{rollAngle,0,0})
@@ -151,10 +297,8 @@ function sim.yawPitchRollToAlphaBetaGamma(yawAngle,pitchAngle,rollAngle)
     return alpha,beta,gamma
 end
 
-function sim.alphaBetaGammaToYawPitchRoll(alpha,beta,gamma)
-    local args={{type='number'},{type='number'},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,alpha,beta,gamma)
-    if err then error(err) end
+function sim.alphaBetaGammaToYawPitchRoll(...)
+    local alpha,beta,gamma=sim.checkargs({{type='float'},{type='float'},{type='float'}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     local m=sim.buildMatrix({0,0,0},{alpha,beta,gamma})
@@ -260,11 +404,8 @@ function isArray(t)
     return true
 end
 
-function sim.setDebugWatchList(l)
-    local args={{type='table',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,l)
-    if err then error(err) end
-    
+function sim.setDebugWatchList(...)
+    local l=sim.checkargs({{type='table',default=NIL,nullable=true}},...)
     __HIDDEN__.debug.watchList=l
 end
 
@@ -289,11 +430,8 @@ function sim.getUserVariables()
     return ng
 end
 
-function sim.getMatchingPersistentDataTags(pattern)
-    local args={{type='string'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,pattern)
-    if err then error(err) end
-    
+function sim.getMatchingPersistentDataTags(...)
+    local pattern=sim.checkargs({{type='string'}},...)
     local result = {}
     for index, value in ipairs(sim.getPersistentDataTags()) do
         if value:match(pattern) then
@@ -329,20 +467,11 @@ function getAsString(...)
     return(t)
 end
 
-function table.pack(...)
-    return {n=select("#", ...); ...}
-end
-
-function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,prevPos,dlgHandle)
-    local args={{type='string'},{type='string'},{type='number'},{type='boolean'},{type='string',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,title,mainTxt,style,modal,initTxt,titleCols,dlgCols,prevPos,dlgHandle)
-    if err then error(err) end
+function sim.displayDialog(...)
+    local title,mainTxt,style,modal,initTxt=sim.checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default=''}},...)
     
     if sim.getBoolParameter(sim_boolparam_headless) then
         return -1
-    end
-    if type(initTxt)~='string' then
-        initTxt=''
     end
     local retVal=-1
     local center=true
@@ -360,14 +489,10 @@ function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,p
         xml=xml..' modal="false"'
     end
 
-    if prevPos then
-        xml=xml..' placement="absolute" position="'..prevPos[1]..','..prevPos[2]..'">'
+    if center then
+        xml=xml..' placement="center">'
     else
-        if center then
-            xml=xml..' placement="center">'
-        else
-            xml=xml..' placement="relative" position="-50,50">'
-        end
+        xml=xml..' placement="relative" position="-50,50">'
     end
     mainTxt=string.gsub(mainTxt,"&&n","\n")
     xml=xml..'<label text="'..mainTxt..'"/>'
@@ -403,13 +528,9 @@ function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,p
     if not __HIDDEN__.dlg.nextHandle then
         __HIDDEN__.dlg.nextHandle=0
     end
-    if dlgHandle then
-        retVal=dlgHandle
-    else
-        retVal=__HIDDEN__.dlg.nextHandle
-        __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
-    end
-    __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt,titleCols=titleCols,dlgCols=dlgCols}
+    retVal=__HIDDEN__.dlg.nextHandle
+    __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
+    __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt}
     __HIDDEN__.dlg.openDlgsUi[ui]=retVal
     
     if modal then
@@ -420,14 +541,12 @@ function sim.displayDialog(title,mainTxt,style,modal,initTxt,titleCols,dlgCols,p
     return retVal
 end
 
-function sim.endDialog(dlgHandle)
-    local args={{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,dlgHandle)
-    if err then error(err) end
+function sim.endDialog(...)
+    local dlgHandle=sim.checkargs({{type='int'}},...)
 
     if not sim.getBoolParameter(sim_boolparam_headless) then
         if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
-            error("Argument #1 is not a valid dialog handle. (in function 'sim.endDialog')")
+            error("Argument #1 is not a valid dialog handle.")
         end
         if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
             __HIDDEN__.dlg.removeUi(dlgHandle)
@@ -439,32 +558,28 @@ function sim.endDialog(dlgHandle)
     end
 end
 
-function sim.getDialogInput(dlgHandle)
-    local args={{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,dlgHandle)
-    if err then error(err) end
+function sim.getDialogInput(...)
+    local dlgHandle=sim.checkargs({{type='int'}},...)
 
     if sim.getBoolParameter(sim_boolparam_headless) then
         return ''
     end
     if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
-        error("Argument #1 is not a valid dialog handle. (in function 'sim.endDialog')")
+        error("Argument #1 is not a valid dialog handle.")
     end
     local retVal
     retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
     return retVal
 end
 
-function sim.getDialogResult(dlgHandle)
-    local args={{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,dlgHandle)
-    if err then error(err) end
+function sim.getDialogResult(...)
+    local dlgHandle=sim.checkargs({{type='int'}},...)
 
     if sim.getBoolParameter(sim_boolparam_headless) then
         return -1
     end
     if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
-        error("Argument #1 is not a valid dialog handle. (in function 'sim.endDialog')")
+        error("Argument #1 is not a valid dialog handle.")
     end
     local retVal=-1
     retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
@@ -528,10 +643,12 @@ function sysCallEx_cleanup()
     end
 end
 
-function sim.getAlternateConfigs(jointHandles,inputConfig,tipHandle,lowLimits,ranges)
-    local args={{type='table',size=1,subtype='number'},{type='table',size=-1,subtype='number'},{type='number',opt=true},{type='table',size=-1,opt=true,subtype='number'},{type='table',size=-1,opt=true,subtype='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,jointHandles,inputConfig,tipHandle,lowLimits,ranges)
-    if err then error(err) end
+function sim.getAlternateConfigs(...)
+    local jointHandles,inputConfig,tipHandle,lowLimits,ranges=sim.checkargs({{type='table',item_type='int'},{type='table',item_type='float'},{type='int',default=-1},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',default=NIL,nullable=true}},...)
+
+    if #jointHandles<1 or #jointHandles~=#inputConfig or (lowLimits and #jointHandles~=#lowLimits) or (ranges and #jointHandles~=#ranges) then
+        error("Bad table size.")
+    end
     
     local retVal={}
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -618,9 +735,6 @@ function sim.getAlternateConfigs(jointHandles,inputConfig,tipHandle,lowLimits,ra
             sim.setJointPosition(jointHandles[i],inputConfig[i])
         end
         local desiredPose=0
-        if not tipHandle then
-            tipHandle=-1
-        end
         if tipHandle~=-1 then
             desiredPose=sim.getObjectMatrix(tipHandle,-1)
         end
@@ -634,25 +748,24 @@ function sim.getAlternateConfigs(jointHandles,inputConfig,tipHandle,lowLimits,ra
     return configs
 end
 
-function sim.setObjectSelection(handles)
-    local args={{type='table',subtype='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,handles)
-    if err then error(err) end
+function sim.setObjectSelection(...)
+    local handles=sim.checkargs({{type='table',item_type='int'}},...)
     
     sim.removeObjectFromSelection(sim.handle_all)
     sim.addObjectToSelection(handles)
 end
 
-function sim.moveToPose(flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix,callback,auxData,metric,timeStep)
-    local lb=sim.setThreadAutomaticSwitch(false)
-    
-    local args={{type='number'},{type='table',size=12,subtype='number'},{type='table',size=1,subtype='number'},{type='table',size=-3,subtype='number'},{type='table',size=-3,subtype='number'},{type='table',size=12,subtype='number'},{type='function'},{type='any',opt=true},{type='table',size=4,subtype='number',opt=true},{type='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix,callback,auxData,metric,timeStep)
-    if err then error(err) end
+function sim.moveToPose(...)
+    local flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix,callback,auxData,metric,timeStep=sim.checkargs({{type='int'},{type='table',size=12},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size=12},{type='func'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
+
+    if #maxVel<1 or #maxVel~=#maxAccel or #maxVel~=#maxJerk then
+        error("Bad table size.")
+    end
     if not metric and #maxVel<4 then
         error("Arguments #3, #4 and #5 should be of size 4. (in function 'sim.moveToPose')")    
     end
-    if timeStep==nil then timeStep=0 end
+    
+    local lb=sim.setThreadAutomaticSwitch(false)
     
     local outMatrix=sim.unpackDoubleTable(sim.packDoubleTable(currentMatrix))
     local axis,angle=sim.getRotationAxis(currentMatrix,targetMatrix)
@@ -734,14 +847,15 @@ function sim.moveToPose(flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix
     return outMatrix,timeLeft
 end
 
-function sim.moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep)
-    local lb=sim.setThreadAutomaticSwitch(false)
+function sim.moveToConfig(...)
+    local flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep=sim.checkargs({{type='int'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='table',item_type='float',nullable=true},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='func'},{type='any',default=NIL,nullable=true},{type='table',item_type='bool',default=NIL,nullable=true},{type='float',default=0}},...)
 
-    local args={{type='number'},{type='table',size=1,subtype='number'},{type='table',size=-2,subtype='number',opt=true},{type='table',size=-2,subtype='number',opt=true},{type='table',size=-2,subtype='number'},{type='table',size=-2,subtype='number'},{type='table',size=-2,subtype='number'},{type='table',size=-2,subtype='number'},{type='table',size=-2,subtype='number',opt=true},{type='function'},{type='any',opt=true},{type='table',size=-2,subtype='boolean',opt=true},{type='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep)
-    if err then error(err) end
+    if #currentPos<1 or #currentPos~=#maxVel or #currentPos~=#maxAccel or #currentPos~=#maxJerk or #currentPos~=#targetPos or (currentVel and #currentPos~=#currentVel) or (currentAccel and #currentPos~=#currentAccel) or (targetVel and #currentPos~=#targetVel) or (cyclicJoints and #currentPos~=#cyclicJoints) then
+        error("Bad table size.")
+    end
     
-    if timeStep==nil then timeStep=0 end
+    local lb=sim.setThreadAutomaticSwitch(false)
+    
     local currentPosVelAccel={}
     local maxVelAccelJerk={}
     local targetPosVel={}
@@ -825,24 +939,14 @@ function sim.moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAcc
     return outPos,outVel,outAccel,timeLeft
 end
 
-function sim.generateTimeOptimalTrajectory(path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout)
-    local args={{type='table',subtype='table',size=2}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path)
-    if err then error(err) end
+function sim.generateTimeOptimalTrajectory(...)
+    local path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='table',size=2},{type='table',item_type='table',size=2},{type='int',default=1000},{type='table',item_type='int',default=NIL,nullable=true},{type='string',default='not-a-knot'},{type='float',default=5}},...)
     local dof=#(path[1])
-    local args={{type='table',subtype='table',size=2},
-                {type='table',subtype='table',size=dof},
-                {type='table',subtype='table',size=dof},
-                {type='number',opt=true},
-                {type='table',subtype='number',size=dof,opt=true},
-                {type='string',opt=true},
-                {type='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout)
-    if err then error(err) end
+    
+    if dof<1 or dof~=#minMaxVel or dof~=#minMaxAccel or (metric and dof~=#metric) then
+        error("Bad table size.")
+    end
     local lb=sim.setThreadAutomaticSwitch(false)
-    if timeout==nil then timeout=5 end
-    if trajPtSamples==nil then trajPtSamples=1000 end
-    if boundaryCondition==nil then boundaryCondition='not-a-knot' end
     if metric==nil then
         metric={}
         for i=1,dof,1 do
@@ -875,14 +979,14 @@ function sim.generateTimeOptimalTrajectory(path,minMaxVel,minMaxAccel,trajPtSamp
     return r.qs[1],r.ts
 end
 
-function sim.getInterpolatedConfig(path,times,t,types,method,forceOpen)
-    local args={{type='table',subtype='table',size=2},{type='table',subtype='number',size=-1,opt=true},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path,times,t)
-    if err then error(err) end
+function sim.getInterpolatedConfig(...)
+    local path,times,t,types,method,forceOpen=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='float',nullable=true},{type='float'},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
     local dof=#(path[1])
-    local args={{type='table',subtype='table',size=2},{type='table',subtype='number',size=#path,opt=true},{type='number'},{type='table',subtype='number',size=dof,opt=true},{type='table',opt=true},{type='boolean',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path,times,t,types,method,forceOpen)
-    if err then error(err) end
+    
+    if dof<1 or (times and dof~=#times) or (types and dof~=#types) then
+        error("Bad table size.")
+    end
+
     if times==nil and #path>2 then
         error("Argument #2 is not optional when the path contains more than 2 configurations.")
     end
@@ -922,7 +1026,7 @@ function sim.getInterpolatedConfig(path,times,t,types,method,forceOpen)
     else
         if t>1 then t=1 end
     end
-    if method and method.type=='quadraticBezier' then
+    if method.type=='quadraticBezier' then
         local i0,i1,i2
         if t<0.5 then
             if li==1 and not closed then
@@ -961,19 +1065,13 @@ function sim.getInterpolatedConfig(path,times,t,types,method,forceOpen)
     return retVal
 end
 
-function sim.resamplePath(path,finalConfigCnt,metric,types,method,forceOpen)
-    local args={{type='table',subtype='table',size=2}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path)
-    if err then error(err) end
+function sim.resamplePath(...)
+    local path,finalConfigCnt,metric,types,method,forceOpen=sim.checkargs({{type='table',item_type='table',min_size=2},{type='int'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
     local dof=#(path[1])
-    local args={{type='table',subtype='table',size=2},
-                {type='number'},
-                {type='table',subtype='number',size=dof,opt=true},
-                {type='table',subtype='number',size=dof,opt=true},
-                {type='table',opt=true},
-                {type='boolean',opt=true},}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path,finalConfigCnt,metric,types,method,forceOpen)
-    if err then error(err) end
+    
+    if dof<1 or (metric and dof~=#metric) or (types and dof~=#types) then
+        error("Bad table size.")
+    end
 
     local pathLengths=sim.getPathLengths(path,metric,types)
     local retVal={}
@@ -984,18 +1082,14 @@ function sim.resamplePath(path,finalConfigCnt,metric,types,method,forceOpen)
     return retVal
 end
 
-function sim.getPathLengths(path,metric,types)
-    local args={{type='table',subtype='table',size=2}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path)
-    if err then error(err) end
+function sim.getPathLengths(...)
+    local path,metric,types=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
     local dof=#(path[1])
-    local args={{type='table',subtype='table',size=2},
-                {type='table',subtype='number',size=dof,opt=true},
-                {type='table',subtype='number',size=dof,opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,path,metric,types)
-    if err then error(err) end
+    
+    if dof<1 or (metric and dof~=#metric) or (types and dof~=#types) then
+        error("Bad table size.")
+    end
 
-    local dof=#(path[1])
     if metric==nil then
         metric={}
         for i=1,dof,1 do
@@ -1041,11 +1135,9 @@ function sim.getPathLengths(path,metric,types)
     return distancesAlongPath,totDist
 end
 
-function sim.wait(dt,simTime)
-    local args={{type='number'},{type='boolean',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,dt,simTime)
-    if err then error(err) end
-    if simTime==nil then simTime=true end
+function sim.wait(...)
+    local dt,simTime=sim.checkargs({{type='float'},{type='bool',default=true}},...)
+    
     local retVal=0
     if simTime then
         local st=sim.getSimulationTime()
@@ -1062,10 +1154,8 @@ function sim.wait(dt,simTime)
     return retVal
 end
 
-function sim.waitForSignal(sigName)
-    local args={{type='string'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,sigName)
-    if err then error(err) end
+function sim.waitForSignal(...)
+    local sigName=sim.checkargs({{type='string'}},...)
     local retVal
     while true do
         retVal=sim.getIntegerSignal(sigName) or sim.getFloatSignal(sigName) or sim.getStringSignal(sigName)
@@ -1077,12 +1167,9 @@ function sim.waitForSignal(sigName)
     return retVal
 end
 
-function sim.tubeRead(tubeHandle,blocking)
+function sim.tubeRead(...)
     -- For backward compatibility (01.10.2020)
-    local args={{type='number'},{type='boolean',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,tubeHandle,blocking)
-    if err then error(err) end
-    if blocking==nil then blocking=false end
+    local tubeHandle,blocking=sim.checkargs({{type='int'},{type='bool',default=false}},...)
     local retVal
     if blocking then
         while true do
@@ -1098,13 +1185,8 @@ function sim.tubeRead(tubeHandle,blocking)
     return retVal
 end
 
-function sim.serialRead(portHandle,length,blocking,closingStr,timeout)
-    local args={{type='number'},{type='number'},{type='boolean',opt=true},{type='string',opt=true},{type='number',opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,portHandle,length,blocking,closingStr,timeout)
-    if err then error(err) end
-    if blocking==nil then blocking=false end
-    if closingStr==nil then closingStr='' end
-    if timeout==nil then timeout=0 end
+function sim.serialRead(...)
+    local portHandle,length,blocking,closingStr,timeout=sim.checkargs({{type='int'},{type='int'},{type='bool',default=false},{type='string',default=''},{type='float',default=0}},...)
     
     local retVal
     if blocking then
@@ -1164,10 +1246,8 @@ function sim.serialRead(portHandle,length,blocking,closingStr,timeout)
     return retVal
 end
 
-function sim.serialOpen(portString,baudRate)
-    local args={{type='string'},{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,portString,baudRate)
-    if err then error(err) end
+function sim.serialOpen(...)
+    local portString,baudRate=sim.checkargs({{type='string'},{type='int'}},...)
     
     local retVal=sim._serialOpen(portString,baudRate)
     if not __HIDDEN__.serialPortData then
@@ -1177,10 +1257,8 @@ function sim.serialOpen(portString,baudRate)
     return retVal
 end
 
-function sim.serialClose(portHandle)
-    local args={{type='number'}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,portHandle)
-    if err then error(err) end
+function sim.serialClose(...)
+    local portHandle=sim.checkargs({{type='int'}},...)
 
     sim._serialClose(portHandle)
     if __HIDDEN__.serialPortData then
@@ -1193,11 +1271,16 @@ function simRMLMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVe
     return sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
 end
 
-function sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
+function sim.rmlMoveToJointPositions(...)
     -- For backward compatibility (02.10.2020)
-    local args={{type='table',size=1,subtype='number'},{type='number'},{type='table',size=-1,subtype='number',opt=true},{type='table',size=-1,subtype='number',opt=true},{type='table',size=-1,subtype='number'},{type='table',size=-1,subtype='number'},{type='table',size=-1,subtype='number'},{type='table',size=-1,subtype='number'},{type='table',size=-1,subtype='number',opt=true},{type='table',subtype='number',size=-1,opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
-    if err then error(err) end
+    
+    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=sim.checkargs({{type='table',min_size=1,item_type='int'},{type='int'},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',item_type='number',min_size=1,default=NIL,nullable=true}},...)
+    local dof=#jhandles
+    
+    if dof<1 or (currentVel and dof~=#currentVel) or (currentAccel and dof~=#currentAccel) or dof~=#maxVel or dof~=#maxAccel or dof~=#maxJerk or dof~=#targetPos or (targetVel and dof~=#targetVel) or (direction and dof~=#direction) then
+        error("Bad table size.")
+    end
+
     local lb=sim.setThreadAutomaticSwitch(false)
     
     if direction==nil then
@@ -1259,11 +1342,11 @@ function simRMLMoveToPosition(handle,rel,flags,currentVel,currentAccel,maxVel,ma
     return sim.rmlMoveToPose(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
 end
 
-function sim.rmlMoveToPosition(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
+function sim.rmlMoveToPosition(...)
     -- For backward compatibility (02.10.2020)
-    local args={{type='number'},{type='number'},{type='number'},{type='table',size=4,subtype='number',opt=true},{type='table',size=4,subtype='number',opt=true},{type='table',size=4,subtype='number'},{type='table',size=4,subtype='number'},{type='table',size=4,subtype='number'},{type='table',size=3,subtype='number',opt=true},{type='table',size=4,subtype='number',opt=true},{type='table',subtype='number',size=4,opt=true}}
-    local err=sim.checkArgs(debug.getinfo(1,"n").name,args,handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
-    if err then error(err) end
+    
+    local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=sim.checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,nullable=true}},...)
+
     local lb=sim.setThreadAutomaticSwitch(false)
     
     local mStart=sim.getObjectMatrix(handle,rel)
@@ -1470,10 +1553,10 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.moveToConfig@sim','table endPos,table endVel,table endAccel,number timeLeft=sim.moveToConfig(number flags,\ntable currentPos,table currentVel,table currentAccel,table maxVel,table maxAccel,\ntable maxJerk,table targetPos,table targetVel,function callback,auxData=nil,table cyclicJoints=nil,number timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
-    sim.registerScriptFunction('sim.getInterpolatedConfig@sim',"table config=sim.getInterpolatedConfig(table path,table times=nil,number t,table types=nil,method={type='linear'},forceOpen=false)")
+    sim.registerScriptFunction('sim.getInterpolatedConfig@sim',"table config=sim.getInterpolatedConfig(table path,table times,number t,table types=nil,method={type='linear'},forceOpen=false)")
     sim.registerScriptFunction('sim.resamplePath@sim','table path=sim.resamplePath(table path,number finalConfigCnt,table metric=nil,table types=nil)')
     sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,number totalLength=sim.getPathLengths(table path,table metric=nil,table types=nil)')
-    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table_2 minMaxVel,table_2 minMaxAccel,\nnumber trajPtSamples=1000,metric=nil,string boundaryCondition='not-a-knot',number timeout=5)")
+    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table minMaxVel,table minMaxAccel,\nnumber trajPtSamples=1000,metric=nil,string boundaryCondition='not-a-knot',number timeout=5)")
 
     sim.registerScriptFunction('sim.wait@sim','number timeLeft=sim.wait(number dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
