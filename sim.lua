@@ -14,6 +14,8 @@ end
 
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
+math.log10 = math.log10 or function(a) return math.log(a,10) end
+table.getn = table.getn or function(a) return #a end
 if _VERSION~='Lua 5.1' then
     loadstring = load
 end
