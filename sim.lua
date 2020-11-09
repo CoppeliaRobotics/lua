@@ -1473,20 +1473,34 @@ function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
                 else
                     table.insert(sb, '{\n')
                     -- Print the map content ordered according to type, then key:
-                    local a = {}
-                    for n in pairs(tt) do table.insert(a, n) end
-                    table.sort(a)
-                    local tp={'boolean','number','string','function','userdata','thread','table'}
+                    local tp={{'boolean',false},{'number',true},{'string',true},{'function',false},{'userdata',false},{'thread',true},{'table',false},{'any',false}}
+                    local ts={}
+                    local usedKeys={}
                     for j=1,#tp,1 do
-                        for i,n in ipairs(a) do
-                            if type(tt[n])==tp[j] then
-                                table.insert(sb, string.rep(' ', indent+4))
-                                table.insert(sb, tostring(n))
-                                table.insert(sb, '=')
-                                table.insert(sb, __HIDDEN__.anyToString(tt[n], visitedTables,maxLevel, indent+4))
-                                table.insert(sb, ',\n')
+                        local a={}
+                        ts[#ts+1]=a
+                        for key,val in pairs(tt) do
+                            if type(key)==tp[j][1] or (tp[j][1]=='any' and usedKeys[key]==nil) then
+                                a[#a+1]=key
+                                usedKeys[key]=true
                             end
-                        end                
+                        end
+                        if tp[j][2] then
+                            table.sort(a)
+                        end
+                        for k=1,#a,1 do
+                            local key=a[k]
+                            local val=tt[key]
+                            table.insert(sb, string.rep(' ', indent+4))
+                            if type(key)=='string' then
+                                table.insert(sb, __HIDDEN__.getShortString(key,true))
+                            else
+                                table.insert(sb, tostring(key))
+                            end
+                            table.insert(sb, '=')
+                            table.insert(sb, __HIDDEN__.anyToString(val, visitedTables,maxLevel, indent+4))
+                            table.insert(sb, ',\n')
+                        end
                     end
                     table.insert(sb, string.rep(' ', indent))
                     table.insert(sb, '}')
@@ -1513,7 +1527,7 @@ function __HIDDEN__.anyToString(x, visitedTables,maxLevel,tblindent)
     end
 end
 
-function __HIDDEN__.getShortString(x)
+function __HIDDEN__.getShortString(x,omitQuotes)
     if type(x)=='string' then
         if string.find(x,"\0") then
             return "[buffer string]"
@@ -1525,7 +1539,11 @@ function __HIDDEN__.getShortString(x)
                 if #x>160 then
                     return "[long string]"
                 else
-                    return string.format('"%s"', x)
+                    if omitQuotes then
+                        return string.format('%s', x)
+                    else
+                        return string.format('"%s"', x)
+                    end
                 end
             end
         end
