@@ -595,7 +595,15 @@ function GetCollectionHandle(...)
     if string.find(objName,'#')==nil then
         objName=objName..'#'
     end
-    return sim.getCollectionHandle(objName)
+	local retVal=sim.getCollectionHandle(objName..'@silentError')
+	if retVal<0 then
+		-- fallback convenience functionality: new collections do not have any name
+		retVal=sim.getIntegerSignal(objName)
+		if retVal==nil then
+			retVal=sim.getCollectionHandle(objName) -- for correct error reporting
+		end
+	end
+    return retVal
 end
 
 function GetCollisionHandle(...)
