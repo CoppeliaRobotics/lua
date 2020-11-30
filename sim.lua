@@ -141,23 +141,29 @@ function sim.checkarg.handle(v,t)
 end
 --]]
 
-function sim.checkargs(types,...)
+function sim.checkargsEx(opts,types,...)
+    -- level offset at which we should output the error:
+    opts.level=opts.level or 0
+
+    -- level at which we should output the error (1 is current, 2 parent, etc...)
+    local errorLevel=2+opts.level
+
     local fn=''
     local arg=table.pack(...)
     -- check how many arguments are required (default arguments must come last):
     local minArgs=0
     for i=1,#types do
         if minArgs<(i-1) and types[i].default==nil then
-            error('sim.checkargs: bad types spec: non-default arg cannot follow a default arg',2)
+            error('sim.checkargs: bad types spec: non-default arg cannot follow a default arg',errorLevel)
         elseif types[i].default==nil then
             minArgs=minArgs+1
         end
     end
     -- validate number of arguments:
     if arg.n<minArgs then
-        error(fn..'not enough arguments',2)
+        error(fn..'not enough arguments',errorLevel)
     elseif arg.n>#types then
-        error(fn..'too many arguments',2)
+        error(fn..'too many arguments',errorLevel)
     end
     -- check types:
     for i=1,#types do
@@ -176,15 +182,19 @@ function sim.checkargs(types,...)
             -- do the type check, using one of the sim.checkarg.type() functions
             local checkFunc=sim.checkarg[t.type]
             if checkFunc==nil then
-                error(string.format('function sim.checkarg.%s does not exist',t.type),2)
+                error(string.format('function sim.checkarg.%s does not exist',t.type),errorLevel)
             end
             local ok,err=checkFunc(arg[i],t)
             if not ok then
-                error(string.format('%s: argument %d %s',debug.getinfo(2,'n').name,i,err or string.format('must be a %s',t.type)),2)
+                error(string.format('%s: argument %d %s',debug.getinfo(2,'n').name,i,err or string.format('must be a %s',t.type)),errorLevel)
             end
         end
     end
     return unpackx(arg,#types)
+end
+
+function sim.checkargs(types,...)
+    return sim.checkargsEx({},types,...)
 end
 
 --[[
