@@ -437,15 +437,15 @@ function RemoveObjects(...)
     debugFunc("RemoveObjects",...)
     local objHandles,options=...
     local allObjs1=sim.getObjectsInTree(sim.handle_scene,sim.handle_all,0)
-    if sim.boolAnd32(options,2)>0 then
+    if (options & 2)>0 then
         sim.removeObject(sim.handle_all)
     else
-        if sim.boolAnd32(options,1)>0 then
+        if (options & 1)>0 then
             for i=1,#objHandles,1 do
                 local h=objHandles[i]
                 if sim.isHandleValid(h)>0 then
                     local mp=sim.getModelProperty(h)
-                    if sim.boolAnd32(mp,sim.modelproperty_not_model)>0 then
+                    if (mp & sim.modelproperty_not_model)>0 then
                         sim.removeObject(objHandles[i])
                     else
                         sim.removeModel(objHandles[i])

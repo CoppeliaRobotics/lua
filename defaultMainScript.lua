@@ -1,3 +1,4 @@
+backCompatibility=require('defaultMainScriptBackCompatibility')
 -- This is the main script. The main script is not supposed to be modified,
 -- unless there is a very good reason to do it.
 -- Without main script, there is no simulation.
@@ -5,45 +6,38 @@
 function sysCall_init()
     sim.handleSimulationStart()
     sim.openModule(sim.handle_all)
-    sim.handleGraph(sim.handle_all_except_explicit,0)
+    backCompatibility.handle(0)
 end
 
 function sysCall_actuation()
-    sim.resumeThreads(sim.scriptthreadresume_default)
-    sim.resumeThreads(sim.scriptthreadresume_actuation_first)
-    sim.launchThreadedChildScripts()
+    backCompatibility.handle(1)
     sim.handleChildScripts(sim.syscb_actuation)
-    sim.resumeThreads(sim.scriptthreadresume_actuation_last)
+    backCompatibility.handle(2)
     sim.handleCustomizationScripts(sim.syscb_actuation)
     sim.handleAddOnScripts(sim.syscb_actuation)
     sim.handleSandboxScript(sim.syscb_actuation)
     sim.handleModule(sim.handle_all,false)
-    sim.handleIkGroup(sim.handle_all_except_explicit)
+    backCompatibility.handle(3)
     sim.handleDynamics(sim.getSimulationTimeStep())
 end
 
 function sysCall_sensing()
     sim.handleSensingStart()
-    sim.handleCollision(sim.handle_all_except_explicit)
-    sim.handleDistance(sim.handle_all_except_explicit)
+    backCompatibility.handle(4)
     sim.handleProximitySensor(sim.handle_all_except_explicit)
     sim.handleVisionSensor(sim.handle_all_except_explicit)
-    sim.resumeThreads(sim.scriptthreadresume_sensing_first)
+    backCompatibility.handle(5)
     sim.handleChildScripts(sim.syscb_sensing)
-    sim.resumeThreads(sim.scriptthreadresume_sensing_last)
+    backCompatibility.handle(6)
     sim.handleCustomizationScripts(sim.syscb_sensing)
     sim.handleAddOnScripts(sim.syscb_sensing)
     sim.handleSandboxScript(sim.syscb_sensing)
     sim.handleModule(sim.handle_all,true)
-    sim.resumeThreads(sim.scriptthreadresume_allnotyetresumed)
-    if sim.getSimulationState()~=sim.simulation_advancing_abouttostop and sim.getSimulationState()~=sim.simulation_advancing_lastbeforestop then
-        sim.handleGraph(sim.handle_all_except_explicit,sim.getSimulationTime()+sim.getSimulationTimeStep())
-    end
+    backCompatibility.handle(7)
 end
 
 function sysCall_cleanup()
-    sim.resetCollision(sim.handle_all_except_explicit)
-    sim.resetDistance(sim.handle_all_except_explicit)
+    backCompatibility.handle(8)
     sim.resetProximitySensor(sim.handle_all_except_explicit)
     sim.resetVisionSensor(sim.handle_all_except_explicit)
     sim.closeModule(sim.handle_all)

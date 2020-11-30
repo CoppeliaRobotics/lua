@@ -114,7 +114,7 @@ function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scal
     end
     if t==sim.object_shape_type then
         local r,pt=sim.getShapeGeomInfo(objHandle)
-        if sim.boolAnd32(r,1)~=0 then
+        if (r & 1)~=0 then
             return false -- compound
         end
         if pt==sim.pure_primitive_spheroid then

@@ -1,8 +1,8 @@
 local sim={}
 sim.checkarg={}
 NIL={}
-__HIDDEN__={}
-__HIDDEN__.dlg={}
+_S={}
+_S.dlg={}
 
 if unpack then
     -- Lua5.1
@@ -43,7 +43,7 @@ function printf(fmt,...)
     local a=table.pack(...)
     for i=1,a.n do
         if type(a[i])=='table' then
-            a[i]=__HIDDEN__.anyToString(a[i],{},99)
+            a[i]=_S.anyToString(a[i],{},99)
         elseif type(a[i])=='nil' then
             a[i]='nil'
         end
@@ -51,26 +51,26 @@ function printf(fmt,...)
     print(string.format(fmt,table.unpack(a,1,a.n)))
 end
 
-__HIDDEN__.require=require
+_S.require=require
 function require(...)
     local fl
     if sim.setThreadSwitchAllowed then
         fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
     end 
-    local retVals={__HIDDEN__.require(...)}
+    local retVals={_S.require(...)}
     if fl then 
         sim.setThreadSwitchAllowed(fl) 
     end
     return table.unpack(retVals)
 end
 
-__HIDDEN__.pcall=pcall
+_S.pcall=pcall
 function pcall(...)
     local fl
     if sim.setThreadSwitchAllowed then
         fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
     end 
-    local retVals={__HIDDEN__.pcall(...)}
+    local retVals={_S.pcall(...)}
     if fl then 
         sim.setThreadSwitchAllowed(fl) 
     end
@@ -326,7 +326,7 @@ function sim.getObjectsWithTag(tagName,justModels)
     local retObjs={}
     local objs=sim.getObjectsInTree(sim.handle_scene)
     for i=1,#objs,1 do
-        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
+        if (not justModels) or ((sim.getModelProperty(objs[i]) & sim.modelproperty_not_model)==0) then
             local dat=sim.readCustomDataBlockTags(objs[i])
             if dat then
                 for j=1,#dat,1 do
@@ -409,14 +409,14 @@ end
 
 function sim.setDebugWatchList(...)
     local l=sim.checkargs({{type='table',default=NIL,nullable=true}},...)
-    __HIDDEN__.debug.watchList=l
+    _S.debug.watchList=l
 end
 
 function sim.getUserVariables()
     local ng={}
-    if __HIDDEN__.initGlobals then
+    if _S.initGlobals then
         for key,val in pairs(_G) do
-            if not __HIDDEN__.initGlobals[key] then
+            if not _S.initGlobals[key] then
                 ng[key]=val
             end
         end
@@ -429,7 +429,7 @@ function sim.getUserVariables()
     ng.sim_code_function_to_run=nil
     ng.__notFirst__=nil
     ng.__scriptCodeToRun__=nil
-    ng.__HIDDEN__=nil
+    ng._S=nil
     return ng
 end
 
@@ -457,9 +457,9 @@ function getAsString(...)
                 t=t..','
             end
             if type(a[i])=='table' then
-                t=t..__HIDDEN__.tableToString(a[i],{},99)
+                t=t.._S.tableToString(a[i],{},99)
             else
-                t=t..__HIDDEN__.anyToString(a[i],{},99)
+                t=t.._S.anyToString(a[i],{},99)
             end
         end
     end
@@ -478,7 +478,7 @@ function sim.displayDialog(...)
     end
     local retVal=-1
     local center=true
-    if sim.boolAnd32(style,sim.dlgstyle_dont_center)>0 then
+    if (style & sim.dlgstyle_dont_center)>0 then
         center=false
         style=style-sim.dlgstyle_dont_center
     end
@@ -500,23 +500,23 @@ function sim.displayDialog(...)
     mainTxt=string.gsub(mainTxt,"&&n","\n")
     xml=xml..'<label text="'..mainTxt..'"/>'
     if style==sim.dlgstyle_input then
-        xml=xml..'<edit on-editing-finished="__HIDDEN__.dlg.input_callback" id="1"/>'
+        xml=xml..'<edit on-editing-finished="_S.dlg.input_callback" id="1"/>'
     end
     if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
         xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
+        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
         xml=xml..'</group>'
     end
     if style==sim.dlgstyle_ok_cancel then
         xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Ok" on-click="__HIDDEN__.dlg.ok_callback"/>'
-        xml=xml..'<button text="Cancel" on-click="__HIDDEN__.dlg.cancel_callback"/>'
+        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
+        xml=xml..'<button text="Cancel" on-click="_S.dlg.cancel_callback"/>'
         xml=xml..'</group>'
     end
     if style==sim.dlgstyle_yes_no then
         xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Yes" on-click="__HIDDEN__.dlg.yes_callback"/>'
-        xml=xml..'<button text="No" on-click="__HIDDEN__.dlg.no_callback"/>'
+        xml=xml..'<button text="Yes" on-click="_S.dlg.yes_callback"/>'
+        xml=xml..'<button text="No" on-click="_S.dlg.no_callback"/>'
         xml=xml..'</group>'
     end
     xml=xml..'</ui>'
@@ -524,20 +524,20 @@ function sim.displayDialog(...)
     if style==sim.dlgstyle_input then
         simUI.setEditValue(ui,1,initTxt)
     end
-    if not __HIDDEN__.dlg.openDlgs then
-        __HIDDEN__.dlg.openDlgs={}
-        __HIDDEN__.dlg.openDlgsUi={}
+    if not _S.dlg.openDlgs then
+        _S.dlg.openDlgs={}
+        _S.dlg.openDlgsUi={}
     end
-    if not __HIDDEN__.dlg.nextHandle then
-        __HIDDEN__.dlg.nextHandle=0
+    if not _S.dlg.nextHandle then
+        _S.dlg.nextHandle=0
     end
-    retVal=__HIDDEN__.dlg.nextHandle
-    __HIDDEN__.dlg.nextHandle=__HIDDEN__.dlg.nextHandle+1
-    __HIDDEN__.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt}
-    __HIDDEN__.dlg.openDlgsUi[ui]=retVal
+    retVal=_S.dlg.nextHandle
+    _S.dlg.nextHandle=_S.dlg.nextHandle+1
+    _S.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt}
+    _S.dlg.openDlgsUi[ui]=retVal
     
     if modal then
-        while __HIDDEN__.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
+        while _S.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
             sim.switchThread()
         end
     end
@@ -548,16 +548,16 @@ function sim.endDialog(...)
     local dlgHandle=sim.checkargs({{type='int'}},...)
 
     if not sim.getBoolParameter(sim_boolparam_headless) then
-        if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
+        if not _S.dlg.openDlgs[dlgHandle] then
             error("Argument #1 is not a valid dialog handle.")
         end
-        if __HIDDEN__.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
-            __HIDDEN__.dlg.removeUi(dlgHandle)
+        if _S.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
+            _S.dlg.removeUi(dlgHandle)
         end
-        if __HIDDEN__.dlg.openDlgs[dlgHandle].ui then
-            __HIDDEN__.dlg.openDlgsUi[__HIDDEN__.dlg.openDlgs[dlgHandle].ui]=nil
+        if _S.dlg.openDlgs[dlgHandle].ui then
+            _S.dlg.openDlgsUi[_S.dlg.openDlgs[dlgHandle].ui]=nil
         end
-        __HIDDEN__.dlg.openDlgs[dlgHandle]=nil
+        _S.dlg.openDlgs[dlgHandle]=nil
     end
 end
 
@@ -567,11 +567,11 @@ function sim.getDialogInput(...)
     if sim.getBoolParameter(sim_boolparam_headless) then
         return ''
     end
-    if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
+    if not _S.dlg.openDlgs[dlgHandle] then
         error("Argument #1 is not a valid dialog handle.")
     end
     local retVal
-    retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].input
+    retVal=_S.dlg.openDlgs[dlgHandle].input
     return retVal
 end
 
@@ -581,11 +581,11 @@ function sim.getDialogResult(...)
     if sim.getBoolParameter(sim_boolparam_headless) then
         return -1
     end
-    if not __HIDDEN__.dlg.openDlgs[dlgHandle] then
+    if not _S.dlg.openDlgs[dlgHandle] then
         error("Argument #1 is not a valid dialog handle.")
     end
     local retVal=-1
-    retVal=__HIDDEN__.dlg.openDlgs[dlgHandle].state
+    retVal=_S.dlg.openDlgs[dlgHandle].state
     return retVal
 end
 
@@ -613,34 +613,34 @@ function math.randomseed2(seed)
 end
 
 function sim.throttle(t,f)
-    if __HIDDEN__.lastExecTime==nil then __HIDDEN__.lastExecTime={} end
+    if _S.lastExecTime==nil then _S.lastExecTime={} end
     local h=string.dump(f)
     local now=sim.getSystemTime()
-    if __HIDDEN__.lastExecTime[h]==nil or __HIDDEN__.lastExecTime[h]+t<now then
+    if _S.lastExecTime[h]==nil or _S.lastExecTime[h]+t<now then
         f()
-        __HIDDEN__.lastExecTime[h]=now
+        _S.lastExecTime[h]=now
     end
 end
 
 function sysCallEx_beforeInstanceSwitch()
-    __HIDDEN__.dlg.switch()
+    _S.dlg.switch()
 end
 
 function sysCallEx_afterInstanceSwitch()
-    __HIDDEN__.dlg.switchBack()
+    _S.dlg.switchBack()
 end
 
 function sysCallEx_addOnScriptSuspend()
-    __HIDDEN__.dlg.switch()
+    _S.dlg.switch()
 end
 
 function sysCallEx_addOnScriptResume()
-    __HIDDEN__.dlg.switchBack()
+    _S.dlg.switchBack()
 end
 
 function sysCallEx_cleanup()
-    if __HIDDEN__.dlg.openDlgsUi then
-        for key,val in pairs(__HIDDEN__.dlg.openDlgsUi) do
+    if _S.dlg.openDlgsUi then
+        for key,val in pairs(_S.dlg.openDlgsUi) do
             simUI.destroy(key)
         end
     end
@@ -741,7 +741,7 @@ function sim.getAlternateConfigs(...)
         if tipHandle~=-1 then
             desiredPose=sim.getObjectMatrix(tipHandle,-1)
         end
-        configs=__HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,1,tipHandle)
+        configs=_S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,1,tipHandle)
     end
     
     for i=1,#jointHandles,1 do
@@ -1033,7 +1033,7 @@ function sim.getInterpolatedConfig(...)
         local i0,i1,i2
         if t<0.5 then
             if li==1 and not closed then
-                retVal=__HIDDEN__.linearInterpolate(path[li],path[hi],t,types)
+                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
             else
                 i0=li-1
                 i1=li
@@ -1041,13 +1041,13 @@ function sim.getInterpolatedConfig(...)
                 if li==1 then
                     i0=#path-1
                 end
-                local a=__HIDDEN__.linearInterpolate(path[i0],path[i1],0.75+t*0.5,types)
-                local b=__HIDDEN__.linearInterpolate(path[i1],path[i2],0.25+t*0.5,types)
-                retVal=__HIDDEN__.linearInterpolate(a,b,0.5+t,types)
+                local a=_S.linearInterpolate(path[i0],path[i1],0.75+t*0.5,types)
+                local b=_S.linearInterpolate(path[i1],path[i2],0.25+t*0.5,types)
+                retVal=_S.linearInterpolate(a,b,0.5+t,types)
             end
         else
             if hi==#path and not closed then
-                retVal=__HIDDEN__.linearInterpolate(path[li],path[hi],t,types)
+                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
             else
                 i0=li
                 i1=hi
@@ -1056,14 +1056,14 @@ function sim.getInterpolatedConfig(...)
                     i2=2
                 end
                 t=t-0.5
-                local a=__HIDDEN__.linearInterpolate(path[i0],path[i1],0.5+t*0.5,types)
-                local b=__HIDDEN__.linearInterpolate(path[i1],path[i2],t*0.5,types)
-                retVal=__HIDDEN__.linearInterpolate(a,b,t,types)
+                local a=_S.linearInterpolate(path[i0],path[i1],0.5+t*0.5,types)
+                local b=_S.linearInterpolate(path[i1],path[i2],t*0.5,types)
+                retVal=_S.linearInterpolate(a,b,t,types)
             end
         end
     end
     if not method or method.type=='linear' then
-        retVal=__HIDDEN__.linearInterpolate(path[li],path[hi],t,types)
+        retVal=_S.linearInterpolate(path[li],path[hi],t,types)
     end
     return retVal
 end
@@ -1138,6 +1138,35 @@ function sim.getPathLengths(...)
     return distancesAlongPath,totDist
 end
 
+function sim.changeEntityColor(...)
+    local entityHandle,color,colorComponent=sim.checkargs({{type='int'},{type='table', size=3, item_type='float'},{type='int',default=sim.colorcomponent_ambient_diffuse}},...)
+    local colorData={}
+    local objs={entityHandle}
+    if sim.isHandleValid(entityHandle,sim.appobj_collection_type)==1 then
+        objs=sim.getCollectionObjects(entityHandle)
+    end
+    for i=1,#objs,1 do
+        if sim.getObjectType(objs[i])==sim.object_shape_type then
+            local res,visible=sim.getObjectInt32Parameter(objs[i],sim.objintparam_visible)
+            if visible==1 then
+                local res,col=sim.getShapeColor(objs[i],'@compound',colorComponent)
+                colorData[#colorData+1]={handle=objs[i],data=col,comp=colorComponent}
+                sim.setShapeColor(objs[i],nil,colorComponent,color)
+            end
+        end
+    end
+    return colorData
+end
+
+function sim.restoreEntityColor(...)
+    local colorData=sim.checkargs({{type='table'},min_size=1},...)
+    for i=1,#colorData,1 do
+        if sim.isHandleValid(colorData[i].handle,sim.appobj_object_type)==1 then
+            sim.setShapeColor(colorData[i].handle,'@compound',colorData[i].comp,colorData[i].data)
+        end
+    end
+end
+
 function sim.wait(...)
     local dt,simTime=sim.checkargs({{type='float'},{type='bool',default=true}},...)
     
@@ -1161,7 +1190,7 @@ function sim.waitForSignal(...)
     local sigName=sim.checkargs({{type='string'}},...)
     local retVal
     while true do
-        retVal=sim.getIntegerSignal(sigName) or sim.getFloatSignal(sigName) or sim.getStringSignal(sigName)
+        retVal=sim.getIntegerSignal(sigName) or sim.getFloatSignal(sigName) or sim.getDoubleSignal(sigName) or sim.getStringSignal(sigName)
         if retVal then
             break
         end
@@ -1195,8 +1224,8 @@ function sim.serialRead(...)
     if blocking then
         local st=sim.getSystemTimeInMs(-1)
         while true do 
-            local data=__HIDDEN__.serialPortData[portHandle]
-            __HIDDEN__.serialPortData[portHandle]=''
+            local data=_S.serialPortData[portHandle]
+            _S.serialPortData[portHandle]=''
             if #data<length then
                 local d=sim._serialRead(portHandle,length-#data)
                 if d then
@@ -1207,7 +1236,7 @@ function sim.serialRead(...)
                 retVal=string.sub(data,1,length)
                 if #data>length then
                     data=string.sub(data,length+1)
-                    __HIDDEN__.serialPortData[portHandle]=data
+                    _S.serialPortData[portHandle]=data
                 end
                 break
             end
@@ -1217,7 +1246,7 @@ function sim.serialRead(...)
                     retVal=string.sub(data,1,e)
                     if #data>e then
                         data=string.sub(data,e+1)
-                        __HIDDEN__.serialPortData[portHandle]=data
+                        _S.serialPortData[portHandle]=data
                     end
                     break
                 end
@@ -1227,11 +1256,11 @@ function sim.serialRead(...)
                 break
             end
             sim.switchThread()
-            __HIDDEN__.serialPortData[portHandle]=data
+            _S.serialPortData[portHandle]=data
         end
     else
-        local data=__HIDDEN__.serialPortData[portHandle]
-        __HIDDEN__.serialPortData[portHandle]=''
+        local data=_S.serialPortData[portHandle]
+        _S.serialPortData[portHandle]=''
         if #data<length then
             local d=sim._serialRead(portHandle,length-#data)
             if d then
@@ -1241,7 +1270,7 @@ function sim.serialRead(...)
         if #data>length then
             retVal=string.sub(data,1,length)
             data=string.sub(data,length+1)
-            __HIDDEN__.serialPortData[portHandle]=data
+            _S.serialPortData[portHandle]=data
         else
             retVal=data
         end
@@ -1253,10 +1282,10 @@ function sim.serialOpen(...)
     local portString,baudRate=sim.checkargs({{type='string'},{type='int'}},...)
     
     local retVal=sim._serialOpen(portString,baudRate)
-    if not __HIDDEN__.serialPortData then
-        __HIDDEN__.serialPortData={}
+    if not _S.serialPortData then
+        _S.serialPortData={}
     end
-    __HIDDEN__.serialPortData[retVal]=''
+    _S.serialPortData[retVal]=''
     return retVal
 end
 
@@ -1264,8 +1293,8 @@ function sim.serialClose(...)
     local portHandle=sim.checkargs({{type='int'}},...)
 
     sim._serialClose(portHandle)
-    if __HIDDEN__.serialPortData then
-        __HIDDEN__.serialPortData[portHandle]=nil
+    if _S.serialPortData then
+        _S.serialPortData[portHandle]=nil
     end
 end
 
@@ -1292,7 +1321,7 @@ function sim.rmlMoveToJointPositions(...)
             direction[i]=0
         end
     end
-    function __HIDDEN__.tmpCb(conf,vel,accel,jhandles)
+    function _S.tmpCb(conf,vel,accel,jhandles)
         for i=1,#conf,1 do
             local k=jhandles[i]
             if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
@@ -1331,11 +1360,11 @@ function sim.rmlMoveToJointPositions(...)
         end
     end
     
-    local endPos,endVel,endAccel,timeLeft=sim.moveToConfig(flags,currentConf,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,__HIDDEN__.tmpCb,jhandles,cycl)
+    local endPos,endVel,endAccel,timeLeft=sim.moveToConfig(flags,currentConf,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,_S.tmpCb,jhandles,cycl)
     local res=0
     if endPos then res=1 end
     
-    __HIDDEN__.tmpCb=nil
+    _S.tmpCb=nil
     sim.setThreadAutomaticSwitch(lb)
     return res,endPos,endVel,endAccel,timeLeft
 end
@@ -1360,13 +1389,13 @@ function sim.rmlMoveToPosition(...)
         targetQuat=sim.getObjectQuaternion(handle,rel)
     end
     local mGoal=sim.buildMatrixQ(targetPos,targetQuat)
-    function __HIDDEN__.tmpCb(m,v,a,data)
+    function _S.tmpCb(m,v,a,data)
         sim.setObjectMatrix(data.handle,data.rel,m)
     end
     local data={}
     data.handle=handle
     data.rel=rel
-    local endMatrix,timeLeft=sim.moveToPose(flags,mStart,maxVel,maxAccel,maxJerk,mGoal,__HIDDEN__.tmpCb,data)
+    local endMatrix,timeLeft=sim.moveToPose(flags,mStart,maxVel,maxAccel,maxJerk,mGoal,_S.tmpCb,data)
     local res=0
     local nPos,nQuat
     if endMatrix then 
@@ -1374,18 +1403,42 @@ function sim.rmlMoveToPosition(...)
         nQuat=sim.getQuaternionFromMatrix(endMatrix)
         res=1 
     end
-    __HIDDEN__.tmpCb=nil
+    _S.tmpCb=nil
     sim.setThreadAutomaticSwitch(lb)
     return res,nPos,nQuat,{0,0,0,0},{0,0,0,0},timeLeft
 end
 
+function sim.boolOr32(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)|math.floor(b)
+end
+function sim.boolAnd32(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)&math.floor(b)
+end
+function sim.boolXor32(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)~math.floor(b)
+end
+function sim.boolOr16(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)|math.floor(b)
+end
+function sim.boolAnd16(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)&math.floor(b)
+end
+function sim.boolXor16(a,b)
+    -- For backward compatibility (02.10.2020)
+    return math.floor(a)~math.floor(b)
+end
 
 ----------------------------------------------------------
 
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
-function __HIDDEN__.linearInterpolate(conf1,conf2,t,types)
+function _S.linearInterpolate(conf1,conf2,t,types)
     local retVal={}
     local qcnt=0
     for i=1,#conf1,1 do
@@ -1415,7 +1468,7 @@ function __HIDDEN__.linearInterpolate(conf1,conf2,t,types)
     return retVal
 end
 
-function __HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index,tipHandle)
+function _S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index,tipHandle)
     if index>#jointHandles then
         if tipHandle==-1 then
             return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
@@ -1438,7 +1491,7 @@ function __HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS
         end
         local solutions={}
         while c[index]<=x[index][2] do
-            local s=__HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,c,x,index+1,tipHandle)
+            local s=_S.loopThroughAltConfigSolutions(jointHandles,desiredPose,c,x,index+1,tipHandle)
             for i=1,#s,1 do
                 solutions[#solutions+1]=s[i]
             end
@@ -1448,11 +1501,11 @@ function __HIDDEN__.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS
     end
 end
 
-function __HIDDEN__.comparableTables(t1,t2)
+function _S.comparableTables(t1,t2)
     return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
 
-function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
+function _S.tableToString(tt,visitedTables,maxLevel,indent)
 	indent = indent or 0
     maxLevel=maxLevel-1
 	if type(tt) == 'table' then
@@ -1467,7 +1520,7 @@ function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
                 if isArray(tt) then
                     table.insert(sb, '{')
                     for i = 1, #tt do
-                        table.insert(sb, __HIDDEN__.anyToString(tt[i], visitedTables,maxLevel, indent))
+                        table.insert(sb, _S.anyToString(tt[i], visitedTables,maxLevel, indent))
                         if i < #tt then table.insert(sb, ', ') end
                     end
                     table.insert(sb, '}')
@@ -1494,12 +1547,12 @@ function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
                             local val=tt[key]
                             table.insert(sb, string.rep(' ', indent+4))
                             if type(key)=='string' then
-                                table.insert(sb, __HIDDEN__.getShortString(key,true))
+                                table.insert(sb, _S.getShortString(key,true))
                             else
                                 table.insert(sb, tostring(key))
                             end
                             table.insert(sb, '=')
-                            table.insert(sb, __HIDDEN__.anyToString(val, visitedTables,maxLevel, indent+4))
+                            table.insert(sb, _S.anyToString(val, visitedTables,maxLevel, indent+4))
                             table.insert(sb, ',\n')
                         end
                     end
@@ -1511,24 +1564,24 @@ function __HIDDEN__.tableToString(tt,visitedTables,maxLevel,indent)
             end
         end
     else
-        return __HIDDEN__.anyToString(tt, visitedTables,maxLevel, indent)
+        return _S.anyToString(tt, visitedTables,maxLevel, indent)
     end
 end
 
-function __HIDDEN__.anyToString(x, visitedTables,maxLevel,tblindent)
+function _S.anyToString(x, visitedTables,maxLevel,tblindent)
     local tblindent = tblindent or 0
     if 'nil' == type(x) then
         return tostring(nil)
     elseif 'table' == type(x) then
-        return __HIDDEN__.tableToString(x, visitedTables,maxLevel, tblindent)
+        return _S.tableToString(x, visitedTables,maxLevel, tblindent)
     elseif 'string' == type(x) then
-        return __HIDDEN__.getShortString(x)
+        return _S.getShortString(x)
     else
         return tostring(x)
     end
 end
 
-function __HIDDEN__.getShortString(x,omitQuotes)
+function _S.getShortString(x,omitQuotes)
     if type(x)=='string' then
         if string.find(x,"\0") then
             return "[buffer string]"
@@ -1552,7 +1605,7 @@ function __HIDDEN__.getShortString(x,omitQuotes)
     return "[not a string]"
 end
 
-function __HIDDEN__.executeAfterLuaStateInit()
+function _S.executeAfterLuaStateInit()
     quit=sim.quitSimulator
     exit=sim.quitSimulator
     sim.registerScriptFunction('quit@sim','quit()')
@@ -1587,6 +1640,9 @@ function __HIDDEN__.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.serialRead@sim',"string data=sim.serialRead(number portHandle,number dataLengthToRead,boolean blockingOperation,string closingString='',number timeout=0)")
     sim.registerScriptFunction('sim.rmlMoveToJointPositions@sim',"Deprecated. Use 'sim.moveToConfig' instead")
     sim.registerScriptFunction('sim.rmlMoveToPosition@sim',"Deprecated. Use 'sim.moveToPose' instead")
+	
+    sim.registerScriptFunction('sim.changeEntityColor@sim','table originalColorData=sim.changeEntityColor(number entityHandle,table_3 newColor,\nnumber colorComponent=sim.colorcomponent_ambient_diffuse)')
+    sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table originalColorData)')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
@@ -1595,71 +1651,71 @@ function __HIDDEN__.executeAfterLuaStateInit()
         __initFunctions=nil
     end
     
-    __HIDDEN__.initGlobals={}
+    _S.initGlobals={}
     for key,val in pairs(_G) do
-        __HIDDEN__.initGlobals[key]=true
+        _S.initGlobals[key]=true
     end
-    __HIDDEN__.initGlobals.__HIDDEN__=nil
-    __HIDDEN__.executeAfterLuaStateInit=nil
+    _S.initGlobals._S=nil
+    _S.executeAfterLuaStateInit=nil
 end
 
-function __HIDDEN__.dlg.ok_callback(ui)
-    local h=__HIDDEN__.dlg.openDlgsUi[ui]
-    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_ok
-    if __HIDDEN__.dlg.openDlgs[h].style==sim.dlgstyle_input then
-        __HIDDEN__.dlg.openDlgs[h].input=simUI.getEditValue(ui,1)
+function _S.dlg.ok_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.openDlgs[h].state=sim.dlgret_ok
+    if _S.dlg.openDlgs[h].style==sim.dlgstyle_input then
+        _S.dlg.openDlgs[h].input=simUI.getEditValue(ui,1)
     end
-    __HIDDEN__.dlg.removeUi(h)
+    _S.dlg.removeUi(h)
 end
 
-function __HIDDEN__.dlg.cancel_callback(ui)
-    local h=__HIDDEN__.dlg.openDlgsUi[ui]
-    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_cancel
-    __HIDDEN__.dlg.removeUi(h)
+function _S.dlg.cancel_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.openDlgs[h].state=sim.dlgret_cancel
+    _S.dlg.removeUi(h)
 end
 
-function __HIDDEN__.dlg.input_callback(ui,id,val)
-    local h=__HIDDEN__.dlg.openDlgsUi[ui]
-    __HIDDEN__.dlg.openDlgs[h].input=val
+function _S.dlg.input_callback(ui,id,val)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.openDlgs[h].input=val
 end
 
-function __HIDDEN__.dlg.yes_callback(ui)
-    local h=__HIDDEN__.dlg.openDlgsUi[ui]
-    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_yes
-    __HIDDEN__.dlg.removeUi(h)
+function _S.dlg.yes_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.openDlgs[h].state=sim.dlgret_yes
+    _S.dlg.removeUi(h)
 end
 
-function __HIDDEN__.dlg.no_callback(ui)
-    local h=__HIDDEN__.dlg.openDlgsUi[ui]
-    __HIDDEN__.dlg.openDlgs[h].state=sim.dlgret_no
-    __HIDDEN__.dlg.removeUi(h)
+function _S.dlg.no_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.openDlgs[h].state=sim.dlgret_no
+    _S.dlg.removeUi(h)
 end
 
-function __HIDDEN__.dlg.removeUi(handle)
-    local ui=__HIDDEN__.dlg.openDlgs[handle].ui
+function _S.dlg.removeUi(handle)
+    local ui=_S.dlg.openDlgs[handle].ui
     local x,y=simUI.getPosition(ui)
-    __HIDDEN__.dlg.openDlgs[handle].previousPos={x,y}
+    _S.dlg.openDlgs[handle].previousPos={x,y}
     simUI.destroy(ui)
-    __HIDDEN__.dlg.openDlgsUi[ui]=nil
-    __HIDDEN__.dlg.openDlgs[handle].ui=nil
+    _S.dlg.openDlgsUi[ui]=nil
+    _S.dlg.openDlgs[handle].ui=nil
 end
 
-function __HIDDEN__.dlg.switch()
-    if __HIDDEN__.dlg.openDlgsUi then
-        for key,val in pairs(__HIDDEN__.dlg.openDlgsUi) do
+function _S.dlg.switch()
+    if _S.dlg.openDlgsUi then
+        for key,val in pairs(_S.dlg.openDlgsUi) do
             local ui=key
             local h=val
-            __HIDDEN__.dlg.removeUi(h)
+            _S.dlg.removeUi(h)
         end
     end
 end
 
-function __HIDDEN__.dlg.switchBack()
-    if __HIDDEN__.dlg.openDlgsUi then
-        local dlgs=sim.unpackTable(sim.packTable(__HIDDEN__.dlg.openDlgs)) -- make a deep copy
+function _S.dlg.switchBack()
+    if _S.dlg.openDlgsUi then
+        local dlgs=sim.unpackTable(sim.packTable(_S.dlg.openDlgs)) -- make a deep copy
         for key,val in pairs(dlgs) do
             if val.state==sim.dlgret_still_open then
-                __HIDDEN__.dlg.openDlgs[key]=nil
+                _S.dlg.openDlgs[key]=nil
                 sim.displayDialog(val.title,val.mainTxt,val.style,false,val.input,val.titleCols,val.dlgCols,val.previousPos,key)
             end
         end
@@ -1669,8 +1725,8 @@ end
 
 -- Hidden, debugging functions:
 ----------------------------------------------------------
-__HIDDEN__.debug={}
-function __HIDDEN__.debug.entryFunc(info)
+_S.debug={}
+function _S.debug.entryFunc(info)
     local scriptName=info[1]
     local funcName=info[2]
     local funcType=info[3]
@@ -1679,14 +1735,14 @@ function __HIDDEN__.debug.entryFunc(info)
     local sysCall=info[6]
     local simTime=info[7]
     local simTimeStr=''
-    if (debugLevel~=sim.scriptdebug_vars_interval) or (not __HIDDEN__.debug.lastInterval) or (sim.getSystemTimeInMs(-1)>__HIDDEN__.debug.lastInterval+1000) then
-        __HIDDEN__.debug.lastInterval=sim.getSystemTimeInMs(-1)
+    if (debugLevel~=sim.scriptdebug_vars_interval) or (not _S.debug.lastInterval) or (sim.getSystemTimeInMs(-1)>_S.debug.lastInterval+1000) then
+        _S.debug.lastInterval=sim.getSystemTimeInMs(-1)
         if sim.getSimulationState()~=sim.simulation_stopped then
             simTimeStr=simTime..' '
         end
         if (debugLevel>=sim.scriptdebug_vars) or (debugLevel==sim.scriptdebug_vars_interval) then
             local prefix='DEBUG: '..simTimeStr..' '
-            local t=__HIDDEN__.debug.getVarChanges(prefix)
+            local t=_S.debug.getVarChanges(prefix)
             if t then
                 sim.addLog(sim.verbosity_msgs,t)
             end
@@ -1704,27 +1760,27 @@ function __HIDDEN__.debug.entryFunc(info)
     end
 end
 
-function __HIDDEN__.debug.getVarChanges(pref)
+function _S.debug.getVarChanges(pref)
     local t=''
-    __HIDDEN__.debug.userVarsOld=__HIDDEN__.debug.userVars
-    __HIDDEN__.debug.userVars=sim.unpackTable(sim.packTable(sim.getUserVariables())) -- deep copy
-    if __HIDDEN__.debug.userVarsOld then
-        if __HIDDEN__.debug.watchList and type(__HIDDEN__.debug.watchList)=='table' and #__HIDDEN__.debug.watchList>0 then
-            for i=1,#__HIDDEN__.debug.watchList,1 do
-                local str=__HIDDEN__.debug.watchList[i]
+    _S.debug.userVarsOld=_S.debug.userVars
+    _S.debug.userVars=sim.unpackTable(sim.packTable(sim.getUserVariables())) -- deep copy
+    if _S.debug.userVarsOld then
+        if _S.debug.watchList and type(_S.debug.watchList)=='table' and #_S.debug.watchList>0 then
+            for i=1,#_S.debug.watchList,1 do
+                local str=_S.debug.watchList[i]
                 if type(str)=='string' then
-                    local var1=__HIDDEN__.debug.getVar('__HIDDEN__.debug.userVarsOld.'..str)
-                    local var2=__HIDDEN__.debug.getVar('__HIDDEN__.debug.userVars.'..str)
+                    local var1=_S.debug.getVar('_S.debug.userVarsOld.'..str)
+                    local var2=_S.debug.getVar('_S.debug.userVars.'..str)
                     if var1~=nil or var2~=nil then
-                        t=__HIDDEN__.debug.getVarDiff(pref,str,var1,var2)
+                        t=_S.debug.getVarDiff(pref,str,var1,var2)
                     end
                 end
             end
         else
-            t=__HIDDEN__.debug.getVarDiff(pref,'',__HIDDEN__.debug.userVarsOld,__HIDDEN__.debug.userVars)
+            t=_S.debug.getVarDiff(pref,'',_S.debug.userVarsOld,_S.debug.userVars)
         end
     end
-    __HIDDEN__.debug.userVarsOld=nil
+    _S.debug.userVarsOld=nil
     if #t>0 then
 --        t=t:sub(1,-2) -- remove last linefeed
         t=t:sub(1,-4) -- remove last linefeed
@@ -1732,7 +1788,7 @@ function __HIDDEN__.debug.getVarChanges(pref)
     end
 end
 
-function __HIDDEN__.debug.getVar(varName)
+function _S.debug.getVar(varName)
     local f=loadstring('return '..varName)
     if f then
         local res,val=pcall(f)
@@ -1742,32 +1798,32 @@ function __HIDDEN__.debug.getVar(varName)
     end
 end
 
-function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
+function _S.debug.getVarDiff(pref,varName,oldV,newV)
     local t=''
     local lf='<br>'--'\n'
-    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or __HIDDEN__.comparableTables(oldV,newV) )  then  -- comparableTables: an empty map is seen as an array
+    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or _S.comparableTables(oldV,newV) )  then  -- comparableTables: an empty map is seen as an array
         if type(newV)~='table' then
             if newV~=oldV then
-                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '..__HIDDEN__.getShortString(tostring(newV))..lf
+                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '.._S.getShortString(tostring(newV))..lf
             end
         else
             if isArray(oldV) and isArray(newV) then -- an empty map is seen as an array
                 -- removed items:
                 if #oldV>#newV then
                     for i=1,#oldV-#newV,1 do
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
+                        t=t.._S.debug.getVarDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
                     end
                 end
                 -- added items:
                 if #newV>#oldV then
                     for i=1,#newV-#oldV,1 do
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
+                        t=t.._S.debug.getVarDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
                     end
                 end
                 -- modified items:
                 local l=math.min(#newV,#oldV)
                 for i=1,l,1 do
-                    t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i..']',oldV[i],newV[i])
+                    t=t.._S.debug.getVarDiff(pref,varName..'['..i..']',oldV[i],newV[i])
                 end
             else
                 local nvarName=varName
@@ -1775,21 +1831,21 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
                 -- removed items:
                 for k,vo in pairs(oldV) do
                     if newV[k]==nil then
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,vo,nil)
+                        t=t.._S.debug.getVarDiff(pref,nvarName..k,vo,nil)
                     end
                 end
                 
                 -- added items:
                 for k,vn in pairs(newV) do
                     if oldV[k]==nil then
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,nil,vn)
+                        t=t.._S.debug.getVarDiff(pref,nvarName..k,nil,vn)
                     end
                 end
                 
                 -- modified items:
                 for k,vo in pairs(oldV) do
                     if newV[k] then
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,vo,newV[k])
+                        t=t.._S.debug.getVarDiff(pref,nvarName..k,vo,newV[k])
                     end
                 end
             end
@@ -1797,31 +1853,31 @@ function __HIDDEN__.debug.getVarDiff(pref,varName,oldV,newV)
     else
         if oldV==nil then
             if type(newV)~='table' then
-                t=t..pref..'new: '..varName..' ('..type(newV)..'): '..__HIDDEN__.getShortString(tostring(newV))..lf
+                t=t..pref..'new: '..varName..' ('..type(newV)..'): '.._S.getShortString(tostring(newV))..lf
             else
                 t=t..pref..'new: '..varName..' ('..type(newV)..')'..lf
                 if isArray(newV) then
                     for i=1,#newV,1 do
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,varName..'['..i..']',nil,newV[i])
+                        t=t.._S.debug.getVarDiff(pref,varName..'['..i..']',nil,newV[i])
                     end
                 else
                     local nvarName=varName
                     if nvarName~='' then nvarName=nvarName..'.' end
                     for k,v in pairs(newV) do
-                        t=t..__HIDDEN__.debug.getVarDiff(pref,nvarName..k,nil,v)
+                        t=t.._S.debug.getVarDiff(pref,nvarName..k,nil,v)
                     end
                 end
             end
         elseif newV==nil then
             if type(oldV)~='table' then
-                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '..__HIDDEN__.getShortString(tostring(oldV))..lf
+                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '.._S.getShortString(tostring(oldV))..lf
             else
                 t=t..pref..'del: '..varName..' ('..type(oldV)..')'..lf
             end
         else
             -- variable changed type.. register that as del and new:
-            t=t..__HIDDEN__.debug.getVarDiff(pref,varName,oldV,nil)
-            t=t..__HIDDEN__.debug.getVarDiff(pref,varName,nil,newV)
+            t=t.._S.debug.getVarDiff(pref,varName,oldV,nil)
+            t=t.._S.debug.getVarDiff(pref,varName,nil,newV)
         end
     end
     return t

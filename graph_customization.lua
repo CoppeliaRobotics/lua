@@ -1,61 +1,140 @@
-function sysCall_cleanup()
-    cleanup()
-end
+-- e.g. to record data constantly, i.e. also when simulation is not running:
+
+--[[
+graph=require('graph_customization')
 
 function sysCall_init()
-    init()
+    graphHandle=sim.getObjectHandle(sim.handle_self)
+    
+    -- Create/update data streams/curves:
+    sim.destroyGraphCurve(graphHandle,-1)
+    stream1=sim.addGraphDataStream(graphHandle,'Object position X','m')
+    objectHandle=sim.getObjectHandle('Shape')
+    startTime=sim.getSystemTime()
+    
+    graph.init()
+end
+
+function appendMeasurementPts()
+    -- append measurement points, e.g. the x-position of an object:
+    local p=sim.getObjectPosition(objectHandle,-1)
+    sim.setGraphDataStreamValue(graphHandle,stream1,p[1])
+    
+    graph.handle(sim.getSystemTime()-startTime)
 end
 
 function sysCall_sensing()
-    sensing()
+    appendMeasurementPts()
 end
 
 function sysCall_nonSimulation()
-    nonSimulation()
+    appendMeasurementPts()
+end
+
+function sysCall_suspended()
+    appendMeasurementPts()
+end
+
+-- Overwrite following system callback functions:
+function sysCall_beforeSimulation()
 end
 
 function sysCall_afterSimulation()
-    afterSimulation()
+end
+
+function sysCall_suspend()
+end
+
+function sysCall_resume()
+end
+--]]
+
+function sysCall_init()
+    _S.graph.init()
+end
+
+function sysCall_cleanup()
+    _S.graph.cleanup()
+end
+
+function sysCall_sensing()
+    _S.graph.handle()
+end
+
+function sysCall_nonSimulation()
+    local res,upd=sim.getObjectInt32Parameter(_S.graph.model,sim.graphintparam_needs_refresh)
+    if upd==1 then
+        _S.graph.refresh=true
+        _S.graph.updateCurves(true)
+    end
 end
 
 function sysCall_beforeSimulation()
-    beforeSimulation()
+    _S.graph.beforeSimulation()
+end
+
+function sysCall_afterSimulation()
+    _S.graph.afterSimulation()
+end
+
+function sysCall_suspend()
+    _S.graph.updateCurves(true)
+    _S.graph.enableMouseInteractions(true)
+end
+
+function sysCall_resume()
+    _S.graph.enableMouseInteractions(false)
+    _S.graph.updateCurves(true)
+end
+
+function sysCall_beforeInstanceSwitch()
+    _S.graph.removePlot()
+end
+
+function sysCall_afterInstanceSwitch()
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.updateCurves(true)
+    _S.graph.enableMouseInteractions(true)
 end
 
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
     local xml=[[
             <label text="Visible while simulation not running"/>
-            <checkbox text="" on-change="visibleDuringNonSimulation_callback" id="1" />
+            <checkbox text="" on-change="_S.graph.visibleDuringNonSimulation_callback" id="1" />
 
             <label text="Visible while simulation running"/>
-            <checkbox text="" on-change="visibleDuringSimulation_callback" id="2" />
+            <checkbox text="" on-change="_S.graph.visibleDuringSimulation_callback" id="2" />
 
             <label text="Show time plots"/>
-            <checkbox text="" on-change="timeOnly_callback" id="3" />
+            <checkbox text="" on-change="_S.graph.timeOnly_callback" id="3" />
 
             <label text="Show X/Y plots"/>
-            <checkbox text="" on-change="xyOnly_callback" id="4" />
+            <checkbox text="" on-change="_S.graph.xyOnly_callback" id="4" />
 
             <label text="X/Y plots keep 1:1 aspect ratio"/>
-            <checkbox text="" on-change="squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+            <checkbox text="" on-change="_S.graph.squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+            
+            <label text="Update frequency"/>
+            <combobox id="7" on-change="_S.graph.updateFreqChanged_callback"></combobox>
             
             <label text="Preferred graph position"/>
-            <combobox id="6" on-change="graphPosChanged_callback"></combobox>
+            <combobox id="6" on-change="_S.graph.graphPosChanged_callback"></combobox>
     ]]
-    ui=utils.createCustomUi(xml,sim.getObjectName(model),previousDlgPos,true,'removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.ui=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousDlgPos,true,'_S.graph.removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
+    _S.graph.setDlgItemContent()
 end
 
-function removeDlg()
-    local x,y=simUI.getPosition(ui)
-    previousDlgPos={x,y}
-    simUI.destroy(ui)
-    ui=nil
+_S.graph={}
+
+function _S.graph.removeDlg()
+    local x,y=simUI.getPosition(_S.graph.ui)
+    _S.graph.previousDlgPos={x,y}
+    simUI.destroy(_S.graph.ui)
+    _S.graph.ui=nil
 end
 
-getMinMax=function(minMax1,minMax2)
+function _S.graph.getMinMax(minMax1,minMax2)
     if not minMax1 then
         return minMax2
     end
@@ -66,57 +145,57 @@ getMinMax=function(minMax1,minMax2)
     return(ret)
 end
 
-clearCurves=function()
-    if plotUi then
-        for pl=1,#plots,1 do
-            local ii=plots[pl]
-            for key,value in pairs(curves[ii]) do
-                simUI.clearCurve(plotUi,ii,key)
+function _S.graph.clearCurves()
+    if _S.graph.plotUi then
+        for pl=1,#_S.graph.plots,1 do
+            local ii=_S.graph.plots[pl]
+            for key,value in pairs(_S.graph.curves[ii]) do
+                simUI.clearCurve(_S.graph.plotUi,ii,key)
             end
         end
     end
 end
 
-enableMouseInteractions=function(enable)
-    if plotUi then
-        for pl=1,#plots,1 do
-            local ii=plots[pl]
-            simUI.setMouseOptions(plotUi,ii,enable,enable,enable,enable)
+function _S.graph.enableMouseInteractions(enable)
+    if _S.graph.plotUi then
+        for pl=1,#_S.graph.plots,1 do
+            local ii=_S.graph.plots[pl]
+            simUI.setMouseOptions(_S.graph.plotUi,ii,enable,enable,enable,enable)
         end
     end
 end
 
-function onclickCurve(ui,id,name,index,x,y)
+function _S.graph.onclickCurve(ui,id,name,index,x,y)
     local msg=string.format("Point on curve '%s': (%.4f,%.4f)",name,x,y)
     simUI.setLabelText(ui,3,msg)
 end
 
-function onCloseModal_callback()
-    if modalDlg then
-        simUI.destroy(modalDlg)
-        modalDlg=nil
+function _S.graph.onCloseModal_callback()
+    if _S.graph.modalDlg then
+        simUI.destroy(_S.graph.modalDlg)
+        _S.graph.modalDlg=nil
     end
-    selectedCurve=nil
+    _S.graph.selectedCurve=nil
 end
 
-function toClipboardClick_callback()
-    sim.auxFunc("curveToClipboard",model,selectedCurve[2],selectedCurve[1])
-    onCloseModal_callback()
+function _S.graph.toClipboardClick_callback()
+    sim.auxFunc("curveToClipboard",_S.graph.model,_S.graph.selectedCurve[2],_S.graph.selectedCurve[1])
+    _S.graph.onCloseModal_callback()
 end
 
-function toStaticClick_callback()
-    sim.auxFunc("curveToStatic",model,selectedCurve[2],selectedCurve[1])
-    onCloseModal_callback()
-    prepareCurves()
+function _S.graph.toStaticClick_callback()
+    sim.auxFunc("curveToStatic",_S.graph.model,_S.graph.selectedCurve[2],_S.graph.selectedCurve[1])
+    _S.graph.onCloseModal_callback()
+    _S.graph.prepareCurves()
 end
 
-function removeStaticClick_callback()
-    sim.auxFunc("removeStaticCurve",model,selectedCurve[2],selectedCurve[1])
-    onCloseModal_callback()
-    prepareCurves()
+function _S.graph.removeStaticClick_callback()
+    sim.auxFunc("removeStaticCurve",_S.graph.model,_S.graph.selectedCurve[2],_S.graph.selectedCurve[1])
+    _S.graph.onCloseModal_callback()
+    _S.graph.prepareCurves()
 end
 
-function onlegendclick(ui,id,curveName)
+function _S.graph.onlegendclick(ui,id,curveName)
     if sim.getSimulationState()==sim.simulation_stopped then
         local c={}
         local i=1
@@ -124,117 +203,125 @@ function onlegendclick(ui,id,curveName)
             c[i]=token
             i=i+1
         end
-        selectedCurve={c[1],id-1}
-        if c[2]=='(STATIC)' then
-            selectedCurve[2]=id+2
+        _S.graph.selectedCurve={c[1],id-1}
+        if c[2]=='(STATIC)' or c[2]=='[STATIC]' then
+            _S.graph.selectedCurve[2]=id+2
         end
 
         local xml=[[
-        <button text="Copy curve to clipboard" on-click="toClipboardClick_callback"/>
+        <button text="Copy curve to clipboard" on-click="_S.graph.toClipboardClick_callback"/>
                 <label text="" style="* {margin-left: 350px;font-size: 1px;}"/>
         ]]
-        if c[2]=='(STATIC)' then
-            xml=xml..'<button text="Remove static curve" on-click="removeStaticClick_callback"/>'
+        if c[2]=='(STATIC)' or c[2]=='[STATIC]' then
+            xml=xml..'<button text="Remove static curve" on-click="_S.graph.removeStaticClick_callback"/>'
         else
-            xml=xml..'<button text="Duplicate curve to static curve" on-click="toStaticClick_callback"/>'
+            xml=xml..'<button text="Duplicate curve to static curve" on-click="_S.graph.toStaticClick_callback"/>'
         end
-        modalDlg=utils.createCustomUi(xml,"Operation on Selected Curve","center",true,"onCloseModal_callback",true)
+        _S.graph.modalDlg=_S.graph.utils.createCustomUi(xml,"Operation on Selected Curve","center",true,"_S.graph.onCloseModal_callback",true)
     end
 end
 
-updateCurves=function()
-    if plotUi then
-        for pl=1,#plots,1 do
-            local minMax=nil
-            local ii=plots[pl]
-            local index=0
-            while true do
-                local label,curveType,curveColor,xData,yData,minMaxT=sim.getGraphCurve(model,ii-1,index)
-                if not label then
-                    break
-                end
-                local legendVisible=true
-                if sim.boolAnd32(curveType,4)~=0 then
-                    legendVisible=false
-                    curveType=curveType-4
-                end
-                minMax=getMinMax(minMax,minMaxT)
-                if curves[ii][label] then
-                    simUI.clearCurve(plotUi,ii,label)
-                    if ii==1 then
-                        simUI.addCurveTimePoints(plotUi,ii,label,xData,yData)
-                        if minMaxT and (minMaxT[2]-minMaxT[1]==0 or minMaxT[4]-minMaxT[3]==0) then
-                            simUI.addCurveTimePoints(plotUi,ii,label,{xData[#xData]+0.000000001},{yData[#yData]+0.000000001})
+function _S.graph.updateCurves(forceUpdate)
+    _S.graph.updateCnt=_S.graph.updateCnt+1
+    if _S.graph.updateCnt>=_S.graph.updateTick or forceUpdate then
+        _S.graph.updateCnt=0
+        local res,upd=sim.getObjectInt32Parameter(_S.graph.model,sim.graphintparam_needs_refresh)
+        if upd==1 or _S.graph.refresh then
+            _S.graph.refresh=false
+            _S.graph.removePlot()
+            _S.graph.createPlot()
+        end
+        if _S.graph.plotUi then
+            for pl=1,#_S.graph.plots,1 do
+                local minMax=nil
+                local ii=_S.graph.plots[pl]
+                local index=0
+                while true do
+                    local label,curveType,curveColor,xData,yData,zData,minMaxT=sim.getGraphCurve(_S.graph.model,ii-1,index)
+                    if not label then
+                        break
+                    end
+                    local legendVisible=true
+                    if (curveType & 4)~=0 then
+                        legendVisible=false
+                        curveType=curveType-4
+                    end
+                    minMax=_S.graph.getMinMax(minMax,minMaxT)
+                    if _S.graph.curves[ii][label] then
+                        simUI.clearCurve(_S.graph.plotUi,ii,label)
+                        if ii==1 then
+                            simUI.addCurveTimePoints(_S.graph.plotUi,ii,label,xData,yData)
+                            if #xData>0 and #yData>0 and (minMaxT[2]-minMaxT[1]==0 or minMaxT[4]-minMaxT[3]==0) then
+                                simUI.addCurveTimePoints(_S.graph.plotUi,ii,label,{xData[#xData]+0.000000001},{yData[#yData]+0.000000001})
+                            end
+                        else
+                            local seq={}
+                            for i=1,#xData,1 do
+                                seq[i]=i
+                            end
+                            simUI.addCurveXYPoints(_S.graph.plotUi,ii,label,seq,xData,yData)
+                            if #xData>0 and #yData>0 and (minMaxT[2]-minMaxT[1]==0 or minMaxT[4]-minMaxT[3]==0) then
+                                simUI.addCurveXYPoints(_S.graph.plotUi,ii,label,{seq[#seq]+1},{xData[#xData]+0.000000001},{yData[#yData]+0.000000001})
+                            end
                         end
-                    else
-                        local seq={}
-                        for i=1,#xData,1 do
-                            seq[i]=i
-                        end
-                        simUI.addCurveXYPoints(plotUi,ii,label,seq,xData,yData)
-                        if minMaxT and (minMaxT[2]-minMaxT[1]==0 or minMaxT[4]-minMaxT[3]==0) then
-                            simUI.addCurveXYPoints(plotUi,ii,label,{seq[#seq]+1},{xData[#xData]+0.000000001},{yData[#yData]+0.000000001})
+                        if (curveType&2)==0 then
+                            simUI.rescaleAxes(_S.graph.plotUi,ii,label,index~=0,index~=0) -- for non-static curves
                         end
                     end
-                    if curveType<2 then
-                        simUI.rescaleAxes(plotUi,ii,label,index~=0,index~=0) -- for non-static curves
-                    end
+                    index=index+1
                 end
-                index=index+1
+    --            simUI.rescaleAxesAll(_S.graph.plotUi,ii,false,false)
+                if minMax then
+                    local rangeS={minMax[2]-minMax[1],minMax[4]-minMax[3]}
+                    simUI.growPlotXRange(_S.graph.plotUi,ii,rangeS[1]*0.01,rangeS[1]*0.01)
+                    simUI.growPlotYRange(_S.graph.plotUi,ii,rangeS[2]*0.01,rangeS[2]*0.01)
+                end
+                simUI.replot(_S.graph.plotUi,ii)
             end
---            simUI.rescaleAxesAll(plotUi,ii,false,false)
-            if minMax then
-                local rangeS={minMax[2]-minMax[1],minMax[4]-minMax[3]}
-                simUI.growPlotXRange(plotUi,ii,rangeS[1]*0.01,rangeS[1]*0.01)
-                simUI.growPlotYRange(plotUi,ii,rangeS[2]*0.01,rangeS[2]*0.01)
-            end
-            simUI.replot(plotUi,ii)
         end
     end
 end
 
-prepareCurves=function()
-    if plotUi then
-        for pl=1,#plots,1 do
+function _S.graph.prepareCurves()
+    if _S.graph.plotUi then
+        for pl=1,#_S.graph.plots,1 do
             local minMax=nil
-            local ii=plots[pl]
-            for key,value in pairs(curves[ii]) do
-                simUI.removeCurve(plotUi,ii,key)
+            local ii=_S.graph.plots[pl]
+            for key,value in pairs(_S.graph.curves[ii]) do
+                simUI.removeCurve(_S.graph.plotUi,ii,key)
             end
-            curves[ii]={}
+            _S.graph.curves[ii]={}
             local index=0
             local legendVisibleCnt=0
             while true do
-                local label,curveType,curveColor,xData,yData,minMaxT=sim.getGraphCurve(model,ii-1,index)
+                local label,curveType,curveColor,xData,yData,zData,minMaxT=sim.getGraphCurve(_S.graph.model,ii-1,index)
                 if not label then
                     break
                 end
                 local legendVisible=true
-                if sim.boolAnd32(curveType,4)~=0 then
+                if (curveType & 4)~=0 then
                     legendVisible=false
-                    curveType=curveType-4
                 end
                 local curveStyle
-                local curveOptions
-                if curveType==0 then
-                    -- Non-static line
-                    curveStyle=simUI.curve_style.line
-                    curveOptions={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1}
-                end
-                if curveType==1 then
-                    -- Non-static scatter
+                local curveOptions={line_size=1}
+                if (curveType&1)==1 then
                     curveStyle=simUI.curve_style.scatter
-                    curveOptions={scatter_shape=simUI.curve_scatter_shape.square,scatter_size=4,line_size=1}
-                end
-                if curveType==2 then
-                    -- Static line
+                    curveOptions.scatter_shape=simUI.curve_scatter_shape.square
+                    curveOptions.scatter_size=4
+                else
+                    -- link points
                     curveStyle=simUI.curve_style.line
-                    curveOptions={scatter_shape=simUI.curve_scatter_shape.none,scatter_size=5,line_size=1,line_style=simUI.line_style.dashed}
+                    curveOptions.scatter_shape=simUI.curve_scatter_shape.none
+                    curveOptions.scatter_size=5
                 end
-                if curveType==3 then
-                    -- Static scatter
-                    curveStyle=simUI.curve_style.scatter
-                    curveOptions={scatter_shape=simUI.curve_scatter_shape.plus,scatter_size=4,line_size=1}
+                if (curveType&2)==2 then
+                    -- static
+                    if (curveType&1)==1 then
+                        curveOptions.scatter_shape=simUI.curve_scatter_shape.plus
+                    end
+                    curveOptions.line_style=simUI.line_style.dashed
+                else
+
                 end
                 if legendVisible then
                     legendVisibleCnt=legendVisibleCnt+1
@@ -242,341 +329,309 @@ prepareCurves=function()
                     curveOptions.add_to_legend=false
                 end
                 if ii==1 then
-                    simUI.addCurve(plotUi,ii,simUI.curve_type.time,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
+                    simUI.addCurve(_S.graph.plotUi,ii,simUI.curve_type.time,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
                 else
-                    simUI.addCurve(plotUi,ii,simUI.curve_type.xy,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
+                    simUI.addCurve(_S.graph.plotUi,ii,simUI.curve_type.xy,label,{curveColor[1]*255,curveColor[2]*255,curveColor[3]*255},curveStyle,curveOptions)
                 end
-                curves[ii][label]=true
+                _S.graph.curves[ii][label]=true
                 index=index+1
             end
-            simUI.setLegendVisibility(plotUi,ii,legendVisibleCnt>0)
+            simUI.setLegendVisibility(_S.graph.plotUi,ii,legendVisibleCnt>0)
         end
     end
-    updateCurves()
+    _S.graph.updateCurves(true)
 end
 
-function getDefaultInfoForNonExistingFields(info)
+function _S.graph.getDefaultInfoForNonExistingFields(info)
     if not info['bitCoded'] then
         info['bitCoded']=1+2+4+8 -- 1=visible during simulation, 2=visible during non-simul, 4=show time plots, 8=show xy plots, 16=1:1 proportion for xy plots
     end
     if not info['graphPos'] then
         info['graphPos']=0 -- 0=bottom right, 1=top right, 2=top left, 3=bottom left, 4=center
     end
+    if not info['updateFreq'] then
+        info['updateFreq']=2 -- 0=100%, 1=50%, 2=25%, 3=12.5%, 4=1/16 of time
+    end
+    
+    
 end
 
-function readInfo()
-    local data=sim.readCustomDataBlock(model,'ABC_GRAPH_INFO')
+function _S.graph.readInfo()
+    local data=sim.readCustomDataBlock(_S.graph.model,'ABC_GRAPH_INFO')
     if data then
         data=sim.unpackTable(data)
     else
         data={}
     end
-    getDefaultInfoForNonExistingFields(data)
+    _S.graph.getDefaultInfoForNonExistingFields(data)
     return data
 end
 
-function writeInfo(data)
+function _S.graph.writeInfo(data)
     if data then
-        sim.writeCustomDataBlock(model,'ABC_GRAPH_INFO',sim.packTable(data))
+        sim.writeCustomDataBlock(_S.graph.model,'ABC_GRAPH_INFO',sim.packTable(data))
     else
-        sim.writeCustomDataBlock(model,'ABC_GRAPH_INFO','')
+        sim.writeCustomDataBlock(_S.graph.model,'ABC_GRAPH_INFO','')
     end
 end
 
-function setDlgItemContent()
-    if ui then
-        local config=readInfo()
-        local sel=utils.getSelectedEditWidget(ui)
-        simUI.setCheckboxValue(ui,1,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],2)~=0),true)
-        simUI.setCheckboxValue(ui,2,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],1)~=0),true)
-        simUI.setCheckboxValue(ui,3,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],4)~=0),true)
-        simUI.setCheckboxValue(ui,4,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],8)~=0),true)
-        simUI.setCheckboxValue(ui,5,utils.getCheckboxValFromBool(sim.boolAnd32(config['bitCoded'],16)~=0),true)
+function _S.graph.setDlgItemContent()
+    if _S.graph.ui then
+        local config=_S.graph.readInfo()
+        local sel=_S.graph.utils.getSelectedEditWidget(_S.graph.ui)
+        simUI.setCheckboxValue(_S.graph.ui,1,_S.graph.utils.getCheckboxValFromBool((config['bitCoded'] & 2)~=0),true)
+        simUI.setCheckboxValue(_S.graph.ui,2,_S.graph.utils.getCheckboxValFromBool((config['bitCoded'] & 1)~=0),true)
+        simUI.setCheckboxValue(_S.graph.ui,3,_S.graph.utils.getCheckboxValFromBool((config['bitCoded'] & 4)~=0),true)
+        simUI.setCheckboxValue(_S.graph.ui,4,_S.graph.utils.getCheckboxValFromBool((config['bitCoded'] & 8)~=0),true)
+        simUI.setCheckboxValue(_S.graph.ui,5,_S.graph.utils.getCheckboxValFromBool((config['bitCoded'] & 16)~=0),true)
         
         local items={'bottom right','top right','top left','bottom left','center'}
-        simUI.setComboboxItems(ui,6,items,config['graphPos'])
+        simUI.setComboboxItems(_S.graph.ui,6,items,config['graphPos'])
         
-        utils.setSelectedEditWidget(ui,sel)
+        local items={'always','1/2 of time','1/4 of time','1/8 of time','1/16 of time'}
+        simUI.setComboboxItems(_S.graph.ui,7,items,config['updateFreq'])
+        
+        
+        _S.graph.utils.setSelectedEditWidget(_S.graph.ui,sel)
     end
 end
 
-function updateEnabledDisabledItemsDlg()
-end
-
-function visibleDuringSimulation_callback(ui,id,newVal)
-    local c=readInfo()
-    c['bitCoded']=sim.boolOr32(c['bitCoded'],1)
+function _S.graph.visibleDuringSimulation_callback(ui,id,newVal)
+    local c=_S.graph.readInfo()
+    c['bitCoded']=(c['bitCoded'] | 1)
     if newVal==0 then
         c['bitCoded']=c['bitCoded']-1
     end
-    modified=true
-    writeInfo(c)
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function visibleDuringNonSimulation_callback(ui,id,newVal)
-    local c=readInfo()
-    c['bitCoded']=sim.boolOr32(c['bitCoded'],2)
+function _S.graph.visibleDuringNonSimulation_callback(ui,id,newVal)
+    local c=_S.graph.readInfo()
+    c['bitCoded']=(c['bitCoded'] | 2)
     if newVal==0 then
         c['bitCoded']=c['bitCoded']-2
     end
-    modified=true
-    writeInfo(c)
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function timeOnly_callback(ui,id,newVal)
-    local c=readInfo()
-    c['bitCoded']=sim.boolOr32(c['bitCoded'],4)
+function _S.graph.timeOnly_callback(ui,id,newVal)
+    local c=_S.graph.readInfo()
+    c['bitCoded']=(c['bitCoded'] | 4)
     if newVal==0 then
         c['bitCoded']=c['bitCoded']-4
-        c['bitCoded']=sim.boolOr32(c['bitCoded'],8)
+        c['bitCoded']=(c['bitCoded'] | 8)
     end
-    modified=true
-    writeInfo(c)
-    removePlot()
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.removePlot()
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function xyOnly_callback(ui,id,newVal)
-    local c=readInfo()
-    c['bitCoded']=sim.boolOr32(c['bitCoded'],8)
+function _S.graph.xyOnly_callback(ui,id,newVal)
+    local c=_S.graph.readInfo()
+    c['bitCoded']=(c['bitCoded'] | 8)
     if newVal==0 then
         c['bitCoded']=c['bitCoded']-8
-        c['bitCoded']=sim.boolOr32(c['bitCoded'],4)
+        c['bitCoded']=(c['bitCoded'] | 4)
     end
-    modified=true
-    writeInfo(c)
-    removePlot()
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.removePlot()
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function squareXy_callback(ui,id,newVal)
-    local c=readInfo()
-    c['bitCoded']=sim.boolOr32(c['bitCoded'],16)
+function _S.graph.squareXy_callback(ui,id,newVal)
+    local c=_S.graph.readInfo()
+    c['bitCoded']=(c['bitCoded'] | 16)
     if newVal==0 then
         c['bitCoded']=c['bitCoded']-16
     end
-    modified=true
-    writeInfo(c)
-    removePlot()
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.removePlot()
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function graphPosChanged_callback(ui,id,newIndex)
-    local c=readInfo()
+function _S.graph.graphPosChanged_callback(ui,id,newIndex)
+    local c=_S.graph.readInfo()
     c['graphPos']=newIndex
-    modified=true
-    writeInfo(c)
-    removePlot()
-    previousPlotDlgPos=nil
-    previousPlotDlgSize=nil
-    createOrRemovePlotIfNeeded(false)
-    setDlgItemContent()
-    updateEnabledDisabledItemsDlg()
+    _S.graph.writeInfo(c)
+    _S.graph.removePlot()
+    _S.graph.previousPlotDlgPos=nil
+    _S.graph.previousPlotDlgSize=nil
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.setDlgItemContent()
+    sim.announceSceneContentChange()
 end
 
-function removePlot()
-    if plotUi then
-        local x,y=simUI.getPosition(plotUi)
-        previousPlotDlgPos={x,y}
-        local x,y=simUI.getSize(plotUi)
-        previousPlotDlgSize={x,y}
-        plotTabIndex=#plots>1 and simUI.getCurrentTab(plotUi,77) or 0
-        simUI.destroy(plotUi)
-        plotUi=nil
+function _S.graph.updateFreqChanged_callback(ui,id,newIndex)
+    local c=_S.graph.readInfo()
+    c['updateFreq']=newIndex
+    _S.graph.writeInfo(c)
+    _S.graph.updateTick=2^newIndex
+    _S.graph.updateCnt=0
+    sim.announceSceneContentChange()
+end
+
+function _S.graph.removePlot()
+    if _S.graph.plotUi then
+        local x,y=simUI.getPosition(_S.graph.plotUi)
+        _S.graph.previousPlotDlgPos={x,y}
+        local x,y=simUI.getSize(_S.graph.plotUi)
+        _S.graph.previousPlotDlgSize={x,y}
+        _S.graph.plotTabIndex=#_S.graph.plots>1 and simUI.getCurrentTab(_S.graph.plotUi,77) or 0
+        simUI.destroy(_S.graph.plotUi)
+        _S.graph.plotUi=nil
     end
 end
 
-function onClosePlot_callback()
+function _S.graph.onClosePlot_callback()
     if sim.getSimulationState()==sim.simulation_stopped then
-        local c=readInfo()
-        c['bitCoded']=sim.boolOr32(c['bitCoded'],2)-2
-        writeInfo(c)
-        setDlgItemContent()
-        updateEnabledDisabledItemsDlg()
+        local c=_S.graph.readInfo()
+        c['bitCoded']=(c['bitCoded'] | 2)-2
+        _S.graph.writeInfo(c)
+        _S.graph.setDlgItemContent()
     end
-    removePlot()
+    _S.graph.removePlot()
 end
 
-function createPlot()
-    if not plotUi then
-        local c=readInfo()
-        plots={}
+function _S.graph.createPlot()
+    if not _S.graph.plotUi then
+        local c=_S.graph.readInfo()
+        _S.graph.plots={}
         
         local bgCol='25,25,25'
         local fgCol='150,150,150'
-        if version>30500 or (version==30500 and revision>6) then
-            local bitCoded,colA,colB=sim.getGraphInfo(model)
-            bgCol=(math.floor(colA[1]*255.1))..','..(math.floor(colA[2]*255.1))..','..(math.floor(colA[3]*255.1))
-            fgCol=(math.floor(colB[1]*255.1))..','..(math.floor(colB[2]*255.1))..','..(math.floor(colB[3]*255.1))
-        end
+        local bitCoded,colA,colB=sim.getGraphInfo(_S.graph.model)
+		bgCol=(math.floor(colA[1]*255.1))..','..(math.floor(colA[2]*255.1))..','..(math.floor(colA[3]*255.1))
+		fgCol=(math.floor(colB[1]*255.1))..','..(math.floor(colB[2]*255.1))..','..(math.floor(colB[3]*255.1))
 
-        if (sim.boolAnd32(c['bitCoded'],4)~=0) then table.insert(plots, 1) end
-        if (sim.boolAnd32(c['bitCoded'],8)~=0) then table.insert(plots, 2) end
+        if ((c['bitCoded'] & 4)~=0) then table.insert(_S.graph.plots, 1) end
+        if ((c['bitCoded'] & 8)~=0) then table.insert(_S.graph.plots, 2) end
 
         local xml=''
-        if #plots>1 then xml=xml..'<tabs id="77">' end
-        if (sim.boolAnd32(c['bitCoded'],4)~=0) then
-            if #plots>1 then xml=xml..'<tab title="Time graph">' end
-            xml=xml..'<plot id="1" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'"/>'
-            if #plots>1 then xml=xml..'</tab>' end
+        if #_S.graph.plots>1 then xml=xml..'<tabs id="77">' end
+        if ((c['bitCoded'] & 4)~=0) then
+            if #_S.graph.plots>1 then xml=xml..'<tab title="Time graph">' end
+            xml=xml..'<plot id="1" on-click="_S.graph.onclickCurve" on-legend-click="_S.graph.onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'"/>'
+            if #_S.graph.plots>1 then xml=xml..'</tab>' end
         end
-        if (sim.boolAnd32(c['bitCoded'],8)~=0) then
+        if ((c['bitCoded'] & 8)~=0) then
             local squareAttribute=''
-            if (sim.boolAnd32(c['bitCoded'],16)~=0) then
+            if ((c['bitCoded'] & 16)~=0) then
                 squareAttribute='square="true"'
             end
-            if #plots>1 then xml=xml..'<tab title="X/Y graph">' end
-            xml=xml..'<plot id="2" on-click="onclickCurve" on-legend-click="onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'" '..squareAttribute..'/>'
-            if #plots>1 then xml=xml..'</tab>' end
+            if #_S.graph.plots>1 then xml=xml..'<tab title="X/Y graph">' end
+            xml=xml..'<plot id="2" on-click="_S.graph.onclickCurve" on-legend-click="_S.graph.onlegendclick" max-buffer-size="100000" cyclic-buffer="false" background-color="'..bgCol..'" foreground-color="'..fgCol..'" '..squareAttribute..'/>'
+            if #_S.graph.plots>1 then xml=xml..'</tab>' end
         end
-        if #plots>1 then xml=xml..'</tabs><br/>' end
+        if #_S.graph.plots>1 then xml=xml..'</tabs><br/>' end
         xml=xml..'<label id="3" />'
         
-        if not previousPlotDlgPos then
-            if c['graphPos']==0 then previousPlotDlgPos='bottomRight' end
-            if c['graphPos']==1 then previousPlotDlgPos='topRight' end
-            if c['graphPos']==2 then previousPlotDlgPos='topLeft' end
-            if c['graphPos']==3 then previousPlotDlgPos='bottomLeft' end
-            if c['graphPos']==4 then previousPlotDlgPos='center' end
+        if not _S.graph.previousPlotDlgPos then
+            if c['graphPos']==0 then _S.graph.previousPlotDlgPos='bottomRight' end
+            if c['graphPos']==1 then _S.graph.previousPlotDlgPos='topRight' end
+            if c['graphPos']==2 then _S.graph.previousPlotDlgPos='topLeft' end
+            if c['graphPos']==3 then _S.graph.previousPlotDlgPos='bottomLeft' end
+            if c['graphPos']==4 then _S.graph.previousPlotDlgPos='center' end
         end
         
-        plotUi=utils.createCustomUi(xml,sim.getObjectName(model),previousPlotDlgPos,true,"onClosePlot_callback",false,true,false,'layout="grid"',previousPlotDlgSize)
-        if (sim.boolAnd32(c['bitCoded'],4)~=0) then
-            simUI.setPlotLabels(plotUi,1,"Time (seconds)","")
+        _S.graph.plotUi=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousPlotDlgPos,true,"_S.graph.onClosePlot_callback",false,true,false,'layout="grid"',_S.graph.previousPlotDlgSize)
+        if ((c['bitCoded'] & 4)~=0) then
+            simUI.setPlotLabels(_S.graph.plotUi,1,"Time (seconds)","")
         end
-        if (sim.boolAnd32(c['bitCoded'],8)~=0) then
-            simUI.setPlotLabels(plotUi,2,"X","Y")
+        if ((c['bitCoded'] & 8)~=0) then
+            simUI.setPlotLabels(_S.graph.plotUi,2,"X","Y")
         end
-        if #plots==1 then
-            plotTabIndex=0
+        if #_S.graph.plots==1 then
+            _S.graph.plotTabIndex=0
         end
-        if #plots>1 then
+        if #_S.graph.plots>1 then
             xml=xml..'</tabs><br/>'
-            simUI.setCurrentTab(plotUi,77,plotTabIndex,true)
+            simUI.setCurrentTab(_S.graph.plotUi,77,_S.graph.plotTabIndex,true)
         end
 
-        curves={{},{}}
-        prepareCurves()
+        _S.graph.curves={{},{}}
+        _S.graph.prepareCurves()
 
         local s=sim.getSimulationState()
-        enableMouseInteractions( (s==sim.simulation_stopped)or(s==sim.simulation_paused) )
+        _S.graph.enableMouseInteractions( (s==sim.simulation_stopped)or(s==sim.simulation_paused) )
     end
 end
 
-createOrRemovePlotIfNeeded=function(forSimulation)
-    local c=readInfo()
+function _S.graph.createOrRemovePlotIfNeeded(forSimulation)
+    local c=_S.graph.readInfo()
     if forSimulation then
-        if (sim.boolAnd32(c['bitCoded'],1)==0) then
-            removePlot()
+        if ((c['bitCoded'] & 1)==0) then
+            _S.graph.removePlot()
         else
-            createPlot()
+            _S.graph.createPlot()
         end
     else
-        if (sim.boolAnd32(c['bitCoded'],2)==0) then
-            removePlot()
+        if ((c['bitCoded'] & 2)==0) then
+            _S.graph.removePlot()
         else
-            createPlot()
+            _S.graph.createPlot()
         end
     end
 end
 
-function sysCall_suspend()
-    if sim.getExplicitHandling(model)==0 then
-        enableMouseInteractions(true)
+function _S.graph.init()
+    _S.graph.utils=require('utils')
+    _S.graph.model=sim.getObjectHandle(sim.handle_self)
+	if sim.getExplicitHandling(_S.graph.model)==0 then
+		sim.setExplicitHandling(_S.graph.model,1)
+	end
+    local c=_S.graph.readInfo()
+    _S.graph.updateTick=2^c['updateFreq']
+    _S.graph.updateCnt=0
+    _S.graph.plotTabIndex=0
+    _S.graph.lastT=sim.getSystemTimeInMs(-1)
+    _S.graph.createOrRemovePlotIfNeeded()
+    _S.graph.updateCurves(true)
+end
+
+function _S.graph.cleanup()
+    _S.graph.removePlot()
+end
+
+function _S.graph.beforeSimulation()
+    _S.graph.reset()
+end
+
+function _S.graph.afterSimulation()
+    _S.graph.createOrRemovePlotIfNeeded(false)
+    _S.graph.updateCurves(true)
+    _S.graph.enableMouseInteractions(true)
+end
+
+function _S.graph.reset()
+	-- i.e. reset graph and start recording
+	sim.resetGraph(_S.graph.model)
+    _S.graph.removePlot()
+    _S.graph.createOrRemovePlotIfNeeded(true)
+    _S.graph.prepareCurves()
+    _S.graph.clearCurves()
+    _S.graph.enableMouseInteractions(false)
+end
+
+function _S.graph.handle(recordingTime)
+    if sim.getSimulationState()~=sim.simulation_advancing_abouttostop and sim.getSimulationState()~=sim.simulation_advancing_lastbeforestop then
+		if recordingTime==nil then
+			recordingTime=sim.getSimulationTime()+sim.getSimulationTimeStep()
+		end
+		sim.handleGraph(_S.graph.model,recordingTime)
     end
+    _S.graph.updateCurves()
 end
 
-function sysCall_resume()
-    if sim.getExplicitHandling(model)==0 then
-        enableMouseInteractions(false)
-    end
-end
-
-function nonSimulation()
-    if sim.getSystemTimeInMs(lastT)>3000 then
-        lastT=sim.getSystemTimeInMs(-1)
-        if modified then
-            sim.announceSceneContentChange() -- to have an undo point
-            modified=false
-        end
-    end
-end
-
-function sysCall_beforeInstanceSwitch()
-    stopRecording()
-    removePlot()
-end
-
-function sysCall_afterInstanceSwitch()
-    createOrRemovePlotIfNeeded()
-end
-
-function init()
-    utils=require('utils')
-    modified=false
-    plotTabIndex=0
-    lastT=sim.getSystemTimeInMs(-1)
-    model=sim.getObjectHandle(sim.handle_self)
-    version=sim.getInt32Parameter(sim.intparam_program_version)
-    revision=sim.getInt32Parameter(sim.intparam_program_revision)
-    sim.setScriptAttribute(sim.handle_self,sim.customizationscriptattribute_activeduringsimulation,true)
-    previousPlotDlgPos,previousPlotDlgSize,previousDlgPos=utils.readSessionPersistentObjectData(model,"dlgPosAndSize")
-    simulationGraph=true
-    createOrRemovePlotIfNeeded()
-end
-
-function cleanup()
-    stopRecording()
-    removePlot()
-    utils.writeSessionPersistentObjectData(model,"dlgPosAndSize",previousPlotDlgPos,previousPlotDlgSize,previousDlgPos)
-end
-
-function startRecording()
-    removePlot()
-    createOrRemovePlotIfNeeded(true)
-    prepareCurves()
-    clearCurves()
-    enableMouseInteractions(false)
-end
-
-function stopRecording()
-    createOrRemovePlotIfNeeded(false)
-    enableMouseInteractions(true)
-end
-
-function afterSimulation()
-    if sim.getExplicitHandling(model)==0 then
-        stopRecording()
-    end
-end
-
-function beforeSimulation()
-    if sim.getExplicitHandling(model)==0 then
-        startRecording()
-    else
-        sim.resetGraph(model)
-        sim.handleGraph(model,0)
-        startRecording()
-    end
-end
-
-function sensing()
-    if sim.getExplicitHandling(model)==0 then
-        updateCurves()
-    else
-        sim.handleGraph(model,sim.getSimulationTime())
-        updateCurves()
-    end
-end
+return _S.graph

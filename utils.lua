@@ -111,7 +111,7 @@ function getObjectsWithTag(tagName,justModels)
     local retObjs={}
     local objs=sim.getObjectsInTree(sim.handle_scene)
     for i=1,#objs,1 do
-        if (not justModels) or (sim.boolAnd32(sim.getModelProperty(objs[i]),sim.modelproperty_not_model)==0) then
+        if (not justModels) or ((sim.getModelProperty(objs[i]) & sim.modelproperty_not_model)==0) then
         local dat=sim.readCustomDataBlock(objs[i],tagName)
             if dat then
                 retObjs[#retObjs+1]=objs[i]
@@ -320,7 +320,7 @@ function canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxi
     end
     if t==sim.object_shape_type then
         local r,pt=sim.getShapeGeomInfo(objHandle)
-        if sim.boolAnd32(r,1)~=0 then
+        if (r & 1)~=0 then
             return false -- compound
         end
         if pt==sim.pure_primitive_spheroid then

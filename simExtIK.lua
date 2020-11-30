@@ -1,6 +1,6 @@
 local simIK={}
 
-function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
+function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,confS,x,index)
     if index>#jointHandles then
         return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
     else
@@ -10,7 +10,7 @@ function __HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandle
         end
         local solutions={}
         while c[index]<=x[index][2] do
-            local s=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,c,x,index+1,tipHandle)
+            local s=_S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desiredPose,c,x,index+1,tipHandle)
             for i=1,#s,1 do
                 solutions[#solutions+1]=s[i]
             end
@@ -114,7 +114,7 @@ function simIK.getAlternateConfigs(...)
             simIK.setJointPosition(ikEnv,jointHandles[i],inputConfig[i])
         end
         local desiredPose=0
-        configs=__HIDDEN__.simIKLoopThroughAltConfigSolutions(ikEnv,jointHandles,desiredPose,confS,x,1)
+        configs=_S.simIKLoopThroughAltConfigSolutions(ikEnv,jointHandles,desiredPose,confS,x,1)
     end
     simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
@@ -126,7 +126,7 @@ function simIK.applySceneToIkEnvironment(...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     
-    local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
     if groupData.notYetApplied then
         -- Joint dependencies can go across IK elements. So apply them the first time here:
         for k,v in pairs(groupData.joints) do
@@ -163,7 +163,7 @@ function simIK.applyIkToScene(...)
     local lb=sim.setThreadAutomaticSwitch(false)
     
     simIK.applySceneToIkEnvironment(ikEnv,ikGroup)
-    local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
     local res=simIK.handleIkGroup(ikEnv,ikGroup)
     if res==simIK.result_success or not applyOnlyWhenSuccessful then
         for k,v in pairs(groupData.joints) do
@@ -191,20 +191,20 @@ function simIK.addIkElementFromScene(...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
     
-    if not __HIDDEN__.ikEnvs then
-        __HIDDEN__.ikEnvs={}
+    if not _S.ikEnvs then
+        _S.ikEnvs={}
     end
-    if not __HIDDEN__.ikEnvs[ikEnv] then
-        __HIDDEN__.ikEnvs[ikEnv]={}
+    if not _S.ikEnvs[ikEnv] then
+        _S.ikEnvs[ikEnv]={}
     end
-    if not __HIDDEN__.ikEnvs[ikEnv].ikGroups then
-        __HIDDEN__.ikEnvs[ikEnv].ikGroups={}
-        __HIDDEN__.ikEnvs[ikEnv].allObjects={}
+    if not _S.ikEnvs[ikEnv].ikGroups then
+        _S.ikEnvs[ikEnv].ikGroups={}
+        _S.ikEnvs[ikEnv].allObjects={}
     end
-    local groupData=__HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]
+    local groupData=_S.ikEnvs[ikEnv].ikGroups[ikGroup]
     -- allObjects, i.e. the mapping, need to be scoped by ik env, and not ik group,
     -- otherwise we may have duplicates:
-    local allObjects=__HIDDEN__.ikEnvs[ikEnv].allObjects
+    local allObjects=_S.ikEnvs[ikEnv].allObjects
     if not groupData then
         groupData={}
         groupData.passiveJoints={}
@@ -213,7 +213,7 @@ function simIK.addIkElementFromScene(...)
         groupData.targets={}
         groupData.targetBasePairs={}
         groupData.notYetApplied=true
-        __HIDDEN__.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
+        _S.ikEnvs[ikEnv].ikGroups[ikGroup]=groupData
     end
     local ikBase=-1
     if simBase~=-1 then
@@ -299,8 +299,8 @@ function simIK.eraseEnvironment(...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
     
-    if __HIDDEN__.ikEnvs then
-        __HIDDEN__.ikEnvs[ikEnv]=nil
+    if _S.ikEnvs then
+        _S.ikEnvs[ikEnv]=nil
     end
     simIK._eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
