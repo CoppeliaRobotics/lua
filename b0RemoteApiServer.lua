@@ -918,9 +918,9 @@ function timeStr()
         t=os.date('*t')
         t=string.format('[%02d:%02d:%02d] ',t.hour,t.min,t.sec)
     else
-        local st=sim.getSimulationTime()
-        t=os.date('*t',3600*23+st)
-        t=string.format('[%02d:%02d:%02d.%02d] ',t.hour,t.min,t.sec,st%1)
+        local st=sim.getSimulationTime()+0.001
+        t=os.date('*t',3600*23+math.floor(st))
+        t=string.format('[%02d:%02d:%02d.%02d] ',t.hour,t.min,t.sec,math.floor(100*(st%1)))
     end
     return t
 end
@@ -1546,56 +1546,11 @@ function onConfigRestartNode(ui,id,newVal)
     end
 end
 
-function createConfigDlg()
-    if simUI then
-        if not configUiData then
-            local xml = [[
-            <ui title="BlueZero-based remote API, server-side configuration" closeable="false" resizable="false" activate="false">
-            <group layout="form" flat="true">
-            <label text="Node name"/>
-            <edit on-editing-finished="onConfigNodeNameChanged" id="1"/>
-            <label text="Channel name"/>
-            <edit on-editing-finished="onConfigChannelNameChanged" id="2"/>
-            <label text=""/>
-            <button text="Restart node with above names" checked="false" on-click="onConfigRestartNode" />
-            
-            <label text="Pack strings as binary"/>
-            <checkbox text="" on-change="onPackStrAsBinChanged" id="4" />
-            <label text="Enabled during simulation only"/>
-            <checkbox text="" on-change="onSimOnlyChanged" id="5" />
-            <label text="Debug level"/>
-            <combobox id="3" on-change="onDebugLevelChanged"></combobox>
-            </group>
-            </ui>
-            ]]
-            configUiData={}
-            configUiData.dlg=simUI.create(xml)
-            if previousConfigDlgPos then
-                simUI.setPosition(configUiData.dlg,previousConfigDlgPos[1],previousConfigDlgPos[2],true)
-            end
-            configUiData.nodeName=modelData.nodeName
-            configUiData.channelName=modelData.channelName
-            configUiData.debugLevel=modelData.debugLevel
-            configUiData.packStrAsBin=modelData.packStrAsBin
-            configUiData.duringSimulationOnly=modelData.duringSimulationOnly
-            simUI.setEditValue(configUiData.dlg,1,configUiData.nodeName)
-            simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
-            simUI.setCheckboxValue(configUiData.dlg,4,configUiData.packStrAsBin and 2 or 0)
-            simUI.setCheckboxValue(configUiData.dlg,5,configUiData.duringSimulationOnly and 2 or 0)
-            updateDebugLevelCombobox()
-        end
-    end
-end
-
-function removeConfigDlg()
-    if simUI then
-        if configUiData then
-            local x,y=simUI.getPosition(configUiData.dlg)
-            previousConfigDlgPos={x,y}
-            simUI.destroy(configUiData.dlg)
-            configUiData=nil
-        end
-    end
+function onDlgClose()
+	local x,y=simUI.getPosition(configUiData.dlg)
+	previousConfigDlgPos={x,y}
+	simUI.destroy(configUiData.dlg)
+	configUiData=nil
 end
 
 function sysCall_init()
@@ -1631,16 +1586,9 @@ end
 
 function sysCall_cleanup()
     destroyNode()
-    removeConfigDlg()
 end
 
 function sysCall_nonSimulation()
-    local s=sim.getObjectSelection()
-    if s and #s==1 and s[1]==model then
-        createConfigDlg()
-    else
-        removeConfigDlg()
-    end
     sendAndSpin(0)
 end
 
@@ -1655,7 +1603,6 @@ function sysCall_suspended()
 end
 
 function sysCall_beforeSimulation()
-    removeConfigDlg()
     if modelData.duringSimulationOnly then
         createNode()
     end
@@ -1671,7 +1618,6 @@ end
 function sysCall_beforeInstanceSwitch()
     if model>=0 then
         destroyNode()
-        removeConfigDlg()
     end
 end
 
@@ -1692,4 +1638,42 @@ function sysCall_addOnScriptResume()
     if not modelData.duringSimulationOnly then
         createNode()
     end
+end
+
+function sysCall_userConfig()
+    local simStopped=sim.getSimulationState()==sim.simulation_stopped
+	local xml ='<ui title="BlueZero-based remote API, server-side configuration" closeable="true" on-close="onDlgClose" modal="true" resizable="false" activate="false" enabled="'..tostring(simStopped)
+	xml=xml..[[">
+	<group layout="form" flat="true">
+	<label text="Node name"/>
+	<edit on-editing-finished="onConfigNodeNameChanged" id="1"/>
+	<label text="Channel name"/>
+	<edit on-editing-finished="onConfigChannelNameChanged" id="2"/>
+	<label text=""/>
+	<button text="Restart node with above names" checked="false" on-click="onConfigRestartNode" />
+	
+	<label text="Pack strings as binary"/>
+	<checkbox text="" on-change="onPackStrAsBinChanged" id="4" />
+	<label text="Enabled during simulation only"/>
+	<checkbox text="" on-change="onSimOnlyChanged" id="5" />
+	<label text="Debug level"/>
+	<combobox id="3" on-change="onDebugLevelChanged"></combobox>
+	</group>
+	</ui>
+	]]
+	configUiData={}
+	configUiData.dlg=simUI.create(xml)
+	if previousConfigDlgPos then
+		simUI.setPosition(configUiData.dlg,previousConfigDlgPos[1],previousConfigDlgPos[2],true)
+	end
+	configUiData.nodeName=modelData.nodeName
+	configUiData.channelName=modelData.channelName
+	configUiData.debugLevel=modelData.debugLevel
+	configUiData.packStrAsBin=modelData.packStrAsBin
+	configUiData.duringSimulationOnly=modelData.duringSimulationOnly
+	simUI.setEditValue(configUiData.dlg,1,configUiData.nodeName)
+	simUI.setEditValue(configUiData.dlg,2,configUiData.channelName)
+	simUI.setCheckboxValue(configUiData.dlg,4,configUiData.packStrAsBin and 2 or 0)
+	simUI.setCheckboxValue(configUiData.dlg,5,configUiData.duringSimulationOnly and 2 or 0)
+	updateDebugLevelCombobox()
 end

@@ -15,6 +15,8 @@ end
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
 math.log10 = math.log10 or function(a) return math.log(a,10) end
+math.ldexp = math.ldexp or function(x,exp) return x*2.0^exp end
+math.frexp = math.frexp or function(x) return sim.auxFunc('frexp',x) end
 math.mod = math.mod or math.fmod
 table.getn = table.getn or function(a) return #a end
 if _VERSION~='Lua 5.1' then
@@ -147,7 +149,7 @@ function sim.checkargsEx(opts,types,...)
 
     -- level at which we should output the error (1 is current, 2 parent, etc...)
     local errorLevel=2+opts.level
-
+	
     local fn=''
     local arg=table.pack(...)
     -- check how many arguments are required (default arguments must come last):
@@ -481,7 +483,7 @@ function getAsString(...)
 end
 
 function sim.displayDialog(...)
-    local title,mainTxt,style,modal,initTxt=sim.checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default=''}},...)
+    local title,mainTxt,style,modal,initTxt=sim.checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true}},...)
     
     if sim.getBoolParameter(sim_boolparam_headless) then
         return -1
