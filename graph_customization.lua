@@ -8,7 +8,7 @@ function sysCall_init()
     
     -- Create/update data streams/curves:
     sim.destroyGraphCurve(graphHandle,-1)
-    stream1=sim.addGraphDataStream(graphHandle,'Object position X','m')
+    stream1=sim.addDataStream(graphHandle,'Object position X','m')
     objectHandle=sim.getObjectHandle('Shape')
     startTime=sim.getSystemTime()
     
@@ -18,13 +18,14 @@ end
 function appendMeasurementPts()
     -- append measurement points, e.g. the x-position of an object:
     local p=sim.getObjectPosition(objectHandle,-1)
-    sim.setGraphDataStreamValue(graphHandle,stream1,p[1])
+    sim.setGraphStreamValue(graphHandle,stream1,p[1])
     
     graph.handle(sim.getSystemTime()-startTime)
 end
 
 function sysCall_sensing()
     appendMeasurementPts()
+    graph.updateCurves()
 end
 
 function sysCall_nonSimulation()
@@ -59,6 +60,7 @@ end
 
 function sysCall_sensing()
     _S.graph.handle()
+    _S.graph.updateCurves()
 end
 
 function sysCall_nonSimulation()
@@ -714,7 +716,6 @@ function _S.graph.handle(recordingTime)
 		end
 		sim.handleGraph(_S.graph.model,recordingTime)
     end
-    _S.graph.updateCurves()
 end
 
 return _S.graph
