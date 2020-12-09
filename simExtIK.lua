@@ -351,7 +351,6 @@ end
 
 function simIK.generatePath(...)
     local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=sim.checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
-    local dof=#joints
 
     local lb=sim.setThreadAutomaticSwitch(false)
 

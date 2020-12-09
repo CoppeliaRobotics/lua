@@ -115,18 +115,18 @@ function sim.checkarg.table(v,t)
     if type(v)~='table' then
         return false, 'must be a table'
     end
-    if #v>0 and t.item_type~=nil then
+    if #v>0 and t and t.item_type~=nil then
         if not sim.checkarg[t.item_type](v[1]) or not sim.checkarg[t.item_type](v[#v]) then
             return false, 'must be a table of elements of type '..t.item_type
         end
     end
-    if t.size and #v~=t.size then
+    if t and t.size and #v~=t.size then
         return false, 'must have exactly '..t.size..' elements'
     end
-    if t.min_size and #v<t.min_size then
+    if t and t.min_size and #v<t.min_size then
         return false, 'must have at least '..t.min_size..' elements'
     end
-    if t.max_size and #v>t.max_size then
+    if t and t.max_size and #v>t.max_size then
         return false, 'must have at most '..t.max_size..' elements'
     end
     return true, nil
@@ -865,7 +865,7 @@ end
 function sim.moveToConfig(...)
     local flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep=sim.checkargs({{type='int'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='table',item_type='float',nullable=true},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='func'},{type='any',default=NIL,nullable=true},{type='table',item_type='bool',default=NIL,nullable=true},{type='float',default=0}},...)
 
-    if #currentPos<1 or #currentPos~=#maxVel or #currentPos~=#maxAccel or #currentPos~=#maxJerk or #currentPos~=#targetPos or (currentVel and #currentPos~=#currentVel) or (currentAccel and #currentPos~=#currentAccel) or (targetVel and #currentPos~=#targetVel) or (cyclicJoints and #currentPos~=#cyclicJoints) then
+    if #currentPos<1 or #currentPos>#maxVel or #currentPos>#maxAccel or #currentPos>#maxJerk or #currentPos>#targetPos or (currentVel and #currentPos>#currentVel) or (currentAccel and #currentPos>#currentAccel) or (targetVel and #currentPos>#targetVel) or (cyclicJoints and #currentPos>#cyclicJoints) then
         error("Bad table size.")
     end
     
@@ -998,7 +998,7 @@ function sim.getInterpolatedConfig(...)
     local path,times,t,types,method,forceOpen=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='float',nullable=true},{type='float'},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
     local dof=#(path[1])
     
-    if dof<1 or (times and dof~=#times) or (types and dof~=#types) then
+    if dof<1 or (times and #path~=#times) or (types and dof>#types) then
         error("Bad table size.")
     end
 
