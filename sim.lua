@@ -136,6 +136,26 @@ function sim.checkarg.func(v,t)
     return type(v)=='function'
 end
 
+function sim.checkarg.ndmatrix(v,t)
+    if type(v)~='table' or type(v.dims)~='table' or type(v.data)~='table' then
+        return false, 'bad format'
+    end
+    local ok,err=sim.checkarg.table(v.dims,{item_type='int',min_size=1})
+    if not ok then return false, '"dims": '..err end
+    local sz=1
+    for _,dim in ipairs(v.dims) do 
+        sz=sz*dim 
+        if t.min_size and t.min_size[_]>dim then
+            return false, 'bad dims'
+        end
+    end
+    ok,err=sim.checkarg.table(v.data,{item_type='float',size=sz})
+    if not ok then
+        return false, '"data": '..err
+    end
+    return true, nil
+end
+
 --[[
 function sim.checkarg.handle(v,t)
     -- mockup: a handle is valid if it is a multiple of 100
@@ -149,7 +169,7 @@ function sim.checkargsEx(opts,types,...)
 
     -- level at which we should output the error (1 is current, 2 parent, etc...)
     local errorLevel=2+opts.level
-	
+    
     local fn=''
     local arg=table.pack(...)
     -- check how many arguments are required (default arguments must come last):
@@ -955,10 +975,10 @@ function sim.moveToConfig(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    local path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='table',size=2},{type='table',item_type='table',size=2},{type='int',default=1000},{type='table',item_type='int',default=NIL,nullable=true},{type='string',default='not-a-knot'},{type='float',default=5}},...)
-    local dof=#(path[1])
+    local path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout=sim.checkargs({{type='ndmatrix',min_size={2,1}},{type='ndmatrix'},{type='ndmatrix'},{type='int',default=1000},{type='table',item_type='int',default=NIL,nullable=true},{type='string',default='not-a-knot'},{type='float',default=5}},...)
+    local dof=path.dims[2]
     
-    if dof<1 or dof~=#minMaxVel or dof~=#minMaxAccel or (metric and dof~=#metric) then
+    if dof<1 or dof~=minMaxVel.dims[1] or dof~=minMaxAccel.dims[1] or (metric and dof~=#metric) then
         error("Bad table size.")
     end
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -978,12 +998,23 @@ function sim.generateTimeOptimalTrajectory(...)
         local c=simB0.serviceClientCreate(n,'toppra')
         simB0.nodeInit(n)
         simB0.socketSetOption(c,'readTimeout',timeout*1000)
+        
+        _path={}
+        for i=1,#path.dims[1],1 do
+            _path[#_path+1]=_S.getPathConfig(path,i)
+        end
+        _minMaxVel={}
+        _minMaxAccel={}
+        for i=1,dof,1 do
+            _minMaxVel[#_minMaxVel+1]=_S.getPathConfig(minMaxVel,i)
+            _minMaxAccel[#_minMaxAccel+1]=_S.getPathConfig(minMaxAccel,i)
+        end
         r=simB0.serviceClientCallJSON(c,{
             samples=trajPtSamples,
             ss_waypoints=distancesAlongPath,
-            waypoints=path,
-            velocity_limits=minMaxVel,
-            acceleration_limits=minMaxAccel,
+            waypoints=_path,
+            velocity_limits=_minMaxVel,
+            acceleration_limits=_minMaxAccel,
             bc_type=boundaryCondition
         })
         simB0.nodeCleanup(n)
@@ -995,14 +1026,15 @@ function sim.generateTimeOptimalTrajectory(...)
 end
 
 function sim.getInterpolatedConfig(...)
-    local path,times,t,types,method,forceOpen=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='float',nullable=true},{type='float'},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
-    local dof=#(path[1])
+    local path,times,t,types,method,forceOpen=sim.checkargs({{type='ndmatrix',min_size={2,1}},{type='table',item_type='float',nullable=true},{type='float'},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
+    local confCnt=path.dims[1]
+    local dof=path.dims[2]
     
-    if dof<1 or (times and #path~=#times) or (types and dof>#types) then
+    if dof<1 or (times and confCnt~=#times) or (types and dof~=#types) then
         error("Bad table size.")
     end
 
-    if times==nil and #path>2 then
+    if times==nil and confCnt>2 then
         error("Argument #2 is not optional when the path contains more than 2 configurations.")
     end
     if types==nil then 
@@ -1013,7 +1045,7 @@ function sim.getInterpolatedConfig(...)
     end
     local closed=true
     for i=1,dof,1 do
-        if path[1][i]~=path[#path][i] then
+        if path.data[i]~=path.data[(confCnt-1)*dof+i] then
             closed=false
             break
         end
@@ -1025,7 +1057,7 @@ function sim.getInterpolatedConfig(...)
     local li=1
     local hi=2
     if t<0 then t=0 end
-    if #path>2 or times then
+    if confCnt>2 or times then
         if t>times[#times] then t=times[#times] end
         local ll,hl
         for i=2,#times,1 do
@@ -1045,61 +1077,63 @@ function sim.getInterpolatedConfig(...)
         local i0,i1,i2
         if t<0.5 then
             if li==1 and not closed then
-                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+                retVal=_S.linearInterpolate(_S.getPathConfig(path,li),_S.getPathConfig(path,hi),t,types)
             else
                 i0=li-1
                 i1=li
                 i2=hi
                 if li==1 then
-                    i0=#path-1
+                    i0=confCnt-1
                 end
-                local a=_S.linearInterpolate(path[i0],path[i1],0.75+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1],path[i2],0.25+t*0.5,types)
+                local a=_S.linearInterpolate(_S.getPathConfig(path,i0),_S.getPathConfig(path,i1),0.75+t*0.5,types)
+                local b=_S.linearInterpolate(_S.getPathConfig(path,i1),_S.getPathConfig(path,i2),0.25+t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,0.5+t,types)
             end
         else
-            if hi==#path and not closed then
-                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+            if hi==confCnt and not closed then
+                retVal=_S.linearInterpolate(_S.getPathConfig(path,li),_S.getPathConfig(path,hi),t,types)
             else
                 i0=li
                 i1=hi
                 i2=hi+1
-                if hi==#path then
+                if hi==confCnt then
                     i2=2
                 end
                 t=t-0.5
-                local a=_S.linearInterpolate(path[i0],path[i1],0.5+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1],path[i2],t*0.5,types)
+                local a=_S.linearInterpolate(_S.getPathConfig(path,i0),_S.getPathConfig(path,i1),0.5+t*0.5,types)
+                local b=_S.linearInterpolate(_S.getPathConfig(path,i1),_S.getPathConfig(path,i2),t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,t,types)
             end
         end
     end
     if not method or method.type=='linear' then
-        retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+        retVal=_S.linearInterpolate(_S.getPathConfig(path,li),_S.getPathConfig(path,hi),t,types)
     end
     return retVal
 end
 
 function sim.resamplePath(...)
-    local path,finalConfigCnt,metric,types,method,forceOpen=sim.checkargs({{type='table',item_type='table',min_size=2},{type='int'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
-    local dof=#(path[1])
+    local path,finalConfigCnt,metric,types,method,forceOpen=sim.checkargs({{type='ndmatrix',min_size={2,1}},{type='int'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
+    local dof=path.dims[2]
     
     if dof<1 or (metric and dof~=#metric) or (types and dof~=#types) then
         error("Bad table size.")
     end
 
     local pathLengths=sim.getPathLengths(path,metric,types)
-    local retVal={}
+    local retVal={data={},dims={finalConfigCnt,dof}}
     for i=1,finalConfigCnt,1 do
         local c=sim.getInterpolatedConfig(path,pathLengths,pathLengths[#pathLengths]*(i-1)/(finalConfigCnt-1),types,method,forceOpen)
-        retVal[i]=c
+        for j=1,#c,1 do
+            retVal.data[#retVal.data+1]=c[j]
+        end
     end
     return retVal
 end
 
 function sim.getPathLengths(...)
-    local path,metric,types=sim.checkargs({{type='table',item_type='table',min_size=2},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
-    local dof=#(path[1])
+    local path,metric,types=sim.checkargs({{type='ndmatrix',min_size={2,1}},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
+    local dof=path.dims[2]
     
     if dof<1 or (metric and dof~=#metric) or (types and dof~=#types) then
         error("Bad table size.")
@@ -1119,25 +1153,25 @@ function sim.getPathLengths(...)
     end 
     local distancesAlongPath={0}
     local totDist=0
-    for i=1,#path-1,1 do
+    for i=1,path.dims[1]-1,1 do
         local d=0
         local qcnt=0
         for j=1,dof,1 do
             local dd=0
             if types[j]==0 then
-                dd=(path[i+1][j]-path[i][j])*metric[j] -- e.g. joint with limits
+                dd=(path.data[i*dof+j]-path.data[(i-1)*dof+j])*metric[j] -- e.g. joint with limits
             end
             if types[j]==1 then
-                local dx=math.atan2(math.sin(path[i+1][j]-path[i][j]),math.cos(path[i+1][j]-path[i][j]))
-                local v=path[i][j]+dx
+                local dx=math.atan2(math.sin(path.data[i*dof+j]-path.data[(i-1)*dof+j]),math.cos(path.data[i*dof+j]-path.data[(i-1)*dof+j]))
+                local v=path.data[(i-1)*dof+j]+dx
                 dd=math.atan2(math.sin(v),math.cos(v))*metric[j] -- cyclic rev. joint (-pi;pi)
             end
             if types[j]==2 then
                 qcnt=qcnt+1
                 if qcnt==4 then
                     qcnt=0
-                    local m1=sim.buildMatrixQ({0,0,0},{path[i][j-3],path[i][j-2],path[i][j-1],path[i][j-0]})
-                    local m2=sim.buildMatrixQ({0,0,0},{path[i+1][j-3],path[i+1][j-2],path[i+1][j-1],path[i+1][j-0]})
+                    local m1=sim.buildMatrixQ({0,0,0},{path.data[(i-1)*dof+j-3],path.data[(i-1)*dof+j-2],path.data[(i-1)*dof+j-1],path.data[(i-1)*dof+j-0]})
+                    local m2=sim.buildMatrixQ({0,0,0},{path.data[i*dof+j-3],path.data[i*dof+j-2],path.data[i*dof+j-1],path.data[i*dof+j-0]})
                     local a,angle=sim.getRotationAxis(m1,m2)
                     dd=angle*metric[j-3]
                 end
@@ -1318,7 +1352,7 @@ end
 function sim.rmlMoveToJointPositions(...)
     -- For backward compatibility (02.10.2020)
     
-    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=sim.checkargs({{type='table',min_size=1,item_type='int'},{type='int'},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',item_type='number',min_size=1,default=NIL,nullable=true}},...)
+    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=sim.checkargs({{type='table',min_size=1,item_type='int'},{type='int'},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',min_size=1,default=NIL,nullable=true}},...)
     local dof=#jhandles
     
     if dof<1 or (currentVel and dof~=#currentVel) or (currentAccel and dof~=#currentAccel) or dof~=#maxVel or dof~=#maxAccel or dof~=#maxJerk or dof~=#targetPos or (targetVel and dof~=#targetVel) or (direction and dof~=#direction) then
@@ -1450,6 +1484,16 @@ end
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
+
+function _S.getPathConfig(path,position)
+    local retVal={}
+    local dof=#path.dims[2]
+    for i=1,dof,1 do
+        retVal[i]=path.data[(position-1)*dof+i]
+    end
+    return retVal
+end
+
 function _S.linearInterpolate(conf1,conf2,t,types)
     local retVal={}
     local qcnt=0
@@ -1518,9 +1562,9 @@ function _S.comparableTables(t1,t2)
 end
 
 function _S.tableToString(tt,visitedTables,maxLevel,indent)
-	indent = indent or 0
+    indent = indent or 0
     maxLevel=maxLevel-1
-	if type(tt) == 'table' then
+    if type(tt) == 'table' then
         if maxLevel<=0 then
             return tostring(tt)
         else
@@ -1639,10 +1683,10 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.moveToConfig@sim','table endPos,table endVel,table endAccel,number timeLeft=sim.moveToConfig(number flags,\ntable currentPos,table currentVel,table currentAccel,table maxVel,table maxAccel,\ntable maxJerk,table targetPos,table targetVel,function callback,auxData=nil,table cyclicJoints=nil,number timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
-    sim.registerScriptFunction('sim.getInterpolatedConfig@sim',"table config=sim.getInterpolatedConfig(table path,table times,number t,table types=nil,method={type='linear'},forceOpen=false)")
-    sim.registerScriptFunction('sim.resamplePath@sim','table path=sim.resamplePath(table path,number finalConfigCnt,table metric=nil,table types=nil)')
-    sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,number totalLength=sim.getPathLengths(table path,table metric=nil,table types=nil)')
-    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table minMaxVel,table minMaxAccel,\nnumber trajPtSamples=1000,metric=nil,string boundaryCondition='not-a-knot',number timeout=5)")
+    sim.registerScriptFunction('sim.getInterpolatedConfig@sim',"table config=sim.getInterpolatedConfig(ndmatrix path,table times,number t,table types=nil,method={type='linear'},forceOpen=false)")
+    sim.registerScriptFunction('sim.resamplePath@sim','ndmatrix path=sim.resamplePath(ndmatrix path,number finalConfigCnt,table metric=nil,table types=nil)')
+    sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,number totalLength=sim.getPathLengths(ndmatrix path,table metric=nil,table types=nil)')
+    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"ndmatrix path,table times=sim.generateTimeOptimalTrajectory(ndmatrix path,ndmatrix minMaxVel,ndmatrix minMaxAccel,\nnumber trajPtSamples=1000,metric=nil,string boundaryCondition='not-a-knot',number timeout=5)")
 
     sim.registerScriptFunction('sim.wait@sim','number timeLeft=sim.wait(number dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
@@ -1652,7 +1696,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.serialRead@sim',"string data=sim.serialRead(number portHandle,number dataLengthToRead,boolean blockingOperation,string closingString='',number timeout=0)")
     sim.registerScriptFunction('sim.rmlMoveToJointPositions@sim',"Deprecated. Use 'sim.moveToConfig' instead")
     sim.registerScriptFunction('sim.rmlMoveToPosition@sim',"Deprecated. Use 'sim.moveToPose' instead")
-	
+    
     sim.registerScriptFunction('sim.changeEntityColor@sim','table originalColorData=sim.changeEntityColor(number entityHandle,table_3 newColor,\nnumber colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table originalColorData)')
     
