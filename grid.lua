@@ -138,12 +138,25 @@ function Grid:totable(format,_dim,_index)
     end
 end
 
-function Grid:fromtable(t)
+function Grid:fromtable(t,_depth,_t,_dims,_data)
     if t.dims~=nil and t.data~=nil then
         return Grid:new(t.dims,t.data)
     elseif type(t)=='table' then
-        -- TODO:
-        error('not implemented')
+        if _t then
+            if type(_t)=='table' then
+                if _dims[_depth]==nil then _dims[_depth]=#_t end
+                if #_t~=_dims[_depth] then error('inconsistent size') end
+                for _,st in ipairs(_t) do
+                    self:fromtable(t,_depth+1,st,_dims,_data)
+                end
+            else
+                table.insert(_data,_t)
+            end
+        else
+            local dims,data={},{}
+            self:fromtable(t,1,t,dims,data)
+            return Grid:new(dims,data)
+        end
     end
 end
 
@@ -160,6 +173,18 @@ if #arg==1 and arg[1]=='test' then
             231,232,233,234,
         }
     )
+    local n={
+        {
+            {111,112,113,114},
+            {121,122,123,124},
+            {131,132,133,134},
+        },
+        {
+            {211,212,213,214},
+            {221,222,223,224},
+            {231,232,233,234},
+        }
+    }
     assert(g==Grid:fromtable{
         dims={2,3,4},
         data={
@@ -174,7 +199,6 @@ if #arg==1 and arg[1]=='test' then
     })
     assert(g:get{1,3,2}==132)
     assert(g:dims()[1]==2)
-    local t=g:totable{}
     if not table.tostring then
         function table.tostring(t)
             local s='{'
@@ -184,17 +208,7 @@ if #arg==1 and arg[1]=='test' then
             return s..'}'
         end
     end
-    assert(table.tostring(t)==table.tostring{
-        {
-            {111,112,113,114},
-            {121,122,123,124},
-            {131,132,133,134},
-        },
-        {
-            {211,212,213,214},
-            {221,222,223,224},
-            {231,232,233,234},
-        }
-    })
+    assert(table.tostring(g:totable{})==table.tostring(n))
+    assert(Grid:fromtable(n)==g)
     print('tests passed')
 end
