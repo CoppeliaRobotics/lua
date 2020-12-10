@@ -70,6 +70,10 @@ table.pack = table.pack or function(...) return { n = select("#", ...), ... } en
 table.unpack = table.unpack or unpack
 
 function checkargs(types,...)
+    function infertype(t)
+        if t.class~=nil then return 'object' end
+        error('type missing, and could not infer type')
+    end
     local fn=debug.getinfo(2,'n').name..': '
     local arg=table.pack(...)
     -- check how many arguments are required (default arguments must come last):
@@ -102,6 +106,7 @@ function checkargs(types,...)
         if t.nullable and arg[i]==nil then
         else
             -- do the type check, using one of the checkarg.type() functions
+            if t.type==nil then t.type=infertype(t) end
             local checkFunc=checkarg[t.type]
             if checkFunc==nil then
                 error(string.format('function checkarg.%s does not exist',t.type))
@@ -227,7 +232,13 @@ if arg[1]=='test' then
     end
     test(101, fail, function() useobj(o1) end)
     test(102, succeed, function() useobj(o2) end)
-    useobj(o1)
+    -- test short version (type will be infered by checkargs.infertype)
+    function useobj2(o)
+        checkargs({{class=SomeObj}},o)
+        local y=o.x
+    end
+    test(103, fail, function() useobj2(o1) end)
+    test(104, succeed, function() useobj2(o2) end)
     print('tests done')
 end
 
