@@ -55,48 +55,6 @@ function Matrix:t()
     return Matrix:new(self._rows,self._cols,self._data,not self._t)
 end
 
-function Matrix:addk(k)
-    local data={}
-    for i,x in ipairs(self._data) do
-        table.insert(data,x+k)
-    end
-    return Matrix:new(self._rows,self._cols,data,self._t)
-end
-
-function Matrix:mulk(k)
-    local data={}
-    for i,x in ipairs(self._data) do
-        table.insert(data,x*k)
-    end
-    return Matrix:new(self._rows,self._cols,data,self._t)
-end
-
-function Matrix:add(m)
-    assert(self:rows()==m:rows() and self:cols()==m:cols(),'shape mismatch')
-    local data={}
-    for i=1,self:rows() do
-        for j=1,self:cols() do
-            table.insert(data,self:get(i,j)+m:get(i,j))
-        end
-    end
-    return Matrix:new(self:rows(),self:cols(),data)
-end
-
-function Matrix:mul(m)
-    assert(self:cols()==m:rows(),'invalid matrix shape')
-    local data={}
-    for i=1,self:rows() do
-        for j=1,m:cols() do
-            local s=0
-            for k=1,self:cols() do
-                s=s+self:get(i,k)*m:get(k,j)
-            end
-            table.insert(data,s)
-        end
-    end
-    return Matrix:new(self:rows(),m:cols(),data)
-end
-
 function Matrix:norm()
     if self:rows()==1 then
         return math.sqrt((self*self:t()):get(1,1))
@@ -105,6 +63,66 @@ function Matrix:norm()
     else
         error('supported only on vectors')
     end
+end
+
+function Matrix:__add(m)
+    if type(self)=='number' then
+        self,m=m,self
+    end
+    if type(m)=='number' then
+        local data={}
+        for i,x in ipairs(self._data) do
+            table.insert(data,x+m)
+        end
+        return Matrix:new(self._rows,self._cols,data,self._t)
+    elseif getmetatable(m)==Matrix then
+        assert(self:rows()==m:rows() and self:cols()==m:cols(),'shape mismatch')
+        local data={}
+        for i=1,self:rows() do
+            for j=1,self:cols() do
+                table.insert(data,self:get(i,j)+m:get(i,j))
+            end
+        end
+        return Matrix:new(self:rows(),self:cols(),data)
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:__sub(m)
+    return self+(-1*m)
+end
+
+function Matrix:__mul(m)
+    if type(self)=='number' then
+        self,m=m,self
+    end
+    if type(m)=='number' then
+        local data={}
+        for i,x in ipairs(self._data) do
+            table.insert(data,x*m)
+        end
+        return Matrix:new(self._rows,self._cols,data,self._t)
+    elseif getmetatable(m)==Matrix then
+        assert(self:cols()==m:rows(),'invalid matrix shape')
+        local data={}
+        for i=1,self:rows() do
+            for j=1,m:cols() do
+                local s=0
+                for k=1,self:cols() do
+                    s=s+self:get(i,k)*m:get(k,j)
+                end
+                table.insert(data,s)
+            end
+        end
+        return Matrix:new(self:rows(),m:cols(),data)
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:__unm()
+    return -1*self
 end
 
 function Matrix:__tostring()
@@ -128,34 +146,6 @@ function Matrix:__index(k)
     else
         return Matrix[k]
     end
-end
-
-function Matrix.__add(a,b)
-    if getmetatable(a)==Matrix and getmetatable(b)==Matrix then
-        return a:add(b)
-    elseif type(a)=='number' and getmetatable(b)==Matrix then
-        return b:addk(a)
-    elseif getmetatable(a)==Matrix and type(b)=='number' then
-        return a:addk(b)
-    end
-end
-
-function Matrix.__sub(a,b)
-    return a+(-1*b)
-end
-
-function Matrix.__mul(a,b)
-    if getmetatable(a)==Matrix and getmetatable(b)==Matrix then
-        return a:mul(b)
-    elseif type(a)=='number' and getmetatable(b)==Matrix then
-        return b:mulk(a)
-    elseif getmetatable(a)==Matrix and type(b)=='number' then
-        return a:mulk(b)
-    end
-end
-
-function Matrix:__unm()
-    return -1*self
 end
 
 function Matrix.__eq(a,b)
@@ -260,7 +250,7 @@ if #arg==1 and arg[1]=='test' then
     assert(m:get(2,3)==m[2][3])
     assert(m[2][3]==m:row(2)[3])
     assert(m:t():col(2):t()==m:row(2))
-    assert(m:mul(Matrix:new(4,1,{1,0,0,1}))==Matrix:new(3,1,{25,45,65}))
+    assert(m*Matrix:new(4,1,{1,0,0,1})==Matrix:new(3,1,{25,45,65}))
     assert(2*m==2*m)
     assert(m+m==2*m)
     assert(m-m==0*m)

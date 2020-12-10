@@ -35,30 +35,50 @@ function Grid:project(dim,val)
     error('not implemented')
 end
 
-function Grid:addk(k)
-    local data={}
-    for i,x in ipairs(self._data) do
-        table.insert(data,x+k)
+function Grid:__add(m)
+    if type(self)=='number' then
+        self,m=m,self
     end
-    return Grid:new(self._dims,data)
+    if type(m)=='number' then
+        local data={}
+        for i,x in ipairs(self._data) do
+            table.insert(data,x+m)
+        end
+        return Grid:new(self._dims,data)
+    elseif getmetatable(m)==Grid then
+        assert(self._dims==m._dims,'shape mismatch')
+        for i=1,#self._dims do assert(self._dims[i]==m._dims[i],'shape mismatch') end
+        local data={}
+        for i=1,#self._data do
+            table.insert(data,self._data[i]+m._data[i])
+        end
+        return Grid:new(self._dims,data)
+    else
+        error('unsupported operand')
+    end
 end
 
-function Grid:mulk(k)
-    local data={}
-    for i,x in ipairs(self._data) do
-        table.insert(data,x*k)
-    end
-    return Grid:new(self._dims,data)
+function Grid:__sub(m)
+    return self+(-1*m)
 end
 
-function Grid:add(m)
-    assert(self._dims==m._dims,'shape mismatch')
-    for i=1,#self._dims do assert(self._dims[i]==m._dims[i],'shape mismatch') end
-    local data={}
-    for i=1,#self._data do
-        table.insert(data,self._data[i]+m._data[i])
+function Grid:__mul(m)
+    if type(self)=='number' then
+        self,m=m,self
     end
-    return Grid:new(self._dims,data)
+    if type(m)=='number' then
+        local data={}
+        for i,x in ipairs(self._data) do
+            table.insert(data,x*m)
+        end
+        return Grid:new(self._dims,data)
+    else
+        error('unsupported operand')
+    end
+end
+
+function Grid:__unm()
+    return -1*self
 end
 
 function Grid:__tostring()
@@ -76,34 +96,6 @@ end
 
 function Grid:__index(k)
     return Grid[k]
-end
-
-function Grid.__add(a,b)
-    if getmetatable(a)==Grid and getmetatable(b)==Grid then
-        return a:add(b)
-    elseif type(a)=='number' and getmetatable(b)==Grid then
-        return b:addk(a)
-    elseif getmetatable(a)==Grid and type(b)=='number' then
-        return a:addk(b)
-    end
-end
-
-function Grid.__sub(a,b)
-    return a+(-1*b)
-end
-
-function Grid.__mul(a,b)
-    if type(a)=='number' and getmetatable(b)==Grid then
-        return b:mulk(a)
-    elseif getmetatable(a)==Grid and type(b)=='number' then
-        return a:mulk(b)
-    else
-        error('unsupported operand types')
-    end
-end
-
-function Grid:__unm()
-    return -1*self
 end
 
 function Grid.__eq(a,b)
