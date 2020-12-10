@@ -173,6 +173,20 @@ function Matrix.__eq(a,b)
     return true
 end
 
+function Matrix:__ipairs()
+	local i,j,rows,cols=1,0,self:rows(),self:cols()
+	local function iter()
+		j=j+1
+		if j>cols then
+			i,j=i+1,1
+		end
+		if i<=rows then
+			return i,j
+		end
+	end
+	return iter
+end
+
 function Matrix:totable(format)
     if format==nil then
         local d={}
