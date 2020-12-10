@@ -102,6 +102,10 @@ function Grid.__mul(a,b)
     end
 end
 
+function Grid:__unm()
+    return -1*self
+end
+
 function Grid.__eq(a,b)
     if #a._dims~=#b._dims then return false end
     for i=1,#a._dims do if a._dims[i]~=b._dims[i] then return false end end

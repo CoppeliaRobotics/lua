@@ -142,6 +142,10 @@ function Matrix.__mul(a,b)
     end
 end
 
+function Matrix:__unm()
+    return -1*self
+end
+
 function Matrix.__eq(a,b)
     if a:rows()~=b:rows() then return false end
     if a:cols()~=b:cols() then return false end
@@ -252,5 +256,6 @@ if #arg==1 and arg[1]=='test' then
     assert(m*m:t()*m*m:t()==Matrix:new(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
     assert(m:t()*m==Matrix:new(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
     assert(Matrix:fromtable{{1,0,0,0}}:norm()==1)
+    assert(Matrix:new(2,2,{2,-2,4,-4})==-Matrix:new(2,2,{-2,2,-4,4}))
     print('tests passed')
 end
