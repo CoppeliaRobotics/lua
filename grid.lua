@@ -146,6 +146,10 @@ function Grid:fromtable(t,_depth,_t,_dims,_data)
     end
 end
 
+function Grid:copy()
+    return Grid:fromtable(self:totable())
+end
+
 setmetatable(Grid,{__call=function(self,dims,data)
     assert(type(dims)=='table','dims must be a table')
     for i,dim in ipairs(dims) do assert(type(dim)=='number' and math.floor(dim)==dim,'dims must be a table of integers') end

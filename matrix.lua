@@ -198,6 +198,10 @@ function Matrix:fromtable(t)
     end
 end
 
+function Matrix:copy()
+    return Matrix:fromtable(self:totable())
+end
+
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
     assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
@@ -268,5 +272,13 @@ if #arg==1 and arg[1]=='test' then
     i:setrow(2,Matrix(1,3,{2,0,2}))
     i:setrow(3,Matrix(1,3,{3,3,0}))
     assert(i==Matrix(3,3,{0,1,1,2,0,2,3,3,0}))
+    local m1=Matrix(2,2,{1,0,0,1})
+    local m2=m1
+    m2:set(1,1,6)
+    assert(m1:get(1,1)==6)
+    local m3=m1:copy()
+    m3:set(1,1,9)
+    assert(m3:get(1,1)==9)
+    assert(m1:get(1,1)==6)
     print('tests passed')
 end
