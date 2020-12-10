@@ -44,7 +44,7 @@ function Grid:__add(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x+m)
         end
-        return Grid:new(self._dims,data)
+        return Grid(self._dims,data)
     elseif getmetatable(m)==Grid then
         assert(self._dims==m._dims,'shape mismatch')
         for i=1,#self._dims do assert(self._dims[i]==m._dims[i],'shape mismatch') end
@@ -52,7 +52,7 @@ function Grid:__add(m)
         for i=1,#self._data do
             table.insert(data,self._data[i]+m._data[i])
         end
-        return Grid:new(self._dims,data)
+        return Grid(self._dims,data)
     else
         error('unsupported operand')
     end
@@ -71,7 +71,7 @@ function Grid:__mul(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x*m)
         end
-        return Grid:new(self._dims,data)
+        return Grid(self._dims,data)
     else
         error('unsupported operand')
     end
@@ -105,16 +105,6 @@ function Grid.__eq(a,b)
     return true
 end
 
-function Grid:new(dims,data)
-    assert(type(dims)=='table','dims must be a table')
-    for i,dim in ipairs(dims) do assert(type(dim)=='number' and math.floor(dim)==dim,'dims must be a table of integers') end
-    data=data or {}
-    local dimsProd=1; for _,dim in ipairs(dims) do dimsProd=dimsProd*dim end
-    if #data==0 then for i=1,dimsProd do table.insert(data,0) end end
-    assert(#data==dimsProd,'invalid number of elements')
-    return setmetatable({_dims=dims,_data=data},Grid)
-end
-
 function Grid:totable(format,_dim,_index)
     if format==nil then
         return {dims=self._dims,data=self._data}
@@ -136,7 +126,7 @@ end
 
 function Grid:fromtable(t,_depth,_t,_dims,_data)
     if t.dims~=nil and t.data~=nil then
-        return Grid:new(t.dims,t.data)
+        return Grid(t.dims,t.data)
     elseif type(t)=='table' then
         if _t then
             if type(_t)=='table' then
@@ -151,13 +141,23 @@ function Grid:fromtable(t,_depth,_t,_dims,_data)
         else
             local dims,data={},{}
             self:fromtable(t,1,t,dims,data)
-            return Grid:new(dims,data)
+            return Grid(dims,data)
         end
     end
 end
 
+setmetatable(Grid,{__call=function(self,dims,data)
+    assert(type(dims)=='table','dims must be a table')
+    for i,dim in ipairs(dims) do assert(type(dim)=='number' and math.floor(dim)==dim,'dims must be a table of integers') end
+    data=data or {}
+    local dimsProd=1; for _,dim in ipairs(dims) do dimsProd=dimsProd*dim end
+    if #data==0 then for i=1,dimsProd do table.insert(data,0) end end
+    assert(#data==dimsProd,'invalid number of elements')
+    return setmetatable({_dims=dims,_data=data},self)
+end})
+
 if #arg==1 and arg[1]=='test' then
-    local g=Grid:new(
+    local g=Grid(
         {2,3,4},
         {
             111,112,113,114,

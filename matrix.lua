@@ -27,7 +27,7 @@ function Matrix:row(i)
         __index=function(t,j) return self:get(i,j) end,
         __len=function(t) return self:cols() end,
     })
-    return Matrix:new(1,self:cols(),data)
+    return Matrix(1,self:cols(),data)
 end
 
 function Matrix:setrow(i,m)
@@ -42,7 +42,7 @@ function Matrix:col(j)
         __index=function(t,i) return self:get(i,j) end,
         __len=function(t) return self:rows() end,
     })
-    return Matrix:new(self:rows(),1,data)
+    return Matrix(self:rows(),1,data)
 end
 
 function Matrix:setcol(j,m)
@@ -52,7 +52,7 @@ function Matrix:setcol(j,m)
 end
 
 function Matrix:t()
-    return Matrix:new(self._rows,self._cols,self._data,not self._t)
+    return Matrix(self._rows,self._cols,self._data,not self._t)
 end
 
 function Matrix:norm()
@@ -74,7 +74,7 @@ function Matrix:__add(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x+m)
         end
-        return Matrix:new(self._rows,self._cols,data,self._t)
+        return Matrix(self._rows,self._cols,data,self._t)
     elseif getmetatable(m)==Matrix then
         assert(self:rows()==m:rows() and self:cols()==m:cols(),'shape mismatch')
         local data={}
@@ -83,7 +83,7 @@ function Matrix:__add(m)
                 table.insert(data,self:get(i,j)+m:get(i,j))
             end
         end
-        return Matrix:new(self:rows(),self:cols(),data)
+        return Matrix(self:rows(),self:cols(),data)
     else
         error('unsupported operand')
     end
@@ -102,7 +102,7 @@ function Matrix:__mul(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x*m)
         end
-        return Matrix:new(self._rows,self._cols,data,self._t)
+        return Matrix(self._rows,self._cols,data,self._t)
     elseif getmetatable(m)==Matrix then
         assert(self:cols()==m:rows(),'invalid matrix shape')
         local data={}
@@ -115,7 +115,7 @@ function Matrix:__mul(m)
                 table.insert(data,s)
             end
         end
-        return Matrix:new(self:rows(),m:cols(),data)
+        return Matrix(self:rows(),m:cols(),data)
     else
         error('unsupported operand')
     end
@@ -159,15 +159,6 @@ function Matrix.__eq(a,b)
     return true
 end
 
-function Matrix:new(rows,cols,data,t)
-    assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
-    assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
-    data=data or {}
-    if #data==0 then for i=1,rows*cols do table.insert(data,0) end end
-    assert(#data==rows*cols,'invalid number of elements')
-    return setmetatable({_rows=rows,_cols=cols,_data=data,_t=t or false},Matrix)
-end
-
 function Matrix:totable(format)
     if format==nil then
         local d={}
@@ -193,7 +184,7 @@ end
 function Matrix:fromtable(t)
     if t.dims~=nil and t.data~=nil then
         assert(#t.dims==2,'only 2d grids are supported by this class')
-        return Matrix:new(t.dims[1],t.dims[2],t.data)
+        return Matrix(t.dims[1],t.dims[2],t.data)
     elseif type(t[1])=='table' then
         local rows=#t
         local cols=#t[1]
@@ -203,12 +194,21 @@ function Matrix:fromtable(t)
                 table.insert(data,t[i][j])
             end
         end
-        return Matrix:new(rows,cols,data)
+        return Matrix(rows,cols,data)
     end
 end
 
+setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
+    assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
+    assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
+    data=data or {}
+    if #data==0 then for i=1,rows*cols do table.insert(data,0) end end
+    assert(#data==rows*cols,'invalid number of elements')
+    return setmetatable({_rows=rows,_cols=cols,_data=data,_t=t or false},self)
+end})
+
 if #arg==1 and arg[1]=='test' then
-    local m=Matrix:new(
+    local m=Matrix(
         3,4,
         {
             11,12,13,14,
@@ -236,10 +236,10 @@ if #arg==1 and arg[1]=='test' then
     assert(m:totable{}[3][2]==32)
     assert(m:totable{}[2][4]==24)
     for i=1,3 do
-        assert(m:row(i)==Matrix:new(1,4,{i*10+1,i*10+2,i*10+3,i*10+4}))
+        assert(m:row(i)==Matrix(1,4,{i*10+1,i*10+2,i*10+3,i*10+4}))
     end
     for j=1,4 do
-        assert(m:col(j)==Matrix:new(3,1,{10+j,20+j,30+j}))
+        assert(m:col(j)==Matrix(3,1,{10+j,20+j,30+j}))
     end
     assert(m:row(2)==m[2])
     for i=1,3 do
@@ -250,23 +250,23 @@ if #arg==1 and arg[1]=='test' then
     assert(m:get(2,3)==m[2][3])
     assert(m[2][3]==m:row(2)[3])
     assert(m:t():col(2):t()==m:row(2))
-    assert(m*Matrix:new(4,1,{1,0,0,1})==Matrix:new(3,1,{25,45,65}))
+    assert(m*Matrix(4,1,{1,0,0,1})==Matrix(3,1,{25,45,65}))
     assert(2*m==2*m)
     assert(m+m==2*m)
     assert(m-m==0*m)
-    assert(m*m:t()==Matrix:new(3,3,{630,1130,1630,1130,2030,2930,1630,2930,4230}))
-    assert(m*m:t()*m*m:t()==Matrix:new(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
-    assert(m:t()*m==Matrix:new(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
+    assert(m*m:t()==Matrix(3,3,{630,1130,1630,1130,2030,2930,1630,2930,4230}))
+    assert(m*m:t()*m*m:t()==Matrix(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
+    assert(m:t()*m==Matrix(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
     assert(Matrix:fromtable{{1,0,0,0}}:norm()==1)
-    assert(Matrix:new(2,2,{2,-2,4,-4})==-Matrix:new(2,2,{-2,2,-4,4}))
-    local i=Matrix:new(3,3)
-    i:setcol(1,Matrix:new(3,1,{1,0,0}))
-    i:setcol(2,Matrix:new(3,1,{0,2,0}))
-    i:setcol(3,Matrix:new(3,1,{0,0,3}))
-    assert(i==Matrix:new(3,3,{1,0,0,0,2,0,0,0,3}))
-    i:setrow(1,Matrix:new(1,3,{0,1,1}))
-    i:setrow(2,Matrix:new(1,3,{2,0,2}))
-    i:setrow(3,Matrix:new(1,3,{3,3,0}))
-    assert(i==Matrix:new(3,3,{0,1,1,2,0,2,3,3,0}))
+    assert(Matrix(2,2,{2,-2,4,-4})==-Matrix(2,2,{-2,2,-4,4}))
+    local i=Matrix(3,3)
+    i:setcol(1,Matrix(3,1,{1,0,0}))
+    i:setcol(2,Matrix(3,1,{0,2,0}))
+    i:setcol(3,Matrix(3,1,{0,0,3}))
+    assert(i==Matrix(3,3,{1,0,0,0,2,0,0,0,3}))
+    i:setrow(1,Matrix(1,3,{0,1,1}))
+    i:setrow(2,Matrix(1,3,{2,0,2}))
+    i:setrow(3,Matrix(1,3,{3,3,0}))
+    assert(i==Matrix(3,3,{0,1,1,2,0,2,3,3,0}))
     print('tests passed')
 end
