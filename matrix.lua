@@ -65,6 +65,20 @@ function Matrix:norm()
     end
 end
 
+function Matrix:cross(m)
+    if self:rows()==1 and m:rows()==1 then
+        return self:t():cross(m:t()):t()
+    elseif self:cols()==1 and m:cols()==1 then
+        return Matrix(3,1,{
+            self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
+            self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
+            self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
+        })
+    else
+        error('supported only on vectors')
+    end
+end
+
 function Matrix:__add(m)
     if type(self)=='number' then
         self,m=m,self
