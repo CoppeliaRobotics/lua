@@ -230,11 +230,34 @@ function Matrix:copy()
     return Matrix:fromtable(self:totable())
 end
 
+function Matrix:eye(size)
+    return Matrix(size,size,function(i,j) return i==j and 1 or 0 end)
+end
+
+function Matrix:ones(rows,cols)
+    return Matrix(rows,cols,function(i,j) return 1 end)
+end
+
+function Matrix:zeros(rows,cols)
+    return Matrix(rows,cols,function(i,j) return 0 end)
+end
+
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
     assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
+    if type(data)=='function' then
+        datagen,data=data,nil
+    else
+        datagen=function() return 0 end
+    end
     data=data or {}
-    if #data==0 then for i=1,rows*cols do table.insert(data,0) end end
+    if #data==0 then
+        for i=1,rows do
+            for j=1,cols do
+                table.insert(data,datagen(i,j))
+            end
+        end
+    end
     assert(#data==rows*cols,'invalid number of elements')
     return setmetatable({_rows=rows,_cols=cols,_data=data,_t=t or false},self)
 end})
