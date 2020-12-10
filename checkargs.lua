@@ -52,6 +52,20 @@ function checkarg.handle(v,t)
     return type(v)=='number' and math.fmod(v,100)==0
 end
 
+function checkarg.object(v,t)
+    if type(v)~='table' then
+        return false, 'not a table'
+    end
+    if getmetatable(v)~=t.class then
+        local errmsg='should be an object'
+        if t.class.__classname then
+            errmsg=errmsg..' of class '..t.class.__classname
+        end
+        return false, errmsg
+    end
+    return true, nil
+end
+
 table.pack = table.pack or function(...) return { n = select("#", ...), ... } end
 table.unpack = table.unpack or unpack
 
@@ -200,6 +214,20 @@ if arg[1]=='test' then
         assert(v2==nil)
         assert(v3==2)
     end)
+
+    SomeObj={__classname='SomeObj'}
+    function SomeObj:new(x)
+        return setmetatable({x=x},self)
+    end
+    o1={}
+    o2=SomeObj:new(3)
+    function useobj(o)
+        checkargs({{type='object',class=SomeObj}},o)
+        local y=o.x
+    end
+    test(101, fail, function() useobj(o1) end)
+    test(102, succeed, function() useobj(o2) end)
+    useobj(o1)
     print('tests done')
 end
 
