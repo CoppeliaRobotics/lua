@@ -30,6 +30,12 @@ function Matrix:row(i)
     return Matrix:new(1,self:cols(),data)
 end
 
+function Matrix:setrow(i,m)
+    assert(m:rows()==1,'bad shape')
+    assert(m:cols()==self:cols(),'mismatching column count')
+    for j=1,self:cols() do self:set(i,j,m:get(1,j)) end
+end
+
 function Matrix:col(j)
     local data={}
     setmetatable(data,{
@@ -37,6 +43,12 @@ function Matrix:col(j)
         __len=function(t) return self:rows() end,
     })
     return Matrix:new(self:rows(),1,data)
+end
+
+function Matrix:setcol(j,m)
+    assert(m:cols()==1,'bad shape')
+    assert(m:rows()==self:rows(),'mismatching row count')
+    for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
 end
 
 function Matrix:t()
@@ -257,5 +269,14 @@ if #arg==1 and arg[1]=='test' then
     assert(m:t()*m==Matrix:new(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
     assert(Matrix:fromtable{{1,0,0,0}}:norm()==1)
     assert(Matrix:new(2,2,{2,-2,4,-4})==-Matrix:new(2,2,{-2,2,-4,4}))
+    local i=Matrix:new(3,3)
+    i:setcol(1,Matrix:new(3,1,{1,0,0}))
+    i:setcol(2,Matrix:new(3,1,{0,2,0}))
+    i:setcol(3,Matrix:new(3,1,{0,0,3}))
+    assert(i==Matrix:new(3,3,{1,0,0,0,2,0,0,0,3}))
+    i:setrow(1,Matrix:new(1,3,{0,1,1}))
+    i:setrow(2,Matrix:new(1,3,{2,0,2}))
+    i:setrow(3,Matrix:new(1,3,{3,3,0}))
+    assert(i==Matrix:new(3,3,{0,1,1,2,0,2,3,3,0}))
     print('tests passed')
 end
