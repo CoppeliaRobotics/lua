@@ -8,6 +8,11 @@ function Matrix:cols()
     if self._t then return self._rows else return self._cols end
 end
 
+function Matrix:sameshape(m)
+    assert(getmetatable(m)==Matrix,'argument is not a matrix')
+    return self:rows()==m:rows() and self:cols()==m:cols()
+end
+
 function Matrix:offset(i,j)
     local h=self._t and {j,i} or {i,j}
     return self._cols*(h[1]-1)+h[2]
@@ -91,7 +96,7 @@ function Matrix:__add(m)
         end
         return Matrix(self._rows,self._cols,data,self._t)
     elseif getmetatable(m)==Matrix then
-        assert(self:rows()==m:rows() and self:cols()==m:cols(),'shape mismatch')
+        assert(self:sameshape(m),'shape mismatch')
         local data={}
         for i=1,self:rows() do
             for j=1,self:cols() do
@@ -184,8 +189,7 @@ function Matrix:__newindex(k,v)
 end
 
 function Matrix.__eq(a,b)
-    if a:rows()~=b:rows() then return false end
-    if a:cols()~=b:cols() then return false end
+    if not a:sameshape(b) then return false end
     for i=1,a:rows() do
         for j=1,a:cols() do
             if a:get(i,j)~=b:get(i,j) then return false end
