@@ -118,7 +118,13 @@ function simIK.getAlternateConfigs(...)
     end
     simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
-    return Matrix:fromtable(configs)
+    
+    if configs=={} then
+        configs=Matrix(0,0)
+    else
+        configs=Matrix:fromtable(configs)
+    end
+    return configs
 end
 
 function simIK.applySceneToIkEnvironment(...)
@@ -387,12 +393,14 @@ function simIK.generatePath(...)
             end
         end
     end
-    if not success then
-        retPath={}
-    end
     simIK.eraseEnvironment(env)
     sim.setThreadAutomaticSwitch(lb)
-    return Matrix:fromtable(retPath)
+    if not success then
+        retPath=Matrix(0,0)
+    else
+        retPath=Matrix:fromtable(retPath)
+    end
+    return retPath
 end
 
 function simIK.init()
