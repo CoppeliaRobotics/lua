@@ -106,9 +106,9 @@ function Grid.__eq(a,b)
 end
 
 function Grid:totable(format,_dim,_index)
-    if format==nil then
+    if type(format)=='table' and #format==0 then
         return {dims=self._dims,data=self._data}
-    elseif type(format)=='table' and #format==0 then
+    elseif format==nil then
         if _dim then
             if _dim>#self._dims then return self:get(_index) end
             local t={}
@@ -147,7 +147,7 @@ function Grid:fromtable(t,_depth,_t,_dims,_data)
 end
 
 function Grid:copy()
-    return Grid:fromtable(self:totable())
+    return Grid:fromtable(self:totable{})
 end
 
 setmetatable(Grid,{__call=function(self,dims,data)
@@ -208,7 +208,7 @@ if arg and #arg==1 and arg[1]=='test' then
             return s..'}'
         end
     end
-    assert(table.tostring(g:totable{})==table.tostring(n))
+    assert(table.tostring(g:totable())==table.tostring(n))
     assert(Grid:fromtable(n)==g)
     print('tests passed')
 end

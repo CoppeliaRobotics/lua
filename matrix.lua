@@ -209,7 +209,7 @@ function Matrix:__ipairs()
 end
 
 function Matrix:totable(format)
-    if format==nil then
+    if type(format)=='table' and #format==0 then
         local d={}
         for i=1,self:rows() do
             for j=1,self:cols() do
@@ -217,7 +217,7 @@ function Matrix:totable(format)
             end
         end
         return {dims={self:rows(),self:cols()},data=d}
-    elseif type(format)=='table' and #format==0 then
+    elseif format==nil then
         local t={}
         for i=1,self:rows() do
             local row={}
@@ -248,7 +248,7 @@ function Matrix:fromtable(t)
 end
 
 function Matrix:copy()
-    return Matrix:fromtable(self:totable())
+    return Matrix:fromtable(self:totable{})
 end
 
 function Matrix:eye(size)
@@ -307,10 +307,10 @@ if arg and #arg==1 and arg[1]=='test' then
     })
     assert(m:rows()==3)
     assert(m:cols()==4)
-    assert(m:totable().dims[1]==m:rows())
-    assert(m:totable().dims[2]==m:cols())
-    assert(m:totable{}[3][2]==32)
-    assert(m:totable{}[2][4]==24)
+    assert(m:totable{}.dims[1]==m:rows())
+    assert(m:totable{}.dims[2]==m:cols())
+    assert(m:totable()[3][2]==32)
+    assert(m:totable()[2][4]==24)
     for i=1,3 do
         assert(m:row(i)==Matrix(1,4,{i*10+1,i*10+2,i*10+3,i*10+4}))
     end
