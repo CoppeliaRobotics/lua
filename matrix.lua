@@ -66,6 +66,44 @@ function Matrix:data()
     return data
 end
 
+function Matrix:_minmax(dim,cmp,what)
+    if dim==nil then
+        if #self._data==0 then return nil end
+        local mv,mi,mj=self._data[1],1,1
+        for i=1,self:rows() do
+            for j=1,self:cols() do
+                local v=self:get(i,j)
+                if cmp(v,mv) then mv,mi,mj=v,i,j end
+            end
+        end
+        return mv,mi,mj
+    elseif dim==1 then
+        local m=Matrix(1,self:cols())
+        for j=1,self:cols() do
+            local col=self:col(j)
+            m:set(1,j,col[what](col))
+        end
+        return m
+    elseif dim==2 then
+        local m=Matrix(self:rows(),1)
+        for i=1,self:rows() do
+            local row=self:row(i)
+            m:set(i,1,row[what](row))
+        end
+        return m
+    else
+        error('invalid dimension')
+    end
+end
+
+function Matrix:min(dim)
+    return self:_minmax(dim,function(a,b) return a<b end,'min')
+end
+
+function Matrix:max(dim)
+    return self:_minmax(dim,function(a,b) return a>b end,'max')
+end
+
 function Matrix:t()
     return Matrix(self._rows,self._cols,{ref=self._data},not self._t)
 end
@@ -410,4 +448,22 @@ if arg and #arg==1 and arg[1]=='test' then
     table.remove(d)
     assert(pcall(function() tostring(m4) end))
     print('tests passed')
+    m5=Matrix:fromtable{
+        {1,20,5,3},
+        {10,2,28,4},
+        {2,5,7,9},
+    }
+    assert(m5:min()==1)
+    minVal,minRow,minCol=m5:min()
+    maxVal,maxRow,maxCol=m5:max()
+    assert(minVal==1)
+    assert(minRow==1)
+    assert(minCol==1)
+    assert(maxVal==28)
+    assert(maxRow==2)
+    assert(maxCol==3)
+    assert(m5:min(1)==Matrix(1,4,{1,2,5,3}))
+    assert(m5:max(1)==Matrix(1,4,{10,20,28,9}))
+    assert(m5:min(2)==Matrix(3,1,{1,2,2}))
+    assert(m5:max(2)==Matrix(3,1,{20,28,9}))
 end
