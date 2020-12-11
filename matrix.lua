@@ -57,6 +57,15 @@ function Matrix:setcol(j,m)
     for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
 end
 
+function Matrix:data()
+    local data={}
+    setmetatable(data,{
+        __index=function(t,i) return self:get((i-1)//self:cols()+1,(i-1)%self:cols()+1) end,
+        __len=function(t) return self:rows()*self:cols() end,
+    })
+    return data
+end
+
 function Matrix:t()
     return Matrix(self._rows,self._cols,self._data,not self._t)
 end
