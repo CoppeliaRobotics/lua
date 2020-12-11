@@ -135,6 +135,7 @@ function Matrix:t()
 end
 
 function Matrix:dot(m)
+    assert(self:sameshape(m) or self:sameshape(m:t()),'shape mismatch')
     if self:rows()==1 and m:rows()==1 then
         return (self*m:t()):get(1,1)
     elseif self:cols()==1 and m:cols()==1 then
