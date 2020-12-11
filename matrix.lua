@@ -286,6 +286,17 @@ function Matrix:zeros(rows,cols)
     return Matrix(rows,cols,function(i,j) return 0 end)
 end
 
+function Matrix:print(elemwidth)
+    elemwidth=elemwidth or 10
+    for i=1,self:rows() do
+        local row=''
+        for j=1,self:cols() do
+            row=row..string.format('%'..tostring(elemwidth)..'s',tostring(self:get(i,j)))
+        end
+        print(row)
+    end
+end
+
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
     assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
