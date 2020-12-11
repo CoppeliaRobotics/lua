@@ -777,9 +777,9 @@ function sim.generateTimeOptimalTrajectory(...)
         r=simB0.serviceClientCallJSON(c,{
             samples=trajPtSamples,
             ss_waypoints=distancesAlongPath,
-            waypoints=path.totable({}),
-            velocity_limits=minMaxVel.totable({}),
-            acceleration_limits=minMaxAccel.totable({}),
+            waypoints=path:totable(),
+            velocity_limits=minMaxVel:totable(),
+            acceleration_limits=minMaxAccel:totable(),
             bc_type=boundaryCondition
         })
         simB0.nodeCleanup(n)
@@ -830,13 +830,7 @@ function sim.getPathInterpolatedConfig(...)
             types[i]=0
         end
     end
-    local closed=true
-    for i=1,dof,1 do
-        if path[1][i]~=path[confCnt][i] then
-            closed=false
-            break
-        end
-    end
+    local closed=(path[1]==path[confCnt])
     if forceOpen then
         closed=false
     end
@@ -864,7 +858,7 @@ function sim.getPathInterpolatedConfig(...)
         local i0,i1,i2
         if t<0.5 then
             if li==1 and not closed then
-                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+                retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
             else
                 i0=li-1
                 i1=li
@@ -872,13 +866,13 @@ function sim.getPathInterpolatedConfig(...)
                 if li==1 then
                     i0=confCnt-1
                 end
-                local a=_S.linearInterpolate(path[i0],path[i1],0.75+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1],path[i2],0.25+t*0.5,types)
+                local a=_S.linearInterpolate(path[i0]:data(),path[i1]:data(),0.75+t*0.5,types)
+                local b=_S.linearInterpolate(path[i1]:data(),path[i2]:data(),0.25+t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,0.5+t,types)
             end
         else
             if hi==confCnt and not closed then
-                retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+                retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
             else
                 i0=li
                 i1=hi
@@ -887,14 +881,14 @@ function sim.getPathInterpolatedConfig(...)
                     i2=2
                 end
                 t=t-0.5
-                local a=_S.linearInterpolate(path[i0],path[i1],0.5+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1],path[i2],t*0.5,types)
+                local a=_S.linearInterpolate(path[i0]:data(),path[i1]:data(),0.5+t*0.5,types)
+                local b=_S.linearInterpolate(path[i1]:data(),path[i2]:data(),t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,t,types)
             end
         end
     end
     if not method or method.type=='linear' then
-        retVal=_S.linearInterpolate(path[li],path[hi],t,types)
+        retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
     end
     return retVal
 end
@@ -903,19 +897,17 @@ function sim.resamplePath(...)
     local path,finalConfigCnt,metric,types,method,forceOpen=checkargs({{type='object',class=Matrix},{type='int'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
     local dof=path:cols()
     
-    if dof<1 or (path.rows()<2) or (metric and dof~=#metric) or (types and dof~=#types) then
+    if dof<1 or (path:rows()<2) or (metric and dof~=#metric) or (types and dof~=#types) then
         error("Bad table size.")
     end
 
     local pathLengths=sim.getPathLengths(path,metric,types)
-    local retVal={data={},dims={finalConfigCnt,dof}}
+    local retVal={}
     for i=1,finalConfigCnt,1 do
         local c=sim.getPathInterpolatedConfig(path,pathLengths,pathLengths[#pathLengths]*(i-1)/(finalConfigCnt-1),types,method,forceOpen)
-        for j=1,#c,1 do
-            retVal.data[#retVal.data+1]=c[j]
-        end
+        retVal[#retVal+1]=c
     end
-    return retVal
+    return Matrix:fromtable(retVal)
 end
 
 function sim.getPathLengths(...)
