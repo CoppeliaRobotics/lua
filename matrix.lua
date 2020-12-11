@@ -151,6 +151,14 @@ function Matrix:__tostring()
     return s
 end
 
+function Matrix:__len()
+    if self:rows()==1 then
+        return self:cols()
+    else
+        return {self:rows(),self:cols()}
+    end
+end
+
 function Matrix:__index(k)
     if type(k)=='number' then
         if self:rows()==1 then
