@@ -104,6 +104,32 @@ function Matrix:max(dim)
     return self:_minmax(dim,function(a,b) return a>b end,'max')
 end
 
+function Matrix:sum(dim)
+    if dim==nil then
+        local s=0
+        for i=1,self:rows() do
+            for j=1,self:cols() do
+                s=s+self:get(i,j)
+            end
+        end
+        return s
+    elseif dim==1 then
+        local m=Matrix(1,self:cols())
+        for j=1,self:cols() do
+            m:set(1,j,self:col(j):sum())
+        end
+        return m
+    elseif dim==2 then
+        local m=Matrix(self:rows(),1)
+        for i=1,self:rows() do
+            m:set(i,1,self:row(i):sum())
+        end
+        return m
+    else
+        error('invalid dimension')
+    end
+end
+
 function Matrix:t()
     return Matrix(self._rows,self._cols,{ref=self._data},not self._t)
 end
@@ -447,7 +473,6 @@ if arg and #arg==1 and arg[1]=='test' then
     m4=Matrix(3,1,d)
     table.remove(d)
     assert(pcall(function() tostring(m4) end))
-    print('tests passed')
     m5=Matrix:fromtable{
         {1,20,5,3},
         {10,2,28,4},
@@ -466,4 +491,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m5:max(1)==Matrix(1,4,{10,20,28,9}))
     assert(m5:min(2)==Matrix(3,1,{1,2,2}))
     assert(m5:max(2)==Matrix(3,1,{20,28,9}))
+    assert(m5:sum()==96)
+    assert(m5:sum(1)==Matrix(1,4,{13,27,40,16}))
+    assert(m5:sum(2)==Matrix(3,1,{29,44,23}))
+    print('tests passed')
 end
