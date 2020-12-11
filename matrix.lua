@@ -26,6 +26,7 @@ function Matrix:row(i)
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
         __len=function(t) return self:cols() end,
+        __newindex=function(t,j,v) self:set(i,j,v) end,
     })
     return Matrix(1,self:cols(),data)
 end
@@ -156,6 +157,18 @@ function Matrix:__index(k)
             return self:get(1,k)
         else
             return self:row(k)
+        end
+    else
+        return Matrix[k]
+    end
+end
+
+function Matrix:__newindex(k,v)
+    if type(k)=='number' then
+        if self:rows()==1 then
+            return self:set(1,k,v)
+        else
+            return self:setrow(k,v)
         end
     else
         return Matrix[k]
