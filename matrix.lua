@@ -33,7 +33,7 @@ function Matrix:row(i)
         __len=function(t) return self:cols() end,
         __newindex=function(t,j,v) self:set(i,j,v) end,
     })
-    return Matrix(1,self:cols(),data)
+    return Matrix(1,self:cols(),{ref=data})
 end
 
 function Matrix:setrow(i,m)
@@ -48,7 +48,7 @@ function Matrix:col(j)
         __index=function(t,i) return self:get(i,j) end,
         __len=function(t) return self:rows() end,
     })
-    return Matrix(self:rows(),1,data)
+    return Matrix(self:rows(),1,{ref=data})
 end
 
 function Matrix:setcol(j,m)
@@ -67,7 +67,7 @@ function Matrix:data()
 end
 
 function Matrix:t()
-    return Matrix(self._rows,self._cols,self._data,not self._t)
+    return Matrix(self._rows,self._cols,{ref=self._data},not self._t)
 end
 
 function Matrix:dot(m)
@@ -90,11 +90,11 @@ function Matrix:cross(m)
         return self:t():cross(m:t()):t()
     elseif self:rows()==3 and self:cols()==1 then
         assert(self:sameshape(m),'shape mismatch')
-        return Matrix(3,1,{
+        return Matrix(3,1,{ref={
             self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
             self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
             self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
-        })
+        }})
     else
         error('supported only on 3d vectors')
     end
@@ -113,7 +113,7 @@ function Matrix:__add(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x+m)
         end
-        return Matrix(self._rows,self._cols,data,self._t)
+        return Matrix(self._rows,self._cols,{ref=data},self._t)
     elseif getmetatable(m)==Matrix then
         assert(self:sameshape(m),'shape mismatch')
         local data={}
@@ -122,7 +122,7 @@ function Matrix:__add(m)
                 table.insert(data,self:get(i,j)+m:get(i,j))
             end
         end
-        return Matrix(self:rows(),self:cols(),data)
+        return Matrix(self:rows(),self:cols(),{ref=data})
     else
         error('unsupported operand')
     end
@@ -141,7 +141,7 @@ function Matrix:__mul(m)
         for i,x in ipairs(self._data) do
             table.insert(data,x*m)
         end
-        return Matrix(self._rows,self._cols,data,self._t)
+        return Matrix(self._rows,self._cols,{ref=data},self._t)
     elseif getmetatable(m)==Matrix then
         assert(self:cols()==m:rows(),'invalid matrix shape')
         local data={}
@@ -154,7 +154,7 @@ function Matrix:__mul(m)
                 table.insert(data,s)
             end
         end
-        return Matrix(self:rows(),m:cols(),data)
+        return Matrix(self:rows(),m:cols(),{ref=data})
     else
         error('unsupported operand')
     end
@@ -266,7 +266,7 @@ function Matrix:fromtable(t)
                 table.insert(data,t[i][j])
             end
         end
-        return Matrix(rows,cols,data)
+        return Matrix(rows,cols,{ref=data})
     end
 end
 
@@ -300,13 +300,21 @@ end
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
     assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
-    if type(data)=='function' then
-        datagen,data=data,nil
-    else
-        datagen=function() return 0 end
+    local datagen,origdata=function() return 0 end,data
+    if type(data)=='table' then
+        if data.ref~=nil then
+            -- take data by reference
+            data,datagen=data.ref,nil
+        elseif #data==rows*cols then
+            data,datagen=nil,function(i,j) return origdata[(i-1)*cols+j] end
+        else
+            error('invalid number of elements')
+        end
+    elseif type(data)=='function' then
+        data,datagen=nil,data
     end
-    data=data or {}
-    if #data==0 then
+    if data==nil then
+        data={}
         for i=1,rows do
             for j=1,cols do
                 table.insert(data,datagen(i,j))
@@ -394,5 +402,10 @@ if arg and #arg==1 and arg[1]=='test' then
     m3:set(1,1,9)
     assert(m3:get(1,1)==9)
     assert(m1:get(1,1)==6)
+    -- data should be copied, not referenced:
+    local d={100,200,300}
+    m4=Matrix(3,1,d)
+    table.remove(d)
+    assert(pcall(function() tostring(m4) end))
     print('tests passed')
 end
