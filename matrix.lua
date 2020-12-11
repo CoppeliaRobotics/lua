@@ -243,7 +243,7 @@ function Matrix:__len()
     if self:rows()==1 then
         return self:cols()
     else
-        return {self:rows(),self:cols()}
+        return self:rows()
     end
 end
 
@@ -282,17 +282,23 @@ function Matrix.__eq(a,b)
 end
 
 function Matrix:__ipairs()
-	local i,j,rows,cols=1,0,self:rows(),self:cols()
-	local function iter()
-		j=j+1
-		if j>cols then
-			i,j=i+1,1
-		end
-		if i<=rows then
-			return i,j
-		end
-	end
-	return iter
+    if self:rows()==1 then
+        local j,cols=0,self:cols()
+        return function()
+            j=j+1
+            if j<=cols then
+                return j,self:get(1,j)
+            end
+        end
+    else
+        local i,rows=0,self:rows()
+        return function()
+            i=i+1
+            if i<=rows then
+                return i,self:row(i)
+            end
+        end
+    end
 end
 
 function Matrix:totable(format)
