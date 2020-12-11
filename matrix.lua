@@ -380,6 +380,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(Matrix(3,1,{3,4,0}):dot(Matrix(3,1,{-4,3,5}))==0)
     assert(Matrix(3,1,{3,4,0}):data()[1]==3)
     assert(Matrix(3,1,{3,4,0}):data()[2]==4)
+    assert(Matrix(1,3,{3,4,0}):data()[1]==3)
+    assert(Matrix(1,3,{3,4,0}):data()[2]==4)
     local x,y,z=Matrix(3,1,{1,0,0}),Matrix(3,1,{0,1,0}),Matrix(3,1,{0,0,1})
     assert(x:dot(y:cross(z))~=0)
     assert(y:dot(y:cross(z))==0)
