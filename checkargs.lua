@@ -1,6 +1,15 @@
-local checkarg={}
+checkarg={}
 
-local NIL={}
+NIL={}
+table.pack = table.pack or function(...) return { n = select("#", ...), ... } end
+table.unpack = table.unpack or unpack
+
+function unpackx(arg,n,i)
+    i=i or 1
+    if i<=n then
+        return arg[i],unpackx(arg,n,i+1)
+    end
+end
 
 function checkarg.any(v,t)
     return true
@@ -66,9 +75,6 @@ function checkarg.object(v,t)
     return true, nil
 end
 
-table.pack = table.pack or function(...) return { n = select("#", ...), ... } end
-table.unpack = table.unpack or unpack
-
 function checkargs(types,...)
     function infertype(t)
         if t.class~=nil then return 'object' end
@@ -120,16 +126,9 @@ function checkargs(types,...)
     return unpackx(arg,#types)
 end
 
-function unpackx(arg,n,i)
-    i=i or 1
-    if i<=n then
-        return arg[i],unpackx(arg,n,i+1)
-    end
-end
-
 -- tests:
 
-if arg[1]=='test' then
+if arg and #arg==1 and arg[1]=='test' then
     function f(...)
         local i,s,ti=checkargs({{type='int'},{type='string'},{type='table',item_type='int',size=3}},...)
     end

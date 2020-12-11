@@ -160,7 +160,7 @@ setmetatable(Grid,{__call=function(self,dims,data)
     return setmetatable({_dims=dims,_data=data},self)
 end})
 
-if #arg==1 and arg[1]=='test' then
+if arg and #arg==1 and arg[1]=='test' then
     local g=Grid(
         {2,3,4},
         {

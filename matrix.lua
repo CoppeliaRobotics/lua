@@ -262,7 +262,7 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     return setmetatable({_rows=rows,_cols=cols,_data=data,_t=t or false},self)
 end})
 
-if #arg==1 and arg[1]=='test' then
+if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
         3,4,
         {

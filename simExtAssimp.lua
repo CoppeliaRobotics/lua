@@ -4,7 +4,7 @@ local simAssimp={}
 --@arg string filename The filename (including extension) of the CAD data
 --@ret table handles The handles of the imported shapes
 function simAssimp.importShapesDlg(...)
-    local filenames=sim.checkargs({{type='string'}},...)
+    local filenames=checkargs({{type='string'}},...)
     
     configUiData={}
     function configUiData.onImport(ui,id,newVal)
@@ -182,7 +182,7 @@ end
 --@arg string filename The filename (including extension) of the CAD data
 --@arg table shapeHandles The handles of the shapes to export
 function simAssimp.exportShapesDlg(...)
-    local filename,shapeHandles=sim.checkargs({{type='string'},{type='table',min_size=1,item_type='int'}},...)
+    local filename,shapeHandles=checkargs({{type='string'},{type='table',min_size=1,item_type='int'}},...)
     
     configUiData={}
     function configUiData.onExport(ui,id,newVal)

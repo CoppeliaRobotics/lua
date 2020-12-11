@@ -21,7 +21,7 @@ function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desire
 end
 
 function simIK.getAlternateConfigs(...)
-    local ikEnvironment,jointHandles,lowLimits,ranges=sim.checkargs({{type='int'},{type='table',min_size=1,item_type='int'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local ikEnvironment,jointHandles,lowLimits,ranges=checkargs({{type='int'},{type='table',min_size=1,item_type='int'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
     local dof=#jointHandles
     if (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
         error("Bad table size.")
@@ -118,11 +118,11 @@ function simIK.getAlternateConfigs(...)
     end
     simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
-    return configs
+    return Matrix:fromtable(configs)
 end
 
 function simIK.applySceneToIkEnvironment(...)
-    local ikEnv,ikGroup=sim.checkargs({{type='int'},{type='int'}},...)
+    local ikEnv,ikGroup=checkargs({{type='int'},{type='int'}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     
@@ -158,7 +158,7 @@ function simIK.applySceneToIkEnvironment(...)
 end
 
 function simIK.applyIkToScene(...)
-    local ikEnv,ikGroup,applyOnlyWhenSuccessful=sim.checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
+    local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     
@@ -187,7 +187,7 @@ function simIK.applyIkToScene(...)
 end
 
 function simIK.addIkElementFromScene(...)
-    local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=sim.checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
+    local ikEnv,ikGroup,simBase,simTip,simTarget,constraints=checkargs({{type='int'},{type='int'},{type='int'},{type='int'},{type='int'},{type='int'}},...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
     
@@ -295,7 +295,7 @@ function simIK.addIkElementFromScene(...)
 end
 
 function simIK.eraseEnvironment(...)
-    local ikEnv=sim.checkargs({{type='int'}},...)
+    local ikEnv=checkargs({{type='int'}},...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
     
@@ -307,7 +307,7 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.getConfigForTipPose(...)
-    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=sim.checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',min_size=1,item_type='int',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',min_size=1,item_type='int',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
     local dof=#joints
 
     if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
@@ -350,7 +350,7 @@ function simIK.getConfigForTipPose(...)
 end
 
 function simIK.generatePath(...)
-    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=sim.checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
+    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
 
@@ -392,18 +392,18 @@ function simIK.generatePath(...)
     end
     simIK.eraseEnvironment(env)
     sim.setThreadAutomaticSwitch(lb)
-    return retPath
+    return Matrix:fromtable(retPath)
 end
 
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
-    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
+    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','Matrix configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
     sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','number ikElement,table simToIkObjectMap=simIK.addIkElementFromScene(number environmentHandle\n,number ikGroup,number baseHandle,number tipHandle,\nnumber targetHandle,number constraints)')
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(number environmentHandle,number ikGroup)')
     sim.registerScriptFunction('simIK.applyIkToScene@simIK','number result=simIK.applyIkToScene(number environmentHandle,number ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(number environmentHandle)')
     sim.registerScriptFunction('simIK.getConfigForTipPose@simIK','table jointPositions=simIK.getConfigForTipPose(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number thresholdDist=0.1,\nnumber maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,\nauxData=nil,table jointOptions={},table lowLimits={},table ranges={})')
-    sim.registerScriptFunction('simIK.generatePath@simIK','table configurationList=simIK.generatePath(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number tipHandle,\nnumber pathPointCount,function validationCallback=nil,auxData=nil)')
+    sim.registerScriptFunction('simIK.generatePath@simIK','matrix path=simIK.generatePath(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number tipHandle,\nnumber pathPointCount,function validationCallback=nil,auxData=nil)')
     
     simIK.init=nil
 end
