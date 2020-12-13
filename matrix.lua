@@ -23,10 +23,27 @@ function Matrix:get(i,j)
 end
 
 function Matrix:set(i,j,value)
+    if self._copyonwrite then
+        self._copyonwrite=false
+        local d={}
+        for i,x in ipairs(self._data) do table.insert(d,x) end
+        self._data=d
+    end
     self._data[self:offset(i,j)]=value
 end
 
 function Matrix:row(i)
+    local data={}
+    setmetatable(data,{
+        __index=function(t,j) return self:get(i,j) end,
+        __len=function(t) return self:cols() end,
+        __newindex=function(t,j,v) self:set(i,j,v) end,
+    })
+    self._copyonwrite=true
+    return Matrix(1,self:cols(),{ref=data,copyonwrite=true})
+end
+
+function Matrix:rowref(i)
     local data={}
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
@@ -48,7 +65,8 @@ function Matrix:col(j)
         __index=function(t,i) return self:get(i,j) end,
         __len=function(t) return self:rows() end,
     })
-    return Matrix(self:rows(),1,{ref=data})
+    self._copyonwrite=true
+    return Matrix(self:rows(),1,{ref=data,copyonwrite=true})
 end
 
 function Matrix:setcol(j,m)
@@ -131,7 +149,8 @@ function Matrix:sum(dim)
 end
 
 function Matrix:t()
-    return Matrix(self._rows,self._cols,{ref=self._data},not self._t)
+    self._copyonwrite=true
+    return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
 end
 
 function Matrix:dot(m)
@@ -253,7 +272,7 @@ function Matrix:__index(k)
         if self:rows()==1 then
             return self:get(1,k)
         else
-            return self:row(k)
+            return self:rowref(k)
         end
     else
         return Matrix[k]
@@ -371,10 +390,12 @@ end
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
     assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
+    local copyonwrite=false
     local datagen,origdata=function() return 0 end,data
     if type(data)=='table' then
         if data.ref~=nil then
             -- take data by reference
+            if data.copyonwrite then copyonwrite=true end
             data,datagen=data.ref,nil
         elseif #data==rows*cols then
             data,datagen=nil,function(i,j) return origdata[(i-1)*cols+j] end
@@ -393,7 +414,13 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
         end
     end
     assert(#data==rows*cols,'invalid number of elements')
-    return setmetatable({_rows=rows,_cols=cols,_data=data,_t=t or false},self)
+    return setmetatable({
+        _rows=rows,
+        _cols=cols,
+        _data=data,
+        _t=t or false,
+        _copyonwrite=copyonwrite,
+    },self)
 end})
 
 if arg and #arg==1 and arg[1]=='test' then
@@ -467,6 +494,10 @@ if arg and #arg==1 and arg[1]=='test' then
     i:setrow(2,Matrix(1,3,{2,0,2}))
     i:setrow(3,Matrix(1,3,{3,3,0}))
     assert(i==Matrix(3,3,{0,1,1,2,0,2,3,3,0}))
+    i:set(1,1,9)
+    i:set(2,2,9)
+    i:set(3,3,9)
+    assert(i==Matrix(3,3,{9,1,1,2,9,2,3,3,9}))
     local m1=Matrix(2,2,{1,0,0,1})
     local m2=m1
     m2:set(1,1,6)
@@ -501,5 +532,23 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m5:sum()==96)
     assert(m5:sum(1)==Matrix(1,4,{13,27,40,16}))
     assert(m5:sum(2)==Matrix(3,1,{29,44,23}))
+    -- verify copy-on-write:
+    a=Matrix(2,2,{10,20,30,40})
+    b=a:t():t()
+    a[1][1]=11
+    b[2][2]=44
+    assert(a[1][1]==11)
+    assert(b[1][1]==10)
+    assert(a[2][2]==40)
+    assert(b[2][2]==44)
+    -- repeat the above test using :set / :get
+    a=Matrix(2,2,{10,20,30,40})
+    b=a:t():t()
+    a:set(1,1,11)
+    b:set(2,2,44)
+    assert(a:get(1,1)==11)
+    assert(b:get(1,1)==10)
+    assert(a:get(2,2)==40)
+    assert(b:get(2,2)==44)
     print('tests passed')
 end
