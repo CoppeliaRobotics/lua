@@ -84,6 +84,17 @@ function Matrix:setcol(j,m)
     for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
 end
 
+function Matrix:slice(fromrow,fromcol,torow,tocol)
+    assert(fromrow<=torow and fromcol<=tocol,'bad ranges')
+    local m=Matrix(1+torow-fromrow,1+tocol-fromcol)
+    for i=fromrow,torow do
+        for j=fromcol,tocol do
+            m:set(i-fromrow+1,j-fromcol+1,self:get(i,j))
+        end
+    end
+    return m
+end
+
 function Matrix:data()
     local data={}
     setmetatable(data,{
