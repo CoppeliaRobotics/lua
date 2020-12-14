@@ -390,7 +390,15 @@ function Matrix:zeros(rows,cols)
 end
 
 function Matrix:print(elemwidth)
-    elemwidth=elemwidth or 10
+    if not elemwidth then
+        elemwidth=0
+        for i=1,self:rows() do
+            for j=1,self:cols() do
+                elemwidth=math.max(elemwidth,#tostring(self:get(i,j)))
+            end
+        end
+        elemwidth=elemwidth+1
+    end
     for i=1,self:rows() do
         local row=''
         for j=1,self:cols() do
