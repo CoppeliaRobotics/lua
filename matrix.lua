@@ -159,34 +159,19 @@ function Matrix:t()
 end
 
 function Matrix:dot(m)
-    assert(self:sameshape(m) or self:sameshape(m:t()),'shape mismatch')
-    if self:rows()==1 and m:rows()==1 then
-        return (self*m:t()):get(1,1)
-    elseif self:cols()==1 and m:cols()==1 then
-        return (self:t()*m):get(1,1)
-    elseif self:rows()==1 and m:cols()==1 then
-        return (self*m):get(1,1)
-    elseif self:cols()==1 and m:rows()==1 then
-        return (m*self):get(1,1)
-    else
-        error('supported only on vectors')
-    end
+    assert(self:cols()==1,'supported only on vectors')
+    assert(self:sameshape(m),'shape mismatch')
+    return (self:t()*m):get(1,1)
 end
 
 function Matrix:cross(m)
-    if self:rows()==1 and self:cols()==3 then
-        assert(self:sameshape(m),'shape mismatch')
-        return self:t():cross(m:t()):t()
-    elseif self:rows()==3 and self:cols()==1 then
-        assert(self:sameshape(m),'shape mismatch')
-        return Matrix(3,1,{ref={
-            self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
-            self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
-            self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
-        }})
-    else
-        error('supported only on 3d vectors')
-    end
+    assert(self:sameshape{3,1},'supported only on 3d vectors')
+    assert(self:sameshape(m),'shape mismatch')
+    return Matrix(3,1,{ref={
+        self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
+        self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
+        self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
+    }})
 end
 
 function Matrix:norm()
@@ -232,7 +217,7 @@ function Matrix:__mul(m)
         end
         return Matrix(self._rows,self._cols,{ref=data},self._t)
     elseif getmetatable(m)==Matrix then
-        assert(self:cols()==m:rows(),'invalid matrix shape')
+        assert(self:cols()==m:rows(),'incompatible matrix dimensions')
         local data={}
         for i=1,self:rows() do
             for j=1,m:cols() do
@@ -478,7 +463,7 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m*m:t()==Matrix(3,3,{630,1130,1630,1130,2030,2930,1630,2930,4230}))
     assert(m*m:t()*m*m:t()==Matrix(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
     assert(m:t()*m==Matrix(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
-    assert(Matrix:fromtable{{1,0,0,0}}:norm()==1)
+    assert(Matrix:fromtable{{1,0,0,0}}:t():norm()==1)
     assert(Matrix(3,1,{3,4,0}):norm()==5)
     assert(Matrix(3,1,{3,4,0}):dot(Matrix(3,1,{-4,3,5}))==0)
     assert(Matrix(3,1,{3,4,0}):data()[1]==3)
