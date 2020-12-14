@@ -89,7 +89,7 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     local m=Matrix(1+torow-fromrow,1+tocol-fromcol)
     for i=fromrow,torow do
         for j=fromcol,tocol do
-            m:set(i-fromrow+1,j-fromcol+1,self:get(i,j))
+            m:set(i-fromrow+1,j-fromcol+1,self:get(i,j) or 0)
         end
     end
     return m
@@ -98,7 +98,7 @@ end
 function Matrix:assign(startrow,startcol,m)
     for i=1,m:rows() do
         for j=1,m:cols() do
-            m:set(i-startrow+1,j-startcol+1,m:get(i,j))
+            m:set(i-startrow+1,j-startcol+1,m:get(i,j) or 0)
         end
     end
 end
