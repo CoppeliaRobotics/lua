@@ -95,6 +95,14 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     return m
 end
 
+function Matrix:assign(startrow,startcol,m)
+    for i=1,m:rows() do
+        for j=1,m:cols() do
+            m:set(i-startrow+1,j-startcol+1,m:get(i,j))
+        end
+    end
+end
+
 function Matrix:data()
     local data={}
     setmetatable(data,{
