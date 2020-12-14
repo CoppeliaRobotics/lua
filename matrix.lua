@@ -24,17 +24,21 @@ function Matrix:offset(i,j)
 end
 
 function Matrix:get(i,j)
-    return self._data[self:offset(i,j)]
+    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
+        return self._data[self:offset(i,j)]
+    end
 end
 
 function Matrix:set(i,j,value)
-    if self._copyonwrite then
-        self._copyonwrite=false
-        local d={}
-        for i,x in ipairs(self._data) do table.insert(d,x) end
-        self._data=d
+    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
+        if self._copyonwrite then
+            self._copyonwrite=false
+            local d={}
+            for i,x in ipairs(self._data) do table.insert(d,x) end
+            self._data=d
+        end
+        self._data[self:offset(i,j)]=value
     end
-    self._data[self:offset(i,j)]=value
 end
 
 function Matrix:row(i)
