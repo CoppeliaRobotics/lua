@@ -9,8 +9,13 @@ function Matrix:cols()
 end
 
 function Matrix:sameshape(m)
-    assert(getmetatable(m)==Matrix,'argument is not a matrix')
-    return self:rows()==m:rows() and self:cols()==m:cols()
+    if getmetatable(m)==Matrix then
+        return self:rows()==m:rows() and self:cols()==m:cols()
+    elseif type(m)=='table' and m[1] and m[2] then
+        return self:rows()==m[1] and self:cols()==m[2]
+    else
+        error('argument is not a matrix')
+    end
 end
 
 function Matrix:offset(i,j)
