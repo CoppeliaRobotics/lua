@@ -34,7 +34,7 @@ or can be printed with the [`:print`](#matrixprint) method:
  21 22 23
 ```
 
-The `data` argument of the `Matrix` constructor can be omitted, in which case the matrix will be filled with zeros:
+The `data` argument of the [`Matrix`](#matrixrowscolsdata) constructor can be omitted, in which case the matrix will be filled with zeros:
 
 ```
 > Matrix(2,2)
@@ -42,12 +42,12 @@ Matrix(2,2,{0,0,0,0})
 ```
 
 There are additional constructors for special type of matrices:
-- `Matrix3x3([data])` creates a 3x3 matrix
-- `Matrix4x4([data])` creates a 4x4 matrix
-- `Vector(n[,data])` creates a `n`-dimensional vector (works also with `Vector(data)` in which case the dimension is guessed from table size)
-- `Vector3([data])` creates a 3-dimensional vector
-- `Vector4([data])` creates a 4-dimensional vector
-- `Vector7([data])` creates a 7-dimensional vector
+- [`Matrix3x3([data])`](#matrix3x3data) creates a 3x3 matrix
+- [`Matrix4x4([data])`](#matrix4x4data) creates a 4x4 matrix
+- [`Vector(n[,data])`](#vectorlendata) creates a `n`-dimensional vector (works also with [`Vector(data)`](#vectordata) in which case the dimension is guessed from table size)
+- [`Vector3([data])`](#vector3data) creates a 3-dimensional vector
+- [`Vector4([data])`](#vector4data) creates a 4-dimensional vector
+- [`Vector7([data])`](#vector7data) creates a 7-dimensional vector
 
 All the above constructors return an object of type `Matrix`:
 
@@ -264,6 +264,10 @@ Matrix(2,3,{1,2,3,4,5,6})
 ```
 
 ## Functions reference
+
+#### `Matrix(rows,cols,data)`
+
+Returns a new matrix of size `rows`x`cols`. If `data` is provided (table) the matrix will be initialized with the given data (row-major order). If `data` is a function, each element at position `i`, `j` will be initialized with the value returned by calling `data(i,j)`.
 
 #### `Matrix:abs()`
 
@@ -503,6 +507,10 @@ Returns the element-wise ult (true if and only if integer m is below integer n w
 
 Returns a `rows`x`cols` matrix of zeros.
 
+#### `Matrix3x3(data)`
+
+Returns a new matrix of size 3x3 initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how `data` is interpreted).
+
 #### `Matrix3x3:fromeuler(e)`
 
 Returns a rotation matrix from euler angles.
@@ -534,6 +542,10 @@ Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
 Returns a unit quaternion (table) computed from this rotation matrix.
 
 Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4(data)`
+
+Returns a new matrix of size 4x4 initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how data is interpreted).
 
 #### `Matrix4x4:fromeuler(e)`
 
@@ -582,4 +594,24 @@ Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
 #### `Matrix4x4:torotation(m)`
 
 Returns the rotation matrix of this transformation matrix.
+
+#### `Vector(len,data)`
+
+Returns a new matrix of size `len`x`1` (i.e. a vector) initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how data is interpreted).
+
+#### `Vector(data)`
+
+Shortcut for `Vector(#data,data)`. See [`Vector(len,data)`](#vectorlendata).
+
+#### `Vector3(data)`
+
+Same as `Vector(3,data)`. See [`Vector(len,data)`](#vectorlendata).
+
+#### `Vector4(data)`
+
+Same as `Vector(4,data)`. See [`Vector(len,data)`](#vectorlendata).
+
+#### `Vector7(data)`
+
+Same as `Vector(7,data)`. See [`Vector(len,data)`](#vectorlendata).
 
