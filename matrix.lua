@@ -440,6 +440,19 @@ function Matrix:__unm()
     return -1*self
 end
 
+function Matrix:__pow(k)
+    assert(self:rows()==self:cols(),'must be square matrix')
+    if type(k)=='number' then
+        assert(k%1==0,'only integer powers are supported')
+        assert(k>=0,'only positive powers are supported')
+        local r=Matrix:eye(self:rows())
+        for i=1,k do r=r*self end
+        return r
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:__tostring()
     s='Matrix('..self:rows()..','..self:cols()..',{'
     for i=1,self:rows() do

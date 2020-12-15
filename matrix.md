@@ -107,7 +107,7 @@ Matrix multiplication (dimensions must be compatible):
 Matrix(3,1,{2,3,1})
 ```
 
-Other supported operators are: scalar and matrix subtraction (`a-b`), scalar division (`m/k`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
+Other supported operators are: scalar and matrix subtraction (`a-b`), scalar division (`m/k`), power (`m^k`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
 
 Matrices can be transposed (rows and columns will be swapped) with the [`:t`](#matrixt) method:
 
