@@ -352,6 +352,12 @@ function Matrix:norm()
     return math.sqrt(self:dot(self))
 end
 
+function Matrix:diag()
+    local r=Matrix(math.min(self:rows(),self:cols()),1)
+    for ij=1,r:rows() do r:set(ij,1,self:get(ij,ij)) end
+    return r
+end
+
 function Matrix:__add(m)
     if type(self)=='number' then
         self,m=m,self

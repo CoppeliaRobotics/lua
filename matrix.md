@@ -341,6 +341,10 @@ Returns data as a table in row-major order.
 
 Returns element-wise conversion from radians to degrees.
 
+#### `Matrix:diag()`
+
+Returns the vector of eements on the main diagonal.
+
 #### `Matrix:dot(m)`
 
 Returns the dot product with vector `m`.
