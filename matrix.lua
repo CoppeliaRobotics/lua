@@ -98,7 +98,7 @@ end
 function Matrix:assign(startrow,startcol,m)
     for i=1,m:rows() do
         for j=1,m:cols() do
-            m:set(i-startrow+1,j-startcol+1,m:get(i,j) or 0)
+            self:set(i+startrow-1,j+startcol-1,m:get(i,j) or 0)
         end
     end
 end
