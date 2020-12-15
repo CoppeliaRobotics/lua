@@ -19,26 +19,28 @@ function Matrix:sameshape(m)
 end
 
 function Matrix:offset(i,j)
-    local h=self._t and {j,i} or {i,j}
-    return self._cols*(h[1]-1)+h[2]
+    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
+        if self._t then i,j=j,i end
+        return self._cols*(i-1)+j
+    end
 end
 
 function Matrix:get(i,j)
-    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
-        return self._data[self:offset(i,j)]
-    end
+    local offset=self:offset(i,j)
+    if not offset then return end
+    return self._data[offset]
 end
 
 function Matrix:set(i,j,value)
-    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
-        if self._copyonwrite then
-            self._copyonwrite=false
-            local d={}
-            for i,x in ipairs(self._data) do table.insert(d,x) end
-            self._data=d
-        end
-        self._data[self:offset(i,j)]=value
+    local offset=self:offset(i,j)
+    if not offset then return end
+    if self._copyonwrite then
+        self._copyonwrite=false
+        local d={}
+        for i,x in ipairs(self._data) do table.insert(d,x) end
+        self._data=d
     end
+    self._data[offset]=value
 end
 
 function Matrix:row(i)
