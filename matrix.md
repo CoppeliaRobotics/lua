@@ -373,6 +373,10 @@ Returns a matrix with data from the 2d table `t`.
 
 Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` are out of range.
 
+#### `Matrix:horzcat(m)`
+
+Returns the matrix obtained by concatenating with `m` horizontally.
+
 #### `Matrix:log(base)`
 
 Returns element-wise logarithm. If `base` is specified, the logarithm will be computed in the specified base. The `base` argument can be a matrix of the same size or a number.
@@ -526,6 +530,10 @@ Returns a 2d table representation of this matrix.
 #### `Matrix:ult(m2)`
 
 Returns the element-wise ult (true if and only if integer m is below integer n when they are compared as unsigned integers) value.
+
+#### `Matrix:vertcat(m)`
+
+Returns the matrix obtained by concatenating with `m` vertically.
 
 #### `Matrix:zeros(rows,cols)`
 

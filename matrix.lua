@@ -116,6 +116,20 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     return m
 end
 
+function Matrix:horzcat(m)
+    assert(self:rows()==m:rows(),'row count mismatch')
+    local r=self:slice(1,1,self:rows(),self:cols()+m:cols())
+    r:assign(1,1+self:cols(),m)
+    return r
+end
+
+function Matrix:vertcat(m)
+    assert(self:cols()==m:cols(),'column count mismatch')
+    local r=self:slice(1,1,self:rows()+m:rows(),self:cols())
+    r:assign(1+self:rows(),1,m)
+    return r
+end
+
 function Matrix:assign(startrow,startcol,m)
     for i=1,m:rows() do
         for j=1,m:cols() do
