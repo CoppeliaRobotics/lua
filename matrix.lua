@@ -103,6 +103,86 @@ function Matrix:assign(startrow,startcol,m)
     end
 end
 
+function Matrix:applyfunc(f)
+    local m=self:copy()
+    for i=1,m:rows() do
+        for j=1,m:cols() do
+            m:set(i,j,f(m:get(i,j)))
+        end
+    end
+    return m
+end
+
+function Matrix:abs()
+    return self:applyfunc(math.abs)
+end
+
+function Matrix:acos()
+    return self:applyfunc(math.acos)
+end
+
+function Matrix:asin()
+    return self:applyfunc(math.asin)
+end
+
+function Matrix:atan()
+    return self:applyfunc(math.atan)
+end
+
+function Matrix:ceil()
+    return self:applyfunc(math.ceil)
+end
+
+function Matrix:cos()
+    return self:applyfunc(math.cos)
+end
+
+function Matrix:deg()
+    return self:applyfunc(math.deg)
+end
+
+function Matrix:exp()
+    return self:applyfunc(math.exp)
+end
+
+function Matrix:floor()
+    return self:applyfunc(math.floor)
+end
+
+function Matrix:log()
+    return self:applyfunc(math.log)
+end
+
+function Matrix:rad()
+    return self:applyfunc(math.rad)
+end
+
+function Matrix:random(a,b)
+    if a and b then
+        return self:applyfunc(function() return math.random(a,b) end)
+    elseif a then
+        return self:applyfunc(function() return math.random(a) end)
+    else
+        return self:applyfunc(math.random)
+    end
+end
+
+function Matrix:sin()
+    return self:applyfunc(math.sin)
+end
+
+function Matrix:sqrt()
+    return self:applyfunc(math.sqrt)
+end
+
+function Matrix:tan()
+    return self:applyfunc(math.tan)
+end
+
+function Matrix:tointeger()
+    return self:applyfunc(math.tointeger)
+end
+
 function Matrix:data()
     local data={}
     setmetatable(data,{
