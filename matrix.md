@@ -4,7 +4,7 @@
 
 ### Initialization
 
-You can create a matrix with:
+Create a matrix with:
 
 ```
 > m=Matrix(2,3,{11,12,13,21,22,23})
@@ -12,7 +12,7 @@ You can create a matrix with:
 
 (creates a 2 rows by 3 columns matrix filled with the specified data in row-major order)
 
-Use the `:rows` and `:cols` methods to know the dimensions of a matrix:
+Use the [`:rows`](#matrixrows) and [`:cols`](#matrixcols) methods to know the dimensions of a matrix:
 
 ```
 > m:rows(), m:cols()
@@ -26,7 +26,7 @@ Matrices are converted to a lua representation (e.g. with `tostring()`):
 Matrix(2,3,{11,12,13,21,22,23})
 ```
 
-or can be printed with the `:print` method:
+or can be printed with the [`:print`](#matrixprint) method:
 
 ```
 > m:print()
@@ -68,9 +68,9 @@ The `data` argument can be a function with parameters `i`, `j`:
 
 There are some convenience constructors for creating commonly used matrices:
 
-- `Matrix:eye(n)` creates a `n`x`n` identity matrix
-- `Matrix:ones(m,n)` creates a `m`x`n` matrix of ones
-- `Matrix:zeros(m,n)` creates a `m`x`n` matrix of zeros
+- [`Matrix:eye(n)`](#matrixeyen) creates a `n`x`n` identity matrix
+- [`Matrix:ones(m,n)`](#matrixonesrowscols) creates a `m`x`n` matrix of ones
+- [`Matrix:zeros(m,n)`](#matrixzerosrowscols) creates a `m`x`n` matrix of zeros
 
 ### Basic operations
 
@@ -109,7 +109,7 @@ Matrix(3,1,{2,3,1})
 
 Other supported operators are: subtraction (`a-b`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
 
-Matrices can be transposed (rows and columns will be swapped) with the `:t` method:
+Matrices can be transposed (rows and columns will be swapped) with the [`:t`](#matrixt) method:
 
 ```
 > v=Vector{1,2,3}
@@ -124,7 +124,7 @@ Matrices can be transposed (rows and columns will be swapped) with the `:t` meth
 
 ### Getting and setting data
 
-Use `:get` and `:set` to read and write elements:
+Use [`:get`](#matrixgetij) and [`:set`](#matrixsetijvalue) to read and write elements:
 
 ```
 > m=Matrix(2,3,{11,12,13,21,22,23})
@@ -136,14 +136,14 @@ Use `:get` and `:set` to read and write elements:
  4000   22   23
 ```
 
-Methods `:row` and `:col` can access rows and columns:
+Methods [`:row`](#matrixrowi) and [`:col`](#matrixcolj) can access rows and columns:
 
 ```
 > m:row(2)
 Matrix(1,3,{4000,22,23})
 ```
 
-Methods `:setrow` and `:setcol` can modify whole rows or columns:
+Methods [`:setrow`](#matrixsetrowim) and [`:setcol`](#matrixsetcoljm) can modify whole rows or columns:
 
 ```
 > m:setrow(2,Matrix:zeros(1,3))
@@ -181,7 +181,7 @@ Matrix(2,1,{100,300})
 Matrix(2,1,{100,300})
 ```
 
-To create a copy, use the `:copy` method:
+To create a copy, use the [`:copy`](#matrixcopy) method:
 
 ```
 > a=Vector{100,200}
@@ -195,7 +195,7 @@ Matrix(2,1,{100,200})
 
 ### Slicing and assigning
 
-It is possible to get a portion of a matrix with `:slice`. Parameters are: start row, start column, end row, end column.
+It is possible to get a portion of a matrix with [`:slice`](#matrixslicefromrowfromcoltorowtocol). Parameters are: start row, start column, end row, end column.
 
 ```
 > m=Matrix:eye(3)
@@ -208,7 +208,7 @@ It is possible to get a portion of a matrix with `:slice`. Parameters are: start
  1 0
 ```
 
-The `:slice` mathod can also create a matrix which is bigger than the original:
+The [`:slice`](#matrixslicefromrowfromcoltorowtocol) method can also create a matrix which is bigger than the original:
 
 ```
 > m:slice(1,1,3,5):print()
@@ -217,7 +217,7 @@ The `:slice` mathod can also create a matrix which is bigger than the original:
  0 0 1 0 0
 ```
 
-It is possible to copy data from a matrix of different size with `:assign`. Parameters are start row, start column, matrix.
+It is possible to copy data from a matrix of different size with [`:assign`](#matrixassignstartrowstartcolm). Parameters are start row, start column, matrix.
 
 ```
 > m:assign(1,2,5*Matrix:ones(2,2))
@@ -233,11 +233,11 @@ Normally, all the methods return a new matrix, so the original data is not affec
 
 There are a few methods that are an exception to this rule:
 
-- `Matrix:set(i,j,value)` modifies the specified element in place.
-- `Matrix:rowref(i)` returns a *row reference*. Modifying data in the returned row modifies also the original matrix. Use `Matrix:row(i)` to avoid side-effect.
-- `Matrix:setrow(i,mtx)` modifies the specified row.
-- `Matrix:setcol(j,mtx)` modifies the specified column.
-- `Matrix:assign(startrow,startcol,mtx)` sets elements of this matrix, copying the values from `mtx`.
+- [`Matrix:set(i,j,value)`](#matrixsetijvalue) modifies the specified element in place.
+- [`Matrix:rowref(i)`](#matrixrowrefi) returns a *row reference*. Modifying data in the returned row modifies also the original matrix. Use [`Matrix:row(i)`](#matrixrowi) to avoid side-effect.
+- [`Matrix:setrow(i,mtx)`](#matrixsetrowim) modifies the specified row.
+- [`Matrix:setcol(j,mtx)`](#matrixsetcoljm) modifies the specified column.
+- [`Matrix:assign(startrow,startcol,mtx)`](#matrixassignstartrowstartcolm) sets elements of this matrix, copying the values from `mtx`.
 
 ### Converting to/from tables
 
