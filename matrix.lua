@@ -106,13 +106,7 @@ function Matrix:assign(startrow,startcol,m)
 end
 
 function Matrix:applyfuncidx(f)
-    local m=self:copy()
-    for i=1,m:rows() do
-        for j=1,m:cols() do
-            m:set(i,j,f(i,j,m:get(i,j)))
-        end
-    end
-    return m
+    return Matrix(self:rows(),self:cols(),function(i,j) return f(i,j,self:get(i,j)) end)
 end
 
 function Matrix:applyfunc(f)
