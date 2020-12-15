@@ -386,7 +386,7 @@ function Matrix:__tostring()
     s='Matrix('..self:rows()..','..self:cols()..',{'
     for i=1,self:rows() do
         for j=1,self:cols() do
-            s=s..(i==1 and j==1 and '' or ',')..self:get(i,j)
+            s=s..(i==1 and j==1 and '' or ',')..tostring(self:get(i,j))
         end
     end
     s=s..'})'
