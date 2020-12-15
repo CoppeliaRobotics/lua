@@ -107,7 +107,7 @@ Matrix multiplication (dimensions must be compatible):
 Matrix(3,1,{2,3,1})
 ```
 
-Other supported operators are: subtraction (`a-b`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
+Other supported operators are: scalar and matrix subtraction (`a-b`), scalar division (`m/k`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
 
 Matrices can be transposed (rows and columns will be swapped) with the [`:t`](#matrixt) method:
 
@@ -325,6 +325,10 @@ Returns a copy of the matrix.
 
 Returns element-wise cosine value.
 
+#### `Matrix:count()`
+
+Returns the number of elements (rows * cols).
+
 #### `Matrix:cross(m)`
 
 Returns the cross product with 3d vectors `m`.
@@ -380,6 +384,14 @@ Returns a column-wise (`dim` = 1) or row-wise (`dim` = 2) maximum.
 #### `Matrix:max(m)`
 
 Returns pair-wise maximum with matrix `m` which must have the same size.
+
+#### `Matrix:mean()`
+
+Returns the mean of all the values.
+
+#### `Matrix:mean(dim)`
+
+Returns the column-wise (`dim` = 1) or row-wise (`dim` = 2) mean.
 
 #### `Matrix:min()`
 

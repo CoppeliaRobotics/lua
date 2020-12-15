@@ -8,6 +8,10 @@ function Matrix:cols()
     if self._t then return self._rows else return self._cols end
 end
 
+function Matrix:count()
+    return self._rows*self._cols
+end
+
 function Matrix:sameshape(m)
     if getmetatable(m)==Matrix then
         return self:rows()==m:rows() and self:cols()==m:cols()
@@ -309,6 +313,20 @@ function Matrix:sum(dim)
     end
 end
 
+function Matrix:mean(dim)
+    local c
+    if dim==nil then
+        c=self:count()
+    elseif dim==1 then
+        c=self:rows()
+    elseif dim==2 then
+        c=self:cols()
+    else
+        error('invalid dimension')
+    end
+    return self:sum(dim)/c
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
@@ -385,6 +403,14 @@ function Matrix:__mul(m)
             end
         end
         return Matrix(self:rows(),m:cols(),{ref=data})
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:__div(k)
+    if type(k)=='number' then
+        return self*(1/k)
     else
         error('unsupported operand')
     end
