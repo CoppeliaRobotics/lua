@@ -962,19 +962,9 @@ if arg and #arg==1 and arg[1]=='test' then
         if type(a)=='number' and type(b)=='number' then
             return math.abs(a-b)<tol
         elseif getmetatable(a)==Matrix and getmetatable(b)==Matrix then
-            assert(a:sameshape(b),'mismatching shape')
-            for i=1,a:rows() do
-                for j=1,a:cols() do
-                    if not approxEq(a:get(i,j),b:get(i,j),tol) then return false end
-                end
-            end
-            return true
+            return (a-b):abs():max()<tol
         elseif type(a)=='table' and type(b)=='table' then
-            assert(#a==#b,'size mismatch')
-            for i=1,#a do
-                if not approxEq(a[i],b[i],tol) then return false end
-            end
-            return true
+            return approxEq(Vector(a),Vector(b))
         else
             error('incorrect or mismatching type(s)')
         end
