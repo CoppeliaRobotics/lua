@@ -41,6 +41,7 @@ function Matrix:set(i,j,value)
         self._data=d
     end
     self._data[offset]=value
+    return self
 end
 
 function Matrix:row(i)
@@ -65,9 +66,16 @@ function Matrix:rowref(i)
 end
 
 function Matrix:setrow(i,m)
-    assert(m:rows()==1,'bad shape')
-    assert(m:cols()==self:cols(),'mismatching column count')
-    for j=1,self:cols() do self:set(i,j,m:get(1,j)) end
+    if getmetatable(m)==Matrix then
+        assert(m:rows()==1,'bad shape')
+        assert(m:cols()==self:cols(),'mismatching column count')
+        for j=1,self:cols() do self:set(i,j,m:get(1,j)) end
+    elseif type(m)=='table' then
+        for j=1,self:cols() do self:set(i,j,m[j] or 0) end
+    else
+        error('bad type')
+    end
+    return self
 end
 
 function Matrix:col(j)
@@ -81,9 +89,16 @@ function Matrix:col(j)
 end
 
 function Matrix:setcol(j,m)
-    assert(m:cols()==1,'bad shape')
-    assert(m:rows()==self:rows(),'mismatching row count')
-    for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
+    if getmetatable(m)==Matrix then
+        assert(m:cols()==1,'bad shape')
+        assert(m:rows()==self:rows(),'mismatching row count')
+        for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
+    elseif type(m)=='table' then
+        for i=1,self:rows() do self:set(i,j,m[i] or 0) end
+    else
+        error('bad type')
+    end
+    return self
 end
 
 function Matrix:slice(fromrow,fromcol,torow,tocol)
@@ -103,6 +118,7 @@ function Matrix:assign(startrow,startcol,m)
             self:set(i+startrow-1,j+startcol-1,m:get(i,j) or 0)
         end
     end
+    return self
 end
 
 function Matrix:applyfuncidx(f)

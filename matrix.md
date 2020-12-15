@@ -299,6 +299,8 @@ Returns element-wise inverse-sine value.
 
 Copies values from matrix `m`. Element `m[1+i][1+j]` will be copied to position `startrow+i`, `startcol+j` for `i`=0,...,`m:rows()-1` and `j`=0,...,`m:cols()-1`.
 
+Returns the matrix itself.
+
 #### `Matrix:atan(m)`
 
 Returns element-wise inverse-tangent value.
@@ -451,17 +453,23 @@ Returns true if `m` has the given shape of `rows` and `columns`.
 
 Sets the element's value at row `i` column `j`. Has no effect if `i` or `j` are out of range.
 
+Returns the matrix itself.
+
 #### `Matrix:setcol(j,m)`
 
 [modifies current matrix]
 
-Sets the `j`-th column with values from column vector `m` (row count must match).
+Sets the `j`-th column with values from `m` (must be a column vector, in which case row count must match, or must be a table).
+
+Returns the matrix itself.
 
 #### `Matrix:setrow(i,m)`
 
 [modifies current matrix]
 
-Sets the `i`-th row with values from row vector `m` (column count must match).
+Sets the `i`-th row with values from `m` (must be a row vector, in which case column count must match, or must be a table).
+
+Returns the matrix itself.
 
 #### `Matrix:sin()`
 
