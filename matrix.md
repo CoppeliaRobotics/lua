@@ -469,7 +469,7 @@ Returns element-wise sine value.
 
 #### `Matrix:slice(fromrow,fromcol,torow,tocol)`
 
-Returns a matrix obtained by copiying the values from this matrix, starting at `fromrow`, `fromcol` and ending at `torow`, `tocol`.
+Returns a matrix obtained by copying the values from this matrix, starting at `fromrow`, `fromcol` and ending at `torow`, `tocol`.
 
 #### `Matrix:sqrt()`
 
