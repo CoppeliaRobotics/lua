@@ -107,6 +107,8 @@ Matrix multiplication (dimensions must be compatible):
 Matrix(3,1,{2,3,1})
 ```
 
+Other supported operators are: subtraction (`a-b`), unary minus (`-a`), table length (`#a`, returns the number of rows), iteration (`ipairs(a)`).
+
 Matrices can be transposed (rows and columns will be swapped) with the `:t` method:
 
 ```
@@ -118,32 +120,6 @@ Matrices can be transposed (rows and columns will be swapped) with the `:t` meth
 > v=v:t()
 > v:print()
  1 2 3
-```
-
-### Assignment and copy
-
-Assignment simply creates another reference to the same object, just like normal tables:
-
-```
-> a=Vector{100,200}
-> b=a
-> b:set(2,1,300)
-> b
-Matrix(2,1,{100,300})
-> a
-Matrix(2,1,{100,300})
-```
-
-To create a copy, use the `:copy` method:
-
-```
-> a=Vector{100,200}
-> b=a:copy()
-> b:set(2,1,300)
-> b
-Matrix(2,1,{100,300})
-> a
-Matrix(2,1,{100,200})
 ```
 
 ### Getting and setting data
@@ -191,6 +167,32 @@ It is possible to use square brackets to get and set elements:
   0  0  1
 ```
 
+### Variables assignment and copy
+
+Variable assignment simply creates another reference to the same object, just like normal tables:
+
+```
+> a=Vector{100,200}
+> b=a
+> b:set(2,1,300)
+> b
+Matrix(2,1,{100,300})
+> a
+Matrix(2,1,{100,300})
+```
+
+To create a copy, use the `:copy` method:
+
+```
+> a=Vector{100,200}
+> b=a:copy()
+> b:set(2,1,300)
+> b
+Matrix(2,1,{100,300})
+> a
+Matrix(2,1,{100,200})
+```
+
 ### Slicing and assigning
 
 It is possible to get a portion of a matrix with `:slice`. Parameters are: start row, start column, end row, end column.
@@ -236,3 +238,348 @@ There are a few methods that are an exception to this rule:
 - `Matrix:setrow(i,mtx)` modifies the specified row.
 - `Matrix:setcol(j,mtx)` modifies the specified column.
 - `Matrix:assign(startrow,startcol,mtx)` sets elements of this matrix, copying the values from `mtx`.
+
+### Converting to/from tables
+
+A 2-dimensional lua table can be converted to a matrix and vice-versa:
+
+```
+> tbl={
+>> {1,2,3},
+>> {4,5,6},
+>> }
+> m=Matrix:fromtable(tbl)
+> m
+Matrix(2,3,{1,2,3,4,5,6})
+> m:print()
+ 1 2 3
+ 4 5 6
+> tbl1=m:totable()
+> #tbl1
+2
+> #tbl1[2]
+3
+> tbl1[2][1], tbl1[2][2], tbl1[2][3]
+4	5	6
+```
+
+## Functions reference
+
+#### `Matrix:abs()`
+
+Returns element-wise absolute value.
+
+#### `Matrix:acos()`
+
+Returns element-wise inverse-cosine value.
+
+#### `Matrix:applyfunc(f)`
+
+Returns element-wise result of function `f(x)` where `x` is if the element value.
+
+#### `Matrix:applyfunc2(m,f)`
+
+Returns element-pairwise result of function `f(x,y)` where `x` is the element of `self` and `y` is the element of `m` in the same position.
+
+#### `Matrix:applyfuncidx(f)`
+
+Returns element-wise result of function `f(i,i)` where `i`, `j` are element's row and column indices respectively.
+
+#### `Matrix:asin()`
+
+Returns element-wise inverse-sine value.
+
+#### `Matrix:assign(startrow,startcol,m)`
+
+[modifies current matrix]
+
+Copies values from matrix `m`. Element `m[1+i][1+j]` will be copied to position `startrow+i`, `startcol+j` for `i`=0,...,`m:rows()-1` and `j`=0,...,`m:cols()-1`.
+
+#### `Matrix:atan(m)`
+
+Returns element-wise inverse-tangent value.
+
+#### `Matrix:ceil()`
+
+Returns element-wise ceil (smallest integral value larger than or equal to x).
+
+#### `Matrix:col(j)`
+
+Returns the `j`-th column.
+
+#### `Matrix:cols()`
+
+Returns the number of columns.
+
+#### `Matrix:copy()`
+
+Returns a copy of the matrix.
+
+#### `Matrix:cos()`
+
+Returns element-wise cosine value.
+
+#### `Matrix:cross(m)`
+
+Returns the cross product with 3d vectors `m`.
+
+#### `Matrix:data()`
+
+Returns data as a table in row-major order.
+
+#### `Matrix:deg()`
+
+Returns element-wise conversion from radians to degrees.
+
+#### `Matrix:dot(m)`
+
+Returns the dot product with vector `m`.
+
+#### `Matrix:exp()`
+
+Returns element-wise exponential.
+
+#### `Matrix:eye(n)`
+
+Returns a `n`x`n` identity matrix.
+
+#### `Matrix:floor()`
+
+Returns element-wise floor (largest integral value smaller than or equal to x).
+
+#### `Matrix:fmod(m)`
+
+Returns element-wise fmod (remainder of the division of x by y that rounds the quotient towards zero) with `m`, which can be a matrix of the same size or a number.
+
+#### `Matrix:fromtable(t)`
+
+Returns a matrix with data from the 2d table `t`.
+
+#### `Matrix:get(i,j)`
+
+Returns the element's value at row `i` column `j`.
+
+#### `Matrix:log(base)`
+
+Returns element-wise logarithm. If `base` is specified, the logarithm will be computed in the specified base. The `base` argument can be a matrix of the same size or a number.
+
+#### `Matrix:max()`
+
+Returns `maxval`, `i`, `j` where `maxval` is the global maximum value of the matrix, and `i`, `j` its row and column indices.
+
+#### `Matrix:max(dim)`
+
+Returns a column-wise (`dim` = 1) or row-wise (`dim` = 2) maximum.
+
+#### `Matrix:max(m)`
+
+Returns pair-wise maximum with matrix `m` which must have the same size.
+
+#### `Matrix:min()`
+
+Returns `minval`, `i`, `j` where `minval` is the global minimum value of the matrix, and `i`, `j` its row and column indices.
+
+#### `Matrix:min(dim)`
+
+Returns a column-wise (`dim` = 1) or row-wise (`dim` = 2) minimum.
+
+#### `Matrix:min(m)`
+
+Returns pair-wise minimum with matrix `m` which must have the same size.
+
+#### `Matrix:norm()`
+
+Returns the vector norm of this vector.
+
+#### `Matrix:offset(i,j)`
+
+Returns the data offset for indices `i`, `j`.
+
+#### `Matrix:ones(rows,cols)`
+
+Returns a `rows`x`cols` matrix of ones.
+
+#### `Matrix:print(elemwidth)`
+
+Print the matrix.
+
+#### `Matrix:rad()`
+
+Returns element-wise conversion from degrees to radians.
+
+#### `Matrix:random()`
+
+Returns element-wise random numbers.
+
+#### `Matrix:random(a)`
+
+Returns element-wise random numbers between 1 and `a`.
+
+#### `Matrix:random(a,b)`
+
+Returns element-wise random numbers between `a` and `b`.
+
+#### `Matrix:row(i)`
+
+Returns the `i`-th row.
+
+#### `Matrix:rowref(i)`
+
+Returns a *reference* to the `i`-th row.
+
+Can allow modifying the current matrix: use with caution.
+
+#### `Matrix:rows()`
+
+Returns the number of rows.
+
+#### `Matrix:sameshape(m)`
+
+Returns true if `m` has the same shape (number of rows and columns) of this matrix.
+
+#### `Matrix:sameshape(rows,cols)`
+
+Returns true if `m` has the given shape of `rows` and `columns`.
+
+#### `Matrix:set(i,j,value)`
+
+[modifies current matrix]
+
+Sets the element's value at row `i` column `j`.
+
+#### `Matrix:setcol(j,m)`
+
+[modifies current matrix]
+
+Sets the `j`-th column with values from column vector `m` (row count must match).
+
+#### `Matrix:setrow(i,m)`
+
+[modifies current matrix]
+
+Sets the `i`-th row with values from row vector `m` (column count must match).
+
+#### `Matrix:sin()`
+
+Returns element-wise sine value.
+
+#### `Matrix:slice(fromrow,fromcol,torow,tocol)`
+
+Returns a matrix obtained by copiying the values from this matrix, starting at `fromrow`, `fromcol` and ending at `torow`, `tocol`.
+
+#### `Matrix:sqrt()`
+
+Returns element-wise square root value.
+
+#### `Matrix:sum()`
+
+Returns the sum of all the values.
+
+#### `Matrix:sum(dim)`
+
+Returns the column-wise (`dim` = 1) or row-wise (`dim` = 2) sum.
+
+#### `Matrix:t()`
+
+Returns a transposed matrix.
+
+#### `Matrix:tan()`
+
+Returns element-wise tangent value.
+
+#### `Matrix:tointeger()`
+
+Returns element-wise integer value.
+
+#### `Matrix:totable(format)`
+
+Returns a 2d table representation of this matrix.
+
+#### `Matrix:ult(m2)`
+
+Returns the element-wise ult (true if and only if integer m is below integer n when they are compared as unsigned integers) value.
+
+#### `Matrix:zeros(rows,cols)`
+
+Returns a `rows`x`cols` matrix of zeros.
+
+#### `Matrix3x3:fromeuler(e)`
+
+Returns a rotation matrix from euler angles.
+
+#### `Matrix3x3:fromquaternion(q)`
+
+Returns a rotation matrix from quaternion.
+
+#### `Matrix3x3:rotx(angle)`
+
+Returns a rotation matrix from rotation around X axis.
+
+#### `Matrix3x3:roty(angle)`
+
+Returns a rotation matrix from rotation around Y axis.
+
+#### `Matrix3x3:rotz(angle)`
+
+Returns a rotation matrix from rotation around Z axis.
+
+#### `Matrix3x3:toeuler(m,t)`
+
+Returns a table of euler angles computed from this rotation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix3x3:toquaternion(m,t)`
+
+Returns a unit quaternion (table) computed from this rotation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4:fromeuler(e)`
+
+Returns a transformation matrix from euler angles (null translation).
+
+#### `Matrix4x4:frompose(p)`
+
+Returns a transformation matrix from the given pose (a 7-dimensional vector, first 3 values for translation, last 4 values for rotation as unit quaternion).
+
+#### `Matrix4x4:fromposition(v)`
+
+Returns a transformation matrix from translation (null rotation).
+
+#### `Matrix4x4:fromquaternion(q)`
+
+Returns a transformation matrix from unit quaternion (null translation).
+
+#### `Matrix4x4:fromrotation(m)`
+
+Returns a transformation matrix from rotation matrix (null translation).
+
+#### `Matrix4x4:toeuler(m,t)`
+
+Returns a table of euler angles computed from the rotation matrix of this transformation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4:topose(m,t)`
+
+Returns the pose (a 7-dimensional table, first 3 values for translation, last 4 values for rotation as unit quaternion) computed from this transformation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4:toposition(m,t)`
+
+Returns the translation vector (table) computed from this transformation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4:toquaternion(m,t)`
+
+Returns the unit quaternion (table) computed from the rotation matrix of this transformation matrix.
+
+Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
+
+#### `Matrix4x4:torotation(m)`
+
+Returns the rotation matrix of this transformation matrix.
+

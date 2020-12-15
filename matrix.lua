@@ -561,6 +561,188 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     },self)
 end})
 
+Vector={}
+
+setmetatable(Vector,{__call=function(self,len,data)
+    if type(len)=='table' then
+        data=len
+        len=#data
+    end
+    assert(len>0,'length must be greater than zero')
+    return Matrix(len,1,data)
+end})
+
+Vector3={}
+
+setmetatable(Vector3,{__call=function(self,data)
+    return Vector(3,data)
+end})
+
+Vector4={}
+
+setmetatable(Vector4,{__call=function(self,data)
+    return Vector(4,data)
+end})
+
+Vector7={}
+
+setmetatable(Vector7,{__call=function(self,data)
+    return Vector(7,data)
+end})
+
+Matrix3x3={}
+
+function Matrix3x3:rotx(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{1,0,0,0,c,-s,0,s,c})
+end
+
+function Matrix3x3:roty(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{c,0,s,0,1,0,-s,0,c})
+end
+
+function Matrix3x3:rotz(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{c,-s,0,s,c,0,0,0,1})
+end
+
+function Matrix3x3:fromquaternion(q)
+    if q.x and q.y and q.z and q.w then
+        local n=1/math.sqrt(q.x*q.x+q.y*q.y+q.z*q.z+q.w*q.w)
+        local qx,qy,qz,qw=n*q.x,n*q.y,n*q.z,n*q.w
+        return Matrix(3,3,{
+            1-2*qy*qy-2*qz*qz, 2*qx*qy-2*qz*qw,   2*qx*qz+2*qy*qw,
+            2*qx*qy+2*qz*qw,   1-2*qx*qx-2*qz*qz, 2*qy*qz-2*qx*qw,
+            2*qx*qz-2*qy*qw,   2*qy*qz+2*qx*qw,   1-2*qx*qx-2*qy*qy,
+        })
+    elseif getmetatable(q)==Matrix then
+        assert(q:sameshape{4,1},'incorrect shape')
+        return Matrix3x3:fromquaternion{w=q[4],x=q[1],y=q[2],z=q[3]}
+    elseif #q==4 and q[1] and q[2] and q[3] and q[4] then
+        return Matrix3x3:fromquaternion{w=q[4],x=q[1],y=q[2],z=q[3]}
+    else
+        error('unsupported type')
+    end
+end
+
+function Matrix3x3:fromeuler(e)
+    if e.x and e.y and e.z then
+        return Matrix3x3:rotx(e.x)*Matrix3x3:roty(e.y)*Matrix3x3:rotz(e.z)
+    elseif getmetatable(e)==Matrix then
+        return Matrix3x3:fromeuler{x=e[1],y=e[2],z=e[3]}
+    elseif #e==3 and e[1] and e[2] and e[3] then
+        return Matrix3x3:fromeuler{x=e[1],y=e[2],z=e[3]}
+    else
+        error('unsupported type')
+    end
+end
+
+function Matrix3x3:toquaternion(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'incorrect shape')
+    local q={}
+    q.w=math.sqrt(1+m[1][1]+m[2][2]+m[3][3])/2
+    q.x=(m[3][2]-m[2][3])/(4*q.w)
+    q.y=(m[1][3]-m[3][1])/(4*q.w)
+    q.z=(m[2][1]-m[1][2])/(4*q.w)
+    q={q.x,q.y,q.z,q.w}
+    if t==Matrix then return Vector4{ref=q} end
+    return q
+end
+
+function Matrix3x3:toeuler(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'incorrect shape')
+    local e={
+        math.atan2(m:get(3,2),m:get(3,3)),
+        math.atan2(-m:get(3,1),math.sqrt(m:get(3,2)*m:get(3,2)+m:get(3,3)*m:get(3,3))),
+        math.atan2(m:get(2,1),m:get(1,1)),
+    }
+    if t==Matrix then return Vector3{ref=e} end
+    return e
+end
+
+setmetatable(Matrix3x3,{__call=function(self,data)
+    return Matrix(3,3,data)
+end})
+
+Matrix4x4={}
+
+function Matrix4x4:fromrotation(m)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'not a 3x3 matrix')
+    local r=Matrix:eye(4)
+    for i=1,3 do for j=1,3 do r:set(i,j,m:get(i,j)) end end
+    return r
+end
+
+function Matrix4x4:fromquaternion(q)
+    local r=Matrix3x3:fromquaternion(q)
+    return Matrix4x4:fromMatrix3x3(r)
+end
+
+function Matrix4x4:fromeuler(e)
+    local r=Matrix3x3:fromeuler(e)
+    return Matrix4x4:fromMatrix3x3(r)
+end
+
+function Matrix4x4:fromposition(v)
+    local r=Matrix:eye(4)
+    for i=1,3 do r:set(i,4,v[i]) end
+    return r
+end
+
+function Matrix4x4:frompose(p)
+    local m=Matrix4x4:fromquaternion{p[4],p[5],p[6],p[7]}
+    m:set(1,4,p[1])
+    m:set(2,4,p[2])
+    m:set(3,4,p[3])
+    return m
+end
+
+function Matrix4x4:torotation(m)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix3x3()
+    for i=1,3 do for j=1,3 do r:set(i,j,m:get(i,j)) end end
+    return r
+end
+
+function Matrix4x4:toquaternion(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix4x4:torotation(m)
+    return Matrix3x3:toquaternion(r,t)
+end
+
+function Matrix4x4:toeuler(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix4x4:torotation(m)
+    return Matrix3x3:toeuler(r,t)
+end
+
+function Matrix4x4:toposition(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local d={m:get(1,4),m:get(2,4),m:get(3,4)}
+    if t==Matrix then return Vector3{ref=d} end
+    return d
+end
+
+function Matrix4x4:topose(m,t)
+    local p=Matrix4x4:toposition(m)
+    local q=Matrix4x4:toquaternion(m)
+    local v={p[1],p[2],p[3],q[1],q[2],q[3],q[4]}
+    if t==Matrix then return Vector7{ref=v} end
+    return v
+end
+
+setmetatable(Matrix4x4,{__call=function(self,data)
+    return Matrix(4,4,data)
+end})
+
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
         3,4,
@@ -688,5 +870,51 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(b:get(1,1)==10)
     assert(a:get(2,2)==40)
     assert(b:get(2,2)==44)
+    m=Matrix(4,4,{
+        11,12,13,14,
+        21,22,23,24,
+        31,32,33,34,
+        41,42,43,44,
+    })
+    assert(m:slice(2,2,3,3)==Matrix(2,2,{22,23,32,33}))
+    assert(m:slice(1,4,2,5)==Matrix(2,2,{14,0,24,0}))
+    m:assign(1,2,m:slice(1,1,4,1))
+    m:assign(1,3,m:slice(1,1,4,1))
+    m:assign(1,4,m:slice(1,1,4,1))
+    assert(m==Matrix(4,4,{11,11,11,11,21,21,21,21,31,31,31,31,41,41,41,41}))
+    function approxEq(a,b,tol)
+        tol=tol or 1e-5
+        if type(a)=='number' and type(b)=='number' then
+            return math.abs(a-b)<tol
+        elseif getmetatable(a)==Matrix and getmetatable(b)==Matrix then
+            assert(a:sameshape(b),'mismatching shape')
+            for i=1,a:rows() do
+                for j=1,a:cols() do
+                    if not approxEq(a:get(i,j),b:get(i,j),tol) then return false end
+                end
+            end
+            return true
+        elseif type(a)=='table' and type(b)=='table' then
+            assert(#a==#b,'size mismatch')
+            for i=1,#a do
+                if not approxEq(a[i],b[i],tol) then return false end
+            end
+            return true
+        else
+            error('incorrect or mismatching type(s)')
+        end
+    end
+    rot_e=Matrix3x3:fromeuler{0.7853982,0.5235988,1.5707963}
+    rot_m=Matrix(3,3,{
+        0.0000000,-0.8660254,0.5000000,
+        0.7071068,-0.3535534,-0.6123725,
+        0.7071068,0.3535534,0.6123725,
+    })
+    rot_q=Matrix3x3:fromquaternion{0.4304593,-0.092296,0.7010574,0.5609855}
+    assert(approxEq(rot_e,rot_m))
+    assert(approxEq(rot_e,rot_q))
+    assert(approxEq(rot_m,rot_q))
+    --assert(approxEq(Matrix3x3:toeuler(rot_m),{0.7853982,0.5235988,1.5707963}))
+    assert(approxEq(Matrix3x3:toquaternion(rot_m),{0.4304593,-0.092296,0.7010574,0.5609855}))
     print('tests passed')
 end
