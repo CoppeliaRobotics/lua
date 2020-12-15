@@ -283,7 +283,7 @@ Returns element-pairwise result of function `f(x,y)` where `x` is the element of
 
 #### `Matrix:applyfuncidx(f)`
 
-Returns element-wise result of function `f(i,i)` where `i`, `j` are element's row and column indices respectively.
+Returns element-wise result of function `f(i,i,x)` where `i`, `j` are element's row and column indices respectively, and `x` the element's value.
 
 #### `Matrix:asin()`
 
