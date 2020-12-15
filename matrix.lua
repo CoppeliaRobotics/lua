@@ -103,14 +103,23 @@ function Matrix:assign(startrow,startcol,m)
     end
 end
 
-function Matrix:applyfunc(f)
+function Matrix:applyfuncidx(f)
     local m=self:copy()
     for i=1,m:rows() do
         for j=1,m:cols() do
-            m:set(i,j,f(m:get(i,j)))
+            m:set(i,j,f(i,j,m:get(i,j)))
         end
     end
     return m
+end
+
+function Matrix:applyfunc(f)
+    return self:applyfuncidx(function(i,j,x) return f(x) end)
+end
+
+function Matrix:applyfunc2(m2,f)
+    assert(self:sameshape(m2),'shape mismatch')
+    return self:applyfuncidx(function(i,j,x) return f(x,m2:get(i,j)) end)
 end
 
 function Matrix:abs()
@@ -125,8 +134,12 @@ function Matrix:asin()
     return self:applyfunc(math.asin)
 end
 
-function Matrix:atan()
-    return self:applyfunc(math.atan)
+function Matrix:atan(m)
+    if m then
+        return self:applyfunc2(m,math.atan)
+    else
+        return self:applyfunc(math.atan)
+    end
 end
 
 function Matrix:ceil()
@@ -149,8 +162,24 @@ function Matrix:floor()
     return self:applyfunc(math.floor)
 end
 
-function Matrix:log()
-    return self:applyfunc(math.log)
+function Matrix:fmod(m)
+    if getmetatable(m)==Matrix then
+        return self:applyfunc2(m,math.fmod)
+    else
+        return self:applyfunc(function(x) return math.fmod(x,m) end)
+    end
+end
+
+function Matrix:log(base)
+    if base==nil then
+        return self:applyfunc(math.log)
+    elseif type(base)=='number' then
+        return self:applyfunc(function(x) return math.log(x,base) end)
+    elseif getmetatable(base)==Matrix then
+        return self:applyfunc2(base,math.log)
+    else
+        error('unsupported operand type')
+    end
 end
 
 function Matrix:rad()
@@ -181,6 +210,10 @@ end
 
 function Matrix:tointeger()
     return self:applyfunc(math.tointeger)
+end
+
+function Matrix:ult(m2)
+    return self:applyfunc2(math.ult)
 end
 
 function Matrix:data()
@@ -222,12 +255,20 @@ function Matrix:_minmax(dim,cmp,what)
     end
 end
 
-function Matrix:min(dim)
-    return self:_minmax(dim,function(a,b) return a<b end,'min')
+function Matrix:min(dim_or_mtx2)
+    if dim_or_mtx2==nil or math.type(dim_or_mtx2)=='integer' then
+        return self:_minmax(dim_or_mtx2,function(a,b) return a<b end,'min')
+    elseif getmetatable(dim_or_mtx2)==Matrix then
+        return self:applyfunc2(dim_or_mtx2,math.min)
+    end
 end
 
-function Matrix:max(dim)
-    return self:_minmax(dim,function(a,b) return a>b end,'max')
+function Matrix:max(dim_or_mtx2)
+    if dim_or_mtx2==nil or math.type(dim_or_mtx2)=='integer' then
+        return self:_minmax(dim_or_mtx2,function(a,b) return a>b end,'max')
+    elseif getmetatable(dim_or_mtx2)==Matrix then
+        return self:applyfunc2(dim_or_mtx2,math.max)
+    end
 end
 
 function Matrix:sum(dim)
