@@ -547,7 +547,7 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
         data={}
         for i=1,rows do
             for j=1,cols do
-                table.insert(data,datagen(i,j))
+                table.insert(data,datagen(i,j) or 0)
             end
         end
     end
