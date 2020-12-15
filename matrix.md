@@ -361,7 +361,7 @@ Returns a matrix with data from the 2d table `t`.
 
 #### `Matrix:get(i,j)`
 
-Returns the element's value at row `i` column `j`.
+Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` are out of range.
 
 #### `Matrix:log(base)`
 
@@ -397,7 +397,7 @@ Returns the vector norm of this vector.
 
 #### `Matrix:offset(i,j)`
 
-Returns the data offset for indices `i`, `j`.
+Returns the data offset for indices `i`, `j`. Returns `nil` if `i` or `j` are out of range.
 
 #### `Matrix:ones(rows,cols)`
 
@@ -449,7 +449,7 @@ Returns true if `m` has the given shape of `rows` and `columns`.
 
 [modifies current matrix]
 
-Sets the element's value at row `i` column `j`.
+Sets the element's value at row `i` column `j`. Has no effect if `i` or `j` are out of range.
 
 #### `Matrix:setcol(j,m)`
 
