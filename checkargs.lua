@@ -75,10 +75,16 @@ function checkarg.object(v,t)
     return true, nil
 end
 
-function checkargs(types,...)
+function checkargsEx(opts,types,...)
+    -- level offset at which we should output the error:
+    opts.level=opts.level or 0
+
+    -- level at which we should output the error (1 is current, 2 parent, etc...)
+    local errorLevel=2+opts.level
+
     function infertype(t)
         if t.class~=nil then return 'object' end
-        error('type missing, and could not infer type')
+        error('type missing, and could not infer type',errorLevel+1)
     end
     local fn='?: '
     local info=debug.getinfo(2,'n')
@@ -88,16 +94,16 @@ function checkargs(types,...)
     local minArgs=0
     for i=1,#types do
         if minArgs<(i-1) and types[i].default==nil then
-            error('checkargs: bad types spec: non-default arg cannot follow a default arg')
+            error('checkargs: bad types spec: non-default arg cannot follow a default arg',errorLevel)
         elseif types[i].default==nil then
             minArgs=minArgs+1
         end
     end
     -- validate number of arguments:
     if arg.n<minArgs then
-        error(fn..'not enough arguments')
+        error(fn..'not enough arguments',errorLevel)
     elseif arg.n>#types then
-        error(fn..'too many arguments')
+        error(fn..'too many arguments',errorLevel)
     end
     -- check types:
     for i=1,#types do
@@ -117,15 +123,19 @@ function checkargs(types,...)
             if t.type==nil then t.type=infertype(t) end
             local checkFunc=checkarg[t.type]
             if checkFunc==nil then
-                error(string.format('function checkarg.%s does not exist',t.type))
+                error(string.format('function checkarg.%s does not exist',t.type),errorLevel)
             end
             local ok,err=checkFunc(arg[i],t)
             if not ok then
-                error(fn..string.format('argument %d %s',i,err or string.format('must be a %s',t.type)))
+                error(fn..string.format('argument %d %s',i,err or string.format('must be a %s',t.type)),errorLevel)
             end
         end
     end
     return unpackx(arg,#types)
+end
+
+function checkargs(types,...)
+    return checkargsEx({level=1},types,...)
 end
 
 -- tests:
