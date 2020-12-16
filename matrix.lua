@@ -476,6 +476,8 @@ function Matrix:__index(k)
     if type(k)=='number' then
         if self:rows()==1 then
             return self:get(1,k)
+        elseif self:cols()==1 then
+            return self:get(k,1)
         else
             return self:rowref(k)
         end
@@ -488,6 +490,8 @@ function Matrix:__newindex(k,v)
     if type(k)=='number' then
         if self:rows()==1 then
             return self:set(1,k,v)
+        elseif self:cols()==1 then
+            return self:set(k,1,v)
         else
             return self:setrow(k,v)
         end
