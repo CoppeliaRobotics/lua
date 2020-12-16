@@ -583,18 +583,23 @@ end
 
 function Matrix:print(elemwidth)
     if not elemwidth then
-        elemwidth=0
-        for i=1,self:rows() do
-            for j=1,self:cols() do
-                elemwidth=math.max(elemwidth,#tostring(self:get(i,j)))
+        elemwidth={}
+        for j=1,self:cols() do
+            for i=1,self:rows() do
+                elemwidth[j]=math.max(elemwidth[j] or 0,#tostring(self:get(i,j)))
             end
+            elemwidth[j]=elemwidth[j]+2
         end
-        elemwidth=elemwidth+1
+    elseif type(elemwidth)=='number' then
+        elemwidth={elemwidth+2}
+        for j=1,self:cols() do
+            elemwidth[j]=elemwidth[1]
+        end
     end
     for i=1,self:rows() do
         local row=''
         for j=1,self:cols() do
-            row=row..string.format('%'..tostring(elemwidth)..'s',tostring(self:get(i,j)))
+            row=row..string.format('%'..tostring(elemwidth[j])..'s',tostring(self:get(i,j)))
         end
         print(row)
     end
