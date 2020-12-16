@@ -8,28 +8,44 @@ function Matrix:cols()
     if self._t then return self._rows else return self._cols end
 end
 
+function Matrix:count()
+    return self._rows*self._cols
+end
+
 function Matrix:sameshape(m)
-    assert(getmetatable(m)==Matrix,'argument is not a matrix')
-    return self:rows()==m:rows() and self:cols()==m:cols()
+    if getmetatable(m)==Matrix then
+        return self:rows()==m:rows() and self:cols()==m:cols()
+    elseif type(m)=='table' and m[1] and m[2] then
+        return self:rows()==m[1] and self:cols()==m[2]
+    else
+        error('argument is not a matrix')
+    end
 end
 
 function Matrix:offset(i,j)
-    local h=self._t and {j,i} or {i,j}
-    return self._cols*(h[1]-1)+h[2]
+    if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
+        if self._t then i,j=j,i end
+        return self._cols*(i-1)+j
+    end
 end
 
 function Matrix:get(i,j)
-    return self._data[self:offset(i,j)]
+    local offset=self:offset(i,j)
+    if not offset then return end
+    return self._data[offset]
 end
 
 function Matrix:set(i,j,value)
+    local offset=self:offset(i,j)
+    if not offset then return end
     if self._copyonwrite then
         self._copyonwrite=false
         local d={}
         for i,x in ipairs(self._data) do table.insert(d,x) end
         self._data=d
     end
-    self._data[self:offset(i,j)]=value
+    self._data[offset]=value
+    return self
 end
 
 function Matrix:row(i)
@@ -54,9 +70,16 @@ function Matrix:rowref(i)
 end
 
 function Matrix:setrow(i,m)
-    assert(m:rows()==1,'bad shape')
-    assert(m:cols()==self:cols(),'mismatching column count')
-    for j=1,self:cols() do self:set(i,j,m:get(1,j)) end
+    if getmetatable(m)==Matrix then
+        assert(m:rows()==1,'bad shape')
+        assert(m:cols()==self:cols(),'mismatching column count')
+        for j=1,self:cols() do self:set(i,j,m:get(1,j)) end
+    elseif type(m)=='table' then
+        for j=1,self:cols() do self:set(i,j,m[j] or 0) end
+    else
+        error('bad type')
+    end
+    return self
 end
 
 function Matrix:col(j)
@@ -70,9 +93,157 @@ function Matrix:col(j)
 end
 
 function Matrix:setcol(j,m)
-    assert(m:cols()==1,'bad shape')
-    assert(m:rows()==self:rows(),'mismatching row count')
-    for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
+    if getmetatable(m)==Matrix then
+        assert(m:cols()==1,'bad shape')
+        assert(m:rows()==self:rows(),'mismatching row count')
+        for i=1,self:rows() do self:set(i,j,m:get(i,1)) end
+    elseif type(m)=='table' then
+        for i=1,self:rows() do self:set(i,j,m[i] or 0) end
+    else
+        error('bad type')
+    end
+    return self
+end
+
+function Matrix:slice(fromrow,fromcol,torow,tocol)
+    assert(fromrow<=torow and fromcol<=tocol,'bad ranges')
+    local m=Matrix(1+torow-fromrow,1+tocol-fromcol)
+    for i=fromrow,torow do
+        for j=fromcol,tocol do
+            m:set(i-fromrow+1,j-fromcol+1,self:get(i,j) or 0)
+        end
+    end
+    return m
+end
+
+function Matrix:horzcat(m)
+    assert(self:rows()==m:rows(),'row count mismatch')
+    local r=self:slice(1,1,self:rows(),self:cols()+m:cols())
+    r:assign(1,1+self:cols(),m)
+    return r
+end
+
+function Matrix:vertcat(m)
+    assert(self:cols()==m:cols(),'column count mismatch')
+    local r=self:slice(1,1,self:rows()+m:rows(),self:cols())
+    r:assign(1+self:rows(),1,m)
+    return r
+end
+
+function Matrix:assign(startrow,startcol,m)
+    for i=1,m:rows() do
+        for j=1,m:cols() do
+            self:set(i+startrow-1,j+startcol-1,m:get(i,j) or 0)
+        end
+    end
+    return self
+end
+
+function Matrix:applyfuncidx(f)
+    return Matrix(self:rows(),self:cols(),function(i,j) return f(i,j,self:get(i,j)) end)
+end
+
+function Matrix:applyfunc(f)
+    return self:applyfuncidx(function(i,j,x) return f(x) end)
+end
+
+function Matrix:applyfunc2(m2,f)
+    assert(self:sameshape(m2),'shape mismatch')
+    return self:applyfuncidx(function(i,j,x) return f(x,m2:get(i,j)) end)
+end
+
+function Matrix:abs()
+    return self:applyfunc(math.abs)
+end
+
+function Matrix:acos()
+    return self:applyfunc(math.acos)
+end
+
+function Matrix:asin()
+    return self:applyfunc(math.asin)
+end
+
+function Matrix:atan(m)
+    if m then
+        return self:applyfunc2(m,math.atan)
+    else
+        return self:applyfunc(math.atan)
+    end
+end
+
+function Matrix:ceil()
+    return self:applyfunc(math.ceil)
+end
+
+function Matrix:cos()
+    return self:applyfunc(math.cos)
+end
+
+function Matrix:deg()
+    return self:applyfunc(math.deg)
+end
+
+function Matrix:exp()
+    return self:applyfunc(math.exp)
+end
+
+function Matrix:floor()
+    return self:applyfunc(math.floor)
+end
+
+function Matrix:fmod(m)
+    if getmetatable(m)==Matrix then
+        return self:applyfunc2(m,math.fmod)
+    else
+        return self:applyfunc(function(x) return math.fmod(x,m) end)
+    end
+end
+
+function Matrix:log(base)
+    if base==nil then
+        return self:applyfunc(math.log)
+    elseif type(base)=='number' then
+        return self:applyfunc(function(x) return math.log(x,base) end)
+    elseif getmetatable(base)==Matrix then
+        return self:applyfunc2(base,math.log)
+    else
+        error('unsupported operand type')
+    end
+end
+
+function Matrix:rad()
+    return self:applyfunc(math.rad)
+end
+
+function Matrix:random(a,b)
+    if a and b then
+        return self:applyfunc(function() return math.random(a,b) end)
+    elseif a then
+        return self:applyfunc(function() return math.random(a) end)
+    else
+        return self:applyfunc(math.random)
+    end
+end
+
+function Matrix:sin()
+    return self:applyfunc(math.sin)
+end
+
+function Matrix:sqrt()
+    return self:applyfunc(math.sqrt)
+end
+
+function Matrix:tan()
+    return self:applyfunc(math.tan)
+end
+
+function Matrix:tointeger()
+    return self:applyfunc(math.tointeger)
+end
+
+function Matrix:ult(m2)
+    return self:applyfunc2(math.ult)
 end
 
 function Matrix:data()
@@ -114,12 +285,20 @@ function Matrix:_minmax(dim,cmp,what)
     end
 end
 
-function Matrix:min(dim)
-    return self:_minmax(dim,function(a,b) return a<b end,'min')
+function Matrix:min(dim_or_mtx2)
+    if dim_or_mtx2==nil or math.type(dim_or_mtx2)=='integer' then
+        return self:_minmax(dim_or_mtx2,function(a,b) return a<b end,'min')
+    elseif getmetatable(dim_or_mtx2)==Matrix then
+        return self:applyfunc2(dim_or_mtx2,math.min)
+    end
 end
 
-function Matrix:max(dim)
-    return self:_minmax(dim,function(a,b) return a>b end,'max')
+function Matrix:max(dim_or_mtx2)
+    if dim_or_mtx2==nil or math.type(dim_or_mtx2)=='integer' then
+        return self:_minmax(dim_or_mtx2,function(a,b) return a>b end,'max')
+    elseif getmetatable(dim_or_mtx2)==Matrix then
+        return self:applyfunc2(dim_or_mtx2,math.max)
+    end
 end
 
 function Matrix:sum(dim)
@@ -148,44 +327,49 @@ function Matrix:sum(dim)
     end
 end
 
+function Matrix:mean(dim)
+    local c
+    if dim==nil then
+        c=self:count()
+    elseif dim==1 then
+        c=self:rows()
+    elseif dim==2 then
+        c=self:cols()
+    else
+        error('invalid dimension')
+    end
+    return self:sum(dim)/c
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
 end
 
 function Matrix:dot(m)
-    assert(self:sameshape(m) or self:sameshape(m:t()),'shape mismatch')
-    if self:rows()==1 and m:rows()==1 then
-        return (self*m:t()):get(1,1)
-    elseif self:cols()==1 and m:cols()==1 then
-        return (self:t()*m):get(1,1)
-    elseif self:rows()==1 and m:cols()==1 then
-        return (self*m):get(1,1)
-    elseif self:cols()==1 and m:rows()==1 then
-        return (m*self):get(1,1)
-    else
-        error('supported only on vectors')
-    end
+    assert(self:cols()==1,'supported only on vectors')
+    assert(self:sameshape(m),'shape mismatch')
+    return (self:t()*m):get(1,1)
 end
 
 function Matrix:cross(m)
-    if self:rows()==1 and self:cols()==3 then
-        assert(self:sameshape(m),'shape mismatch')
-        return self:t():cross(m:t()):t()
-    elseif self:rows()==3 and self:cols()==1 then
-        assert(self:sameshape(m),'shape mismatch')
-        return Matrix(3,1,{ref={
-            self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
-            self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
-            self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
-        }})
-    else
-        error('supported only on 3d vectors')
-    end
+    assert(self:sameshape{3,1},'supported only on 3d vectors')
+    assert(self:sameshape(m),'shape mismatch')
+    return Matrix(3,1,{ref={
+        self:get(2,1)*m:get(3,1)-self:get(3,1)*m:get(2,1),
+        self:get(3,1)*m:get(1,1)-self:get(1,1)*m:get(3,1),
+        self:get(1,1)*m:get(2,1)-self:get(2,1)*m:get(1,1),
+    }})
 end
 
 function Matrix:norm()
     return math.sqrt(self:dot(self))
+end
+
+function Matrix:diag()
+    local r=Matrix(math.min(self:rows(),self:cols()),1)
+    for ij=1,r:rows() do r:set(ij,1,self:get(ij,ij)) end
+    return r
 end
 
 function Matrix:__add(m)
@@ -227,7 +411,7 @@ function Matrix:__mul(m)
         end
         return Matrix(self._rows,self._cols,{ref=data},self._t)
     elseif getmetatable(m)==Matrix then
-        assert(self:cols()==m:rows(),'invalid matrix shape')
+        assert(self:cols()==m:rows(),'incompatible matrix dimensions')
         local data={}
         for i=1,self:rows() do
             for j=1,m:cols() do
@@ -244,15 +428,36 @@ function Matrix:__mul(m)
     end
 end
 
+function Matrix:__div(k)
+    if type(k)=='number' then
+        return self*(1/k)
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:__unm()
     return -1*self
+end
+
+function Matrix:__pow(k)
+    assert(self:rows()==self:cols(),'must be square matrix')
+    if type(k)=='number' then
+        assert(k%1==0,'only integer powers are supported')
+        assert(k>=0,'only positive powers are supported')
+        local r=Matrix:eye(self:rows())
+        for i=1,k do r=r*self end
+        return r
+    else
+        error('unsupported operand')
+    end
 end
 
 function Matrix:__tostring()
     s='Matrix('..self:rows()..','..self:cols()..',{'
     for i=1,self:rows() do
         for j=1,self:cols() do
-            s=s..(i==1 and j==1 and '' or ',')..self:get(i,j)
+            s=s..(i==1 and j==1 and '' or ',')..tostring(self:get(i,j))
         end
     end
     s=s..'})'
@@ -377,7 +582,15 @@ function Matrix:zeros(rows,cols)
 end
 
 function Matrix:print(elemwidth)
-    elemwidth=elemwidth or 10
+    if not elemwidth then
+        elemwidth=0
+        for i=1,self:rows() do
+            for j=1,self:cols() do
+                elemwidth=math.max(elemwidth,#tostring(self:get(i,j)))
+            end
+        end
+        elemwidth=elemwidth+1
+    end
     for i=1,self:rows() do
         local row=''
         for j=1,self:cols() do
@@ -409,7 +622,7 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
         data={}
         for i=1,rows do
             for j=1,cols do
-                table.insert(data,datagen(i,j))
+                table.insert(data,datagen(i,j) or 0)
             end
         end
     end
@@ -421,6 +634,188 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
         _t=t or false,
         _copyonwrite=copyonwrite,
     },self)
+end})
+
+Vector={}
+
+setmetatable(Vector,{__call=function(self,len,data)
+    if type(len)=='table' then
+        data=len
+        len=#data
+    end
+    assert(len>0,'length must be greater than zero')
+    return Matrix(len,1,data)
+end})
+
+Vector3={}
+
+setmetatable(Vector3,{__call=function(self,data)
+    return Vector(3,data)
+end})
+
+Vector4={}
+
+setmetatable(Vector4,{__call=function(self,data)
+    return Vector(4,data)
+end})
+
+Vector7={}
+
+setmetatable(Vector7,{__call=function(self,data)
+    return Vector(7,data)
+end})
+
+Matrix3x3={}
+
+function Matrix3x3:rotx(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{1,0,0,0,c,-s,0,s,c})
+end
+
+function Matrix3x3:roty(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{c,0,s,0,1,0,-s,0,c})
+end
+
+function Matrix3x3:rotz(angle)
+    local s,c=math.sin(angle),math.cos(angle)
+    return Matrix(3,3,{c,-s,0,s,c,0,0,0,1})
+end
+
+function Matrix3x3:fromquaternion(q)
+    if q.x and q.y and q.z and q.w then
+        local n=1/math.sqrt(q.x*q.x+q.y*q.y+q.z*q.z+q.w*q.w)
+        local qx,qy,qz,qw=n*q.x,n*q.y,n*q.z,n*q.w
+        return Matrix(3,3,{
+            1-2*qy*qy-2*qz*qz, 2*qx*qy-2*qz*qw,   2*qx*qz+2*qy*qw,
+            2*qx*qy+2*qz*qw,   1-2*qx*qx-2*qz*qz, 2*qy*qz-2*qx*qw,
+            2*qx*qz-2*qy*qw,   2*qy*qz+2*qx*qw,   1-2*qx*qx-2*qy*qy,
+        })
+    elseif getmetatable(q)==Matrix then
+        assert(q:sameshape{4,1},'incorrect shape')
+        return Matrix3x3:fromquaternion{w=q[4],x=q[1],y=q[2],z=q[3]}
+    elseif #q==4 and q[1] and q[2] and q[3] and q[4] then
+        return Matrix3x3:fromquaternion{w=q[4],x=q[1],y=q[2],z=q[3]}
+    else
+        error('unsupported type')
+    end
+end
+
+function Matrix3x3:fromeuler(e)
+    if e.x and e.y and e.z then
+        return Matrix3x3:rotx(e.x)*Matrix3x3:roty(e.y)*Matrix3x3:rotz(e.z)
+    elseif getmetatable(e)==Matrix then
+        return Matrix3x3:fromeuler{x=e[1],y=e[2],z=e[3]}
+    elseif #e==3 and e[1] and e[2] and e[3] then
+        return Matrix3x3:fromeuler{x=e[1],y=e[2],z=e[3]}
+    else
+        error('unsupported type')
+    end
+end
+
+function Matrix3x3:toquaternion(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'incorrect shape')
+    local q={}
+    q.w=math.sqrt(1+m[1][1]+m[2][2]+m[3][3])/2
+    q.x=(m[3][2]-m[2][3])/(4*q.w)
+    q.y=(m[1][3]-m[3][1])/(4*q.w)
+    q.z=(m[2][1]-m[1][2])/(4*q.w)
+    q={q.x,q.y,q.z,q.w}
+    if t==Matrix then return Vector4{ref=q} end
+    return q
+end
+
+function Matrix3x3:toeuler(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'incorrect shape')
+    local e={
+        math.atan2(m:get(3,2),m:get(3,3)),
+        math.atan2(-m:get(3,1),math.sqrt(m:get(3,2)*m:get(3,2)+m:get(3,3)*m:get(3,3))),
+        math.atan2(m:get(2,1),m:get(1,1)),
+    }
+    if t==Matrix then return Vector3{ref=e} end
+    return e
+end
+
+setmetatable(Matrix3x3,{__call=function(self,data)
+    return Matrix(3,3,data)
+end})
+
+Matrix4x4={}
+
+function Matrix4x4:fromrotation(m)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'not a 3x3 matrix')
+    local r=Matrix:eye(4)
+    for i=1,3 do for j=1,3 do r:set(i,j,m:get(i,j)) end end
+    return r
+end
+
+function Matrix4x4:fromquaternion(q)
+    local r=Matrix3x3:fromquaternion(q)
+    return Matrix4x4:fromMatrix3x3(r)
+end
+
+function Matrix4x4:fromeuler(e)
+    local r=Matrix3x3:fromeuler(e)
+    return Matrix4x4:fromMatrix3x3(r)
+end
+
+function Matrix4x4:fromposition(v)
+    local r=Matrix:eye(4)
+    for i=1,3 do r:set(i,4,v[i]) end
+    return r
+end
+
+function Matrix4x4:frompose(p)
+    local m=Matrix4x4:fromquaternion{p[4],p[5],p[6],p[7]}
+    m:set(1,4,p[1])
+    m:set(2,4,p[2])
+    m:set(3,4,p[3])
+    return m
+end
+
+function Matrix4x4:torotation(m)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix3x3()
+    for i=1,3 do for j=1,3 do r:set(i,j,m:get(i,j)) end end
+    return r
+end
+
+function Matrix4x4:toquaternion(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix4x4:torotation(m)
+    return Matrix3x3:toquaternion(r,t)
+end
+
+function Matrix4x4:toeuler(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local r=Matrix4x4:torotation(m)
+    return Matrix3x3:toeuler(r,t)
+end
+
+function Matrix4x4:toposition(m,t)
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{4,4},'not a 4x4 matrix')
+    local d={m:get(1,4),m:get(2,4),m:get(3,4)}
+    if t==Matrix then return Vector3{ref=d} end
+    return d
+end
+
+function Matrix4x4:topose(m,t)
+    local p=Matrix4x4:toposition(m)
+    local q=Matrix4x4:toquaternion(m)
+    local v={p[1],p[2],p[3],q[1],q[2],q[3],q[4]}
+    if t==Matrix then return Vector7{ref=v} end
+    return v
+end
+
+setmetatable(Matrix4x4,{__call=function(self,data)
+    return Matrix(4,4,data)
 end})
 
 if arg and #arg==1 and arg[1]=='test' then
@@ -473,7 +868,7 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m*m:t()==Matrix(3,3,{630,1130,1630,1130,2030,2930,1630,2930,4230}))
     assert(m*m:t()*m*m:t()==Matrix(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
     assert(m:t()*m==Matrix(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
-    assert(Matrix:fromtable{{1,0,0,0}}:norm()==1)
+    assert(Matrix:fromtable{{1,0,0,0}}:t():norm()==1)
     assert(Matrix(3,1,{3,4,0}):norm()==5)
     assert(Matrix(3,1,{3,4,0}):dot(Matrix(3,1,{-4,3,5}))==0)
     assert(Matrix(3,1,{3,4,0}):data()[1]==3)
@@ -550,5 +945,41 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(b:get(1,1)==10)
     assert(a:get(2,2)==40)
     assert(b:get(2,2)==44)
+    m=Matrix(4,4,{
+        11,12,13,14,
+        21,22,23,24,
+        31,32,33,34,
+        41,42,43,44,
+    })
+    assert(m:slice(2,2,3,3)==Matrix(2,2,{22,23,32,33}))
+    assert(m:slice(1,4,2,5)==Matrix(2,2,{14,0,24,0}))
+    m:assign(1,2,m:slice(1,1,4,1))
+    m:assign(1,3,m:slice(1,1,4,1))
+    m:assign(1,4,m:slice(1,1,4,1))
+    assert(m==Matrix(4,4,{11,11,11,11,21,21,21,21,31,31,31,31,41,41,41,41}))
+    function approxEq(a,b,tol)
+        tol=tol or 1e-5
+        if type(a)=='number' and type(b)=='number' then
+            return math.abs(a-b)<tol
+        elseif getmetatable(a)==Matrix and getmetatable(b)==Matrix then
+            return (a-b):abs():max()<tol
+        elseif type(a)=='table' and type(b)=='table' then
+            return approxEq(Vector(a),Vector(b))
+        else
+            error('incorrect or mismatching type(s)')
+        end
+    end
+    rot_e=Matrix3x3:fromeuler{0.7853982,0.5235988,1.5707963}
+    rot_m=Matrix(3,3,{
+        0.0000000,-0.8660254,0.5000000,
+        0.7071068,-0.3535534,-0.6123725,
+        0.7071068,0.3535534,0.6123725,
+    })
+    rot_q=Matrix3x3:fromquaternion{0.4304593,-0.092296,0.7010574,0.5609855}
+    assert(approxEq(rot_e,rot_m))
+    assert(approxEq(rot_e,rot_q))
+    assert(approxEq(rot_m,rot_q))
+    --assert(approxEq(Matrix3x3:toeuler(rot_m),{0.7853982,0.5235988,1.5707963}))
+    assert(approxEq(Matrix3x3:toquaternion(rot_m),{0.4304593,-0.092296,0.7010574,0.5609855}))
     print('tests passed')
 end
