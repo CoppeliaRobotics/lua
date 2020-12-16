@@ -986,5 +986,6 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(approxEq(rot_m,rot_q))
     --assert(approxEq(Matrix3x3:toeuler(rot_m),{0.7853982,0.5235988,1.5707963}))
     assert(approxEq(Matrix3x3:toquaternion(rot_m),{0.4304593,-0.092296,0.7010574,0.5609855}))
+    assert(approxEq(Matrix4x4:frompose{0,0,0,0,0,0,1},Matrix:eye(4)))
     print('tests passed')
 end
