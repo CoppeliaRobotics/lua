@@ -610,8 +610,8 @@ function Matrix:print(elemwidth)
 end
 
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
-    assert(type(rows)=='number' and math.floor(rows)==rows,'rows must be an integer')
-    assert(type(cols)=='number' and math.floor(cols)==cols,'cols must be an integer')
+    assert(math.type(rows)=='integer' and rows>0,'rows must be a positive integer')
+    assert(math.type(cols)=='integer' and cols>0,'cols must be a positive integer')
     local copyonwrite=false
     local datagen,origdata=function() return 0 end,data
     if type(data)=='table' then
