@@ -119,7 +119,7 @@ function checkargs(types,...)
             end
             local ok,err=checkFunc(arg[i],t)
             if not ok then
-                error(string.format('%s: argument %d %s',debug.getinfo(2,'n').name,i,err or string.format('must be a %s',t.type)))
+                error(fn..string.format('argument %d %s',i,err or string.format('must be a %s',t.type)))
             end
         end
     end
