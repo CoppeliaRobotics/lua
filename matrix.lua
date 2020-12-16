@@ -654,11 +654,35 @@ end})
 
 Vector3={}
 
+function Vector3:hom(v)
+    if getmetatable(v)==Matrix then
+        assert(v:sameshape{3,1},'must be Vector3')
+        return v:slice(1,1,4,1):set(4,1,1)
+    elseif type(v)=='table' then
+        assert(#v==3,'must have 3 elements')
+        return Vector4{v[1],v[2],v[3],1.0}
+    else
+        error('unsupported type')
+    end
+end
+
 setmetatable(Vector3,{__call=function(self,data)
     return Vector(3,data)
 end})
 
 Vector4={}
+
+function Vector4:hom(v)
+    if getmetatable(v)==Matrix then
+        assert(v:sameshape{4,1},'must be Vector4')
+        return v/v:get(4,1)
+    elseif type(v)=='table' then
+        assert(#v==4,'must have 4 elements')
+        return Vector4{v[1]/v[4],v[2]/v[4],v[3]/v[4],1.0}
+    else
+        error('unsupported type')
+    end
+end
 
 setmetatable(Vector4,{__call=function(self,data)
     return Vector(4,data)

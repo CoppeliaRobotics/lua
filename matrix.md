@@ -639,9 +639,17 @@ Shortcut for `Vector(#data,data)`. See [`Vector(len,data)`](#vectorlendata).
 
 Same as `Vector(3,data)`. See [`Vector(len,data)`](#vectorlendata).
 
+#### `Vector3:hom(v)`
+
+Returns a 4-dimensional homogeneous coordinates vector from the given 3-dimensional vector or table `v`.
+
 #### `Vector4(data)`
 
 Same as `Vector(4,data)`. See [`Vector(len,data)`](#vectorlendata).
+
+#### `Vector4:hom(v)`
+
+Returns a 4-dimensional homogeneous coordinates vector from the given 4-dimensional vector or table `v`.
 
 #### `Vector7(data)`
 
