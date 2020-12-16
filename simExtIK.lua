@@ -119,10 +119,9 @@ function simIK.getAlternateConfigs(...)
     simIK.eraseEnvironment(ikEnv)
     sim.setThreadAutomaticSwitch(lb)
     
-    if configs=={} then
-        configs=Matrix(0,0)
-    else
+    if configs~={} then
         configs=Matrix:fromtable(configs)
+        configs=configs:data()
     end
     return configs
 end
@@ -396,22 +395,23 @@ function simIK.generatePath(...)
     simIK.eraseEnvironment(env)
     sim.setThreadAutomaticSwitch(lb)
     if not success then
-        retPath=Matrix(0,0)
+        retPath={}
     else
         retPath=Matrix:fromtable(retPath)
+        retPath=retPath:data()
     end
     return retPath
 end
 
 function simIK.init()
     -- can only be executed once sim.* functions were initialized
-    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','Matrix configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
+    sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
     sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','number ikElement,table simToIkObjectMap=simIK.addIkElementFromScene(number environmentHandle\n,number ikGroup,number baseHandle,number tipHandle,\nnumber targetHandle,number constraints)')
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(number environmentHandle,number ikGroup)')
     sim.registerScriptFunction('simIK.applyIkToScene@simIK','number result=simIK.applyIkToScene(number environmentHandle,number ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(number environmentHandle)')
     sim.registerScriptFunction('simIK.getConfigForTipPose@simIK','table jointPositions=simIK.getConfigForTipPose(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number thresholdDist=0.1,\nnumber maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,\nauxData=nil,table jointOptions={},table lowLimits={},table ranges={})')
-    sim.registerScriptFunction('simIK.generatePath@simIK','matrix path=simIK.generatePath(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number tipHandle,\nnumber pathPointCount,function validationCallback=nil,auxData=nil)')
+    sim.registerScriptFunction('simIK.generatePath@simIK','table path=simIK.generatePath(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number tipHandle,\nnumber pathPointCount,function validationCallback=nil,auxData=nil)')
     
     simIK.init=nil
 end

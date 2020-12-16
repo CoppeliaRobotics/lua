@@ -460,7 +460,6 @@ function sim.getAlternateConfigs(...)
         error("Bad table size.")
     end
     
-    local retVal={}
     local lb=sim.setThreadAutomaticSwitch(false)
     local initConfig={}
     local x={}
@@ -553,6 +552,10 @@ function sim.getAlternateConfigs(...)
     
     for i=1,#jointHandles,1 do
         sim.setJointPosition(jointHandles[i],initConfig[i])
+    end
+    if configs~={} then
+        configs=Matrix:fromtable(configs)
+        configs=configs:data()
     end
     sim.setThreadAutomaticSwitch(lb)
     return configs
@@ -750,20 +753,16 @@ function sim.moveToConfig(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    local path,minMaxVel,minMaxAccel,trajPtSamples,metric,boundaryCondition,timeout=checkargs({{type='object',class=Matrix},{type='object',class=Matrix},{type='object',class=Matrix},{type='int',default=1000},{type='table',item_type='int',default=NIL,nullable=true},{type='string',default='not-a-knot'},{type='float',default=5}},...)
-    local dof=path:cols()
+    local path,pathLengths,minMaxVel,minMaxAccel,trajPtSamples,boundaryCondition,timeout=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int',default=1000},{type='string',default='not-a-knot'},{type='float',default=5}},...)
+
+    local confCnt=#pathLengths
+    local dof=math.floor(#path/confCnt)
     
-    if dof<1 or path:rows()<2 or dof~=minMaxVel:rows() or dof~=minMaxAccel:rows() or minMaxVel:cols()<2 or minMaxAccel:cols()<2 or (metric and dof~=#metric) then
-        error("Bad matrix/table size.")
+    if (dof*confCnt~=#path) or dof<1 or confCnt<2 or dof~=#minMaxVel/2 or dof~=#minMaxAccel/2 then
+        error("Bad table size.")
     end
     local lb=sim.setThreadAutomaticSwitch(false)
-    if metric==nil then
-        metric={}
-        for i=1,dof,1 do
-            metric[i]=1
-        end
-    end
-    local distancesAlongPath=sim.getPathLengths(path,metric)
+    
     local dkjson=require 'dkjson'
     local r
     sim.addLog(sim.verbosity_scriptinfos,"Checking if the BlueZero resolver is running, this can take a few seconds...")
@@ -774,12 +773,16 @@ function sim.generateTimeOptimalTrajectory(...)
         simB0.nodeInit(n)
         simB0.socketSetOption(c,'readTimeout',timeout*1000)
         
+        local pM=Matrix(confCnt,dof,path)
+        local mmvM=Matrix(2,dof,minMaxVel)
+        local mmaM=Matrix(2,dof,minMaxAccel)
+        
         r=simB0.serviceClientCallJSON(c,{
             samples=trajPtSamples,
-            ss_waypoints=distancesAlongPath,
-            waypoints=path:totable(),
-            velocity_limits=minMaxVel:totable(),
-            acceleration_limits=minMaxAccel:totable(),
+            ss_waypoints=pathLengths,
+            waypoints=pM:totable(),
+            velocity_limits=mmvM:totable(),
+            acceleration_limits=mmaM:totable(),
             bc_type=boundaryCondition
         })
         simB0.nodeCleanup(n)
@@ -787,7 +790,7 @@ function sim.generateTimeOptimalTrajectory(...)
         error('BlueZero resolver was not detected.')
     end
     sim.setThreadAutomaticSwitch(lb)
-    return Matrix:fromtable(r.qs[1]),r.ts
+    return Matrix:fromtable(r.qs[1]):data(),r.ts
 end
 
 function sim.copyTable(...)
@@ -813,32 +816,26 @@ function sim.copyTable(...)
 end
 
 function sim.getPathInterpolatedConfig(...)
-    local path,times,t,types,method,forceOpen=checkargs({{type='object',class=Matrix},{type='table',item_type='float',nullable=true},{type='float'},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
-    local confCnt=path:rows()
-    local dof=path:cols()
+    local path,times,t,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='float'},{type='table',default={type='linear',forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+
+    local confCnt=#times
+    local dof=math.floor(#path/confCnt)
     
-    if dof<1 or (confCnt<2) or (times and confCnt~=#times) or (types and dof~=#types) then
-        error("Bad matrix/table size.")
+    if (dof*confCnt~=#path) or (types and dof~=#types) then
+        error("Bad table size.")
     end
 
-    if times==nil and confCnt>2 then
-        error("Argument #2 is not optional when the path contains more than 2 configurations.")
-    end
     if types==nil then 
         types={}
         for i=1,dof,1 do
             types[i]=0
         end
     end
-    local closed=(path[1]==path[confCnt])
-    if forceOpen then
-        closed=false
-    end
     local retVal={}
     local li=1
     local hi=2
     if t<0 then t=0 end
-    if confCnt>2 or times then
+    if confCnt>2 then
         if t>times[#times] then t=times[#times] end
         local ll,hl
         for i=2,#times,1 do
@@ -854,11 +851,21 @@ function sim.getPathInterpolatedConfig(...)
     else
         if t>1 then t=1 end
     end
-    if method.type=='quadraticBezier' then
+    if method and method.type=='quadraticBezier' then
+        local closed=true
+        for i=1,dof,1 do
+            if (path[i]~=path[(confCnt-1)*dof+i]) then
+                closed=false
+                break
+            end
+        end
+        if method.forceOpen then
+            closed=false
+        end
         local i0,i1,i2
         if t<0.5 then
             if li==1 and not closed then
-                retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
+                retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
             else
                 i0=li-1
                 i1=li
@@ -866,13 +873,13 @@ function sim.getPathInterpolatedConfig(...)
                 if li==1 then
                     i0=confCnt-1
                 end
-                local a=_S.linearInterpolate(path[i0]:data(),path[i1]:data(),0.75+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1]:data(),path[i2]:data(),0.25+t*0.5,types)
+                local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),0.75+t*0.5,types)
+                local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),0.25+t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,0.5+t,types)
             end
         else
             if hi==confCnt and not closed then
-                retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
+                retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
             else
                 i0=li
                 i1=hi
@@ -881,83 +888,104 @@ function sim.getPathInterpolatedConfig(...)
                     i2=2
                 end
                 t=t-0.5
-                local a=_S.linearInterpolate(path[i0]:data(),path[i1]:data(),0.5+t*0.5,types)
-                local b=_S.linearInterpolate(path[i1]:data(),path[i2]:data(),t*0.5,types)
+                local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),0.5+t*0.5,types)
+                local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),t*0.5,types)
                 retVal=_S.linearInterpolate(a,b,t,types)
             end
         end
     end
     if not method or method.type=='linear' then
-        retVal=_S.linearInterpolate(path[li]:data(),path[hi]:data(),t,types)
+        retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
     end
     return retVal
 end
 
 function sim.resamplePath(...)
-    local path,finalConfigCnt,metric,types,method,forceOpen=checkargs({{type='object',class=Matrix},{type='int'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true},{type='table',default={type='linear'}},{type='bool',default=false}},...)
-    local dof=path:cols()
+    local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int'},{type='table',default={type='linear',forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+
+    local confCnt=#pathLengths
+    local dof=math.floor(#path/confCnt)
     
-    if dof<1 or (path:rows()<2) or (metric and dof~=#metric) or (types and dof~=#types) then
+    if dof*confCnt~=#path or (confCnt<2) or (types and dof~=#types) then
         error("Bad table size.")
     end
 
-    local pathLengths=sim.getPathLengths(path,metric,types)
     local retVal={}
     for i=1,finalConfigCnt,1 do
-        local c=sim.getPathInterpolatedConfig(path,pathLengths,pathLengths[#pathLengths]*(i-1)/(finalConfigCnt-1),types,method,forceOpen)
-        retVal[#retVal+1]=c
+        local c=sim.getPathInterpolatedConfig(path,pathLengths,pathLengths[#pathLengths]*(i-1)/(finalConfigCnt-1),method,types)
+        for j=1,dof,1 do
+            retVal[(i-1)*dof+j]=c[j]
+        end
     end
-    return Matrix:fromtable(retVal)
+    return retVal
 end
 
-function sim.getPathLengths(...)
-    local path,metric,types=checkargs({{type='object',class=Matrix},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
-    local dof=path:cols()
-    
-    if dof<1 or (path:rows()<2) or (metric and dof~=#metric) or (types and dof~=#types) then
-        error("Bad matrix/table size.")
+function sim.getConfigDistance(...)
+    local confA,confB,metric,types=checkargs({{type='table',item_type='float',min_size=1},{type='table',item_type='float',min_size=1},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
+    if (#confA~=#confB) or (metric and #confA~=#metric) or (types and #confA~=#types) then
+        error("Bad table size.")
     end
+    return _S.getConfigDistance(confA,confB,metric,types)
+end
 
+function _S.getConfigDistance(confA,confB,metric,types)
     if metric==nil then
         metric={}
-        for i=1,dof,1 do
+        for i=1,#confA,1 do
             metric[i]=1
         end
     end
     if types==nil then 
         types={}
-        for i=1,dof,1 do
+        for i=1,#confA,1 do
             types[i]=0
         end
     end 
+    
+    local d=0
+    local qcnt=0
+    for j=1,#confA,1 do
+        local dd=0
+        if types[j]==0 then
+            dd=(confB[j]-confA[j])*metric[j] -- e.g. joint with limits
+        end
+        if types[j]==1 then
+            local dx=math.atan2(math.sin(confB[j]-confA[j]),math.cos(confB[j]-confA[j]))
+            local v=confA[j]+dx
+            dd=math.atan2(math.sin(v),math.cos(v))*metric[j] -- cyclic rev. joint (-pi;pi)
+        end
+        if types[j]==2 then
+            qcnt=qcnt+1
+            if qcnt==4 then
+                qcnt=0
+                local m1=sim.buildMatrixQ({0,0,0},{confA[j-3],confA[j-2],confA[j-1],confA[j-0]})
+                local m2=sim.buildMatrixQ({0,0,0},{confB[j-3],confB[j-2],confB[j-1],confB[j-0]})
+                local a,angle=sim.getRotationAxis(m1,m2)
+                dd=angle*metric[j-3]
+            end
+        end
+        d=d+dd*dd
+    end
+    return math.sqrt(d)
+end
+
+function sim.getPathLengths(...)
+    local path,dof,cb=checkargs({{type='table',item_type='float',min_size=2},{type='int'},{type='func',default=NIL,nullable=true}},...)
+    local confCnt=#path/dof    
+    if dof<1 or (confCnt<2) then
+        error("Bad table size.")
+    end
     local distancesAlongPath={0}
     local totDist=0
-    for i=1,path:rows()-1,1 do
-        local d=0
-        local qcnt=0
-        for j=1,dof,1 do
-            local dd=0
-            if types[j]==0 then
-                dd=(path[i+1][j]-path[i][j])*metric[j] -- e.g. joint with limits
-            end
-            if types[j]==1 then
-                local dx=math.atan2(math.sin(path[i+1][j]-path[i][j]),math.cos(path[i+1][j]-path[i][j]))
-                local v=path[i][j]+dx
-                dd=math.atan2(math.sin(v),math.cos(v))*metric[j] -- cyclic rev. joint (-pi;pi)
-            end
-            if types[j]==2 then
-                qcnt=qcnt+1
-                if qcnt==4 then
-                    qcnt=0
-                    local m1=sim.buildMatrixQ({0,0,0},{path[i][j-3],path[i][j-2],path[i][j-1],path[i][j-0]})
-                    local m2=sim.buildMatrixQ({0,0,0},{path[i+1][j-3],path[i+1][j-2],path[i+1][j-1],path[i+1][j-0]})
-                    local a,angle=sim.getRotationAxis(m1,m2)
-                    dd=angle*metric[j-3]
-                end
-            end
-            d=d+dd*dd
+    local pM=Matrix(#path/dof,dof,path)
+    for i=1,pM:rows()-1,1 do
+        local d=ccc
+        if cb then
+            d=cb(pM[i]:data(),pM[i+1]:data())
+        else
+            d=sim.getConfigDistance(pM[i]:data(),pM[i+1]:data())
         end
-        totDist=totDist+math.sqrt(d)
+        totDist=totDist+d
         distancesAlongPath[i+1]=totDist
     end
     return distancesAlongPath,totDist
@@ -1294,10 +1322,18 @@ function _S.linearInterpolate(conf1,conf2,t,types)
     return retVal
 end
 
+function _S.getConfig(path,dof,index)
+    local retVal={}
+    for i=1,dof,1 do
+        retVal[#retVal+1]=path[(index-1)*dof+i]
+    end
+    return retVal
+end
+
 function _S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index,tipHandle)
     if index>#jointHandles then
         if tipHandle==-1 then
-            return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+            return {sim.copyTable(confS)}
         else
             for i=1,#jointHandles,1 do
                 sim.setJointPosition(jointHandles[i],confS[i])
@@ -1305,7 +1341,7 @@ function _S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index
             local p=sim.getObjectMatrix(tipHandle,-1)
             local axis,angle=sim.getRotationAxis(desiredPose,p)
             if math.abs(angle)<0.1*180/math.pi then -- checking is needed in case some joints are dependent on others
-                return {sim.unpackDoubleTable(sim.packDoubleTable(confS))} -- copy the table
+                return {sim.copyTable(confS)}
             else
                 return {}
             end
@@ -1455,10 +1491,11 @@ function _S.executeAfterLuaStateInit()
 
     sim.registerScriptFunction('sim.copyTable@sim',"table copy=sim.copyTable(table original)")
     
-    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table config=sim.getPathInterpolatedConfig(Matrix path,table times,float t,table types=nil,method={type='linear'},forceOpen=false)")
-    sim.registerScriptFunction('sim.resamplePath@sim','Matrix path=sim.resamplePath(Matrix path,int finalConfigCnt,table metric=nil,table types=nil)')
-    sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,float totalLength=sim.getPathLengths(Matrix path,table metric=nil,table types=nil)')
-    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"Matrix path,table times=sim.generateTimeOptimalTrajectory(Matrix path,Matrix minMaxVel,Matrix minMaxAccel,\nint trajPtSamples=1000,metric=nil,string boundaryCondition='not-a-knot',float timeout=5)")
+    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table config=sim.getPathInterpolatedConfig(table path,table pathLengths,float t,table method={type='linear',forceOpen=false},table types=nil)")
+    sim.registerScriptFunction('sim.resamplePath@sim',"table path=sim.resamplePath(table path,table pathLengths,int finalConfigCnt,table method={type='linear',forceOpen=false},table types=nil)")
+    sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,float totalLength=sim.getPathLengths(table path,int dof,function distCallback=nil)')
+    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table configA,table configB,table metric=nil,table types=nil)')
+    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table pathLengths,\ntable minMaxVel,table minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
 
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
