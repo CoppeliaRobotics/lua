@@ -80,7 +80,9 @@ function checkargs(types,...)
         if t.class~=nil then return 'object' end
         error('type missing, and could not infer type')
     end
-    local fn=debug.getinfo(2,'n').name..': '
+    local fn='?: '
+    local info=debug.getinfo(2,'n')
+    if info and info.name then fn=info.name..': ' end
     local arg=table.pack(...)
     -- check how many arguments are required (default arguments must come last):
     local minArgs=0
