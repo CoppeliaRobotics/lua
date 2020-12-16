@@ -49,6 +49,7 @@ function Matrix:set(i,j,value)
 end
 
 function Matrix:row(i)
+    if i<1 or i>self:rows() then return nil end
     local data={}
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
@@ -60,6 +61,7 @@ function Matrix:row(i)
 end
 
 function Matrix:rowref(i)
+    if i<1 or i>self:rows() then return nil end
     local data={}
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
@@ -70,6 +72,7 @@ function Matrix:rowref(i)
 end
 
 function Matrix:setrow(i,m)
+    if i<1 or i>self:rows() then return self end
     if getmetatable(m)==Matrix then
         assert(m:rows()==1,'bad shape')
         assert(m:cols()==self:cols(),'mismatching column count')
@@ -83,6 +86,7 @@ function Matrix:setrow(i,m)
 end
 
 function Matrix:col(j)
+    if j<1 or j>self:cols() then return nil end
     local data={}
     setmetatable(data,{
         __index=function(t,i) return self:get(i,j) end,
@@ -93,6 +97,7 @@ function Matrix:col(j)
 end
 
 function Matrix:setcol(j,m)
+    if j<1 or j>self:cols() then return self end
     if getmetatable(m)==Matrix then
         assert(m:cols()==1,'bad shape')
         assert(m:rows()==self:rows(),'mismatching row count')
