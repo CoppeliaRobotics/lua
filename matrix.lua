@@ -754,7 +754,7 @@ end
 
 function Matrix4x4:fromquaternion(q)
     local r=Matrix3x3:fromquaternion(q)
-    return Matrix4x4:fromMatrix3x3(r)
+    return Matrix4x4:fromrotation(r)
 end
 
 function Matrix4x4:fromeuler(e)
