@@ -361,6 +361,10 @@ Returns the result of dividing the elements of this matrix by scalar value `k`.
 
 Returns the dot product with vector `m`.
 
+#### `Matrix:eq(m)`
+
+Returns binary matrix obtained by comparing (`==`) element-wise with `m` if it is a matrix, or with scalar `m`.
+
 #### `Matrix:exp()`
 
 Returns element-wise exponential.
@@ -385,9 +389,17 @@ Returns a matrix of same shape (if `dim` is `nil`), a row vector (if `dim` is 1)
 
 Returns a matrix with data from the 2d table `t`.
 
+#### `Matrix:ge(m)`
+
+Returns binary matrix obtained by comparing (`>=`) element-wise with `m` if it is a matrix, or with scalar `m`.
+
 #### `Matrix:get(i,j)`
 
 Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` are out of range.
+
+#### `Matrix:gt(m)`
+
+Returns binary matrix obtained by comparing (`>`) element-wise with `m` if it is a matrix, or with scalar `m`.
 
 #### `Matrix:horzcat(m)`
 
@@ -397,9 +409,17 @@ Returns the matrix obtained by concatenating with `m` horizontally.
 
 Returns the matrix obtained by Kronecker product with `m`.
 
+#### `Matrix:le(m)`
+
+Returns binary matrix obtained by comparing (`<=`) element-wise with `m` if it is a matrix, or with scalar `m`.
+
 #### `Matrix:log(base)`
 
 Returns element-wise logarithm. If `base` is specified, the logarithm will be computed in the specified base. The `base` argument can be a matrix of the same size or a number.
+
+#### `Matrix:lt(m)`
+
+Returns binary matrix obtained by comparing (`<`) element-wise with `m` if it is a matrix, or with scalar `m`.
 
 #### `Matrix:max()`
 
@@ -436,6 +456,10 @@ Returns pair-wise minimum with matrix `m` which must have the same size.
 #### `Matrix:mul(m)`
 
 Returns the result of multiplying this matrix by `m`, which can be a matrix of compatible size for matrix multipication, or a scalar.
+
+#### `Matrix:ne(m)`
+
+Returns binary matrix obtained by comparing (~=) element-wise with `m` if it is a matrix, or with scalar `m`.
 
 #### `Matrix:norm()`
 

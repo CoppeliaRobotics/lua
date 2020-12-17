@@ -402,6 +402,30 @@ function Matrix:div(m)
     end
 end
 
+function Matrix:eq(m)
+    return self:binop(m,function(a,b) return a==b and 1 or 0 end)
+end
+
+function Matrix:ne(m)
+    return self:binop(m,function(a,b) return a~=b and 1 or 0 end)
+end
+
+function Matrix:lt(m)
+    return self:binop(m,function(a,b) return a<b and 1 or 0 end)
+end
+
+function Matrix:gt(m)
+    return self:binop(m,function(a,b) return a>b and 1 or 0 end)
+end
+
+function Matrix:le(m)
+    return self:binop(m,function(a,b) return a<=b and 1 or 0 end)
+end
+
+function Matrix:ge(m)
+    return self:binop(m,function(a,b) return a>=b and 1 or 0 end)
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
