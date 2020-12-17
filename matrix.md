@@ -343,7 +343,7 @@ Returns element-wise conversion from radians to degrees.
 
 #### `Matrix:diag()`
 
-Returns the vector of eements on the main diagonal.
+Returns the vector of elements on the main diagonal.
 
 #### `Matrix:dot(m)`
 
