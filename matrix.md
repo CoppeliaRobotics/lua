@@ -389,6 +389,10 @@ Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` a
 
 Returns the matrix obtained by concatenating with `m` horizontally.
 
+#### `Matrix:kron(m)`
+
+Returns the matrix obtained by Kronecker product with `m`.
+
 #### `Matrix:log(base)`
 
 Returns element-wise logarithm. If `base` is specified, the logarithm will be computed in the specified base. The `base` argument can be a matrix of the same size or a number.
