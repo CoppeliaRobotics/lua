@@ -365,6 +365,10 @@ Returns element-wise floor (largest integral value smaller than or equal to x).
 
 Returns element-wise fmod (remainder of the division of x by y that rounds the quotient towards zero) with `m`, which can be a matrix of the same size or a number.
 
+#### `Matrix:fold(dim,start,op)`
+
+Returns a matrix of same shape (if `dim` is `nil`), a row vector (if `dim` is 1) or a column vector (if `dim` is 2) computed by repeatedly applying `op(a+b)` along the specified dimension, e.g.: `op(start,op(get(1,1),op(get(1,2),...)))`.
+
 #### `Matrix:fromtable(t)`
 
 Returns a matrix with data from the 2d table `t`.
@@ -428,6 +432,14 @@ Returns a `rows`x`cols` matrix of ones.
 #### `Matrix:print(elemwidth)`
 
 Print the matrix.
+
+#### `Matrix:prod()`
+
+Returns the product of all the values.
+
+#### `Matrix:prod(dim)`
+
+Returns the column-wise (`dim` = 1) or row-wise (`dim` = 2) product.
 
 #### `Matrix:rad()`
 

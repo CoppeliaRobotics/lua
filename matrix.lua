@@ -306,30 +306,38 @@ function Matrix:max(dim_or_mtx2)
     end
 end
 
-function Matrix:sum(dim)
+function Matrix:fold(dim,start,op)
     if dim==nil then
-        local s=0
+        local s=start
         for i=1,self:rows() do
             for j=1,self:cols() do
-                s=s+self:get(i,j)
+                s=op(s,self:get(i,j))
             end
         end
         return s
     elseif dim==1 then
         local m=Matrix(1,self:cols())
         for j=1,self:cols() do
-            m:set(1,j,self:col(j):sum())
+            m:set(1,j,self:col(j):fold(nil,start,op))
         end
         return m
     elseif dim==2 then
         local m=Matrix(self:rows(),1)
         for i=1,self:rows() do
-            m:set(i,1,self:row(i):sum())
+            m:set(i,1,self:row(i):fold(nil,start,op))
         end
         return m
     else
         error('invalid dimension')
     end
+end
+
+function Matrix:sum(dim)
+    return self:fold(dim,0,function(a,b) return a+b end)
+end
+
+function Matrix:prod(dim)
+    return self:fold(dim,1,function(a,b) return a*b end)
 end
 
 function Matrix:mean(dim)
@@ -965,6 +973,9 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m5:sum()==96)
     assert(m5:sum(1)==Matrix(1,4,{13,27,40,16}))
     assert(m5:sum(2)==Matrix(3,1,{29,44,23}))
+    assert(m5:prod()==423360000)
+    assert(m5:prod(1)==Matrix(1,4,{20,200,980,108}))
+    assert(m5:prod(2)==Matrix(3,1,{300,2240,630}))
     -- verify copy-on-write:
     a=Matrix(2,2,{10,20,30,40})
     b=a:t():t()
