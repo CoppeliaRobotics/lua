@@ -485,6 +485,14 @@ function Matrix:__pow(m)
     end
 end
 
+function Matrix:__concat(m)
+    if self:cols()==1 and self:sameshape(m) then
+        return self:dot(m)
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:__tostring()
     s='Matrix('..self:rows()..','..self:cols()..',{'
     for i=1,self:rows() do
