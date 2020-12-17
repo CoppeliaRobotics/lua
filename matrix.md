@@ -277,6 +277,10 @@ Returns element-wise absolute value.
 
 Returns element-wise inverse-cosine value.
 
+#### `Matrix:add(m)`
+
+Returns the result of adding `m` to this matrix.
+
 #### `Matrix:applyfunc(f)`
 
 Returns element-wise result of function `f(x)` where `x` is if the element value.
@@ -344,6 +348,10 @@ Returns element-wise conversion from radians to degrees.
 #### `Matrix:diag()`
 
 Returns the vector of elements on the main diagonal.
+
+#### `Matrix:div(k)`
+
+Returns the result of dividing the elements of this matrix by scalar value `k`.
 
 #### `Matrix:dot(m)`
 
@@ -416,6 +424,10 @@ Returns a column-wise (`dim` = 1) or row-wise (`dim` = 2) minimum.
 #### `Matrix:min(m)`
 
 Returns pair-wise minimum with matrix `m` which must have the same size.
+
+#### `Matrix:mul(m)`
+
+Returns the result of multiplying this matrix by `m`, which can be a matrix of compatible size for matrix multipication, or a scalar.
 
 #### `Matrix:norm()`
 
@@ -514,6 +526,10 @@ Returns a matrix obtained by copying the values from this matrix, starting at `f
 #### `Matrix:sqrt()`
 
 Returns element-wise square root value.
+
+#### `Matrix:sub(m)`
+
+Returns the result of subtracting `m` from this matrix.
 
 #### `Matrix:sum()`
 

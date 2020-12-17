@@ -354,6 +354,57 @@ function Matrix:mean(dim)
     return self:sum(dim)/c
 end
 
+function Matrix:add(m)
+    if type(m)=='number' then
+        return self:applyfunc(function(x) return x+m end)
+    elseif getmetatable(m)==Matrix then
+        assert(self:sameshape(m),'shape mismatch')
+        return self:applyfunc2(m,function(x,y) return x+y end)
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:sub(m)
+    if type(m)=='number' then
+        return self:applyfunc(function(x) return x-m end)
+    elseif getmetatable(m)==Matrix then
+        assert(self:sameshape(m),'shape mismatch')
+        return self:applyfunc2(m,function(x,y) return x-y end)
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:mul(m)
+    if type(m)=='number' then
+        return self:applyfunc(function(x) return x*m end)
+    elseif getmetatable(m)==Matrix then
+        assert(self:cols()==m:rows(),'incompatible matrix dimensions')
+        local data={}
+        for i=1,self:rows() do
+            for j=1,m:cols() do
+                local s=0
+                for k=1,self:cols() do
+                    s=s+self:get(i,k)*m:get(k,j)
+                end
+                table.insert(data,s)
+            end
+        end
+        return Matrix(self:rows(),m:cols(),{ref=data})
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:div(m)
+    if type(m)=='number' then
+        return self:applyfunc(function(x) return x/m end)
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
@@ -394,64 +445,25 @@ function Matrix:__add(m)
     if type(self)=='number' then
         self,m=m,self
     end
-    if type(m)=='number' then
-        local data={}
-        for i,x in ipairs(self._data) do
-            table.insert(data,x+m)
-        end
-        return Matrix(self._rows,self._cols,{ref=data},self._t)
-    elseif getmetatable(m)==Matrix then
-        assert(self:sameshape(m),'shape mismatch')
-        local data={}
-        for i=1,self:rows() do
-            for j=1,self:cols() do
-                table.insert(data,self:get(i,j)+m:get(i,j))
-            end
-        end
-        return Matrix(self:rows(),self:cols(),{ref=data})
-    else
-        error('unsupported operand')
-    end
+    return self:add(m)
 end
 
 function Matrix:__sub(m)
-    return self+(-1*m)
+    if type(self)=='number' then
+        self,m=m,self
+    end
+    return self:sub(m)
 end
 
 function Matrix:__mul(m)
     if type(self)=='number' then
         self,m=m,self
     end
-    if type(m)=='number' then
-        local data={}
-        for i,x in ipairs(self._data) do
-            table.insert(data,x*m)
-        end
-        return Matrix(self._rows,self._cols,{ref=data},self._t)
-    elseif getmetatable(m)==Matrix then
-        assert(self:cols()==m:rows(),'incompatible matrix dimensions')
-        local data={}
-        for i=1,self:rows() do
-            for j=1,m:cols() do
-                local s=0
-                for k=1,self:cols() do
-                    s=s+self:get(i,k)*m:get(k,j)
-                end
-                table.insert(data,s)
-            end
-        end
-        return Matrix(self:rows(),m:cols(),{ref=data})
-    else
-        error('unsupported operand')
-    end
+    return self:mul(m)
 end
 
 function Matrix:__div(k)
-    if type(k)=='number' then
-        return self*(1/k)
-    else
-        error('unsupported operand')
-    end
+    return self:div(k)
 end
 
 function Matrix:__unm()
