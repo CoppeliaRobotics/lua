@@ -433,6 +433,10 @@ Returns the result of multiplying this matrix by `m`, which can be a matrix of c
 
 Returns the vector norm of this vector.
 
+#### `Matrix:normalized()`
+
+Returns this vector normalized (`self/self:norm()`).
+
 #### `Matrix:offset(i,j)`
 
 Returns the data offset for indices `i`, `j`. Returns `nil` if `i` or `j` are out of range.
