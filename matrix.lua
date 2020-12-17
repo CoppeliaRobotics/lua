@@ -470,14 +470,16 @@ function Matrix:__unm()
     return -1*self
 end
 
-function Matrix:__pow(k)
-    assert(self:rows()==self:cols(),'must be square matrix')
-    if type(k)=='number' then
-        assert(k%1==0,'only integer powers are supported')
-        assert(k>=0,'only positive powers are supported')
+function Matrix:__pow(m)
+    if type(m)=='number' then
+        assert(self:rows()==self:cols(),'must be square matrix')
+        assert(m%1==0,'only integer powers are supported')
+        assert(m>=0,'only positive powers are supported')
         local r=Matrix:eye(self:rows())
-        for i=1,k do r=r*self end
+        for i=1,m do r=r*self end
         return r
+    elseif self:sameshape{3,1} and self:sameshape(m) then
+        return self:cross(m)
     else
         error('unsupported operand')
     end
