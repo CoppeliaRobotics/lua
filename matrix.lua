@@ -209,11 +209,7 @@ function Matrix:floor()
 end
 
 function Matrix:fmod(m)
-    if getmetatable(m)==Matrix then
-        return self:applyfunc2(m,math.fmod)
-    else
-        return self:applyfunc(function(x) return math.fmod(x,m) end)
-    end
+    return self:binop(m,math.fmod)
 end
 
 function Matrix:log(base)
