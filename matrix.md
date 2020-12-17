@@ -579,6 +579,10 @@ Returns a `rows`x`cols` matrix of zeros.
 
 Returns a new matrix of size 3x3 initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how `data` is interpreted).
 
+#### `Matrix3x3:fromaxisangle(axis,angle)`
+
+Returns a rotation matrix from an axis-angle representation.
+
 #### `Matrix3x3:fromeuler(e)`
 
 Returns a rotation matrix from euler angles.

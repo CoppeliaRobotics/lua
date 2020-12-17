@@ -790,6 +790,30 @@ function Matrix3x3:fromeuler(e)
     end
 end
 
+function Matrix3x3:fromaxisangle(axis,angle)
+    axis=axis:normalized()
+    local c=math.cos(angle)
+    local s=math.sin(angle)
+    local t=1.0-c
+    local m=Matrix3x3()
+    m[1][1]=c+axis[1]*axis[1]*t
+    m[2][2]=c+axis[2]*axis[2]*t
+    m[3][3]=c+axis[3]*axis[3]*t
+    local tmp1=axis[1]*axis[2]*t
+    local tmp2=axis[3]*s
+    m[2][1]=tmp1+tmp2
+    m[1][2]=tmp1-tmp2
+    tmp1=axis[1]*axis[3]*t
+    tmp2=axis[2]*s
+    m[3][1]=tmp1-tmp2
+    m[1][3]=tmp1+tmp2
+    tmp1=axis[2]*axis[3]*t
+    tmp2=axis[1]*s
+    m[3][2]=tmp1+tmp2
+    m[2][3]=tmp1-tmp2
+    return m
+end
+
 function Matrix3x3:toquaternion(m,t)
     assert(getmetatable(m)==Matrix,'not a matrix')
     assert(m:sameshape{3,3},'incorrect shape')
