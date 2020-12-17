@@ -361,9 +361,9 @@ Returns element-wise conversion from radians to degrees.
 
 Returns the vector of elements on the main diagonal.
 
-#### `Matrix:div(k)`
+#### `Matrix:div(m)`
 
-Returns the result of dividing the elements of this matrix by scalar value `k`.
+Returns the result of dividing the elements of this matrix by scalar value `m` or element-wise with matrix of same size `m`.
 
 #### `Matrix:dot(m)`
 
@@ -412,6 +412,10 @@ Returns binary matrix obtained by comparing (`>`) element-wise with `m` if it is
 #### `Matrix:horzcat(m)`
 
 Returns the matrix obtained by concatenating with `m` horizontally.
+
+#### `Matrix:idiv(m)`
+
+Returns the result of dividing the elements of this matrix by scalar value `m` or element-wise with matrix of same size `m`, using integer division (`//`).
 
 #### `Matrix:kron(m)`
 

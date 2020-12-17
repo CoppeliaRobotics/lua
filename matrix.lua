@@ -394,6 +394,10 @@ function Matrix:div(m)
     return self:binop(m,function(a,b) return a/b end)
 end
 
+function Matrix:idiv(m)
+    return self:binop(m,function(a,b) return a//b end)
+end
+
 function Matrix:pow(m)
     return self:binop(m,function(a,b) return a^b end)
 end
@@ -532,6 +536,14 @@ end
 
 function Matrix:__div(k)
     return self:div(k)
+end
+
+function Matrix:__idiv(k)
+    return self:idiv(k)
+end
+
+function Matrix:__mod(k)
+    return self:mod(k)
 end
 
 function Matrix:__unm()
