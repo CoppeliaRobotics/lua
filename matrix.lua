@@ -406,6 +406,15 @@ function Matrix:times(m)
     return self:binop(m,function(a,b) return a*b end)
 end
 
+function Matrix:power(k)
+    assert(self:rows()==self:cols(),'must be square matrix')
+    assert(math.type(k)=='integer','only integer matrix power are allowed')
+    assert(k>=0,'only non-negative matrix powers are allowed')
+    local r=Matrix:eye(self:rows())
+    for i=1,m do r=r*self end
+    return r
+end
+
 function Matrix:eq(m)
     return self:binop(m,function(a,b) return a==b and 1 or 0 end)
 end
@@ -531,12 +540,7 @@ end
 
 function Matrix:__pow(m)
     if type(m)=='number' then
-        assert(self:rows()==self:cols(),'must be square matrix')
-        assert(m%1==0,'only integer powers are supported')
-        assert(m>=0,'only positive powers are supported')
-        local r=Matrix:eye(self:rows())
-        for i=1,m do r=r*self end
-        return r
+        return self:power(m)
     elseif self:sameshape{3,1} and self:sameshape(m) then
         return self:cross(m)
     else
