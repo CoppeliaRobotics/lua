@@ -485,6 +485,10 @@ Returns the data offset for indices `i`, `j`. Returns `nil` if `i` or `j` are ou
 
 Returns a `rows`x`cols` matrix of ones.
 
+#### `Matrix:pow(k)`
+
+Returns the matrix of element-wise `k`-th powers.
+
 #### `Matrix:power(k)`
 
 Returns the matrix `k`-th power (iterated matrix product).
