@@ -157,6 +157,17 @@ function Matrix:applyfunc2(m2,f)
     return self:applyfuncidx(function(i,j,x) return f(x,m2:get(i,j)) end)
 end
 
+function Matrix:binop(m,op)
+    if type(m)=='number' then
+        return self:applyfunc(function(x) return op(x,m) end)
+    elseif getmetatable(m)==Matrix then
+        assert(self:sameshape(m),'shape mismatch')
+        return self:applyfunc2(m,op)
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:abs()
     return self:applyfunc(math.abs)
 end
@@ -355,25 +366,11 @@ function Matrix:mean(dim)
 end
 
 function Matrix:add(m)
-    if type(m)=='number' then
-        return self:applyfunc(function(x) return x+m end)
-    elseif getmetatable(m)==Matrix then
-        assert(self:sameshape(m),'shape mismatch')
-        return self:applyfunc2(m,function(x,y) return x+y end)
-    else
-        error('unsupported operand')
-    end
+    return self:binop(m,function(a,b) return a+b end)
 end
 
 function Matrix:sub(m)
-    if type(m)=='number' then
-        return self:applyfunc(function(x) return x-m end)
-    elseif getmetatable(m)==Matrix then
-        assert(self:sameshape(m),'shape mismatch')
-        return self:applyfunc2(m,function(x,y) return x-y end)
-    else
-        error('unsupported operand')
-    end
+    return self:binop(m,function(a,b) return a-b end)
 end
 
 function Matrix:mul(m)

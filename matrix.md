@@ -309,6 +309,10 @@ Returns the matrix itself.
 
 Returns element-wise inverse-tangent value.
 
+#### `Matrix:binop(m,op)`
+
+Returns the matrix obtained by applying function `op(x,y)` element-wise, where `x` and `y` are elements at same position if `m` is a matrix, or `y` is `m` if `m` is a scalar.
+
 #### `Matrix:ceil()`
 
 Returns element-wise ceil (smallest integral value larger than or equal to x).
