@@ -735,6 +735,14 @@ Returns a new matrix of size `len`x`1` (i.e. a vector) initialized with data fro
 
 Shortcut for `Vector(#data,data)`. See [`Vector(len,data)`](#vectorlendata).
 
+#### `Vector:linspace(start,stop,num,endpoint)`
+
+Returns a vector of `num` (by default: 50) evenly spaced numbers between `start` and `stop`. If `endpoint` is false, the last point will be omitted.
+
+#### `Vector:range(start,stop,step)`
+
+Returns a vector of evenly spaced numbers between `start` and `stop`, spaced by `step`. If not given, `start` is 1. If not given, `step` is 1.
+
 #### `Vector3(data)`
 
 Same as `Vector(3,data)`. See [`Vector(len,data)`](#vectorlendata).

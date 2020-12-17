@@ -756,6 +756,23 @@ end})
 
 Vector={}
 
+function Vector:range(start,stop,step)
+    step=step or 1
+    if not stop then start,stop=1,start end
+    local data={}
+    for i=start,stop,step do table.insert(data,i) end
+    return Vector(#data,{ref=data})
+end
+
+function Vector:linspace(start,stop,num,endpoint)
+    num=num or 50
+    if endpoint==nil then endpoint=true end
+    local e=endpoint and num or num-1
+    local r=start+Vector:range(0,e-1)/(num-1)*(stop-start)
+    local step=#r>1 and r[2]-r[1] or 0
+    return r,step
+end
+
 setmetatable(Vector,{__call=function(self,len,data)
     if type(len)=='table' then
         data=len
