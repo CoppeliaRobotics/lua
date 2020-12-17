@@ -522,7 +522,7 @@ end
 
 function Matrix:__sub(m)
     if type(self)=='number' then
-        self,m=m,self
+        return m*(-1)+self
     end
     return self:sub(m)
 end
