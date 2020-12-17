@@ -385,6 +385,11 @@ function Matrix:diag()
     return r
 end
 
+function Matrix:trace()
+    assert(self:rows()==self:cols(),'only defined on square matrices')
+    return self:diag():sum()
+end
+
 function Matrix:__add(m)
     if type(self)=='number' then
         self,m=m,self

@@ -539,6 +539,10 @@ Returns element-wise integer value.
 
 Returns a 2d table representation of this matrix.
 
+#### `Matrix:trace()`
+
+Returns the trace (sum of elements on the main diagonal) of the matrix.
+
 #### `Matrix:ult(m2)`
 
 Returns the element-wise ult (true if and only if integer m is below integer n when they are compared as unsigned integers) value.
