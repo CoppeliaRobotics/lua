@@ -391,11 +391,7 @@ function Matrix:mul(m)
 end
 
 function Matrix:div(m)
-    if type(m)=='number' then
-        return self:applyfunc(function(x) return x/m end)
-    else
-        error('unsupported operand')
-    end
+    return self:binop(m,function(a,b) return a/b end)
 end
 
 function Matrix:pow(m)
