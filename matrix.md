@@ -461,6 +461,10 @@ Returns a column-wise (`dim` = 1) or row-wise (`dim` = 2) minimum.
 
 Returns pair-wise minimum with matrix `m` which must have the same size.
 
+#### `Matrix:mod(m)`
+
+Returns pair-wise integer modulo (`%`) with matrix `m` which must have the same size or is a scalar.
+
 #### `Matrix:mul(m)`
 
 Returns the result of multiplying this matrix by `m`, which can be a matrix of compatible size for matrix multipication, or a scalar.

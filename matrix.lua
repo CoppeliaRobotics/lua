@@ -262,6 +262,10 @@ function Matrix:pow(m)
     return self:binop(m,function(a,b) return a^b end)
 end
 
+function Matrix:mod(m)
+    return self:binop(m,function(a,b) return a%b end)
+end
+
 function Matrix:data()
     local data={}
     setmetatable(data,{
