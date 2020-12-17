@@ -426,6 +426,26 @@ function Matrix:ge(m)
     return self:binop(m,function(a,b) return a>=b and 1 or 0 end)
 end
 
+function Matrix:all(f)
+    f=f or function(x) return x~=0 end
+    for i=1,self:rows() do
+        for j=1,self:cols() do
+            if not f(self:get(i,j)) then return false end
+        end
+    end
+    return true
+end
+
+function Matrix:any(f)
+    f=f or function(x) return x~=0 end
+    for i=1,self:rows() do
+        for j=1,self:cols() do
+            if f(self:get(i,j)) then return true end
+        end
+    end
+    return false
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)
@@ -1142,5 +1162,9 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(approxEq(Matrix3x3:toquaternion(Matrix(3,3,{-1,0,0,0,-1,0,0,0,1})),{0,0,1,0}))
     assert(Matrix(2,2,{1,2,3,4}):kron(Matrix(2,2,{0,5,6,7}))==Matrix(4,4,{0,5,0,10,6,7,12,14,0,15,0,20,18,21,24,28}))
     assert(Matrix(2,3,{1,-4,7,-2,3,3}):kron(Matrix(4,4,{8,-9,-6,5,1,-3,-4,7,2,8,-8,-3,1,2,-5,-1}))==Matrix(8,12,{8,-9,-6,5,-32,36,24,-20,56,-63,-42,35,1,-3,-4,7,-4,12,16,-28,7,-21,-28,49,2,8,-8,-3,-8,-32,32,12,14,56,-56,-21,1,2,-5,-1,-4,-8,20,4,7,14,-35,-7,-16,18,12,-10,24,-27,-18,15,24,-27,-18,15,-2,6,8,-14,3,-9,-12,21,3,-9,-12,21,-4,-16,16,6,6,24,-24,-9,6,24,-24,-9,-2,-4,10,2,3,6,-15,-3,3,6,-15,-3}))
+    assert(Vector{1,1,1}:all())
+    assert(not Vector{1,0,1}:all())
+    assert(Vector{1,0,1}:any())
+    assert(not Vector{0,0,0}:any())
     print('tests passed')
 end

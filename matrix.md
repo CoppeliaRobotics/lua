@@ -281,6 +281,14 @@ Returns element-wise inverse-cosine value.
 
 Returns the result of adding `m` to this matrix.
 
+#### `Matrix:all(f)`
+
+Returns true if `f(x)` returns true for every element of the matrix.
+
+#### `Matrix:any(f)`
+
+Returns true if `f(x)` returns true for any element of the matrix.
+
 #### `Matrix:applyfunc(f)`
 
 Returns element-wise result of function `f(x)` where `x` is if the element value.
