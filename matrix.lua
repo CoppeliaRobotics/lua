@@ -463,6 +463,11 @@ function Matrix:any(f)
     return false
 end
 
+function Matrix:where(cond,x,y)
+    assert(cond:sameshape(x) and cond:sameshape(y),'shape mismatch')
+    return cond:times(x)+(1-cond):times(y)
+end
+
 function Matrix:t()
     self._copyonwrite=true
     return Matrix(self._rows,self._cols,{ref=self._data,copyonwrite=true},not self._t)

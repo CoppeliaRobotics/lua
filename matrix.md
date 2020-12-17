@@ -631,6 +631,10 @@ Returns the element-wise ult (true if and only if integer m is below integer n w
 
 Returns the matrix obtained by concatenating with `m` vertically.
 
+#### `Matrix:where(cond,x,y)`
+
+Returns the matrix where the element os copied from `x` if `cond` is nonzero, otherwise is copies from `y`. Both `cond`, `x`, `y` must have the same shape.
+
 #### `Matrix:zeros(rows,cols)`
 
 Returns a `rows`x`cols` matrix of zeros.
