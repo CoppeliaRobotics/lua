@@ -258,14 +258,6 @@ function Matrix:ult(m2)
     return self:applyfunc2(math.ult)
 end
 
-function Matrix:pow(m)
-    return self:binop(m,function(a,b) return a^b end)
-end
-
-function Matrix:mod(m)
-    return self:binop(m,function(a,b) return a%b end)
-end
-
 function Matrix:data()
     local data={}
     setmetatable(data,{
@@ -404,6 +396,14 @@ function Matrix:div(m)
     else
         error('unsupported operand')
     end
+end
+
+function Matrix:pow(m)
+    return self:binop(m,function(a,b) return a^b end)
+end
+
+function Matrix:mod(m)
+    return self:binop(m,function(a,b) return a%b end)
 end
 
 function Matrix:times(m)
