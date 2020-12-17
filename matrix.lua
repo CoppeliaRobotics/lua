@@ -595,14 +595,8 @@ function Matrix:__newindex(k,v)
     end
 end
 
-function Matrix.__eq(a,b)
-    if not a:sameshape(b) then return false end
-    for i=1,a:rows() do
-        for j=1,a:cols() do
-            if a:get(i,j)~=b:get(i,j) then return false end
-        end
-    end
-    return true
+function Matrix:__eq(m)
+    return self:eq(m):all()
 end
 
 function Matrix:__ipairs()
