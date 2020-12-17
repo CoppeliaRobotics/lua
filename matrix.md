@@ -591,6 +591,10 @@ Returns a transposed matrix.
 
 Returns element-wise tangent value.
 
+#### `Matrix:times(m)`
+
+Returns element-wise multiplication with `m`.
+
 #### `Matrix:tointeger()`
 
 Returns element-wise integer value.

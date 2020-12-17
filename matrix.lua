@@ -402,6 +402,10 @@ function Matrix:div(m)
     end
 end
 
+function Matrix:times(m)
+    return self:binop(m,function(a,b) return a*b end)
+end
+
 function Matrix:eq(m)
     return self:binop(m,function(a,b) return a==b and 1 or 0 end)
 end
