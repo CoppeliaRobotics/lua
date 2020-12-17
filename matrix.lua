@@ -790,10 +790,32 @@ function Matrix3x3:toquaternion(m,t)
     assert(getmetatable(m)==Matrix,'not a matrix')
     assert(m:sameshape{3,3},'incorrect shape')
     local q={}
-    q.w=math.sqrt(1+m[1][1]+m[2][2]+m[3][3])/2
-    q.x=(m[3][2]-m[2][3])/(4*q.w)
-    q.y=(m[1][3]-m[3][1])/(4*q.w)
-    q.z=(m[2][1]-m[1][2])/(4*q.w)
+    local tr=m:trace()
+    if tr>0 then
+        local s=math.sqrt(tr+1.0)*2
+        q.w=0.25*s
+        q.x=(m[3][2]-m[2][3])/s
+        q.y=(m[1][3]-m[3][1])/s
+        q.z=(m[2][1]-m[1][2])/s
+    elseif m[1][1]>m[2][2] and m[1][1]>m[3][3] then
+        local s=math.sqrt(1.0+m[1][1]-m[2][2]-m[3][3])*2
+        q.w=(m[3][2]-m[2][3])/s
+        q.x=0.25*s
+        q.y=(m[1][2]+m[2][1])/s
+        q.z=(m[1][3]+m[3][1])/s
+    elseif m[2][2]>m[3][3] then
+        local s=math.sqrt(1.0+m[2][2]-m[1][1]-m[3][3])*2
+        q.w=(m[1][3]-m[3][1])/s
+        q.x=(m[1][2]+m[2][1])/s
+        q.y=0.25*s
+        q.z=(m[2][3]+m[3][2])/s
+    else
+        local s=math.sqrt(1.0+m[3][3]-m[1][1]-m[2][2])*2
+        q.w=(m[2][1]-m[1][2])/s
+        q.x=(m[1][3]+m[3][1])/s
+        q.y=(m[2][3]+m[3][2])/s
+        q.z=0.25*s
+    end
     q={q.x,q.y,q.z,q.w}
     if t==Matrix then return Vector4{ref=q} end
     return q
@@ -1058,5 +1080,6 @@ if arg and #arg==1 and arg[1]=='test' then
     --assert(approxEq(Matrix3x3:toeuler(rot_m),{0.7853982,0.5235988,1.5707963}))
     assert(approxEq(Matrix3x3:toquaternion(rot_m),{0.4304593,-0.092296,0.7010574,0.5609855}))
     assert(approxEq(Matrix4x4:frompose{0,0,0,0,0,0,1},Matrix:eye(4)))
+    assert(approxEq(Matrix3x3:toquaternion(Matrix(3,3,{-1,0,0,0,-1,0,0,0,1})),{0,0,1,0}))
     print('tests passed')
 end
