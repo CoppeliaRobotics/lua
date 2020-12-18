@@ -313,6 +313,10 @@ Copies values from matrix `m`. Element `m[1+i][1+j]` will be copied to position 
 
 Returns the matrix itself.
 
+#### `Matrix:at(rowidx,colidx)`
+
+Returns the matrix of same shape as `rowidx` and `colidx` obtained by reading element at row defined by `rowidx`'s element, and at column defined by `colidx`'s eement.
+
 #### `Matrix:atan(m)`
 
 Returns element-wise inverse-tangent value.

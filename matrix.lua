@@ -121,6 +121,11 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     return m
 end
 
+function Matrix:at(rowidx,colidx)
+    assert(getmetatable(rowidx)==Matrix and getmetatable(colidx)==Matrix,'bad type')
+    return rowidx:applyfunc2(colidx,function(i,j) return self:get(i,j) end)
+end
+
 function Matrix:horzcat(m)
     assert(self:rows()==m:rows(),'row count mismatch')
     local r=self:slice(1,1,self:rows(),self:cols()+m:cols())
@@ -1221,5 +1226,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(approxEq(Vector:logspace(2,3,4),Vector{100,215.443469,464.15888336,1000}))
     assert(approxEq(Vector:logspace(2,3,4,false),Vector{100,177.827941,316.22776602,562.34132519}))
     assert(approxEq(Vector:logspace(2,3,4,true,2),Vector{4,5.0396842,6.34960421,8}))
+    m=Matrix(4,4,function(i,j) return 10*i+j end)
+    i,j=Matrix(2,2,{1,1,2,2}),Matrix(2,2,{1,2,3,4})
+    assert(m:at(i,j)==Matrix(2,2,{11,12,23,24}))
     print('tests passed')
 end
