@@ -747,6 +747,10 @@ Returns a vector of `num` (by default: 50) evenly spaced numbers on a log scale 
 
 Returns a vector of `num` (by default: 50) evenly spaced numbers between `start` and `stop`. If `endpoint` is false, the last point will be omitted.
 
+#### `Vector:logspace(start,stop,num,endpoint,base)`
+
+Returns a vector of `num` (by default: 50) evenly spaced numbers between `base^start` and `base^stop`, where `base` is 10.0 if not specified. If `endpoint` is false, the last point will be omitted.
+
 #### `Vector:range(start,stop,step)`
 
 Returns a vector of evenly spaced numbers between `start` and `stop`, spaced by `step`. If not given, `start` is 1. If not given, `step` is 1.

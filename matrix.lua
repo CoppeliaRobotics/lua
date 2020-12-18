@@ -781,6 +781,11 @@ function Vector:linspace(start,stop,num,endpoint)
     return r,step
 end
 
+function Vector:logspace(start,stop,num,endpoint,base)
+    base=base or 10.0
+    return base^Vector:linspace(start,stop,num,endpoint)
+end
+
 function Vector:geomspace(start,stop,num,endpoint)
     k=math.pow(stop/start,1/(num-1))
     return start*(k^Vector:linspace(0,num-1,num,endpoint))
@@ -1213,5 +1218,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(approxEq(Vector:geomspace(1,1000,4),Vector{1,10,100,1000}))
     assert(approxEq(Vector:geomspace(1,1000,3,false),Vector{1,10,100}))
     assert(approxEq(Vector:geomspace(1,1000,4,false),Vector{1,5.62341325,31.6227766,177.827941}))
+    assert(approxEq(Vector:logspace(2,3,4),Vector{100,215.443469,464.15888336,1000}))
+    assert(approxEq(Vector:logspace(2,3,4,false),Vector{100,177.827941,316.22776602,562.34132519}))
+    assert(approxEq(Vector:logspace(2,3,4,true,2),Vector{4,5.0396842,6.34960421,8}))
     print('tests passed')
 end
