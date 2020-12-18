@@ -395,7 +395,7 @@ Returns element-wise fmod (remainder of the division of x by y that rounds the q
 
 #### `Matrix:fold(dim,start,op)`
 
-Returns a matrix of same shape (if `dim` is `nil`), a row vector (if `dim` is 1) or a column vector (if `dim` is 2) computed by repeatedly applying `op(a+b)` along the specified dimension, e.g.: `op(start,op(get(1,1),op(get(1,2),...)))`.
+Returns a scalar (if `dim` is `nil`), a row vector (if `dim` is 1) or a column vector (if `dim` is 2) computed by repeatedly applying `op(a+b)` along the specified dimension, e.g.: `op(start,op(get(1,1),op(get(1,2),...)))`.
 
 #### `Matrix:fromtable(t)`
 
