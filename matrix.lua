@@ -1094,6 +1094,10 @@ if arg and #arg==1 and arg[1]=='test' then
     })
     assert(m:rows()==3)
     assert(m:cols()==4)
+    assert(m:count()==12)
+    assert(m:sameshape{3,4})
+    assert(m:sameshape(Matrix(3,4)))
+    assert(m:offset(2,2)==6)
     assert(m:totable{}.dims[1]==m:rows())
     assert(m:totable{}.dims[2]==m:cols())
     assert(m:totable()[3][2]==32)
@@ -1120,6 +1124,18 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(m*m:t()==Matrix(3,3,{630,1130,1630,1130,2030,2930,1630,2930,4230}))
     assert(m*m:t()*m*m:t()==Matrix(3,3,{4330700,7781700,11232700,7781700,13982700,20183700,11232700,20183700,29134700}))
     assert(m:t()*m==Matrix(4,4,{1523,1586,1649,1712,1586,1652,1718,1784,1649,1718,1787,1856,1712,1784,1856,1928}))
+    assert(Vector{2.1,7,8.2}//2==Vector{1,3,4})
+    assert(Vector{1,2,3}:eq(Vector{1,2,2})==Vector{1,1,0})
+    assert(Vector{1,2,3}:ne(Vector{1,2,2})==Vector{0,0,1})
+    assert(Vector{1,2,3}:lt(Vector{1,2,2})==Vector{0,0,0})
+    assert(Vector{1,2,3}:gt(Vector{1,2,2})==Vector{0,0,1})
+    assert(Vector{1,2,3}:le(Vector{1,2,2})==Vector{1,1,0})
+    assert(Vector{1,2,3}:ge(Vector{1,2,2})==Vector{1,1,1})
+    assert(not Vector{1,2,3}:lt(Vector{1,2,2}):any())
+    assert(Vector{1,2,3}:ge(Vector{1,2,2}):all())
+    assert(Vector{1,2,3}:le(Vector{1,2,2}):any())
+    assert(not Vector{1,2,3}:le(Vector{1,2,2}):all())
+    assert(Matrix:where(Vector:range(5):lt(3),Vector{10,20,30,40,50},Vector{5,4,3,2,1})==Vector{10,20,3,2,1})
     assert(Matrix:fromtable{{1,0,0,0}}:t():norm()==1)
     assert(Matrix(3,1,{3,4,0}):norm()==5)
     assert(Matrix(3,1,{3,4,0}):dot(Matrix(3,1,{-4,3,5}))==0)
@@ -1224,6 +1240,9 @@ if arg and #arg==1 and arg[1]=='test' then
             error('incorrect or mismatching type(s)')
         end
     end
+    assert(approxEq(m5:mean(),8))
+    assert(approxEq(m5:mean(1),Vector{13,27,40,16}:t()/3))
+    assert(approxEq(m5:mean(2),Vector{7.25,11,5.75}))
     rot_e=Matrix3x3:fromeuler{0.7853982,0.5235988,1.5707963}
     rot_m=Matrix(3,3,{
         0.0000000,-0.8660254,0.5000000,
@@ -1253,5 +1272,13 @@ if arg and #arg==1 and arg[1]=='test' then
     m=Matrix(4,4,function(i,j) return 10*i+j end)
     i,j=Matrix(2,2,{1,1,2,2}),Matrix(2,2,{1,2,3,4})
     assert(m:at(i,j)==Matrix(2,2,{11,12,23,24}))
+    assert(Matrix:horzcat(Vector{1,0,0},Vector{0,1,0},Vector{0,0,1})==Matrix:eye(3))
+    assert(Matrix:vertcat(Matrix:ones(4,3),Matrix:eye(3)):col(2)==Vector{1,1,1,1,0,1,0})
+    assert(Matrix:ones(2,3):applyfuncidx(function(i,j,x) return 100*x+10*i+j end)==Matrix(2,3,{111,112,113,121,122,123}))
+    assert(Matrix:ones(2,3):applyfunc(function(x) return 100*x end)==Matrix(2,3,{100,100,100,100,100,100}))
+    assert(Matrix:ones(2,2):applyfunc2(Matrix:eye(2),function(x,y) return x-2*y end)==Matrix(2,2,{-1,1,1,-1}))
+    assert(Vector{1,2,3}:binop(Vector{4,5,6},function(x,y) return 2*x-y end)==Vector{-2,-1,0})
+    assert(Vector{-1,0,90,-4}:abs()==Vector{1,0,90,4})
+    assert(Vector{-0.6,0.3}:acos()==Vector{math.acos(-0.6),math.acos(0.3)})
     print('tests passed')
 end
