@@ -771,9 +771,10 @@ end
 
 function Vector:linspace(start,stop,num,endpoint)
     num=num or 50
-    if endpoint==nil then endpoint=true end
-    local e=endpoint and num or num-1
-    local r=start+Vector:range(0,e-1)/(num-1)*(stop-start)
+    local normrange=num-1
+    if endpoint==false then normrange=normrange+1 end
+    local range=(stop-start)/normrange
+    local r=start+Vector:range(0,num-1)*range
     local step=#r>1 and r[2]-r[1] or 0
     return r,step
 end
