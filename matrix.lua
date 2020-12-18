@@ -781,6 +781,11 @@ function Vector:linspace(start,stop,num,endpoint)
     return r,step
 end
 
+function Vector:geomspace(start,stop,num,endpoint)
+    k=math.pow(stop/start,1/(num-1))
+    return start*(k^Vector:linspace(0,num-1,num,endpoint))
+end
+
 setmetatable(Vector,{__call=function(self,len,data)
     if type(len)=='table' then
         data=len
@@ -1205,5 +1210,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(not Vector{1,0,1}:all())
     assert(Vector{1,0,1}:any())
     assert(not Vector{0,0,0}:any())
+    assert(approxEq(Vector:geomspace(1,1000,4),Vector{1,10,100,1000}))
+    assert(approxEq(Vector:geomspace(1,1000,3,false),Vector{1,10,100}))
+    assert(approxEq(Vector:geomspace(1,1000,4,false),Vector{1,5.62341325,31.6227766,177.827941}))
     print('tests passed')
 end
