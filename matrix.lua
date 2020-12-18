@@ -556,7 +556,9 @@ function Matrix:__unm()
 end
 
 function Matrix:__pow(m)
-    if type(m)=='number' then
+    if type(self)=='number' then
+        return m:applyfunc(function(x) return math.pow(self,x) end)
+    elseif type(m)=='number' then
         return self:power(m)
     elseif self:sameshape{3,1} and self:sameshape(m) then
         return self:cross(m)
