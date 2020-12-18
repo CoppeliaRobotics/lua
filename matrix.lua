@@ -126,17 +126,41 @@ function Matrix:at(rowidx,colidx)
     return rowidx:applyfunc2(colidx,function(i,j) return self:get(i,j) end)
 end
 
-function Matrix:horzcat(m)
-    assert(self:rows()==m:rows(),'row count mismatch')
-    local r=self:slice(1,1,self:rows(),self:cols()+m:cols())
-    r:assign(1,1+self:cols(),m)
+function Matrix:horzcat(...)
+    local args={...}
+    if getmetatable(self)==Matrix then table.insert(args,1,self) end
+    assert(#args>0,'not enough args')
+    local self=args[1]
+    local cols=0
+    for _,arg in ipairs(args) do
+        assert(self:rows()==arg:rows(),'row count mismatch')
+        cols=cols+arg:cols()
+    end
+    local r=Matrix(self:rows(),cols)
+    local j=1
+    for _,arg in ipairs(args) do
+        r:assign(1,j,arg)
+        j=j+arg:cols()
+    end
     return r
 end
 
-function Matrix:vertcat(m)
-    assert(self:cols()==m:cols(),'column count mismatch')
-    local r=self:slice(1,1,self:rows()+m:rows(),self:cols())
-    r:assign(1+self:rows(),1,m)
+function Matrix:vertcat(...)
+    local args={...}
+    if getmetatable(self)==Matrix then table.insert(args,1,self) end
+    assert(#args>0,'not enough args')
+    local self=args[1]
+    local rows=0
+    for _,arg in ipairs(args) do
+        assert(self:cols()==arg:cols(),'column count mismatch')
+        rows=rows+arg:rows()
+    end
+    local r=Matrix(rows,self:cols())
+    local i=1
+    for _,arg in ipairs(args) do
+        r:assign(i,1,arg)
+        i=i+arg:rows()
+    end
     return r
 end
 

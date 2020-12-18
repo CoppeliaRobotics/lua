@@ -413,9 +413,9 @@ Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` a
 
 Returns binary matrix obtained by comparing (`>`) element-wise with `m` if it is a matrix, or with scalar `m`.
 
-#### `Matrix:horzcat(m)`
+#### `Matrix:horzcat(m,...)`
 
-Returns the matrix obtained by concatenating with `m` horizontally.
+Returns the matrix obtained by concatenating with `m` (and any subsequent argument) horizontally.
 
 #### `Matrix:idiv(m)`
 
@@ -631,9 +631,9 @@ Returns the trace (sum of elements on the main diagonal) of the matrix.
 
 Returns the element-wise ult (true if and only if integer m is below integer n when they are compared as unsigned integers) value.
 
-#### `Matrix:vertcat(m)`
+#### `Matrix:vertcat(m,...)`
 
-Returns the matrix obtained by concatenating with `m` vertically.
+Returns the matrix obtained by concatenating with `m` (and any subsequent argument) vertically.
 
 #### `Matrix:where(cond,x,y)`
 
