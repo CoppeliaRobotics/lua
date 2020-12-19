@@ -55,7 +55,7 @@ function Matrix:set(i,j,value)
 end
 
 function Matrix:row(i)
-    if i<1 or i>self:rows() then return nil end
+    if i<1 or i>self:rows() then return Matrix(0,0) end
     local data={}
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
@@ -67,7 +67,7 @@ function Matrix:row(i)
 end
 
 function Matrix:rowref(i)
-    if i<1 or i>self:rows() then return nil end
+    if i<1 or i>self:rows() then return Matrix(0,0) end
     local data={}
     setmetatable(data,{
         __index=function(t,j) return self:get(i,j) end,
@@ -92,7 +92,7 @@ function Matrix:setrow(i,m)
 end
 
 function Matrix:col(j)
-    if j<1 or j>self:cols() then return nil end
+    if j<1 or j>self:cols() then return Matrix(0,0) end
     local data={}
     setmetatable(data,{
         __index=function(t,i) return self:get(i,j) end,
@@ -117,8 +117,7 @@ function Matrix:setcol(j,m)
 end
 
 function Matrix:slice(fromrow,fromcol,torow,tocol)
-    assert(fromrow<=torow and fromcol<=tocol,'bad ranges')
-    local m=Matrix(1+torow-fromrow,1+tocol-fromcol)
+    local m=Matrix(math.max(0,1+torow-fromrow),math.max(0,1+tocol-fromcol))
     for i=fromrow,torow do
         for j=fromcol,tocol do
             m:set(i-fromrow+1,j-fromcol+1,self:get(i,j) or 0)
@@ -719,6 +718,7 @@ function Matrix:totable(format)
 end
 
 function Matrix:fromtable(t)
+    assert(type(t)=='table','bad type')
     if t.dims~=nil and t.data~=nil then
         assert(#t.dims==2,'only 2d grids are supported by this class')
         return Matrix(t.dims[1],t.dims[2],t.data)
@@ -728,10 +728,13 @@ function Matrix:fromtable(t)
         local data={}
         for i=1,rows do
             for j=1,cols do
+                assert(#t[i]==cols,'inconsistent number of columns in table data')
                 table.insert(data,t[i][j])
             end
         end
         return Matrix(rows,cols,{ref=data})
+    elseif #t==0 then
+        return Matrix(0,0)
     end
 end
 
@@ -776,8 +779,8 @@ function Matrix:print(elemwidth)
 end
 
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
-    assert(math.type(rows)=='integer' and rows>0,'rows must be a positive integer')
-    assert(math.type(cols)=='integer' and cols>0,'cols must be a positive integer')
+    assert(math.type(rows)=='integer' and rows>=0,'rows must be a positive integer')
+    assert(math.type(cols)=='integer' and cols>=0,'cols must be a positive integer')
     local copyonwrite=false
     local datagen,origdata=function() return 0 end,data
     if type(data)=='table' then
