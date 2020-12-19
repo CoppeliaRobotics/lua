@@ -126,6 +126,18 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     return m
 end
 
+function Matrix:droprow(i)
+    local m,n=self:rows(),self:cols()
+    assert(i>=1 and i<=m,'out of bounds')
+    return Matrix.vertcat(self:slice(1,1,i-1,n),self:slice(i+1,1,m,n))
+end
+
+function Matrix:dropcol(j)
+    local m,n=self:rows(),self:cols()
+    assert(j>=1 and j<=n,'out of bounds')
+    return Matrix.horzcat(self:slice(1,1,m,j-1),self:slice(1,j+1,m,n))
+end
+
 function Matrix:at(rowidx,colidx)
     assert(getmetatable(rowidx)==Matrix and getmetatable(colidx)==Matrix,'bad type')
     return rowidx:applyfunc2(colidx,function(i,j) return self:get(i,j) end)
@@ -497,6 +509,18 @@ function Matrix:any(f)
     return false
 end
 
+function Matrix:nonzero()
+    local r={}
+    for i=1,self:rows() do
+        for j=1,self:cols() do
+            if self:get(i,j)~=0 then
+                table.insert(r,{i,j})
+            end
+        end
+    end
+    return Matrix:fromtable(r)
+end
+
 function Matrix:where(cond,x,y)
     assert(cond:sameshape(x) and cond:sameshape(y),'shape mismatch')
     return cond:times(x)+(1-cond):times(y)
@@ -565,6 +589,33 @@ end
 function Matrix:trace()
     assert(self:rows()==self:cols(),'only defined on square matrices')
     return self:diag():sum()
+end
+
+function Matrix:det()
+    assert(self:rows()==self:cols(),'only defined on square matrices')
+    local n=self:rows()
+    if n==1 then
+        return self:get(1,1)
+    elseif n==2 then
+        return self:get(1,1)*self:get(2,2)-self:get(1,2)*self:get(2,1)
+    else
+        local z=self:eq(0)
+        local zrm,zri,j=z:sum(1):max()
+        local zcm,i,zcj=z:sum(2):max()
+        local d=0
+        if zrm>=zcm then
+            local m=self:dropcol(j)
+            for _,i in ipairs(self:col(j):nonzero():col(1):data()) do
+                d=d+self:get(i,j)*(-1)^(i+j)*m:droprow(i):det()
+            end
+        else
+            local m=self:droprow(i)
+            for _,j in ipairs(self:row(i):nonzero():col(2):data()) do
+                d=d+self:get(i,j)*(-1)^(i+j)*m:dropcol(j):det()
+            end
+        end
+        return d
+    end
 end
 
 function Matrix:__add(m)
@@ -1254,6 +1305,8 @@ if arg and #arg==1 and arg[1]=='test' then
     m:assign(1,2,m:slice(1,1,4,1))
     m:assign(1,3,m:slice(1,1,4,1))
     m:assign(1,4,m:slice(1,1,4,1))
+    assert(Matrix(3,3,{1,1,1,2,2,2,3,3,3}):droprow(2)==Matrix(2,3,{1,1,1,3,3,3}))
+    assert(Matrix(3,3,{1,1,1,2,2,2,3,3,3}):dropcol(2)==Matrix(3,2,{1,1,2,2,3,3}))
     assert(m==Matrix(4,4,{11,11,11,11,21,21,21,21,31,31,31,31,41,41,41,41}))
     function approxEq(a,b,tol)
         tol=tol or 1e-5
@@ -1290,6 +1343,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(not Vector{1,0,1}:all())
     assert(Vector{1,0,1}:any())
     assert(not Vector{0,0,0}:any())
+    assert(Matrix:fromtable(Matrix(3,3,{0,1,0,0,1,0,0,0,1}):nonzero())==Matrix(3,2,{1,2,2,2,3,3}))
+    assert(Matrix:fromtable(Vector{1,0,2}:nonzero())==Matrix(2,2,{1,1,3,1}))
     assert(approxEq(Vector:geomspace(1,1000,4),Vector{1,10,100,1000}))
     assert(approxEq(Vector:geomspace(1,1000,3,false),Vector{1,10,100}))
     assert(approxEq(Vector:geomspace(1,1000,4,false),Vector{1,5.62341325,31.6227766,177.827941}))
@@ -1307,5 +1362,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(Vector{1,2,3}:binop(Vector{4,5,6},function(x,y) return 2*x-y end)==Vector{-2,-1,0})
     assert(Vector{-1,0,90,-4}:abs()==Vector{1,0,90,4})
     assert(Vector{-0.6,0.3}:acos()==Vector{math.acos(-0.6),math.acos(0.3)})
+    assert(-24==Matrix(4,4,{1,3,0,1,0,0,3,2,2,0,3,2,1,2,1,0}):det())
+    assert(0==Matrix(4,4,{0,0,0,0,1,0,3,3,1,1,1,3,1,0,3,1}):det())
+    assert(-22==Matrix(5,5,{3,2,2,1,3,0,3,0,1,3,3,0,4,3,2,2,2,1,2,2,4,3,3,1,4}):det())
     print('tests passed')
 end

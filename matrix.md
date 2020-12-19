@@ -362,6 +362,10 @@ Returns data as a table in row-major order.
 
 Returns element-wise conversion from radians to degrees.
 
+#### `Matrix:det()`
+
+Returns the determinant of the square matrix.
+
 #### `Matrix:diag()`
 
 Returns the vector of elements on the main diagonal.
@@ -377,6 +381,14 @@ Returns the result of dividing the elements of this matrix by scalar value `m` o
 #### `Matrix:dot(m)`
 
 Returns the dot product with vector `m`.
+
+#### `Matrix:dropcol(j)`
+
+Returns a copy of the matrix without column `j`.
+
+#### `Matrix:droprow(i)`
+
+Returns a copy of the matrix without row `i`.
 
 #### `Matrix:eq(m)`
 
@@ -485,6 +497,10 @@ Returns the result of multiplying this matrix by `m`, which can be a matrix of c
 #### `Matrix:ne(m)`
 
 Returns binary matrix obtained by comparing (~=) element-wise with `m` if it is a matrix, or with scalar `m`.
+
+#### `Matrix:nonzero()`
+
+Returns a table of indices `{i,j}` of nonzero elements.
 
 #### `Matrix:norm()`
 
