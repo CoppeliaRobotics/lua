@@ -295,7 +295,7 @@ end
 function Matrix:data()
     local data={}
     setmetatable(data,{
-        __index=function(t,i) return self:get((i-1)//self:cols()+1,(i-1)%self:cols()+1) end,
+        __index=function(t,i) return self:get(i) end,
         __len=function(t) return self:rows()*self:cols() end,
     })
     return data
