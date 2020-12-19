@@ -42,14 +42,15 @@ end
 
 function Matrix:set(i,j,value)
     local offset=self:offset(i,j)
-    if not offset then return end
-    if self._copyonwrite then
-        self._copyonwrite=false
-        local d={}
-        for i,x in ipairs(self._data) do table.insert(d,x) end
-        self._data=d
+    if offset then
+        if self._copyonwrite then
+            self._copyonwrite=false
+            local d={}
+            for i,x in ipairs(self._data) do table.insert(d,x) end
+            self._data=d
+        end
+        self._data[offset]=value
     end
-    self._data[offset]=value
     return self
 end
 
