@@ -23,6 +23,11 @@ function Matrix:sameshape(m)
 end
 
 function Matrix:offset(i,j)
+    if j==nil then
+        if self._rows<1 or self._cols<1 then return end
+        local o=i
+        i,j=(i-1)//self:cols()+1,(i-1)%self:cols()+1
+    end
     if i>=1 and j>=1 and i<=self:rows() and j<=self:cols() then
         if self._t then i,j=j,i end
         return self._cols*(i-1)+j
