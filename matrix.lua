@@ -536,10 +536,25 @@ function Matrix:normalized()
     return self/self:norm()
 end
 
-function Matrix:diag()
-    local r=Matrix(math.min(self:rows(),self:cols()),1)
-    for ij=1,r:rows() do r:set(ij,1,self:get(ij,ij)) end
-    return r
+function Matrix:diag(t)
+    if t then
+        -- called as static, creates a matrix from diagonal elements
+        if getmetatable(t)==Matrix then
+            assert(t:cols()==1,'argument must be a vector')
+            return Matrix:diag(t:data())
+        elseif type(t)=='table' then
+            local r=Matrix(#t,#t)
+            for i,x in ipairs(t) do r:set(i,i,x) end
+            return r
+        else
+            error('bad argument type')
+        end
+    else
+        -- called as matrix method, returns the main diagonal
+        local r=Matrix(math.min(self:rows(),self:cols()),1)
+        for ij=1,r:rows() do r:set(ij,1,self:get(ij,ij)) end
+        return r
+    end
 end
 
 function Matrix:trace()
@@ -1138,6 +1153,9 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(Matrix:where(Vector:range(5):lt(3),Vector{10,20,30,40,50},Vector{5,4,3,2,1})==Vector{10,20,3,2,1})
     assert(Matrix:fromtable{{1,0,0,0}}:t():norm()==1)
     assert(Matrix(3,1,{3,4,0}):norm()==5)
+    assert(Matrix:diag{1,2,3}==Matrix(3,3,{1,0,0,0,2,0,0,0,3}))
+    assert(Matrix:diag(Vector{1,2,3})==Matrix(3,3,{1,0,0,0,2,0,0,0,3}))
+    assert(Vector{1,2,3}==Matrix(3,3,{1,0,0,0,2,0,0,0,3}):diag())
     assert(Matrix(3,1,{3,4,0}):dot(Matrix(3,1,{-4,3,5}))==0)
     assert(Matrix(3,1,{3,4,0}):data()[1]==3)
     assert(Matrix(3,1,{3,4,0}):data()[2]==4)

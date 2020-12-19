@@ -71,6 +71,7 @@ There are some convenience constructors for creating commonly used matrices:
 - [`Matrix:eye(n)`](#matrixeyen) creates a `n`x`n` identity matrix
 - [`Matrix:ones(m,n)`](#matrixonesrowscols) creates a `m`x`n` matrix of ones
 - [`Matrix:zeros(m,n)`](#matrixzerosrowscols) creates a `m`x`n` matrix of zeros
+- [`Matrix:diag{e1,e2,...,en}`](#matrixdiage) creates a `n`x`n` diagonal matrix with specified elements
 
 ### Basic operations
 
@@ -364,6 +365,10 @@ Returns element-wise conversion from radians to degrees.
 #### `Matrix:diag()`
 
 Returns the vector of elements on the main diagonal.
+
+#### `Matrix:diag(e)`
+
+Returns a diagonal matrix with specified elements `e` (vector or table) on the main diagonal.
 
 #### `Matrix:div(m)`
 
