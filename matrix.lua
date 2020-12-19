@@ -56,14 +56,9 @@ end
 
 function Matrix:row(i)
     if i<1 or i>self:rows() then return Matrix(0,0) end
-    local data={}
-    setmetatable(data,{
-        __index=function(t,j) return self:get(i,j) end,
-        __len=function(t) return self:cols() end,
-        __newindex=function(t,j,v) self:set(i,j,v) end,
-    })
-    self._copyonwrite=true
-    return Matrix(1,self:cols(),{ref=data,copyonwrite=true})
+    local r=Matrix(1,self:cols())
+    for j=1,self:cols() do r:set(1,j,self:get(i,j)) end
+    return r
 end
 
 function Matrix:rowref(i)
@@ -93,13 +88,9 @@ end
 
 function Matrix:col(j)
     if j<1 or j>self:cols() then return Matrix(0,0) end
-    local data={}
-    setmetatable(data,{
-        __index=function(t,i) return self:get(i,j) end,
-        __len=function(t) return self:rows() end,
-    })
-    self._copyonwrite=true
-    return Matrix(self:rows(),1,{ref=data,copyonwrite=true})
+    local r=Matrix(self:rows(),1)
+    for i=1,self:rows() do r:set(i,1,self:get(i,j)) end
+    return r
 end
 
 function Matrix:setcol(j,m)
@@ -1239,6 +1230,11 @@ if arg and #arg==1 and arg[1]=='test' then
     i:set(2,2,9)
     i:set(3,3,9)
     assert(i==Matrix(3,3,{9,1,1,2,9,2,3,3,9}))
+    local s=Matrix(3,3,{1,2,3,4,5,6,7,8,9})
+    local temp=s:row(1)
+    s:setrow(1,s:row(2))
+    s:setrow(2,temp)
+    assert(s==Matrix(3,3,{4,5,6,1,2,3,7,8,9}))
     local m1=Matrix(2,2,{1,0,0,1})
     local m2=m1
     m2:set(1,1,6)
