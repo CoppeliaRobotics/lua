@@ -418,6 +418,10 @@ Returns a scalar (if `dim` is `nil`), a row vector (if `dim` is 1) or a column v
 
 Returns a matrix with data from the 2d table `t`.
 
+#### `Matrix:gauss(jordan)`
+
+Returns the matrix obtained by performing Gaussian elimination (or Gauss-Jordan elimination if `jordan` is not nil) on the matrix.
+
 #### `Matrix:ge(m)`
 
 Returns binary matrix obtained by comparing (`>=`) element-wise with `m` if it is a matrix, or with scalar `m`.
@@ -437,6 +441,10 @@ Returns the matrix obtained by concatenating with `m` (and any subsequent argume
 #### `Matrix:idiv(m)`
 
 Returns the result of dividing the elements of this matrix by scalar value `m` or element-wise with matrix of same size `m`, using integer division (`//`).
+
+#### `Matrix:inv()`
+
+Returns the matrix inverted using the Gauss-Jordan elimination algorithm.
 
 #### `Matrix:kron(m)`
 

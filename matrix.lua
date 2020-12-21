@@ -582,31 +582,82 @@ function Matrix:trace()
     return self:diag():sum()
 end
 
+function Matrix:gauss(jordan)
+    assert(self:cols()>=self:rows(),'number of columns must be greater or equal to the number of rows')
+    local n=self:rows()
+    local r=self:copy()
+    local det=1
+    local function swaprows(i1,i2)
+        if i1==i2 then return end
+        r1,r2=r:row(i1),r:row(i2)
+        r:setrow(i1,r2)
+        r:setrow(i2,r1)
+        det=-det
+    end
+    local function multrow(i,k)
+        r:setrow(i,k*r:row(i))
+        det=det/k
+    end
+    local function addrow(i1,k,i2)
+        r:setrow(i1,r:row(i1)+k*r:row(i2))
+    end
+    for j=1,r:rows() do
+        local pivotvalue,pivotindex=r:get(j,j),j
+        for i=j,n do
+            if math.abs(r:get(i,j))>math.abs(pivotvalue) then
+                pivotvalue,pivotindex=r:get(i,j),i
+            end
+        end
+        if pivotvalue~=0 then
+            if math.abs(pivotvalue)>math.abs(r:get(j,j)) then swaprows(j,pivotindex) end
+            multrow(j,1/r:get(j,j))
+            for i=j+1,r:rows() do
+                if r:get(i,j)~=0 then
+                    addrow(i,-r:get(i,j)/r:get(j,j),j)
+                end
+            end
+        end
+    end
+    if jordan then
+        for j=r:rows(),2,-1 do
+            for i=j-1,1,-1 do
+                addrow(i,-r:get(i,j),j)
+            end
+        end
+    end
+    det=det*r:diag():prod() -- in case some element on the diagonal is zero
+    return r,det
+end
+
 function Matrix:det()
     assert(self:rows()==self:cols(),'only defined on square matrices')
     local n=self:rows()
     if n==1 then
         return self:get(1,1)
     elseif n==2 then
-        return self:get(1,1)*self:get(2,2)-self:get(1,2)*self:get(2,1)
+        local a,b,c,d=table.unpack(self:data())
+        return a*d-b*c
+    elseif n==3 then
+        local a,b,c,d,e,f,g,h,i=table.unpack(self:data())
+        return a*e*i+b*f*g+c*d*h-c*e*g-a*f*h-b*d*i
+    elseif false then -- very slow method
+        local d,r1=0,self:slice(2,1,n,n)
+        for j=1,n do d=d+(-1)^(1+j)*self:get(1,j)*r1:dropcol(j):det() end
+        return d
     else
-        local z=self:eq(0)
-        local zrm,zri,j=z:sum(1):max()
-        local zcm,i,zcj=z:sum(2):max()
-        local d=0
-        if zrm>=zcm then
-            local m=self:dropcol(j)
-            for _,i in ipairs(self:col(j):nonzero():col(1):data()) do
-                d=d+self:get(i,j)*(-1)^(i+j)*m:droprow(i):det()
-            end
-        else
-            local m=self:droprow(i)
-            for _,j in ipairs(self:row(i):nonzero():col(2):data()) do
-                d=d+self:get(i,j)*(-1)^(i+j)*m:dropcol(j):det()
-            end
-        end
+        local _,d=self:gauss()
         return d
     end
+end
+
+function Matrix:inv()
+    assert(self:rows()==self:cols(),'must be square')
+    local n=self:rows()
+    local w,d=Matrix.horzcat(self,Matrix:eye(n)):gauss(true)
+    if math.abs(d)<1e-11 then
+        error('matrix is not invertible')
+    end
+    return w:slice(1,1+n,n,n+n)
 end
 
 function Matrix:__add(m)
@@ -1361,5 +1412,17 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(-24==Matrix(4,4,{1,3,0,1,0,0,3,2,2,0,3,2,1,2,1,0}):det())
     assert(0==Matrix(4,4,{0,0,0,0,1,0,3,3,1,1,1,3,1,0,3,1}):det())
     assert(-22==Matrix(5,5,{3,2,2,1,3,0,3,0,1,3,3,0,4,3,2,2,2,1,2,2,4,3,3,1,4}):det())
+    for n,c in ipairs{0,1000,1000,500,200,100,30,10} do
+        for i=1,c do
+            local m=Matrix(n,n):random(-10,10)
+            g,d=m:gauss()
+            --assert(approxEq(m:det(),d)) -- meaningful only if using slow :det implementation
+            if math.abs(d)>1e-5 then
+                i=m:inv()
+                assert(approxEq(i*m,Matrix:eye(n)))
+                assert(approxEq(m*i,Matrix:eye(n)))
+            end
+        end
+    end
     print('tests passed')
 end
