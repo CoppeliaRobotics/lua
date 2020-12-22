@@ -434,6 +434,10 @@ Returns the element's value at row `i` column `j`. Returns `nil` if `i` or `j` a
 
 Returns binary matrix obtained by comparing (`>`) element-wise with `m` if it is a matrix, or with scalar `m`.
 
+#### `Matrix:hom()`
+
+Returns the matrix obtained by adding a row or a column of ones if one of the dimensions is 3.
+
 #### `Matrix:horzcat(m,...)`
 
 Returns the matrix obtained by concatenating with `m` (and any subsequent argument) horizontally.

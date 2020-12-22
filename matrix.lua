@@ -548,6 +548,16 @@ function Matrix:kron(m)
     return r
 end
 
+function Matrix:hom()
+    if self:cols()==3 then
+        return self:horzcat(Matrix:ones(self:rows(),1))
+    elseif self:rows()==3 then
+        return self:vertcat(Matrix:ones(1,self:cols()))
+    else
+        error('invalid shape')
+    end
+end
+
 function Matrix:norm()
     return math.sqrt(self:dot(self))
 end
