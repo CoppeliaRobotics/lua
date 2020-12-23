@@ -37,6 +37,7 @@ function sysCall_sensing()
 end
 
 function sysCall_cleanup()
+    sim.handleChildScripts(sim.syscb_cleanup)
     backCompatibility.handle(8)
     sim.resetProximitySensor(sim.handle_all_except_explicit)
     sim.resetVisionSensor(sim.handle_all_except_explicit)

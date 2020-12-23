@@ -387,8 +387,6 @@ function _S.graph.getDefaultInfoForNonExistingFields(info)
     if not info['updateFreq'] then
         info['updateFreq']=2 -- 0=100%, 1=50%, 2=25%, 3=10%, 4=1% of time
     end
-    
-    
 end
 
 function _S.graph.readInfo()

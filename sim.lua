@@ -816,7 +816,7 @@ function sim.copyTable(...)
 end
 
 function sim.getPathInterpolatedConfig(...)
-    local path,times,t,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='float'},{type='table',default={type='linear',forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+    local path,times,t,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='float'},{type='table',default={type='linear',strength=1.0,forceOpen=false},nullable=true},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
 
     local confCnt=#times
     local dof=math.floor(#path/confCnt)
@@ -843,7 +843,7 @@ function sim.getPathInterpolatedConfig(...)
             hi=i
             ll=times[li]
             hl=times[hi]
-            if hl>=t then
+            if hl>t then -- >= gives problems with overlapping points
                 break
             end
         end
@@ -852,6 +852,13 @@ function sim.getPathInterpolatedConfig(...)
         if t>1 then t=1 end
     end
     if method and method.type=='quadraticBezier' then
+        local w=1
+        if method.strength then
+            w=method.strength
+        end
+        if w<0.05 then
+            w=0.05
+        end
         local closed=true
         for i=1,dof,1 do
             if (path[i]~=path[(confCnt-1)*dof+i]) then
@@ -867,30 +874,38 @@ function sim.getPathInterpolatedConfig(...)
             if li==1 and not closed then
                 retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
             else
-                i0=li-1
-                i1=li
-                i2=hi
-                if li==1 then
-                    i0=confCnt-1
+                if t<0.5*w then
+                    i0=li-1
+                    i1=li
+                    i2=hi
+                    if li==1 then
+                        i0=confCnt-1
+                    end
+                    local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),1-0.25*w+t*0.5,types)
+                    local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),0.25*w+t*0.5,types)
+                    retVal=_S.linearInterpolate(a,b,0.5+t/w,types)
+                else
+                    retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
                 end
-                local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),0.75+t*0.5,types)
-                local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),0.25+t*0.5,types)
-                retVal=_S.linearInterpolate(a,b,0.5+t,types)
             end
         else
             if hi==confCnt and not closed then
                 retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
             else
-                i0=li
-                i1=hi
-                i2=hi+1
-                if hi==confCnt then
-                    i2=2
+                if t>(1-0.5*w) then
+                    i0=li
+                    i1=hi
+                    i2=hi+1
+                    if hi==confCnt then
+                        i2=2
+                    end
+                    t=t-(1-0.5*w)
+                    local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),1-0.5*w+t*0.5,types)
+                    local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),t*0.5,types)
+                    retVal=_S.linearInterpolate(a,b,t/w,types)
+                else
+                    retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
                 end
-                t=t-0.5
-                local a=_S.linearInterpolate(_S.getConfig(path,dof,i0),_S.getConfig(path,dof,i1),0.5+t*0.5,types)
-                local b=_S.linearInterpolate(_S.getConfig(path,dof,i1),_S.getConfig(path,dof,i2),t*0.5,types)
-                retVal=_S.linearInterpolate(a,b,t,types)
             end
         end
     end
@@ -900,8 +915,118 @@ function sim.getPathInterpolatedConfig(...)
     return retVal
 end
 
+--[[
+now implemented in c++
+function sim.generateShapeFromPath(...)
+    local ppath,section,zvect,closedPath=checkargs({{type='table',item_type='float',min_size=6},{type='table',item_type='float',min_size=4},{type='table',item_type='float',size=3,default={0,0,1},nullable=true},{type='bool',default=false}},...)
+    local confCnt=math.floor(#ppath/3)
+    local elementCount=confCnt
+    local secVertCnt=math.floor(#section/2)
+
+    local mppath=Matrix(confCnt,3,ppath)
+    
+    local zvect=Vector3(zvect)
+
+    local path={}
+    for i=1,mppath:rows(),1 do
+        local p0,p1,p2
+        if i~=1 then
+            p0=Vector3(mppath[i-1])
+        else
+            if closedPath then
+                p0=Vector3(mppath[mppath:rows()-1])
+            end
+        end
+        p1=Vector3(mppath[i+0])
+        if i~=mppath:rows() then
+            p2=Vector3(mppath[i+1])
+        else
+            if closedPath then
+                p2=Vector3(mppath[2])
+            end
+        end
+        local vy
+        if p0 and p2 then
+            vy=(p1-p0)+(p2-p1)
+        else
+            if i==1 then
+                vy=(p2-p1)
+            else
+                vy=(p1-p0)
+            end
+        end
+        vy=vy/vy:norm()
+        local vx=vy:cross(zvect)
+        vx=vx/vx:norm()
+        local m=vx
+        m=m:horzcat(vy)
+        m=m:horzcat(vx:cross(vy))
+        m=Matrix4x4:fromrotation(m)
+        m[1][4]=p1[1]
+        m[2][4]=p1[2]
+        m[3][4]=p1[3]
+        local p=Matrix4x4:topose(m)
+        path[#path+1]=p
+    end
+
+    local sectionClosed=(section[1]==section[#section-1] and section[2]==section[#section-0])
+    if sectionClosed then
+        secVertCnt=secVertCnt-1
+    end
+    
+    local vertices={}
+    local indices={}
+    local c0=path[1]
+    local m0=Matrix4x4:frompose(c0)
+    for i=0,secVertCnt-1,1 do
+        local v=Vector3:hom({section[i*2+1],0,section[i*2+2]})
+        v=m0*v
+        vertices[#vertices+1]=v[1]
+        vertices[#vertices+1]=v[2]
+        vertices[#vertices+1]=v[3]
+    end
+
+    local previousVerticesOffset=0
+    for ec=2,elementCount,1 do
+        local c=path[ec]
+        local m=Matrix4x4:frompose(c)
+        local forwOff=secVertCnt
+        for i=0,secVertCnt-1,1 do
+            local v=Vector3:hom({section[i*2+1],0,section[i*2+2]})
+            if closedPath and ec==elementCount then
+                forwOff=-previousVerticesOffset
+            else
+                v=m*v
+                vertices[#vertices+1]=v[1]
+                vertices[#vertices+1]=v[2]
+                vertices[#vertices+1]=v[3]
+            end
+            if i~=secVertCnt-1 then
+                indices[#indices+1]=previousVerticesOffset+0+i
+                indices[#indices+1]=previousVerticesOffset+forwOff+i
+                indices[#indices+1]=previousVerticesOffset+1+i
+                indices[#indices+1]=previousVerticesOffset+1+i
+                indices[#indices+1]=previousVerticesOffset+forwOff+i
+                indices[#indices+1]=previousVerticesOffset+forwOff+i+1
+            else
+                if sectionClosed then
+                    indices[#indices+1]=previousVerticesOffset+0+i
+                    indices[#indices+1]=previousVerticesOffset+forwOff+i
+                    indices[#indices+1]=previousVerticesOffset+0
+                    indices[#indices+1]=previousVerticesOffset+0
+                    indices[#indices+1]=previousVerticesOffset+forwOff+i
+                    indices[#indices+1]=previousVerticesOffset+forwOff+0
+                end
+            end
+        end
+        previousVerticesOffset=previousVerticesOffset+secVertCnt
+    end
+    return sim.createMeshShape(0,0,vertices,indices)
+end
+--]]
+
 function sim.resamplePath(...)
-    local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int'},{type='table',default={type='linear',forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+    local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int'},{type='table',default={type='linear',strength=1.0,forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
 
     local confCnt=#pathLengths
     local dof=math.floor(#path/confCnt)
@@ -971,13 +1096,13 @@ end
 
 function sim.getPathLengths(...)
     local path,dof,cb=checkargs({{type='table',item_type='float',min_size=2},{type='int'},{type='func',default=NIL,nullable=true}},...)
-    local confCnt=#path/dof    
+    local confCnt=math.floor(#path/dof)    
     if dof<1 or (confCnt<2) then
         error("Bad table size.")
     end
     local distancesAlongPath={0}
     local totDist=0
-    local pM=Matrix(#path/dof,dof,path)
+    local pM=Matrix(confCnt,dof,path)
     for i=1,pM:rows()-1,1 do
         local d=ccc
         if cb then
@@ -1491,12 +1616,11 @@ function _S.executeAfterLuaStateInit()
 
     sim.registerScriptFunction('sim.copyTable@sim',"table copy=sim.copyTable(table original)")
     
-    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table config=sim.getPathInterpolatedConfig(table path,table pathLengths,float t,table method={type='linear',forceOpen=false},table types=nil)")
-    sim.registerScriptFunction('sim.resamplePath@sim',"table path=sim.resamplePath(table path,table pathLengths,int finalConfigCnt,table method={type='linear',forceOpen=false},table types=nil)")
+    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table config=sim.getPathInterpolatedConfig(table path,table pathLengths,float t,table method={type='linear',strength=1.0,forceOpen=false},table types=nil)")
+    sim.registerScriptFunction('sim.resamplePath@sim',"table path=sim.resamplePath(table path,table pathLengths,int finalConfigCnt,table method={type='linear',strength=1.0,forceOpen=false},table types=nil)")
     sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,float totalLength=sim.getPathLengths(table path,int dof,function distCallback=nil)')
-    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table configA,table configB,table metric=nil,table types=nil)')
+    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table configA,table configB,table metric={1,1,1,..},table types={0,0,0,..})')
     sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table pathLengths,\ntable minMaxVel,table minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
-
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
     
