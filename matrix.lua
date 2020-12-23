@@ -297,6 +297,14 @@ end
 
 function Matrix:data()
     local data={}
+    for i=1,self:count() do
+        table.insert(data,self:get(i))
+    end
+    return data
+end
+
+function Matrix:dataref()
+    local data={}
     setmetatable(data,{
         __index=function(t,i) return self:get(i) end,
         __len=function(t) return self:rows()*self:cols() end,

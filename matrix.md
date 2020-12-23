@@ -358,6 +358,10 @@ Returns the cross product with 3d vectors `m`.
 
 Returns data as a table in row-major order.
 
+#### `Matrix:dataref()`
+
+Returns reference to data as a table in row-major order.
+
 #### `Matrix:deg()`
 
 Returns element-wise conversion from radians to degrees.
