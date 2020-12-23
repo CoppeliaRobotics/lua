@@ -557,10 +557,16 @@ function Matrix:kron(m)
 end
 
 function Matrix:hom()
-    if self:cols()==3 then
-        return self:horzcat(Matrix:ones(self:rows(),1))
-    elseif self:rows()==3 then
+    if self:rows()==3 then
         return self:vertcat(Matrix:ones(1,self:cols()))
+    else
+        error('invalid shape')
+    end
+end
+
+function Matrix:nonhom()
+    if self:rows()==4 then
+        return self:slice(1,1,3,self:cols()):applyfuncidx(function(i,j,x) return x/self:get(4,j) end)
     else
         error('invalid shape')
     end

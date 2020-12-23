@@ -440,7 +440,7 @@ Returns binary matrix obtained by comparing (`>`) element-wise with `m` if it is
 
 #### `Matrix:hom()`
 
-Returns the matrix obtained by adding a row or a column of ones if one of the dimensions is 3.
+Returns the matrix obtained by adding a row of ones if number of rows is 3.
 
 #### `Matrix:horzcat(m,...)`
 
@@ -513,6 +513,10 @@ Returns the result of multiplying this matrix by `m`, which can be a matrix of c
 #### `Matrix:ne(m)`
 
 Returns binary matrix obtained by comparing (~=) element-wise with `m` if it is a matrix, or with scalar `m`.
+
+#### `Matrix:nonhom()`
+
+Returns the matrix obtained by dividing each column by its fourth element, and dropping last row of ones (number of rows must be 4).
 
 #### `Matrix:nonzero()`
 
