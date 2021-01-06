@@ -40,14 +40,31 @@ function checkarg.table(v,t)
             return false, 'must be a table of elements of type '..t.item_type
         end
     end
-    if t.size and #v~=t.size then
+    local minsize,maxsize=0,1/0
+    if type(t.size)=='string' and t.size~='' and t.size~='*' then
+        i,j=t.size:find('%.%.')
+        if i then
+            minsize,maxsize=t.size:sub(1,i),t.size:sub(j+1)
+            minsize=tonumber(minsize)
+            maxsize=maxsize=='*' and 1/0 or tonumber(maxsize)
+        else
+            minsize=tonumber(t.size)
+            maxsize=minsize
+            if math.type(minsize)~='integer' then
+                error('incorrect value for size attribute')
+            end
+        end
+    elseif math.type(t.size)=='integer' then
+        minsize,maxsize=t.size,t.size
+    elseif t.size then
+        error('incorrect value for "size" attribute')
+    end
+    if minsize==maxsize and #v~=maxsize then
         return false, 'must have exactly '..t.size..' elements'
-    end
-    if t.min_size and #v<t.min_size then
-        return false, 'must have at least '..t.min_size..' elements'
-    end
-    if t.max_size and #v>t.max_size then
-        return false, 'must have at most '..t.max_size..' elements'
+    elseif #v<minsize then
+        return false, 'must have at least '..minsize..' elements'
+    elseif #v>maxsize then
+        return false, 'must have at most '..maxsize..' elements'
     end
     return true, nil
 end
@@ -146,7 +163,7 @@ if arg and #arg==1 and arg[1]=='test' then
     end
 
     function g(x)
-        checkargs({{type='table',item_type='string',min_size=3}},x)
+        checkargs({{type='table',item_type='string',size='3..*'}},x)
     end
 
     function h(...)
