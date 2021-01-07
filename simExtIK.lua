@@ -21,7 +21,7 @@ function _S.simIKLoopThroughAltConfigSolutions(ikEnvironment,jointHandles,desire
 end
 
 function simIK.getAlternateConfigs(...)
-    local ikEnvironment,jointHandles,lowLimits,ranges=checkargs({{type='int'},{type='table',min_size=1,item_type='int'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local ikEnvironment,jointHandles,lowLimits,ranges=checkargs({{type='int'},{type='table',size='1..*',item_type='int'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
     local dof=#jointHandles
     if (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
         error("Bad table size.")
@@ -312,7 +312,7 @@ function simIK.eraseEnvironment(...)
 end
 
 function simIK.getConfigForTipPose(...)
-    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',min_size=1,item_type='int',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',min_size=1,item_type='float',default=NIL,nullable=true}},...)
+    local ikEnv,ikGroup,joints,thresholdDist,maxTime,metric,callback,auxData,jointOptions,lowLimits,ranges=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='float',default=0.1},{type='float',default=0.5},{type='table',size=4,item_type='float',default={1,1,1,0.1},nullable=true},{type='func',default=NIL,nullable=true},{type='any',default=NIL,nullable=true},{type='table',size='1..*',item_type='int',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',size='1..*',item_type='float',default=NIL,nullable=true}},...)
     local dof=#joints
 
     if (jointOptions and dof~=#jointOptions) or (lowLimits and dof~=#lowLimits) or (ranges and dof~=#ranges) then
@@ -355,7 +355,7 @@ function simIK.getConfigForTipPose(...)
 end
 
 function simIK.generatePath(...)
-    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',min_size=1,item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
+    local ikEnv,ikGroup,ikJoints,tip,ptCnt,callback,auxData=checkargs({{type='int'},{type='int'},{type='table',size='1..*',item_type='int'},{type='int'},{type='int'},{type='func',default=NIL,nullable=true},{type='any',default=NIL}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
 

@@ -182,7 +182,7 @@ end
 --@arg string filename The filename (including extension) of the CAD data
 --@arg table shapeHandles The handles of the shapes to export
 function simAssimp.exportShapesDlg(...)
-    local filename,shapeHandles=checkargs({{type='string'},{type='table',min_size=1,item_type='int'}},...)
+    local filename,shapeHandles=checkargs({{type='string'},{type='table',size='1..*',item_type='int'}},...)
     
     configUiData={}
     function configUiData.onExport(ui,id,newVal)

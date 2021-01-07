@@ -278,7 +278,7 @@ function getAsString(...)
 end
 
 function sim.displayDialog(...)
-    local title,mainTxt,style,modal,initTxt=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true}},...)
+    local title,mainTxt,style,modal,initTxt,d1,d2,d3=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true}},...)
     
     if sim.getBoolParameter(sim_boolparam_headless) then
         return -1
@@ -753,7 +753,7 @@ function sim.moveToConfig(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    local path,pathLengths,minMaxVel,minMaxAccel,trajPtSamples,boundaryCondition,timeout=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int',default=1000},{type='string',default='not-a-knot'},{type='float',default=5}},...)
+    local path,pathLengths,minMaxVel,minMaxAccel,trajPtSamples,boundaryCondition,timeout=checkargs({{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='int',default=1000},{type='string',default='not-a-knot'},{type='float',default=5}},...)
 
     local confCnt=#pathLengths
     local dof=math.floor(#path/confCnt)
@@ -816,7 +816,7 @@ function sim.copyTable(...)
 end
 
 function sim.getPathInterpolatedConfig(...)
-    local path,times,t,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='float'},{type='table',default={type='linear',strength=1.0,forceOpen=false},nullable=true},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+    local path,times,t,method,types=checkargs({{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='float'},{type='table',default={type='linear',strength=1.0,forceOpen=false},nullable=true},{type='table',item_type='int',size='1..*',default=NIL,nullable=true}},...)
 
     local confCnt=#times
     local dof=math.floor(#path/confCnt)
@@ -835,8 +835,8 @@ function sim.getPathInterpolatedConfig(...)
     local li=1
     local hi=2
     if t<0 then t=0 end
-    if confCnt>2 then
-        if t>times[#times] then t=times[#times] end
+--    if confCnt>2 then
+        if t>=times[#times] then t=times[#times]-0.00000001 end
         local ll,hl
         for i=2,#times,1 do
             li=i-1
@@ -848,9 +848,9 @@ function sim.getPathInterpolatedConfig(...)
             end
         end
         t=(t-ll)/(hl-ll)
-    else
-        if t>1 then t=1 end
-    end
+--    else
+--        if t>1 then t=1 end
+--    end
     if method and method.type=='quadraticBezier' then
         local w=1
         if method.strength then
@@ -918,7 +918,7 @@ end
 --[[
 now implemented in c++
 function sim.generateShapeFromPath(...)
-    local ppath,section,zvect,closedPath=checkargs({{type='table',item_type='float',min_size=6},{type='table',item_type='float',min_size=4},{type='table',item_type='float',size=3,default={0,0,1},nullable=true},{type='bool',default=false}},...)
+    local ppath,section,zvect,closedPath=checkargs({{type='table',item_type='float',size='6..*'},{type='table',item_type='float',size='4..*'},{type='table',item_type='float',size=3,default={0,0,1},nullable=true},{type='bool',default=false}},...)
     local confCnt=math.floor(#ppath/3)
     local elementCount=confCnt
     local secVertCnt=math.floor(#section/2)
@@ -1026,7 +1026,7 @@ end
 --]]
 
 function sim.resamplePath(...)
-    local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',min_size=2},{type='table',item_type='float',min_size=2},{type='int'},{type='table',default={type='linear',strength=1.0,forceOpen=false}},{type='table',item_type='int',min_size=1,default=NIL,nullable=true}},...)
+    local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='int'},{type='table',default={type='linear',strength=1.0,forceOpen=false}},{type='table',item_type='int',size='1..*',default=NIL,nullable=true}},...)
 
     local confCnt=#pathLengths
     local dof=math.floor(#path/confCnt)
@@ -1046,7 +1046,7 @@ function sim.resamplePath(...)
 end
 
 function sim.getConfigDistance(...)
-    local confA,confB,metric,types=checkargs({{type='table',item_type='float',min_size=1},{type='table',item_type='float',min_size=1},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
+    local confA,confB,metric,types=checkargs({{type='table',item_type='float',size='1..*'},{type='table',item_type='float',size='1..*'},{type='table',item_type='float',default=NIL,nullable=true},{type='table',item_type='int',default=NIL,nullable=true}},...)
     if (#confA~=#confB) or (metric and #confA~=#metric) or (types and #confA~=#types) then
         error("Bad table size.")
     end
@@ -1095,7 +1095,7 @@ function _S.getConfigDistance(confA,confB,metric,types)
 end
 
 function sim.getPathLengths(...)
-    local path,dof,cb=checkargs({{type='table',item_type='float',min_size=2},{type='int'},{type='func',default=NIL,nullable=true}},...)
+    local path,dof,cb=checkargs({{type='table',item_type='float',size='2..*'},{type='int'},{type='func',default=NIL,nullable=true}},...)
     local confCnt=math.floor(#path/dof)    
     if dof<1 or (confCnt<2) then
         error("Bad table size.")
@@ -1137,7 +1137,7 @@ function sim.changeEntityColor(...)
 end
 
 function sim.restoreEntityColor(...)
-    local colorData=checkargs({{type='table'},min_size=1},...)
+    local colorData=checkargs({{type='table'},size='1..*'},...)
     for i=1,#colorData,1 do
         if sim.isHandleValid(colorData[i].handle,sim.appobj_object_type)==1 then
             sim.setShapeColor(colorData[i].handle,'@compound',colorData[i].comp,colorData[i].data)
@@ -1284,7 +1284,7 @@ end
 function sim.rmlMoveToJointPositions(...)
     -- For backward compatibility (02.10.2020)
     
-    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',min_size=1,item_type='int'},{type='int'},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float',nullable=true},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float'},{type='table',min_size=1,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',min_size=1,default=NIL,nullable=true}},...)
+    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',size='1..*',item_type='int'},{type='int'},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size='1..*',default=NIL,nullable=true}},...)
     local dof=#jhandles
     
     if dof<1 or (currentVel and dof~=#currentVel) or (currentAccel and dof~=#currentAccel) or dof~=#maxVel or dof~=#maxAccel or dof~=#maxJerk or dof~=#targetPos or (targetVel and dof~=#targetVel) or (direction and dof~=#direction) then
@@ -1597,9 +1597,9 @@ function _S.executeAfterLuaStateInit()
     exit=sim.quitSimulator
     sim.registerScriptFunction('quit@sim','quit()')
     sim.registerScriptFunction('exit@sim','exit()')
-    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table vars=nil)')
-    sim.registerScriptFunction('sim.getUserVariables@sim','table variables=sim.getUserVariables()')
-    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table tags=sim.getMatchingPersistentDataTags(string pattern)')
+    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table[] vars=nil)')
+    sim.registerScriptFunction('sim.getUserVariables@sim','table[] variables=sim.getUserVariables()')
+    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table[] tags=sim.getMatchingPersistentDataTags(string pattern)')
 
     sim.registerScriptFunction('sim.displayDialog@sim','int dlgHandle=sim.displayDialog(string title,string mainText,int style,\nboolean modal,string initTxt)')
     sim.registerScriptFunction('sim.getDialogResult@sim','int result=sim.getDialogResult(int dlgHandle)')
@@ -1607,20 +1607,20 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.endDialog@sim','int result=sim.endDialog(int dlgHandle)')
     sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','float alphaAngle,float betaAngle,float gammaAngle=sim.yawPitchRollToAlphaBetaGamma(\nfloat yawAngle,float pitchAngle,float rollAngle)')
     sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','float yawAngle,float pitchAngle,float rollAngle=sim.alphaBetaGammaToYawPitchRoll(\nfloat alphaAngle,float betaAngle,float gammaAngle)')
-    sim.registerScriptFunction('sim.getAlternateConfigs@sim','table configs=sim.getAlternateConfigs(table jointHandles,\ntable inputConfig,int tipHandle=-1,table lowLimits=nil,table ranges=nil)')
-    sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(table handles)')
+    sim.registerScriptFunction('sim.getAlternateConfigs@sim','table[] configs=sim.getAlternateConfigs(table[] jointHandles,\ntable inputConfig,int tipHandle=-1,table[] lowLimits=nil,table[] ranges=nil)')
+    sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(table[] handles)')
     
-    sim.registerScriptFunction('sim.moveToPose@sim','table_12 endMatrix,float timeLeft=sim.moveToPose(int flags,table_12 currentMatrix,\ntable maxVel,table maxAccel,table maxJerk,table_12 targetMatrix,\nfunction callback,auxData=nil,table_4 metric=nil,float timeStep=0)')
-    sim.registerScriptFunction('sim.moveToConfig@sim','table endPos,table endVel,table endAccel,float timeLeft=sim.moveToConfig(int flags,\ntable currentPos,table currentVel,table currentAccel,table maxVel,table maxAccel,\ntable maxJerk,table targetPos,table targetVel,function callback,auxData=nil,table cyclicJoints=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToPose@sim','table_12 endMatrix,float timeLeft=sim.moveToPose(int flags,table_12 currentMatrix,\ntable maxVel,table[] maxAccel,table[] maxJerk,table_12 targetMatrix,\nfunction callback,auxData=nil,table_4 metric=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToConfig@sim','table[] endPos,table[] endVel,table[] endAccel,float timeLeft=sim.moveToConfig(int flags,\ntable currentPos,table[] currentVel,table[] currentAccel,table[] maxVel,table[] maxAccel,\ntable maxJerk,table[] targetPos,table[] targetVel,function callback,auxData=nil,table[] cyclicJoints=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
-    sim.registerScriptFunction('sim.copyTable@sim',"table copy=sim.copyTable(table original)")
+    sim.registerScriptFunction('sim.copyTable@sim',"table[] copy=sim.copyTable(table[] original)")
     
-    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table config=sim.getPathInterpolatedConfig(table path,table pathLengths,float t,table method={type='linear',strength=1.0,forceOpen=false},table types=nil)")
-    sim.registerScriptFunction('sim.resamplePath@sim',"table path=sim.resamplePath(table path,table pathLengths,int finalConfigCnt,table method={type='linear',strength=1.0,forceOpen=false},table types=nil)")
-    sim.registerScriptFunction('sim.getPathLengths@sim','table pathLengths,float totalLength=sim.getPathLengths(table path,int dof,function distCallback=nil)')
-    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table configA,table configB,table metric={1,1,1,..},table types={0,0,0,..})')
-    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table path,table times=sim.generateTimeOptimalTrajectory(table path,table pathLengths,\ntable minMaxVel,table minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
+    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table[] config=sim.getPathInterpolatedConfig(table[] path,table[] pathLengths,float t,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
+    sim.registerScriptFunction('sim.resamplePath@sim',"table[] path=sim.resamplePath(table[] path,table[] pathLengths,int finalConfigCnt,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
+    sim.registerScriptFunction('sim.getPathLengths@sim','table[] pathLengths,float totalLength=sim.getPathLengths(table[] path,int dof,function distCallback=nil)')
+    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table[] configA,table[] configB,table[] metric={1,1,1,..},table[] types={0,0,0,..})')
+    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table[] path,table[] times=sim.generateTimeOptimalTrajectory(table[] path,table[] pathLengths,\ntable minMaxVel,table[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
     
@@ -1630,8 +1630,8 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.rmlMoveToJointPositions@sim',"Deprecated. Use 'sim.moveToConfig' instead")
     sim.registerScriptFunction('sim.rmlMoveToPosition@sim',"Deprecated. Use 'sim.moveToPose' instead")
     
-    sim.registerScriptFunction('sim.changeEntityColor@sim','table originalColorData=sim.changeEntityColor(int entityHandle,table_3 newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
-    sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table originalColorData)')
+    sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table_3 newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
+    sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do

@@ -1,96 +1,73 @@
---[[
 function sysCall_init()
-    pathIsClosed=true
-    handles={}
-    for i=0,5,1 do
-        handles[1+i]=sim.getObjectHandle('d'..i)
-    end
-    if pathIsClosed then
-        handles[#handles+1]=handles[1]
-    end
-    model=sim.getObjectHandle(sim.handle_self)
-end
-
-function sysCall_actuation()
-    if not bla then
-        if shape then
-            sim.removeObject(shape)
-        end
-        shape=nil
-    path={}
-    for i=1,#handles,1 do
-        local p=sim.getObjectPosition(handles[i],-1)
-        path[#path+1]=p[1]
-        path[#path+1]=p[2]
-        path[#path+1]=p[3]
-    end
-    
-    drawPath(true,path)
-    local interpolatedPath={}
-   
-    local lengths,totL=sim.getPathLengths(path,3)
-    
-    local ptCnt=100
-    for i=1,ptCnt,1 do
-        local pp=sim.getPathInterpolatedConfig(path,lengths,(i-1)*totL/(ptCnt-1),{type='quadraticBezier',forceOpen=false,strength=0.25})
-        for j=1,#pp,1 do
-            interpolatedPath[(i-1)*3+j]=pp[j]
-        end
-    end
-    drawPath(false,interpolatedPath)
-    local interpolLengths,totL=sim.getPathLengths(interpolatedPath,3,cb)
-    
-        local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
-        local upVector={0,0,1}
-  --      shape=sim.generateShapeFromPath(interpolatedPath,section,upVector,pathIsClosed)
-    
-    end
-end
---]]
-
-
-function sysCall_init()
-    _S.path.utils=require('utils')
-    _S.path.ctrlPtsTag='ABC_PATHCTRLPT'
-    _S.path.model=sim.getObjectHandle(sim.handle_self)
-    _S.path.uniqueId=sim.getStringParameter(sim.stringparam_uniqueid)
-    _S.path.setup()
+    _S.path.init()
 end
 
 function sysCall_cleanup()
-    if _S.path.ui then
-        simUI.destroy(_S.path.ui)
-    end
+    _S.path.cleanup()
+end
+
+function sysCall_nonSimulation()
+    _S.path.nonSimulation()
+end
+
+function sysCall_afterSimulation()
+    _S.path.afterSimulation()
+end
+
+function sysCall_beforeSimulation()
+    _S.path.beforeSimulation()
 end
 
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
     local xml=[[
+            <group layout="form" flat="true">
             <label text="Path is closed"/>
             <checkbox text="" on-change="_S.path.closed_callback" id="1" />
 
-            <label text="Visible while simulation running"/>
-            <checkbox text="" on-change="_S.path.visibleDuringSimulation_callback" id="2" />
+            <label text="Generate extruded shape"/>
+            <checkbox text="" on-change="_S.path.generateShape_callback" id="3" />
 
-            <label text="Show time plots"/>
-            <checkbox text="" on-change="_S.path.timeOnly_callback" id="3" />
+            <label text="Hide path line when simulation running"/>
+            <checkbox text="" on-change="_S.path.hideDuringSimulation_callback" id="2" />
 
-            <label text="Show X/Y plots"/>
-            <checkbox text="" on-change="_S.path.xyOnly_callback" id="4" />
+            <label text="Show orientation frames"/>
+            <checkbox text="" on-change="_S.path.showOrientation_callback" id="14" />
 
-            <label text="Show 3D curves"/>
-            <checkbox text="" on-change="_S.path.xyzOnly_callback" id="8" />
+            <label text="Smoothness"/>
+            <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
 
-            <label text="X/Y plots keep 1:1 aspect ratio"/>
-            <checkbox text="" on-change="_S.path.squareXy_callback" id="5" style="* {margin-right: 100px;}"/>
+            <label text="Subdivisions"/>
+            <edit on-editing-finished="_S.path.pointCnt_callback" id="5" />
+            </group>
             
-            <label text="Update frequency"/>
-            <combobox id="7" on-change="_S.path.updateFreqChanged_callback"></combobox>
+            <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
+            <group layout="form" flat="true" id="15">
+
+            <label text="X axis along path, Y axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="7"/>
+
+            <label text="X axis along path, Z axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="8"/>
+
+            <label text="Y axis along path, X axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="9"/>
+
+            <label text="Y axis along path, Z axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="10"/>
+
+            <label text="Z axis along path, X axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="11"/>
+
+            <label text="Z axis along path, Y axis up"/>
+            <radiobutton text="" on-click="_S.path.align_callback" id="12"/>
             
-            <label text="Preferred path position"/>
-            <combobox id="6" on-change="_S.path.graphPosChanged_callback"></combobox>
+            <label text="Up vector"/>
+            <edit on-editing-finished="_S.path.upVector_callback" id="13" />
+            
+            </group>
     ]]
-    _S.path.ui=_S.path.utils.createCustomUi(xml,sim.getObjectName(_S.path.model),_S.path.previousDlgPos,true,'_S.path.removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
+    _S.path.ui=_S.path.utils.createCustomUi(xml,sim.getObjectName(_S.path.model),_S.path.previousDlgPos,true,'_S.path.removeDlg',true,false,false,'enabled="'..tostring(simStopped)..'"')
     _S.path.setDlgItemContent()
 end
 
@@ -122,13 +99,15 @@ function sysCall_afterCreate(inData)
     local pts={}
     for i=1,#inData.objectHandles,1 do
         local h=inData.objectHandles[i]
-        local dat=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
-        if dat and #dat>0 then
-            dat=sim.unpackTable(dat)
-            if dat.pasteTo==_S.path.uniqueId then
-                dat.pasteTo=nil
-                pts[#pts+1]=dat
-                dat.handle=h
+        if sim.getObjectParent(h)==-1 then
+            local dat=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
+            if dat and #dat>0 then
+                dat=sim.unpackTable(dat)
+                if dat.pasteTo==_S.path.uniqueId then
+                    dat.pasteTo=nil
+                    pts[#pts+1]=dat
+                    dat.handle=h
+                end
             end
         end
     end
@@ -144,24 +123,75 @@ function sysCall_afterCreate(inData)
     end
 end
 
-function sysCall_nonSimulation()
-    local a=_S.path.getCtrlPtsPoseId()
-    if a~=_S.path.ctrlPtsPoseId then
+function sysCall_afterDelete(inData)
+    local update=false
+    for key,value in pairs(inData.objectHandles) do
+        if _S.path.ctrlPtsMap[key] then
+            -- This ctrl point was erased. Update the path
+            update=true
+            break
+        end
+    end
+    if update then
         _S.path.setup()
     end
 end
 
-function sysCall_beforeDelete(inData)
---    print("sysCall_beforeDelete:")
---    print(inData)
-end
-
-function sysCall_afterDelete(inData)
---    print("sysCall_afterDelete:")
---    print(inData)
-end
-
 _S.path={}
+
+function _S.path.init()
+    _S.path.utils=require('utils')
+    _S.path.ctrlPtsTag='ABC_PATHCTRLPT'
+    _S.path.pathObjectTag='ABC_PATH_INFO'
+    _S.path.shapeTag='ABC_PATHSHAPE_INFO'
+    _S.path.childTag='PATH_CHILD'
+    _S.path.model=sim.getObjectHandle(sim.handle_self)
+    _S.path.uniqueId=sim.getStringParameter(sim.stringparam_uniqueid)
+    _S.path.refreshDelayInMs=300
+    _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
+    _S.path.lineCont={-1,-1}
+    _S.path.tickCont={-1,-1,-1}
+    _S.path.setup()
+end
+
+function _S.path.cleanup()
+    if _S.path.ui then
+        simUI.destroy(_S.path.ui)
+    end
+end
+
+function _S.path.nonSimulation()
+    if not _S.path.refresh then
+        if _S.path.getCtrlPtsPoseId()~=_S.path.ctrlPtsPoseId then
+            _S.path.refresh=true
+        end
+    end
+    if _S.path.refresh and sim.getSystemTimeInMs(_S.path.lastRefreshTimeInMs)>_S.path.refreshDelayInMs then
+        _S.path.setup()
+    end
+end
+
+function _S.path.afterSimulation()
+    _S.path.displayLine(1)
+    _S.path.displayLine(2)
+    for i=1,#_S.path.ctrlPts,1 do
+        local h=_S.path.ctrlPts[i].handle
+        local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
+        sim.setObjectInt32Parameter(h,sim.objintparam_visibility_layer,v)
+    end
+end
+
+function _S.path.beforeSimulation()
+    _S.path.removeLine(1)
+    local c=_S.path.readInfo()
+    if c.bitCoded&1~=0 then
+        _S.path.removeLine(2)
+    end
+    for i=1,#_S.path.ctrlPts,1 do
+        local h=_S.path.ctrlPts[i].handle
+        sim.setObjectInt32Parameter(h,sim.objintparam_visibility_layer,0)
+    end
+end
 
 function _S.path.getCtrlPtsPoseId()
     local p={}
@@ -175,25 +205,55 @@ end
 
 function _S.path.setup()
     _S.path.getCtrlPts()
-    _S.path.computePaths()
-    _S.path.displayLines()
-    if _S.path.shaping then
-        local pathPts={}
-        for i=0,(#_S.path.paths[2]/7)-1,1 do
-            pathPts[#pathPts+1]=_S.path.paths[2][i*7+1]
-            pathPts[#pathPts+1]=_S.path.paths[2][i*7+2]
-            pathPts[#pathPts+1]=_S.path.paths[2][i*7+3]
-        end
+    if #_S.path.ctrlPts>1 then
         local c=_S.path.readInfo()
-        local m=sim.getObjectMatrix(_S.path.model,-1)
-        local s=_S.path.shaping(pathPts,{m[3],m[7],m[11]},(c.bitCoded&2)~=0)
-        if sim.isHandleValid(s)==1 then
-            local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
-            for i=1,#shapes,1 do
+        _S.path.computePaths()
+        _S.path.removeLine(1)
+        _S.path.removeLine(2)
+        _S.path.displayLine(1)
+        _S.path.displayLine(2)
+        
+        local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
+        for i=1,#shapes,1 do
+            local dat=sim.readCustomDataBlock(shapes[i],_S.path.shapeTag)
+            if dat then
                 sim.removeObject(shapes[i])
             end
-            sim.setObjectParent(s,_S.path.model,false)
         end
+        if _S.path.shaping and (c.bitCoded&4)~=0 then
+            local m=sim.getObjectMatrix(_S.path.model,-1)
+            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,{m[3],m[7],m[11]})
+            if sim.isHandleValid(s)==1 then
+                sim.writeCustomDataBlock(s,_S.path.shapeTag,"a")
+                sim.setObjectParent(s,_S.path.model,false)
+                local p=sim.getObjectProperty(s)
+                sim.setObjectProperty(s,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
+                local n=sim.getObjectName(_S.path.model)
+                local baseN=n
+                local index=''
+                local p=string.find(n,'#')
+                if p then
+                    baseN=n:sub(1,p-1)
+                    index=n:sub(p)
+                end
+                n=baseN..'__shape'..index
+                if sim.getObjectHandle(n..'@silentError')==-1 then
+                    sim.setObjectName(s,n)
+                end
+                sim.writeCustomDataBlock(s,_S.path.childTag,'s')
+            end
+        end
+        
+        _S.path.refresh=false
+        _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
+    else
+        _S.path.removeLine(1)
+        _S.path.removeLine(2)
+        sysCall_afterDelete=nil
+        sysCall_beforeCopy=nil
+        sysCall_afterCopy=nil
+        sysCall_afterCreate=nil
+        sim.removeModel(_S.path.model)
     end
 end
 
@@ -220,63 +280,112 @@ function _S.path.computePaths()
         path[#path+1]=q[4]
     end
     
-    local interpolatedPath={}
+    local interpolatedPath1={}
    
     local function cb(a,b)
         return sim.getConfigDistance(a,b,{1,1,1,0,0,0,0})
     end
    
-    local lengths,totL=sim.getPathLengths(path,7,cb)
+    local lengths1,totL=sim.getPathLengths(path,7,cb)
+
     
-    local ptCnt=c.pointCnt
+    local ptCnt=c.pointCnt*2
     for i=1,ptCnt,1 do
         local pp
-        if c.interpol.smoothing==0 then
-            pp=sim.getPathInterpolatedConfig(path,lengths,(i-1)*totL/(ptCnt-1),nil,{0,0,0,2,2,2,2})
+        local t=(i-1)*totL/(ptCnt-1)
+        if c.smoothing==0 then
+            pp=sim.getPathInterpolatedConfig(path,lengths1,t,nil,{0,0,0,2,2,2,2})
         else
-            pp=sim.getPathInterpolatedConfig(path,lengths,(i-1)*totL/(ptCnt-1),{type='quadraticBezier',forceOpen=false,strength=c.interpol.smoothing},{0,0,0,2,2,2,2})
+            pp=sim.getPathInterpolatedConfig(path,lengths1,t,{type='quadraticBezier',forceOpen=false,strength=c.smoothing},{0,0,0,2,2,2,2})
         end
         for j=1,#pp,1 do
-            interpolatedPath[(i-1)*7+j]=pp[j]
+            interpolatedPath1[(i-1)*7+j]=pp[j]
         end
     end
+
+    local interpolatedPath2={}
+    local lengths2,totL=sim.getPathLengths(interpolatedPath1,7,cb)
+    local ptCnt=c.pointCnt
+    for i=1,ptCnt,1 do
+        local t=(i-1)*totL/(ptCnt-1)
+        local pp=sim.getPathInterpolatedConfig(interpolatedPath1,lengths2,t,nil,{0,0,0,2,2,2,2})
+        for j=1,#pp,1 do
+            interpolatedPath2[(i-1)*7+j]=pp[j]
+        end
+    end
+    interpolatedPath2=_S.path.recomputeOrientations(interpolatedPath2)
     _S.path.paths={}
     _S.path.paths[1]=path
-    _S.path.paths[2]=interpolatedPath
+    _S.path.paths[2]=interpolatedPath2
+    sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(interpolatedPath2))
 end
 
-function _S.path.displayLines()
-    local m=sim.getObjectMatrix(_S.path.model,-1)
-    for j=1,2,1 do
-        local path=_S.path.paths[j]
+function _S.path.displayLine(index)
+    _S.path.removeLine(index)
+    local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
+    local l=sim.getInt32Parameter(sim.intparam_visible_layers)
+    local p=sim.getModelProperty(_S.path.model)
+    if (p&sim.modelproperty_not_visible)==0 and v&l>0 then
+        local c=_S.path.readInfo()
+        local m=sim.getObjectMatrix(_S.path.model,-1)
+        local path=_S.path.paths[index]
         local dr,col,s
-        if j==1 then
-            col={0.8,1,1}
+        if index==1 then
+            col={c.line.color[1]*1.2,c.line.color[2]*1.2,c.line.color[3]*1.2}
             s=1
         else
-            col={0,0.96,0.66}
-            s=3
+            col=c.line.color
+            s=c.line.thickness
         end
-        if not _S.path.lineCont then
-            _S.path.lineCont={-1,-1}
-        end
-        if _S.path.lineCont[j]~=-1 then
-            sim.removeDrawingObject(_S.path.lineCont[j])
-        end
-        _S.path.lineCont[j]=sim.addDrawingObject(sim.drawing_lines,s,0,_S.path.model,9999,col)
+        _S.path.lineCont[index]=sim.addDrawingObject(sim.drawing_lines,s,0,_S.path.model,9999,col)
+        local cont=_S.path.lineCont[index]
         for i=0,(#path/7)-2,1 do
             local p1={path[i*7+1],path[i*7+2],path[i*7+3]}
             local p2={path[(i+1)*7+1],path[(i+1)*7+2],path[(i+1)*7+3]}
             p1=sim.multiplyVector(m,p1)
             p2=sim.multiplyVector(m,p2)
             local l={p1[1],p1[2],p1[3],p2[1],p2[2],p2[3]}
-            sim.addDrawingObjectItem(_S.path.lineCont[j],l)
+            sim.addDrawingObjectItem(cont,l)
+        end
+        if index==2 and (c.bitCoded&8)~=0 then
+            _S.path.tickCont[1]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{1,0,0})
+            _S.path.tickCont[2]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{0,1,0})
+            _S.path.tickCont[3]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{0,0,1})
+            local p=sim.getObjectPosition(_S.path.model,-1)
+            local q=sim.getObjectQuaternion(_S.path.model,-1)
+            local m=Matrix4x4:frompose({p[1],p[2],p[3],q[1],q[2],q[3],q[4]})
+            for i=0,(#path/7)-1,1 do
+                local m0=Matrix4x4:frompose({path[i*7+1],path[i*7+2],path[i*7+3],path[i*7+4],path[i*7+5],path[i*7+6],path[i*7+7]})
+                m0=m*m0
+                local p2=m0*Vector({0.02,0,0,1})
+                local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
+                sim.addDrawingObjectItem(_S.path.tickCont[1],l)
+                local p2=m0*Vector({0,0.02,0,1})
+                local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
+                sim.addDrawingObjectItem(_S.path.tickCont[2],l)
+                local p2=m0*Vector({0,0,0.02,1})
+                local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
+                sim.addDrawingObjectItem(_S.path.tickCont[3],l)
+            end
+        end
+    end
+end
+
+function _S.path.removeLine(index)
+    if _S.path.lineCont and _S.path.lineCont[index]~=-1 then
+        sim.removeDrawingObject(_S.path.lineCont[index])
+        _S.path.lineCont[index]=-1
+        if index==2 and _S.path.tickCont[1]~=-1 then
+            for i=1,3,1 do
+                sim.removeDrawingObject(_S.path.tickCont[i])
+                _S.path.tickCont[i]=-1
+            end
         end
     end
 end
 
 function _S.path.getCtrlPts()
-    local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1+2)
+    local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
     local pts={}
     local map={}
     for i=1,#d,1 do
@@ -285,16 +394,7 @@ function _S.path.getCtrlPts()
         if dat and #dat>0 then
             dat=sim.unpackTable(dat)
             dat.handle=h
-            if dat.pasteTo then
-                dat=nil
-            end
-            --[[
-        else
-            dat={}
-            dat.index=i
-            sim.writeCustomDataBlock(h,_S.path.ctrlPtsTag,sim.packTable(dat))
-            dat.handle=h
-            --]]
+            sim.writeCustomDataBlock(h,_S.path.childTag,'p')
         end
         if dat then
             pts[#pts+1]=dat
@@ -302,9 +402,13 @@ function _S.path.getCtrlPts()
         end
     end
     table.sort(pts,function(a,b) return a.index<b.index end)
+    
+    local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
+    
     for i=1,#pts,1 do
         pts[i].index=i -- indices could be fractions and/or not contiguous
         sim.writeCustomDataBlock(pts[i].handle,_S.path.ctrlPtsTag,sim.packTable(pts[i]))
+        sim.setObjectInt32Parameter(pts[i].handle,sim.objintparam_visibility_layer,v)
     end
     _S.path.ctrlPts=pts
     _S.path.ctrlPtsMap=map
@@ -322,38 +426,38 @@ function _S.path.setDlgItemContent()
     if _S.path.ui then
         local config=_S.path.readInfo()
         local sel=simUI.getCurrentEditWidget(_S.path.ui)
-        --[[
-        simUI.setCheckboxValue(_S.path.ui,1,((config['bitCoded'] & 2)==0 and 0 or 2))
-        simUI.setCheckboxValue(_S.path.ui,2,((config['bitCoded'] & 1)==0 and 0 or 2))
-        simUI.setCheckboxValue(_S.path.ui,3,((config['bitCoded'] & 4)==0 and 0 or 2))
-        simUI.setCheckboxValue(_S.path.ui,4,((config['bitCoded'] & 8)==0 and 0 or 2))
-        simUI.setCheckboxValue(_S.path.ui,5,((config['bitCoded'] & 16)==0 and 0 or 2))
-        simUI.setCheckboxValue(_S.path.ui,8,((config['bitCoded'] & 32)==0 and 2 or 0))
+        simUI.setCheckboxValue(_S.path.ui,1,((config.bitCoded & 2)==0 and 0 or 2))
+        simUI.setCheckboxValue(_S.path.ui,2,((config.bitCoded & 1)==0 and 0 or 2))
+        simUI.setCheckboxValue(_S.path.ui,3,((config.bitCoded & 4)==0 and 0 or 2))
+        simUI.setCheckboxValue(_S.path.ui,14,((config.bitCoded & 8)==0 and 0 or 2))
+        simUI.setEditValue(_S.path.ui,4,string.format("%.2f",config.smoothing),true)
+        simUI.setEditValue(_S.path.ui,5,tostring(config.pointCnt),true)
         
-        local items={'bottom right','top right','top left','bottom left','center'}
-        simUI.setComboboxItems(_S.path.ui,6,items,config['graphPos'])
-        
-        local items={'always','1/2 of time','1/4 of time','1/10 of time','1/100 of time'}
-        simUI.setComboboxItems(_S.path.ui,7,items,config['updateFreq'])
---]]        
+        simUI.setCheckboxValue(_S.path.ui,6,((config.bitCoded & 16)==0 and 0 or 2))
+        simUI.setEnabled(_S.path.ui,15,(config.bitCoded & 16)~=0)
+        simUI.setRadiobuttonValue(_S.path.ui,7,(config.autoOrientation==0 and 1 or 0))
+        simUI.setRadiobuttonValue(_S.path.ui,8,(config.autoOrientation==1 and 1 or 0))
+        simUI.setRadiobuttonValue(_S.path.ui,9,(config.autoOrientation==2 and 1 or 0))
+        simUI.setRadiobuttonValue(_S.path.ui,10,(config.autoOrientation==3 and 1 or 0))
+        simUI.setRadiobuttonValue(_S.path.ui,11,(config.autoOrientation==4 and 1 or 0))
+        simUI.setRadiobuttonValue(_S.path.ui,12,(config.autoOrientation==5 and 1 or 0))
+        simUI.setEditValue(_S.path.ui,13,string.format("%.2f, %.2f, %.2f",config.upVector[1],config.upVector[2],config.upVector[3]),true)
         simUI.setCurrentEditWidget(_S.path.ui,sel)
     end
 end
 
 function _S.path.getDefaultInfoForNonExistingFields(info)
     if not info.bitCoded then
-        info.bitCoded=1 -- 1=show line, 2=closed, 4=generate shape
+        info.bitCoded=1 -- 1=show line during simulation, 2=closed, 4=generate shape, 8=show orientation frames, 16=auto orientation
+    end
+    if not info.autoOrientation then
+        info.autoOrientation=0 -- 0=x along path, y up, 1=x along path, z up, 2=y along path, x up, etc.
     end
     if not info.pointCnt then
         info.pointCnt=200
     end
-    if not info.interpol then
-        info.interpol={}
-    end
-    info.interpol.type=nil
-    info.interpol.strength=nil
-    if not info.interpol.strength then
-        info.interpol.smoothing=1 -- 0-1 (0=linear interpol, other is Bezier interpol)
+    if not info.smoothing then
+        info.smoothing=1
     end
     if not info.line then
         info.line={}
@@ -364,22 +468,13 @@ function _S.path.getDefaultInfoForNonExistingFields(info)
     if not info.line.thickness then
         info.line.thickness=3
     end
-    if not info.shaping then
-        info.shaping={}
-    end
-    if not info.shaping.enabled then
-        info.shaping.enabled=false
-    end
-    if not info.shaping.color then
-        info.shaping.color={0.85,0.85,0.85}
-    end
-    if not info.shaping.section then
-        info.shaping.section={0.01,-0.01,0.01,0.01,-0.01,0.01,-0.01,-0.01,0.01,-0.01}
+    if not info.upVector then
+        info.upVector={0,0,1}
     end
 end
 
 function _S.path.readInfo()
-    local data=sim.readCustomDataBlock(_S.path.model,'ABC_PATH_INFO')
+    local data=sim.readCustomDataBlock(_S.path.model,_S.path.pathObjectTag)
     if data then
         data=sim.unpackTable(data)
     else
@@ -391,9 +486,9 @@ end
 
 function _S.path.writeInfo(data)
     if data then
-        sim.writeCustomDataBlock(_S.path.model,'ABC_PATH_INFO',sim.packTable(data))
+        sim.writeCustomDataBlock(_S.path.model,_S.path.pathObjectTag,sim.packTable(data))
     else
-        sim.writeCustomDataBlock(_S.path.model,'ABC_PATH_INFO','')
+        sim.writeCustomDataBlock(_S.path.model,_S.path.pathObjectTag,'')
     end
 end
 
@@ -406,6 +501,191 @@ function _S.path.closed_callback(ui,id,newVal)
     _S.path.writeInfo(c)
     _S.path.setup()
     sim.announceSceneContentChange()
+end
+
+function _S.path.generateShape_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 4)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-4
+    end
+    _S.path.writeInfo(c)
+    _S.path.setup()
+    sim.announceSceneContentChange()
+end
+
+function _S.path.hideDuringSimulation_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 1)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-1
+    end
+    _S.path.writeInfo(c)
+    sim.announceSceneContentChange()
+end
+
+function _S.path.showOrientation_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 8)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-8
+    end
+    _S.path.writeInfo(c)
+    _S.path.setup()
+    sim.announceSceneContentChange()
+end
+
+function _S.path.smoothness_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    local l=tonumber(newVal)
+    if l then
+        if l<0.05 then l=0 end
+        if l>1 then l=1 end
+        if l~=c.smoothing then
+            c.smoothing=l
+            _S.path.writeInfo(c)
+            _S.path.setup()
+            sim.announceSceneContentChange()
+        end
+    end
+    _S.path.setDlgItemContent()
+end
+
+function _S.path.pointCnt_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    local l=tonumber(newVal)
+    if l then
+        if l<10 then l=10 end
+        if l>1000 then l=1000 end
+        if l~=c.pointCnt then
+            c.pointCnt=l
+            _S.path.writeInfo(c)
+            _S.path.setup()
+            sim.announceSceneContentChange()
+        end
+    end
+    _S.path.setDlgItemContent()
+end
+
+function _S.path.upVector_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    local i=1
+    local t={0,0,0}
+    for token in (newVal..","):gmatch("([^,]*),") do
+        t[i]=tonumber(token)
+        if t[i]==nil then t[i]=0 end
+        i=i+1
+    end
+    if t[1]~=0 or t[2]~=0 or t[3]~=0 then
+        t=Vector(t):normalized():data()
+        c.upVector=t
+        _S.path.writeInfo(c)
+        _S.path.setup()
+        sim.announceSceneContentChange()
+    end
+    _S.path.setDlgItemContent()
+end
+
+function _S.path.autoOrient_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 16)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-16
+    end
+    _S.path.writeInfo(c)
+    _S.path.setDlgItemContent()
+    _S.path.setup()
+    sim.announceSceneContentChange()
+end
+
+function _S.path.align_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    local zvect=Vector3(c.upVector)
+    c.autoOrientation=id-7
+    _S.path.writeInfo(c)
+    _S.path.setDlgItemContent()
+    _S.path.setup()
+    sim.announceSceneContentChange()
+end
+
+function _S.path.recomputeOrientations(path)
+    local c=_S.path.readInfo()
+    if (c.bitCoded&16)~=0 then
+        local zvect=Vector3(c.upVector)
+        local mppath=Matrix(#path//7,7,path)
+        mppath=mppath:slice(1,1,mppath:rows(),3)
+        local retPath=Matrix(mppath:rows(),7)
+        for i=1,mppath:rows(),1 do
+            local p0,p1,p2
+            if i~=1 then
+                p0=Vector3(mppath[i-1])
+            else
+                if (c.bitCoded&2)~=0 then
+                    p0=Vector3(mppath[mppath:rows()-1])
+                end
+            end
+            p1=Vector3(mppath[i+0])
+            if i~=mppath:rows() then
+                p2=Vector3(mppath[i+1])
+            else
+                if (c.bitCoded&2)~=0 then
+                    p2=Vector3(mppath[2])
+                end
+            end
+            local vf
+            if p0 and p2 then
+                vf=(p1-p0)+(p2-p1)
+            else
+                if i==1 then
+                    vf=(p2-p1)
+                else
+                    vf=(p1-p0)
+                end
+            end
+            vf=vf/vf:norm()
+            local vr=vf:cross(zvect)
+            vr=vr/vr:norm()
+            
+            local m
+            if c.autoOrientation==0 then
+                m=vf
+                m=m:horzcat(vr:cross(vf))
+                m=m:horzcat(vr)
+            end
+            if c.autoOrientation==1 then
+                m=vf
+                m=m:horzcat(vr*-1)
+                m=m:horzcat(vf:cross(vr*-1))
+            end
+            if c.autoOrientation==2 then
+                m=vr:cross(vf)
+                m=m:horzcat(vf)
+                m=m:horzcat(vr*-1)
+            end
+            if c.autoOrientation==3 then
+                m=vr
+                m=m:horzcat(vf)
+                m=m:horzcat(vr:cross(vf))
+            end
+            if c.autoOrientation==4 then
+                m=vr:cross(vf)
+                m=m:horzcat(vr)
+                m=m:horzcat(vf)
+            end
+            if c.autoOrientation==5 then
+                m=vr*-1
+                m=m:horzcat(vr:cross(vf))
+                m=m:horzcat(vf)
+            end
+            m=Matrix4x4:fromrotation(m)
+            m[1][4]=p1[1]
+            m[2][4]=p1[2]
+            m[3][4]=p1[3]
+            retPath[i]=Matrix4x4:topose(m)
+        end
+        path=retPath:data()
+    end
+    return path
 end
 
 return _S.path
