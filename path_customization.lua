@@ -66,6 +66,15 @@ function sysCall_userConfig()
             <edit on-editing-finished="_S.path.upVector_callback" id="13" />
             
             </group>
+
+            <label text="Generate from data:" style="* {font-weight: bold;}"/>
+            <group layout="vbox" flat="true">
+
+            <edit id="20" />
+            <button text="Generate from position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
+            <button text="Generate from pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
+            
+            </group>
     ]]
     _S.path.ui=_S.path.utils.createCustomUi(xml,sim.getObjectName(_S.path.model),_S.path.previousDlgPos,true,'_S.path.removeDlg',true,false,false,'enabled="'..tostring(simStopped)..'"')
     _S.path.setDlgItemContent()
@@ -143,6 +152,7 @@ function _S.path.init()
     _S.path.utils=require('utils')
     _S.path.ctrlPtsTag='ABC_PATHCTRLPT'
     _S.path.pathObjectTag='ABC_PATH_INFO'
+    _S.path.pathCreationTag='ABC_PATH_CREATION'
     _S.path.shapeTag='ABC_PATHSHAPE_INFO'
     _S.path.childTag='PATH_CHILD'
     _S.path.model=sim.getObjectHandle(sim.handle_self)
@@ -151,7 +161,68 @@ function _S.path.init()
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
+    _S.path.createNewIfNeeded()
     _S.path.setup()
+end
+
+function _S.path.createNewIfNeeded()
+    local data=sim.readCustomDataBlock(_S.path.model,_S.path.pathCreationTag)
+    if data then
+        data=sim.unpackTable(data)
+        sim.writeCustomDataBlock(_S.path.model,_S.path.pathCreationTag,'')  
+        _S.path.createNew(data[1],false,data[2],data[3],data[4],data[5],data[6]) 
+    end
+end
+
+function _S.path.createNew(ctrlPts,onlyPosData,options,pointCount,smoothing,autoOrientationMode,upVector)
+    local c=_S.path.readInfo()
+    c.bitCoded=options
+    c.pointCnt=pointCount
+    c.smoothing=smoothing
+    c.autoOrientation=autoOrientationMode
+    c.upVector=upVector
+    _S.path.writeInfo(c)
+    local tmp1=sysCall_beforeCopy
+    sysCall_beforeCopy=nil
+    local tmp2=sysCall_afterCopy
+    sysCall_afterCopy=nil
+    local tmp3=sysCall_afterCreate
+    sysCall_afterCreate=nil
+    local tmp4=sysCall_afterDelete
+    sysCall_afterDelete=nil
+
+    local children=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
+    for i=1,#children,1 do
+        sim.removeObject(children[i])
+    end
+    
+    local dof=7
+    if onlyPosData then
+        dof=3
+    end
+    local function fp(p,i)
+        return {p[dof*(i-1)+1],p[dof*(i-1)+2],p[dof*(i-1)+3]}
+    end
+    local function fq(p,i)
+        return {p[7*(i-1)+4],p[7*(i-1)+5],p[7*(i-1)+6],p[7*(i-1)+7]}
+    end
+    for i=1,#ctrlPts//dof,1 do
+        ctrlPt=sim.createDummy(0.01,{0,0.96,0.66,0,0,0,0,0,0,0,0,0})
+        sim.setObjectParent(ctrlPt,_S.path.model,true)
+        sim.setObjectPosition(ctrlPt,_S.path.model,fp(ctrlPts,i))
+        _S.path.setObjectName(ctrlPt,'ctrlPt')
+        if onlyPosData then
+            sim.setObjectQuaternion(ctrlPt,_S.path.model,{0,0,0,1})
+        else
+            sim.setObjectQuaternion(ctrlPt,_S.path.model,fq(ctrlPts,i))
+        end
+        sim.writeCustomDataBlock(ctrlPt,_S.path.ctrlPtsTag,sim.packTable({index=i}))
+    end
+    
+    sysCall_afterDelete=tmp4
+    sysCall_afterCreate=tmp3
+    sysCall_afterCopy=tmp2
+    sysCall_beforeCopy=tmp1
 end
 
 function _S.path.cleanup()
@@ -203,6 +274,46 @@ function _S.path.getCtrlPtsPoseId()
     return sim.packTable(p)
 end
 
+function _S.path.setObjectName(obj,name)
+    local pathName=sim.getObjectName(_S.path.model)
+    local base
+    local hash=''
+    local index=-1
+    local p=string.find(pathName,'#%d')
+    if p then
+        base=pathName:sub(1,p-1)
+        hash='#'
+        index=math.floor(tonumber(pathName:sub(p+1)))
+    else
+        base=pathName
+    end
+    base=base..'__'..name
+    local cnt=-1
+    local newName
+    while true do
+        local nm=base
+        if hash=='#' then
+            if cnt>=0 then
+                nm=nm..cnt
+            end
+            nm=nm..'#'..index
+            newName=nm
+            cnt=cnt+1
+        else
+            if index>=0 then
+                nm=nm..index
+            end
+            newName=nm
+            nm=nm..'#'
+            index=index+1
+        end
+        if sim.getObjectHandle(nm..'@silentError')==-1 then
+            break
+        end
+    end
+    sim.setObjectName(obj,newName)
+end
+
 function _S.path.setup()
     _S.path.getCtrlPts()
     if #_S.path.ctrlPts>1 then
@@ -228,18 +339,7 @@ function _S.path.setup()
                 sim.setObjectParent(s,_S.path.model,false)
                 local p=sim.getObjectProperty(s)
                 sim.setObjectProperty(s,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
-                local n=sim.getObjectName(_S.path.model)
-                local baseN=n
-                local index=''
-                local p=string.find(n,'#')
-                if p then
-                    baseN=n:sub(1,p-1)
-                    index=n:sub(p)
-                end
-                n=baseN..'__shape'..index
-                if sim.getObjectHandle(n..'@silentError')==-1 then
-                    sim.setObjectName(s,n)
-                end
+                _S.path.setObjectName(s,'shape')
                 sim.writeCustomDataBlock(s,_S.path.childTag,'s')
             end
         end
@@ -317,6 +417,13 @@ function _S.path.computePaths()
     _S.path.paths={}
     _S.path.paths[1]=path
     _S.path.paths[2]=interpolatedPath2
+    
+    if (c.bitCoded & 2)~=0 then
+        -- path is closed. Remove the last pose for storage
+        handles[#handles+1]=handles[1]
+    end
+    
+    sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path,0,#path-7)) -- last pose is coincident if path is closed
     sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(interpolatedPath2))
 end
 
@@ -357,13 +464,13 @@ function _S.path.displayLine(index)
             for i=0,(#path/7)-1,1 do
                 local m0=Matrix4x4:frompose({path[i*7+1],path[i*7+2],path[i*7+3],path[i*7+4],path[i*7+5],path[i*7+6],path[i*7+7]})
                 m0=m*m0
-                local p2=m0*Vector({0.02,0,0,1})
+                local p2=m0*Vector({_S.path.ctrlPtsSize,0,0,1})
                 local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[1],l)
-                local p2=m0*Vector({0,0.02,0,1})
+                local p2=m0*Vector({0,_S.path.ctrlPtsSize,0,1})
                 local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[2],l)
-                local p2=m0*Vector({0,0,0.02,1})
+                local p2=m0*Vector({0,0,_S.path.ctrlPtsSize,1})
                 local l={m0[1][4],m0[2][4],m0[3][4],p2[1],p2[2],p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[3],l)
             end
@@ -405,10 +512,21 @@ function _S.path.getCtrlPts()
     
     local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
     
+    local _max={-999,-999,-999}
+    local _min={999,999,999}
     for i=1,#pts,1 do
         pts[i].index=i -- indices could be fractions and/or not contiguous
         sim.writeCustomDataBlock(pts[i].handle,_S.path.ctrlPtsTag,sim.packTable(pts[i]))
         sim.setObjectInt32Parameter(pts[i].handle,sim.objintparam_visibility_layer,v)
+        local p=sim.getObjectPosition(pts[i].handle,_S.path.model)
+        for j=1,3,1 do
+            _max[j]=math.max(_max[j],p[j])
+            _min[j]=math.min(_min[j],p[j])
+        end
+    end
+    _S.path.ctrlPtsSize=math.max(_max[1]-_min[1],math.max(_max[2]-_min[2],_max[3]-_min[3]))/75
+    for i=1,#pts,1 do
+        sim.setObjectFloatParameter(pts[i].handle,sim.dummyfloatparam_size,_S.path.ctrlPtsSize)
     end
     _S.path.ctrlPts=pts
     _S.path.ctrlPtsMap=map
@@ -606,6 +724,41 @@ function _S.path.align_callback(ui,id,newVal)
     _S.path.setDlgItemContent()
     _S.path.setup()
     sim.announceSceneContentChange()
+end
+
+function _S.path.generate_callback(ui,id,newVal)
+    local txt=simUI.getEditValue(ui,20)
+    local v={}
+    local i=1
+    local err=false
+    for token in (txt..","):gmatch("([^,]*),") do
+        v[i]=tonumber(token)
+        if v[i]==nil then
+            err=true
+            break
+        end
+        i=i+1
+    end
+    if not err then
+        local c=_S.path.readInfo()
+        if id==21 then
+            if #v>=6 and 3*#v//3==#v then
+                _S.path.createNew(v,true,c.bitCoded,c.pointCnt,c.smoothing,c.autoOrientation,c.upVector)
+                _S.path.setup()
+            else
+                sim.addLog(sim.verbosity_scriptwarnings,'Provided value count is invalid')
+            end
+        else
+            if #v>=14 and 7*#v//7==#v then
+                _S.path.createNew(v,false,c.bitCoded,c.pointCnt,c.smoothing,c.autoOrientation,c.upVector)
+                _S.path.setup()
+            else
+                sim.addLog(sim.verbosity_scriptwarnings,'Provided value count is invalid')
+            end
+        end
+    else
+        sim.addLog(sim.verbosity_scriptwarnings,'Provided data is invalid')
+    end
 end
 
 function _S.path.recomputeOrientations(path)

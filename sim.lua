@@ -231,7 +231,6 @@ function sim.getUserVariables()
         ng=_G
     end
     -- hide a few additional system variables:
-    ng.sim_current_script_id=nil
     ng.sim_call_type=nil
     ng.sim_code_function_to_run=nil
     ng.__notFirst__=nil
@@ -280,7 +279,7 @@ end
 function sim.displayDialog(...)
     local title,mainTxt,style,modal,initTxt,d1,d2,d3=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true}},...)
     
-    if sim.getBoolParameter(sim_boolparam_headless) then
+    if sim.getBoolParameter(sim.boolparam_headless) then
         return -1
     end
     local retVal=-1
@@ -354,7 +353,7 @@ end
 function sim.endDialog(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if not sim.getBoolParameter(sim_boolparam_headless) then
+    if not sim.getBoolParameter(sim.boolparam_headless) then
         if not _S.dlg.openDlgs[dlgHandle] then
             error("Argument #1 is not a valid dialog handle.")
         end
@@ -371,7 +370,7 @@ end
 function sim.getDialogInput(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if sim.getBoolParameter(sim_boolparam_headless) then
+    if sim.getBoolParameter(sim.boolparam_headless) then
         return ''
     end
     if not _S.dlg.openDlgs[dlgHandle] then
@@ -385,7 +384,7 @@ end
 function sim.getDialogResult(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if sim.getBoolParameter(sim_boolparam_headless) then
+    if sim.getBoolParameter(sim.boolparam_headless) then
         return -1
     end
     if not _S.dlg.openDlgs[dlgHandle] then
@@ -911,6 +910,62 @@ function sim.getPathInterpolatedConfig(...)
     end
     if not method or method.type=='linear' then
         retVal=_S.linearInterpolate(_S.getConfig(path,dof,li),_S.getConfig(path,dof,hi),t,types)
+    end
+    return retVal
+end
+
+function sim.createPath(...)
+    local retVal
+    local attrib,intParams,floatParams,col=...
+    if type(attrib)=='number' then
+        retVal=sim._createPath(attrib,intParams,floatParams,col) -- for backward compatibility
+    else
+        local ctrlPts,options,subdiv,smoothness,orientationMode,upVector=checkargs({{type='table',item_type='float',size='14..*'},{type='int',default=0},{type='int',default=100},{type='float',default=1.0},{type='int',default=0},{type='table',item_type='float',size='3',default={0,0,1}}},...)
+        local fl=sim.setThreadSwitchAllowed(false)
+        retVal=sim.createDummy(0.04,{0,0.68,0.47,0,0,0,0,0,0,0,0,0})
+        local nmBase='Path'
+        local nm=nmBase..'#'
+        local suff=0
+        while sim.getObjectHandle(nm..'@silentError')~=-1 do
+            nm=nmBase..'#'..suff
+            suff=suff+1
+        end
+        if suff==0 then nm=nmBase end
+        sim.setObjectName(retVal,nm)
+        local scriptHandle=sim.addScript(sim.scripttype_customizationscript)
+        local code=[[path=require('path_customization')
+
+function path.shaping(path,pathIsClosed,upVector)
+    local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
+    local color={0.7,0.9,0.9}
+    local options=0
+    if pathIsClosed then
+        options=options|4
+    end
+    local shape=sim.generateShapeFromPath(path,section,options,upVector)
+    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
+    return shape
+end]]
+        sim.setScriptText(scriptHandle,code)
+        sim.associateScriptWithObject(scriptHandle,retVal)
+        local prop=sim.getModelProperty(retVal)
+        sim.setModelProperty(retVal,(prop|sim.modelproperty_not_model)-sim.modelproperty_not_model) -- model
+        prop=sim.getObjectProperty(retVal)
+        sim.setObjectProperty(retVal,prop|sim.objectproperty_canupdatedna|sim.objectproperty_collapsed)
+        local data=sim.packTable({ctrlPts,options,subdiv,smoothness,orientationMode,upVector})
+        sim.writeCustomDataBlock(retVal,"ABC_PATH_CREATION",data)
+        sim.initScript(scriptHandle)
+        sim.setThreadSwitchAllowed(fl)
+    end
+    return retVal
+end
+
+function sim.createCollection(arg1,arg2)
+    local retVal
+    if type(arg1)=='string' then
+        retVal=sim._createCollection(arg1,arg2) -- for backward compatibility
+    else
+        retVal=sim.createCollectionEx(arg1)
     end
     return retVal
 end
@@ -1632,6 +1687,10 @@ function _S.executeAfterLuaStateInit()
     
     sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table_3 newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
+    sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(table[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,table[3] upVector={0,0,1})')
+    sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options)')
+
+
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
