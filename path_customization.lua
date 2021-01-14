@@ -21,18 +21,20 @@ end
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
     local xml=[[
+            <label text="Main properties:" style="* {font-weight: bold;}"/>
             <group layout="form" flat="true">
-            <label text="Path is closed"/>
-            <checkbox text="" on-change="_S.path.closed_callback" id="1" />
+            
+            <checkbox text="Path is closed" on-change="_S.path.closed_callback" id="1" />
+            <label text=""/>
 
-            <label text="Generate extruded shape"/>
-            <checkbox text="" on-change="_S.path.generateShape_callback" id="3" />
+            <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
+            <label text=""/>
 
-            <label text="Hide path line when simulation running"/>
-            <checkbox text="" on-change="_S.path.hideDuringSimulation_callback" id="2" />
+            <checkbox text="Hide path line when simulation running" on-change="_S.path.hideDuringSimulation_callback" id="2" />
+            <label text=""/>
 
-            <label text="Show orientation frames"/>
-            <checkbox text="" on-change="_S.path.showOrientation_callback" id="14" />
+            <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
+            <label text=""/>
 
             <label text="Smoothness"/>
             <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
@@ -44,36 +46,40 @@ function sysCall_userConfig()
             <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
             <group layout="form" flat="true" id="15">
 
-            <label text="X axis along path, Y axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="7"/>
+            <radiobutton text="X axis along path, Y axis up" on-click="_S.path.align_callback" id="7"/>
+            <label text=""/>
 
-            <label text="X axis along path, Z axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="8"/>
+            <radiobutton text="X axis along path, Z axis up" on-click="_S.path.align_callback" id="8"/>
+            <label text=""/>
 
-            <label text="Y axis along path, X axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="9"/>
+            <radiobutton text="Y axis along path, X axis up" on-click="_S.path.align_callback" id="9"/>
+            <label text=""/>
 
-            <label text="Y axis along path, Z axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="10"/>
+            <radiobutton text="Y axis along path, Z axis up" on-click="_S.path.align_callback" id="10"/>
+            <label text=""/>
 
-            <label text="Z axis along path, X axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="11"/>
+            <radiobutton text="Z axis along path, X axis up" on-click="_S.path.align_callback" id="11"/>
+            <label text=""/>
 
-            <label text="Z axis along path, Y axis up"/>
-            <radiobutton text="" on-click="_S.path.align_callback" id="12"/>
+            <radiobutton text="Z axis along path, Y axis up" on-click="_S.path.align_callback" id="12"/>
+            <label text=""/>
             
             <label text="Up vector"/>
             <edit on-editing-finished="_S.path.upVector_callback" id="13" />
             
             </group>
 
-            <label text="Generate from data:" style="* {font-weight: bold;}"/>
+            <label text="Initialize path from ctrl point data:" style="* {font-weight: bold;}"/>
             <group layout="vbox" flat="true">
 
             <edit id="20" />
-            <button text="Generate from position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
-            <button text="Generate from pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
+            <button text="ctrl points as position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
+            <button text="ctrl points as pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
+            </group>
             
+            <label text="Output path data:" style="* {font-weight: bold;}"/>
+            <group layout="vbox" flat="true">
+            <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
             </group>
     ]]
     _S.path.ui=_S.path.utils.createCustomUi(xml,sim.getObjectName(_S.path.model),_S.path.previousDlgPos,true,'_S.path.removeDlg',true,false,false,'enabled="'..tostring(simStopped)..'"')
@@ -418,12 +424,11 @@ function _S.path.computePaths()
     _S.path.paths[1]=path
     _S.path.paths[2]=interpolatedPath2
     
-    if (c.bitCoded & 2)~=0 then
-        -- path is closed. Remove the last pose for storage
-        handles[#handles+1]=handles[1]
+    if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
+        sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path,0,#path-7))
+    else
+        sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path))
     end
-    
-    sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path,0,#path-7)) -- last pose is coincident if path is closed
     sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(interpolatedPath2))
 end
 
@@ -724,6 +729,59 @@ function _S.path.align_callback(ui,id,newVal)
     _S.path.setDlgItemContent()
     _S.path.setup()
     sim.announceSceneContentChange()
+end
+
+function _S.path.output_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    local ctrlPts=Matrix(#_S.path.paths[1]//7,7,_S.path.paths[1])
+    local pts=Matrix(#_S.path.paths[2]//7,7,_S.path.paths[2])
+    if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
+        ctrlPts=ctrlPts:droprow(ctrlPts:rows())
+        pts=pts:droprow(pts:rows())
+    end
+    local pathM=Matrix4x4:frompose(sim.getObjectPose(_S.path.model,-1))
+    local relPts='relCtrlPts={'
+    local absPts='absCtrlPts={'
+    local pos=ctrlPts:slice(1,1,ctrlPts:rows(),3):data()
+    local quat=ctrlPts:slice(1,4,ctrlPts:rows(),7):data()
+    for i=1,ctrlPts:rows(),1 do
+        local relData=ctrlPts[i]:data()
+        local tr=Matrix4x4:frompose(ctrlPts[i])
+        local absData=Matrix4x4:topose(pathM*tr)
+        for j=1,7,1 do
+            relPts=relPts..string.format("%.4e",relData[j])
+            absPts=absPts..string.format("%.4e",absData[j])
+            if (j~=7)or(i~=ctrlPts:rows()) then
+                relPts=relPts..','
+                absPts=absPts..','
+            end
+        end
+    end
+    relPts=relPts..'}'
+    absPts=absPts..'}'
+    sim.addLog(sim.verbosity_scriptinfos,relPts)
+    sim.addLog(sim.verbosity_scriptinfos,absPts)
+    local relPts='relPts={'
+    local absPts='absPts={'
+    local pos=pts:slice(1,1,pts:rows(),3):data()
+    local quat=pts:slice(1,4,pts:rows(),7):data()
+    for i=1,pts:rows(),1 do
+        local relData=pts[i]:data()
+        local tr=Matrix4x4:frompose(pts[i])
+        local absData=Matrix4x4:topose(pathM*tr)
+        for j=1,7,1 do
+            relPts=relPts..string.format("%.4e",relData[j])
+            absPts=absPts..string.format("%.4e",absData[j])
+            if (j~=7)or(i~=pts:rows()) then
+                relPts=relPts..','
+                absPts=absPts..','
+            end
+        end
+    end
+    relPts=relPts..'}'
+    absPts=absPts..'}'
+    sim.addLog(sim.verbosity_scriptinfos,relPts)
+    sim.addLog(sim.verbosity_scriptinfos,absPts)
 end
 
 function _S.path.generate_callback(ui,id,newVal)
