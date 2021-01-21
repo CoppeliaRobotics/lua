@@ -1553,10 +1553,11 @@ function onDlgClose()
 	configUiData=nil
 end
 
-function sysCall_init(manualStart)
-    if not manualStart then
-        return {cmd='cleanup'}
-    end
+function sysCall_info()
+    return {autoStart=false}
+end
+
+function sysCall_init()
     local res
     res,model=PCALL(sim.getObjectAssociatedWithScript,false,sim.handle_self) -- if call made directly, will fail with add-on script
     local abort=false
