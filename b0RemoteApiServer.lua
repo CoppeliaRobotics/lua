@@ -1557,6 +1557,10 @@ function sysCall_info()
     return {autoStart=false}
 end
 
+function sysCall_addOnScriptSuspend()
+    return {cmd='cleanup'} -- the clean-up section will be called and the add-on stopped
+end
+
 function sysCall_init()
     local res
     res,model=PCALL(sim.getObjectAssociatedWithScript,false,sim.handle_self) -- if call made directly, will fail with add-on script
@@ -1630,16 +1634,6 @@ function sysCall_afterInstanceSwitch()
         if not modelData.duringSimulationOnly then
             createNode()
         end
-        createNode()
-    end
-end
-
-function sysCall_addOnScriptSuspend()
-    destroyNode()
-end
-
-function sysCall_addOnScriptResume()
-    if not modelData.duringSimulationOnly then
         createNode()
     end
 end
