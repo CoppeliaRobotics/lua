@@ -386,7 +386,6 @@ function _S.path.computePaths()
         path[#path+1]=q[4]
     end
     
-    local interpolatedPath1={}
    
     local function cb(a,b)
         return sim.getConfigDistance(a,b,{1,1,1,0,0,0,0})
@@ -394,19 +393,20 @@ function _S.path.computePaths()
    
     local lengths1,totL=sim.getPathLengths(path,7,cb)
 
+    local interpolatedPath1={}
     
-    local ptCnt=c.pointCnt*2
-    for i=1,ptCnt,1 do
-        local pp
-        local t=(i-1)*totL/(ptCnt-1)
-        if c.smoothing==0 then
-            pp=sim.getPathInterpolatedConfig(path,lengths1,t,nil,{0,0,0,2,2,2,2})
-        else
+    if c.smoothing~=0 then
+        local ptCnt=c.pointCnt*2
+        for i=1,ptCnt,1 do
+            local pp
+            local t=(i-1)*totL/(ptCnt-1)
             pp=sim.getPathInterpolatedConfig(path,lengths1,t,{type='quadraticBezier',forceOpen=false,strength=c.smoothing},{0,0,0,2,2,2,2})
+            for j=1,#pp,1 do
+                interpolatedPath1[(i-1)*7+j]=pp[j]
+            end
         end
-        for j=1,#pp,1 do
-            interpolatedPath1[(i-1)*7+j]=pp[j]
-        end
+    else
+        interpolatedPath1=path
     end
 
     local interpolatedPath2={}
