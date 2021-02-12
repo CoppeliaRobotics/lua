@@ -1207,6 +1207,16 @@ function Matrix4x4:topose(m,t)
     return v
 end
 
+function Matrix4x4:inv(m)
+    local r=m:slice(1,1,3,3)
+    local t=m:slice(1,4,3,4)
+    local m=Matrix(4,4)
+    m:assign(1,1,r:t())
+    m:assign(1,4,-t)
+    m:set(4,4,1)
+    return m
+end
+
 setmetatable(Matrix4x4,{__call=function(self,data)
     return Matrix(4,4,data)
 end})
