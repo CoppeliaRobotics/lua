@@ -748,6 +748,10 @@ Returns a transformation matrix from unit quaternion (null translation).
 
 Returns a transformation matrix from rotation matrix (null translation).
 
+#### `Matrix4x4:inv(m)`
+
+Returns the inverse matrix.
+
 #### `Matrix4x4:toeuler(m,t)`
 
 Returns a table of euler angles computed from the rotation matrix of this transformation matrix.

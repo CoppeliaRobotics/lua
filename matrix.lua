@@ -1208,12 +1208,10 @@ function Matrix4x4:topose(m,t)
 end
 
 function Matrix4x4:inv(m)
-    local r=m:slice(1,1,3,3)
-    local t=m:slice(1,4,3,4)
-    local m=Matrix(4,4)
-    m:assign(1,1,r:t())
-    m:assign(1,4,-t)
-    m:set(4,4,1)
+    local r=m:slice(1,1,3,3):t()
+    local t=r*(m:slice(1,4,3,4)*-1)
+    local m=Matrix4x4:fromrotation(r)
+    m:assign(1,4,t)
     return m
 end
 
