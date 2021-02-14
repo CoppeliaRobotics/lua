@@ -984,6 +984,21 @@ function Vector3:hom(v)
     end
 end
 
+function Vector3:random()
+    local rand=function() return math.tan((math.random()-0.5)*2*math.pi*0.99) end
+    return Vector3{rand(),rand(),rand()}
+end
+
+function Vector3:unitrandom()
+    local theta=math.random()*math.pi
+    local phi=math.random()*math.pi*2
+    return Vector3{
+        math.sin(theta)*math.cos(phi),
+        math.sin(theta)*math.sin(phi),
+        math.cos(theta)
+    }
+end
+
 setmetatable(Vector3,{__call=function(self,data)
     return Vector(3,data)
 end})
@@ -1131,6 +1146,10 @@ function Matrix3x3:toeuler(m,t)
     return e
 end
 
+function Matrix3x3:random()
+    return Matrix3x3:fromaxisangle(Vector3:unitrandom(),math.random()*math.pi*2)
+end
+
 setmetatable(Matrix3x3,{__call=function(self,data)
     return Matrix(3,3,data)
 end})
@@ -1221,6 +1240,10 @@ function Matrix4x4:inv(m)
     local rt=m:slice(1,1,3,3):t()
     local t=m:slice(1,4,3,4)
     return Matrix4x4:fromrt(rt,-rt*t)
+end
+
+function Matrix4x4:random(m)
+    return Matrix4x4:fromrt(Matrix3x3:random(),Vector3:random())
 end
 
 setmetatable(Matrix4x4,{__call=function(self,data)
