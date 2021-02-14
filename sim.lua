@@ -70,6 +70,7 @@ function printf(fmt,...)
 end
 
 function sim.switchThread()
+    local st=sim.getSystemTimeInMs(-1)
     if sim.getThreadSwitchAllowed() then
         if sim.isScriptRunningInThread()==1 then
             sim._switchThread()
@@ -600,7 +601,7 @@ function sim.moveToPose(...)
                 end
                 local syncTime
                 result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
-                if result~=-1 then
+                if result>=0 then
                     if result==0 then
                         timeLeft=dt-syncTime
                     end
@@ -609,6 +610,8 @@ function sim.moveToPose(...)
                     local nv={newPosVelAccel[2]}
                     local na={newPosVelAccel[3]}
                     callback(mi,nv,na,auxData)
+                else
+                    error('sim.rmlStep returned error code '..result)
                 end
                 if result==0 then
                     sim.switchThread()
@@ -633,7 +636,7 @@ function sim.moveToPose(...)
             end
             local syncTime
             result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
-            if result~=-1 then
+            if result>=0 then
                 if result==0 then
                     timeLeft=dt-syncTime
                 end
@@ -648,6 +651,8 @@ function sim.moveToPose(...)
                 local nv={newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7],newPosVelAccel[8]}
                 local na={newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11],newPosVelAccel[12]}
                 callback(mi,nv,na,auxData)
+            else
+                error('sim.rmlStep returned error code '..result)
             end
             if result==0 then
                 sim.switchThread()
@@ -731,7 +736,7 @@ function sim.moveToConfig(...)
         end
         local syncTime
         result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
-        if result~=-1 then
+        if result>=0 then
             if result==0 then
                 timeLeft=dt-syncTime
             end
@@ -741,6 +746,8 @@ function sim.moveToConfig(...)
                 outAccel[i]=newPosVelAccel[#currentPos*2+i]
             end
             callback(outPos,outVel,outAccel,auxData)
+        else
+            error('sim.rmlStep returned error code '..result)
         end
         if result==0 then
             sim.switchThread()
@@ -1410,7 +1417,7 @@ end
 function sim.rmlMoveToPosition(...)
     -- For backward compatibility (02.10.2020)
     
-    local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,nullable=true}},...)
+    local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
     

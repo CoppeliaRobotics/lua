@@ -30,9 +30,12 @@ function sysCall_userConfig()
             <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
             <label text=""/>
 
-            <checkbox text="Hide path line when simulation running" on-change="_S.path.hideDuringSimulation_callback" id="2" />
+            <checkbox text="Hidden path during simulation" on-change="_S.path.hideDuringSimulation_callback" id="2" />
             <label text=""/>
 
+            <checkbox text="Path && ctrl points always hidden" on-change="_S.path.alwaysHide_callback" id="16" />
+            <label text=""/>
+            
             <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
             <label text=""/>
 
@@ -168,7 +171,7 @@ function _S.path.init()
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
     _S.path.createNewIfNeeded()
-    _S.path.setup()
+    return _S.path.setup()
 end
 
 function _S.path.createNewIfNeeded()
@@ -249,11 +252,15 @@ function _S.path.nonSimulation()
 end
 
 function _S.path.afterSimulation()
+    local c=_S.path.readInfo()
     _S.path.displayLine(1)
     _S.path.displayLine(2)
+    local v=4
+    if (c.bitCoded&32)~=0 then
+        v=0
+    end
     for i=1,#_S.path.ctrlPts,1 do
         local h=_S.path.ctrlPts[i].handle
-        local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
         sim.setObjectInt32Parameter(h,sim.objintparam_visibility_layer,v)
     end
 end
@@ -321,15 +328,24 @@ function _S.path.setObjectName(obj,name)
 end
 
 function _S.path.setup()
-    _S.path.getCtrlPts()
+    local ctrlPtsHandles=_S.path.getCtrlPts()
     if #_S.path.ctrlPts>1 then
         local c=_S.path.readInfo()
-        _S.path.computePaths()
+        _S.path.paths={}
+        _S.path.paths[1],_S.path.paths[2]=_S.path.computePaths()
+        if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
+            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1],0,#_S.path.paths[1]-7))
+        else
+            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1]))
+        end
+        sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(_S.path.paths[2]))
         _S.path.removeLine(1)
         _S.path.removeLine(2)
         _S.path.displayLine(1)
         _S.path.displayLine(2)
-        
+        if _S.path.refreshTrigger then
+            _S.path.refreshTrigger(ctrlPtsHandles,_S.path.paths[2],c)
+        end
         local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
         for i=1,#shapes,1 do
             local dat=sim.readCustomDataBlock(shapes[i],_S.path.shapeTag)
@@ -339,7 +355,11 @@ function _S.path.setup()
         end
         if _S.path.shaping and (c.bitCoded&4)~=0 then
             local m=sim.getObjectMatrix(_S.path.model,-1)
-            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,{m[3],m[7],m[11]})
+            m[4]=0
+            m[8]=0
+            m[12]=0
+            local v=sim.multiplyVector(m,c.upVector)
+            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,v)
             if sim.isHandleValid(s)==1 then
                 sim.writeCustomDataBlock(s,_S.path.shapeTag,"a")
                 sim.setObjectParent(s,_S.path.model,false)
@@ -361,6 +381,7 @@ function _S.path.setup()
         sysCall_afterCreate=nil
         sim.removeModel(_S.path.model)
     end
+    return ctrlPtsHandles,_S.path.paths[2]
 end
 
 function _S.path.computePaths()
@@ -420,25 +441,15 @@ function _S.path.computePaths()
         end
     end
     interpolatedPath2=_S.path.recomputeOrientations(interpolatedPath2)
-    _S.path.paths={}
-    _S.path.paths[1]=path
-    _S.path.paths[2]=interpolatedPath2
     
-    if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
-        sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path,0,#path-7))
-    else
-        sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(path))
-    end
-    sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(interpolatedPath2))
+    return path,interpolatedPath2
 end
 
 function _S.path.displayLine(index)
     _S.path.removeLine(index)
-    local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
-    local l=sim.getInt32Parameter(sim.intparam_visible_layers)
+    local c=_S.path.readInfo()
     local p=sim.getModelProperty(_S.path.model)
-    if (p&sim.modelproperty_not_visible)==0 and v&l>0 then
-        local c=_S.path.readInfo()
+    if (p&sim.modelproperty_not_visible)==0 and (c.bitCoded&32)==0 then
         local m=sim.getObjectMatrix(_S.path.model,-1)
         local path=_S.path.paths[index]
         local dr,col,s
@@ -497,6 +508,7 @@ function _S.path.removeLine(index)
 end
 
 function _S.path.getCtrlPts()
+    local config=_S.path.readInfo()
     local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
     local pts={}
     local map={}
@@ -515,7 +527,10 @@ function _S.path.getCtrlPts()
     end
     table.sort(pts,function(a,b) return a.index<b.index end)
     
-    local r,v=sim.getObjectInt32Parameter(_S.path.model,sim.objintparam_visibility_layer)
+    local v=4
+    if (config.bitCoded&32)~=0 then
+        v=0
+    end
     
     local _max={-999,-999,-999}
     local _min={999,999,999}
@@ -530,12 +545,17 @@ function _S.path.getCtrlPts()
         end
     end
     _S.path.ctrlPtsSize=math.max(_max[1]-_min[1],math.max(_max[2]-_min[2],_max[3]-_min[3]))/75
+    local handles={}
     for i=1,#pts,1 do
-        sim.setObjectFloatParameter(pts[i].handle,sim.dummyfloatparam_size,_S.path.ctrlPtsSize)
+        if not config.ctrlPtFixedSize then
+            sim.setObjectFloatParameter(pts[i].handle,sim.dummyfloatparam_size,_S.path.ctrlPtsSize)
+        end
+        handles[i]=pts[i].handle
     end
     _S.path.ctrlPts=pts
     _S.path.ctrlPtsMap=map
     _S.path.ctrlPtsPoseId=_S.path.getCtrlPtsPoseId()
+    return handles
 end
 
 function _S.path.removeDlg()
@@ -553,6 +573,7 @@ function _S.path.setDlgItemContent()
         simUI.setCheckboxValue(_S.path.ui,2,((config.bitCoded & 1)==0 and 0 or 2))
         simUI.setCheckboxValue(_S.path.ui,3,((config.bitCoded & 4)==0 and 0 or 2))
         simUI.setCheckboxValue(_S.path.ui,14,((config.bitCoded & 8)==0 and 0 or 2))
+        simUI.setCheckboxValue(_S.path.ui,16,((config.bitCoded & 32)==0 and 0 or 2))
         simUI.setEditValue(_S.path.ui,4,string.format("%.2f",config.smoothing),true)
         simUI.setEditValue(_S.path.ui,5,tostring(config.pointCnt),true)
         
@@ -571,13 +592,16 @@ end
 
 function _S.path.getDefaultInfoForNonExistingFields(info)
     if not info.bitCoded then
-        info.bitCoded=1 -- 1=show line during simulation, 2=closed, 4=generate shape, 8=show orientation frames, 16=auto orientation
+        info.bitCoded=1 -- 1=show line during simulation, 2=closed, 4=generate shape, 8=show orientation frames, 16=auto orientation, 32 always hide path & ctrl pts
     end
     if not info.autoOrientation then
         info.autoOrientation=0 -- 0=x along path, y up, 1=x along path, z up, 2=y along path, x up, etc.
     end
     if not info.pointCnt then
         info.pointCnt=200
+    end
+    if not info.ctrlPtFixedSize then
+        info.ctrlPtFixedSize=false
     end
     if not info.smoothing then
         info.smoothing=1
@@ -644,6 +668,17 @@ function _S.path.hideDuringSimulation_callback(ui,id,newVal)
         c.bitCoded=c.bitCoded-1
     end
     _S.path.writeInfo(c)
+    sim.announceSceneContentChange()
+end
+
+function _S.path.alwaysHide_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 32)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-32
+    end
+    _S.path.writeInfo(c)
+    _S.path.setup()
     sim.announceSceneContentChange()
 end
 
