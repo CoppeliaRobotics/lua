@@ -1161,6 +1161,16 @@ function Matrix4x4:fromposition(v)
     return r
 end
 
+function Matrix4x4:fromrt(r,t)
+    assert(r:sameshape{3,3},'r is not a 3x3 matrix')
+    assert(t:sameshape{3,1},'t is not a 3x1 matrix')
+    local m=Matrix(4,4)
+    m:assign(1,1,r)
+    m:assign(1,4,t)
+    m:set(4,4,1)
+    return m
+end
+
 function Matrix4x4:frompose(p)
     local m=Matrix4x4:fromquaternion{p[4],p[5],p[6],p[7]}
     m:set(1,4,p[1])
@@ -1208,13 +1218,9 @@ function Matrix4x4:topose(m,t)
 end
 
 function Matrix4x4:inv(m)
-    local r=m:slice(1,1,3,3)
+    local rt=m:slice(1,1,3,3):t()
     local t=m:slice(1,4,3,4)
-    local m=Matrix(4,4)
-    m:assign(1,1,r:t())
-    m:assign(1,4,-t)
-    m:set(4,4,1)
-    return m
+    return Matrix4x4:fromrt(rt,-rt*t)
 end
 
 setmetatable(Matrix4x4,{__call=function(self,data)
