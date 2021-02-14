@@ -1487,5 +1487,11 @@ if arg and #arg==1 and arg[1]=='test' then
             end
         end
     end
+    for i=1,1000 do
+        local m=Matrix4x4:random()
+        local mi=Matrix4x4:inv(m)
+        assert(approxEq(m*mi,Matrix:eye(4)))
+        assert(approxEq(mi*m,Matrix:eye(4)))
+    end
     print('tests passed')
 end
