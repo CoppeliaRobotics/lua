@@ -700,6 +700,10 @@ Returns a rotation matrix from euler angles.
 
 Returns a rotation matrix from quaternion.
 
+#### `Matrix3x3:random()`
+
+Returns a random rotation matrix.
+
 #### `Matrix3x3:rotx(angle)`
 
 Returns a rotation matrix from rotation around X axis.
@@ -748,9 +752,17 @@ Returns a transformation matrix from unit quaternion (null translation).
 
 Returns a transformation matrix from rotation matrix (null translation).
 
+#### `Matrix4x4:fromrt(r,t)`
+
+Returns a transformation matrix from rotation matrix and translation vector.
+
 #### `Matrix4x4:inv(m)`
 
-Returns the inverse matrix.
+Returns the inverted of the given homogeneous transformation matrix.
+
+#### `Matrix4x4:random()`
+
+Returns random homogeneous transformation matrix (from a ranbdom 3x3 rotation and a random 3-vector).
 
 #### `Matrix4x4:toeuler(m,t)`
 
@@ -811,6 +823,14 @@ Same as `Vector(3,data)`. See [`Vector(len,data)`](#vectorlendata).
 #### `Vector3:hom(v)`
 
 Returns a 4-dimensional homogeneous coordinates vector from the given 3-dimensional vector or table `v`.
+
+#### `Vector3:random()`
+
+Returns a 3-dimensional vector of random coordinates.
+
+#### `Vector3:unitrandom()`
+
+Returns a 3-dimensional unit-vector of random coordinates (uniformly distributed in spherical coords).
 
 #### `Vector4(data)`
 

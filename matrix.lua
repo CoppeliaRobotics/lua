@@ -984,6 +984,21 @@ function Vector3:hom(v)
     end
 end
 
+function Vector3:random()
+    local rand=function() return math.tan((math.random()-0.5)*2*math.pi*0.99) end
+    return Vector3{rand(),rand(),rand()}
+end
+
+function Vector3:unitrandom()
+    local theta=math.random()*math.pi
+    local phi=math.random()*math.pi*2
+    return Vector3{
+        math.sin(theta)*math.cos(phi),
+        math.sin(theta)*math.sin(phi),
+        math.cos(theta)
+    }
+end
+
 setmetatable(Vector3,{__call=function(self,data)
     return Vector(3,data)
 end})
@@ -1131,6 +1146,10 @@ function Matrix3x3:toeuler(m,t)
     return e
 end
 
+function Matrix3x3:random()
+    return Matrix3x3:fromaxisangle(Vector3:unitrandom(),math.random()*math.pi*2)
+end
+
 setmetatable(Matrix3x3,{__call=function(self,data)
     return Matrix(3,3,data)
 end})
@@ -1159,6 +1178,16 @@ function Matrix4x4:fromposition(v)
     local r=Matrix:eye(4)
     for i=1,3 do r:set(i,4,v[i]) end
     return r
+end
+
+function Matrix4x4:fromrt(r,t)
+    assert(r:sameshape{3,3},'r is not a 3x3 matrix')
+    assert(t:sameshape{3,1},'t is not a 3x1 matrix')
+    local m=Matrix(4,4)
+    m:assign(1,1,r)
+    m:assign(1,4,t)
+    m:set(4,4,1)
+    return m
 end
 
 function Matrix4x4:frompose(p)
@@ -1208,11 +1237,13 @@ function Matrix4x4:topose(m,t)
 end
 
 function Matrix4x4:inv(m)
-    local r=m:slice(1,1,3,3):t()
-    local t=r*(m:slice(1,4,3,4)*-1)
-    local m=Matrix4x4:fromrotation(r)
-    m:assign(1,4,t)
-    return m
+    local rt=m:slice(1,1,3,3):t()
+    local t=m:slice(1,4,3,4)
+    return Matrix4x4:fromrt(rt,-rt*t)
+end
+
+function Matrix4x4:random(m)
+    return Matrix4x4:fromrt(Matrix3x3:random(),Vector3:random())
 end
 
 setmetatable(Matrix4x4,{__call=function(self,data)
@@ -1455,6 +1486,12 @@ if arg and #arg==1 and arg[1]=='test' then
                 assert(approxEq(m*i,Matrix:eye(n)))
             end
         end
+    end
+    for i=1,1000 do
+        local m=Matrix4x4:random()
+        local mi=Matrix4x4:inv(m)
+        assert(approxEq(m*mi,Matrix:eye(4)))
+        assert(approxEq(mi*m,Matrix:eye(4)))
     end
     print('tests passed')
 end
