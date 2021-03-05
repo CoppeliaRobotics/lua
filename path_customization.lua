@@ -18,74 +18,86 @@ function sysCall_beforeSimulation()
     _S.path.beforeSimulation()
 end
 
+function sysCall_beforeInstanceSwitch()
+    _S.path.hideCtrlPtDlg()
+end
+
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
-    local xml=[[
-            <label text="Main properties:" style="* {font-weight: bold;}"/>
-            <group layout="form" flat="true">
-            
-            <checkbox text="Path is closed" on-change="_S.path.closed_callback" id="1" />
-            <label text=""/>
+    
+    local pos='position="-50,-50"'
+    if _S.path.pathDlgPos then
+        pos='position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'"'
+    end
+    local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.removeDlg" modal="true" placement="relative" enabled="'..tostring(simStopped)..'" '..pos..[[>
+        <label text="Main properties:" style="* {font-weight: bold;}"/>
+        <group layout="form" flat="true">
+        
+        <checkbox text="Path is closed" on-change="_S.path.closed_callback" id="1" />
+        <label text=""/>
 
-            <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
-            <label text=""/>
+        <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
+        <label text=""/>
 
-            <checkbox text="Hidden path during simulation" on-change="_S.path.hideDuringSimulation_callback" id="2" />
-            <label text=""/>
+        <checkbox text="Hidden path during simulation" on-change="_S.path.hideDuringSimulation_callback" id="2" />
+        <label text=""/>
 
-            <checkbox text="Path && ctrl points always hidden" on-change="_S.path.alwaysHide_callback" id="16" />
-            <label text=""/>
-            
-            <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
-            <label text=""/>
+        <checkbox text="Path && ctrl points always hidden" on-change="_S.path.alwaysHide_callback" id="16" />
+        <label text=""/>
+        
+        <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
+        <label text=""/>
 
-            <label text="Smoothness"/>
-            <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
+        <checkbox text="Show control point dialog" on-change="_S.path.noCtrlPtDlg_callback" id="17" />
+        <label text=""/>
+        
+        <label text="Smoothness"/>
+        <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
 
-            <label text="Subdivisions"/>
-            <edit on-editing-finished="_S.path.pointCnt_callback" id="5" />
-            </group>
-            
-            <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
-            <group layout="form" flat="true" id="15">
+        <label text="Subdivisions"/>
+        <edit on-editing-finished="_S.path.pointCnt_callback" id="5" />
+        </group>
+        
+        <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
+        <group layout="form" flat="true" id="15">
 
-            <radiobutton text="X axis along path, Y axis up" on-click="_S.path.align_callback" id="7"/>
-            <label text=""/>
+        <radiobutton text="X axis along path, Y axis up" on-click="_S.path.align_callback" id="7"/>
+        <label text=""/>
 
-            <radiobutton text="X axis along path, Z axis up" on-click="_S.path.align_callback" id="8"/>
-            <label text=""/>
+        <radiobutton text="X axis along path, Z axis up" on-click="_S.path.align_callback" id="8"/>
+        <label text=""/>
 
-            <radiobutton text="Y axis along path, X axis up" on-click="_S.path.align_callback" id="9"/>
-            <label text=""/>
+        <radiobutton text="Y axis along path, X axis up" on-click="_S.path.align_callback" id="9"/>
+        <label text=""/>
 
-            <radiobutton text="Y axis along path, Z axis up" on-click="_S.path.align_callback" id="10"/>
-            <label text=""/>
+        <radiobutton text="Y axis along path, Z axis up" on-click="_S.path.align_callback" id="10"/>
+        <label text=""/>
 
-            <radiobutton text="Z axis along path, X axis up" on-click="_S.path.align_callback" id="11"/>
-            <label text=""/>
+        <radiobutton text="Z axis along path, X axis up" on-click="_S.path.align_callback" id="11"/>
+        <label text=""/>
 
-            <radiobutton text="Z axis along path, Y axis up" on-click="_S.path.align_callback" id="12"/>
-            <label text=""/>
-            
-            <label text="Up vector"/>
-            <edit on-editing-finished="_S.path.upVector_callback" id="13" />
-            
-            </group>
+        <radiobutton text="Z axis along path, Y axis up" on-click="_S.path.align_callback" id="12"/>
+        <label text=""/>
+        
+        <label text="Up vector"/>
+        <edit on-editing-finished="_S.path.upVector_callback" id="13" />
+        
+        </group>
 
-            <label text="Initialize path from ctrl point data:" style="* {font-weight: bold;}"/>
-            <group layout="vbox" flat="true">
+        <label text="Initialize path from ctrl point data:" style="* {font-weight: bold;}"/>
+        <group layout="vbox" flat="true">
 
-            <edit id="20" />
-            <button text="ctrl points as position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
-            <button text="ctrl points as pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
-            </group>
-            
-            <label text="Output path data:" style="* {font-weight: bold;}"/>
-            <group layout="vbox" flat="true">
-            <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
-            </group>
-    ]]
-    _S.path.ui=_S.path.utils.createCustomUi(xml,sim.getObjectName(_S.path.model),_S.path.previousDlgPos,true,'_S.path.removeDlg',true,false,false,'enabled="'..tostring(simStopped)..'"')
+        <edit id="20" />
+        <button text="ctrl points as position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
+        <button text="ctrl points as pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
+        </group>
+        
+        <label text="Output path data:" style="* {font-weight: bold;}"/>
+        <group layout="vbox" flat="true">
+        <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
+        </group>
+    </ui>]]
+    _S.path.ui=simUI.create(xml)
     _S.path.setDlgItemContent()
 end
 
@@ -163,10 +175,10 @@ function _S.path.init()
     _S.path.pathObjectTag='ABC_PATH_INFO'
     _S.path.pathCreationTag='ABC_PATH_CREATION'
     _S.path.shapeTag='ABC_PATHSHAPE_INFO'
-    _S.path.childTag='PATH_CHILD'
+    _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
     _S.path.model=sim.getObjectHandle(sim.handle_self)
     _S.path.uniqueId=sim.getStringParameter(sim.stringparam_uniqueid)
-    _S.path.refreshDelayInMs=300
+    _S.path.refreshDelayInMs=500
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
@@ -219,7 +231,7 @@ function _S.path.createNew(ctrlPts,onlyPosData,options,pointCount,smoothing,auto
         ctrlPt=sim.createDummy(0.01,{0,0.96,0.66,0,0,0,0,0,0,0,0,0})
         sim.setObjectParent(ctrlPt,_S.path.model,true)
         sim.setObjectPosition(ctrlPt,_S.path.model,fp(ctrlPts,i))
-        _S.path.setObjectName(ctrlPt,'ctrlPt')
+        sim.setSimilarName(ctrlPt,sim.getObjectName(_S.path.model),'__ctrlPt')
         if onlyPosData then
             sim.setObjectQuaternion(ctrlPt,_S.path.model,{0,0,0,1})
         else
@@ -235,8 +247,19 @@ function _S.path.createNew(ctrlPts,onlyPosData,options,pointCount,smoothing,auto
 end
 
 function _S.path.cleanup()
+    _S.path.hideCtrlPtDlg()
     if _S.path.ui then
         simUI.destroy(_S.path.ui)
+    end
+    -- Untag path dummies that are not part of the control pts (e.g. from another path):
+    local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
+    for i=1,#d,1 do
+        local h=d[i]
+        local dat=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
+        if dat and #dat>0 and _S.path.ctrlPtsMap[h]==nil then
+            sim.writeCustomDataBlock(h,_S.path.ctrlPtsTag,'')
+            sim.writeCustomDataBlock(h,_S.path.childTag,'') -- old: childTag not used anymore
+        end
     end
 end
 
@@ -248,6 +271,26 @@ function _S.path.nonSimulation()
     end
     if _S.path.refresh and sim.getSystemTimeInMs(_S.path.lastRefreshTimeInMs)>_S.path.refreshDelayInMs then
         _S.path.setup()
+    end
+    local c=_S.path.readInfo()
+    local selectedCtrlPts={}
+    if (c.bitCoded&64)~=0 then
+        -- Maybe open the ctrl pt dialog
+        local s=sim.getObjectSelection()
+        if s and #s>0 then
+            selectedCtrlPts=s
+            for i=1,#s,1 do
+                if _S.path.ctrlPtsMap[s[i]]==nil then
+                    selectedCtrlPts={}
+                    break
+                end
+            end
+        end
+    end
+    if #selectedCtrlPts>0 then
+        _S.path.showCtrlPtDlg(selectedCtrlPts)
+    else
+        _S.path.hideCtrlPtDlg()
     end
 end
 
@@ -266,6 +309,7 @@ function _S.path.afterSimulation()
 end
 
 function _S.path.beforeSimulation()
+    _S.path.hideCtrlPtDlg()
     _S.path.removeLine(1)
     local c=_S.path.readInfo()
     if c.bitCoded&1~=0 then
@@ -287,58 +331,21 @@ function _S.path.getCtrlPtsPoseId()
     return sim.packTable(p)
 end
 
-function _S.path.setObjectName(obj,name)
-    local pathName=sim.getObjectName(_S.path.model)
-    local base
-    local hash=''
-    local index=-1
-    local p=string.find(pathName,'#%d')
-    if p then
-        base=pathName:sub(1,p-1)
-        hash='#'
-        index=math.floor(tonumber(pathName:sub(p+1)))
-    else
-        base=pathName
-    end
-    base=base..'__'..name
-    local cnt=-1
-    local newName
-    while true do
-        local nm=base
-        if hash=='#' then
-            if cnt>=0 then
-                nm=nm..cnt
-            end
-            nm=nm..'#'..index
-            newName=nm
-            cnt=cnt+1
-        else
-            if index>=0 then
-                nm=nm..index
-            end
-            newName=nm
-            nm=nm..'#'
-            index=index+1
-        end
-        if sim.getObjectHandle(nm..'@silentError')==-1 then
-            break
-        end
-    end
-    sim.setObjectName(obj,newName)
-end
-
 function _S.path.setup()
     local ctrlPtsHandles=_S.path.getCtrlPts()
     if #_S.path.ctrlPts>1 then
         local c=_S.path.readInfo()
         _S.path.paths={}
-        _S.path.paths[1],_S.path.paths[2]=_S.path.computePaths()
+        _S.path.paths[1],_S.path.paths[2],_S.path.paths[3],_S.path.paths[4]=_S.path.computePaths()
         if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
             sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1],0,#_S.path.paths[1]-7))
+            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3],0,#_S.path.paths[3]-5))
         else
             sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1]))
+            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3]))
         end
         sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(_S.path.paths[2]))
+        sim.writeCustomDataBlock(_S.path.model,'PATH_X',sim.packDoubleTable(_S.path.paths[4]))
         _S.path.removeLine(1)
         _S.path.removeLine(2)
         _S.path.displayLine(1)
@@ -354,19 +361,14 @@ function _S.path.setup()
             end
         end
         if _S.path.shaping and (c.bitCoded&4)~=0 then
-            local m=sim.getObjectMatrix(_S.path.model,-1)
-            m[4]=0
-            m[8]=0
-            m[12]=0
-            local v=sim.multiplyVector(m,c.upVector)
-            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,v)
+            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,c.upVector)
             if sim.isHandleValid(s)==1 then
                 sim.writeCustomDataBlock(s,_S.path.shapeTag,"a")
                 sim.setObjectParent(s,_S.path.model,false)
                 local p=sim.getObjectProperty(s)
                 sim.setObjectProperty(s,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
-                _S.path.setObjectName(s,'shape')
-                sim.writeCustomDataBlock(s,_S.path.childTag,'s')
+                sim.setSimilarName(s,sim.getObjectName(_S.path.model),'__shape')
+                sim.writeCustomDataBlock(s,_S.path.childTag,'') -- old: childTag not used anymore
             end
         end
         
@@ -405,14 +407,27 @@ function _S.path.computePaths()
         path[#path+1]=q[2]
         path[#path+1]=q[3]
         path[#path+1]=q[4]
+        local data=sim.readCustomDataBlock(handles[i],_S.path.ctrlPtsTag)
+        data=sim.unpackTable(data)
+        local auxDat={0,0,0,0,0}
+        if data.virtualDist then
+            auxDat[1]=data.virtualDist
+        end
+        if data.auxChannels then
+            for j=1,4,1 do
+                auxDat[1+j]=data.auxChannels[j]
+            end
+        end
+        for j=1,5,1 do
+            path[#path+1]=auxDat[j]
+        end
     end
-    
    
     local function cb(a,b)
-        return sim.getConfigDistance(a,b,{1,1,1,0,0,0,0})
+        return sim.getConfigDistance(a,b,{1,1,1,0,0,0,0,1,0,0,0,0})
     end
    
-    local lengths1,totL=sim.getPathLengths(path,7,cb)
+    local lengths1,totL=sim.getPathLengths(path,12,cb)
 
     local interpolatedPath1={}
     
@@ -421,9 +436,9 @@ function _S.path.computePaths()
         for i=1,ptCnt,1 do
             local pp
             local t=(i-1)*totL/(ptCnt-1)
-            pp=sim.getPathInterpolatedConfig(path,lengths1,t,{type='quadraticBezier',forceOpen=false,strength=c.smoothing},{0,0,0,2,2,2,2})
+            pp=sim.getPathInterpolatedConfig(path,lengths1,t,{type='quadraticBezier',forceOpen=false,strength=c.smoothing},{0,0,0,2,2,2,2,0,0,0,0,0})
             for j=1,#pp,1 do
-                interpolatedPath1[(i-1)*7+j]=pp[j]
+                interpolatedPath1[(i-1)*12+j]=pp[j]
             end
         end
     else
@@ -431,18 +446,21 @@ function _S.path.computePaths()
     end
 
     local interpolatedPath2={}
-    local lengths2,totL=sim.getPathLengths(interpolatedPath1,7,cb)
+    local lengths2,totL=sim.getPathLengths(interpolatedPath1,12,cb)
     local ptCnt=c.pointCnt
     for i=1,ptCnt,1 do
         local t=(i-1)*totL/(ptCnt-1)
-        local pp=sim.getPathInterpolatedConfig(interpolatedPath1,lengths2,t,nil,{0,0,0,2,2,2,2})
+        local pp=sim.getPathInterpolatedConfig(interpolatedPath1,lengths2,t,nil,{0,0,0,2,2,2,2,0,0,0,0,0})
         for j=1,#pp,1 do
-            interpolatedPath2[(i-1)*7+j]=pp[j]
+            interpolatedPath2[(i-1)*12+j]=pp[j]
         end
     end
-    interpolatedPath2=_S.path.recomputeOrientations(interpolatedPath2)
+    local mPath=Matrix(#path//12,12,path)
+    local mInterpPath=Matrix(#interpolatedPath2//12,12,interpolatedPath2)
     
-    return path,interpolatedPath2
+    interpolatedPath2=_S.path.recomputeOrientations(mInterpPath:slice(1,1,mInterpPath:rows(),7):data())
+    
+    return mPath:slice(1,1,mPath:rows(),7):data(),interpolatedPath2,mPath:slice(1,8,mPath:rows(),mPath:cols()):data(),mInterpPath:slice(1,8,mInterpPath:rows(),mInterpPath:cols()):data()
 end
 
 function _S.path.displayLine(index)
@@ -518,7 +536,7 @@ function _S.path.getCtrlPts()
         if dat and #dat>0 then
             dat=sim.unpackTable(dat)
             dat.handle=h
-            sim.writeCustomDataBlock(h,_S.path.childTag,'p')
+            sim.writeCustomDataBlock(h,_S.path.childTag,'') -- old: childTag not used anymore
         end
         if dat then
             pts[#pts+1]=dat
@@ -560,7 +578,7 @@ end
 
 function _S.path.removeDlg()
     local x,y=simUI.getPosition(_S.path.ui)
-    _S.path.previousDlgPos={x,y}
+    _S.path.pathDlgPos={x,y}
     simUI.destroy(_S.path.ui)
     _S.path.ui=nil
 end
@@ -574,6 +592,7 @@ function _S.path.setDlgItemContent()
         simUI.setCheckboxValue(_S.path.ui,3,((config.bitCoded & 4)==0 and 0 or 2))
         simUI.setCheckboxValue(_S.path.ui,14,((config.bitCoded & 8)==0 and 0 or 2))
         simUI.setCheckboxValue(_S.path.ui,16,((config.bitCoded & 32)==0 and 0 or 2))
+        simUI.setCheckboxValue(_S.path.ui,17,((config.bitCoded & 64)==0 and 0 or 2))
         simUI.setEditValue(_S.path.ui,4,string.format("%.2f",config.smoothing),true)
         simUI.setEditValue(_S.path.ui,5,tostring(config.pointCnt),true)
         
@@ -592,7 +611,7 @@ end
 
 function _S.path.getDefaultInfoForNonExistingFields(info)
     if not info.bitCoded then
-        info.bitCoded=1 -- 1=show line during simulation, 2=closed, 4=generate shape, 8=show orientation frames, 16=auto orientation, 32 always hide path & ctrl pts
+        info.bitCoded=1 -- 1=show line during simulation, 2=closed, 4=generate shape, 8=show orientation frames, 16=auto orientation, 32 always hide path & ctrl pts, 64 show ctrl pt dialog
     end
     if not info.autoOrientation then
         info.autoOrientation=0 -- 0=x along path, y up, 1=x along path, z up, 2=y along path, x up, etc.
@@ -690,6 +709,17 @@ function _S.path.showOrientation_callback(ui,id,newVal)
     end
     _S.path.writeInfo(c)
     _S.path.setup()
+    sim.announceSceneContentChange()
+end
+
+function _S.path.noCtrlPtDlg_callback(ui,id,newVal)
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded | 64)
+    if newVal==0 then
+        c.bitCoded=c.bitCoded-64
+    end
+    _S.path.writeInfo(c)
+    _S.path.hideCtrlPtDlg()
     sim.announceSceneContentChange()
 end
 
@@ -856,82 +886,242 @@ end
 
 function _S.path.recomputeOrientations(path)
     local c=_S.path.readInfo()
+
+    function getPreviousPt(mpath,index)
+        local retVal,nIndex
+        if index~=1 then
+            nIndex=index-1
+            retVal=Vector3(mpath[nIndex])
+        else
+            if (c.bitCoded&2)~=0 then
+                nIndex=mpath:rows()-1
+                retVal=Vector3(mpath[nIndex])
+            end
+        end
+        return retVal,nIndex
+    end
+    
+    function getNextPt(mpath,index)
+        local retVal,nIndex
+        if index~=mpath:rows() then
+            nIndex=index+1
+            retVal=Vector3(mpath[nIndex])
+        else
+            if (c.bitCoded&2)~=0 then
+                nIndex=2
+                retVal=Vector3(mpath[nIndex])
+            end
+        end
+        return retVal,nIndex
+    end
+
+
     if (c.bitCoded&16)~=0 then
         local zvect=Vector3(c.upVector)
         local mppath=Matrix(#path//7,7,path)
         mppath=mppath:slice(1,1,mppath:rows(),3)
         local retPath=Matrix(mppath:rows(),7)
+        local prevPose
         for i=1,mppath:rows(),1 do
-            local p0,p1,p2
-            if i~=1 then
-                p0=Vector3(mppath[i-1])
-            else
-                if (c.bitCoded&2)~=0 then
-                    p0=Vector3(mppath[mppath:rows()-1])
-                end
-            end
-            p1=Vector3(mppath[i+0])
-            if i~=mppath:rows() then
-                p2=Vector3(mppath[i+1])
-            else
-                if (c.bitCoded&2)~=0 then
-                    p2=Vector3(mppath[2])
-                end
-            end
-            local vf
-            if p0 and p2 then
-                vf=(p1-p0)+(p2-p1)
-            else
-                if i==1 then
-                    vf=(p2-p1)
+            local p1=Vector3(mppath[i])
+            local p0,ni0=getPreviousPt(mppath,i)
+            if p0 and (p1-p0):norm()<0.0001 then
+                -- Prev pt is coincident
+                if prevPose then
+                    p1=nil -- means: use prevPose
                 else
-                    vf=(p1-p0)
+                    -- this is the first pt of a closed path
+                    while (p1-p0):norm()<0.0001 do
+                        p0,ni0=getPreviousPt(mppath,ni0)
+                    end
                 end
             end
-            vf=vf/vf:norm()
-            local vr=vf:cross(zvect)
-            vr=vr/vr:norm()
+            if p1 then
+                local p2,ni2=getNextPt(mppath,i)
+                while p2 and (p1-p2):norm()<0.0001 do
+                    -- Next pt is coincident
+                    p2,ni2=getNextPt(mppath,ni2)
+                end
             
-            local m
-            if c.autoOrientation==0 then
-                m=vf
-                m=m:horzcat(vr:cross(vf))
-                m=m:horzcat(vr)
+                local vf
+                if p0 and p2 then
+                    vf=(p1-p0)+(p2-p1)
+                else
+                    -- open path
+                    if i==1 then
+                        -- first pt
+                        vf=(p2-p1)
+                    else
+                        -- last pt
+                        vf=(p1-p0)
+                    end
+                end
+                vf=vf/vf:norm()
+                local vr=vf:cross(zvect)
+                vr=vr/vr:norm()
+                
+                local m
+                if c.autoOrientation==0 then
+                    m=vf
+                    m=m:horzcat(vr:cross(vf))
+                    m=m:horzcat(vr)
+                end
+                if c.autoOrientation==1 then
+                    m=vf
+                    m=m:horzcat(vr*-1)
+                    m=m:horzcat(vf:cross(vr*-1))
+                end
+                if c.autoOrientation==2 then
+                    m=vr:cross(vf)
+                    m=m:horzcat(vf)
+                    m=m:horzcat(vr*-1)
+                end
+                if c.autoOrientation==3 then
+                    m=vr
+                    m=m:horzcat(vf)
+                    m=m:horzcat(vr:cross(vf))
+                end
+                if c.autoOrientation==4 then
+                    m=vr:cross(vf)
+                    m=m:horzcat(vr)
+                    m=m:horzcat(vf)
+                end
+                if c.autoOrientation==5 then
+                    m=vr*-1
+                    m=m:horzcat(vr:cross(vf))
+                    m=m:horzcat(vf)
+                end
+                m=Matrix4x4:fromrotation(m)
+                m[1][4]=p1[1]
+                m[2][4]=p1[2]
+                m[3][4]=p1[3]
+                prevPose=Matrix4x4:topose(m)
             end
-            if c.autoOrientation==1 then
-                m=vf
-                m=m:horzcat(vr*-1)
-                m=m:horzcat(vf:cross(vr*-1))
-            end
-            if c.autoOrientation==2 then
-                m=vr:cross(vf)
-                m=m:horzcat(vf)
-                m=m:horzcat(vr*-1)
-            end
-            if c.autoOrientation==3 then
-                m=vr
-                m=m:horzcat(vf)
-                m=m:horzcat(vr:cross(vf))
-            end
-            if c.autoOrientation==4 then
-                m=vr:cross(vf)
-                m=m:horzcat(vr)
-                m=m:horzcat(vf)
-            end
-            if c.autoOrientation==5 then
-                m=vr*-1
-                m=m:horzcat(vr:cross(vf))
-                m=m:horzcat(vf)
-            end
-            m=Matrix4x4:fromrotation(m)
-            m[1][4]=p1[1]
-            m[2][4]=p1[2]
-            m[3][4]=p1[3]
-            retPath[i]=Matrix4x4:topose(m)
+            retPath[i]=prevPose
         end
         path=retPath:data()
     end
     return path
 end
+
+function _S.path.showCtrlPtDlg(selectedCtrlPtHandles)
+    if not _S.path.ctrlPtUi then
+        local pos='position="-50,-50"'
+        if _S.path.ctrlPtDlgPos then
+            pos='position="'.._S.path.ctrlPtDlgPos[1]..','.._S.path.ctrlPtDlgPos[2]..'"'
+        end
+        local xml ='<ui title="Control point properties" activate="false" closeable="true" on-close="_S.path.ctrlPtClose_callback" placement="relative" layout="form" '..pos..[[>
+                <label text="virtual distance"/>
+                <edit value="xx" id="11" on-editing-finished="_S.path.ctrlPtVdist_callback"/>
+                
+                <label text="aux. channel 1"/>
+                <edit value="xx" id="1" on-editing-finished="_S.path.ctrlPtChannel_callback"/>
+                <label text="aux. channel 2"/>
+                <edit value="xx" id="2" on-editing-finished="_S.path.ctrlPtChannel_callback"/>
+                <label text="aux. channel 3"/>
+                <edit value="xx" id="3" on-editing-finished="_S.path.ctrlPtChannel_callback"/>
+                <label text="aux. channel 4"/>
+                <edit value="xx" id="4" on-editing-finished="_S.path.ctrlPtChannel_callback"/>
+        </ui>]]
+        _S.path.ctrlPtUi=simUI.create(xml)
+    end
+    if _S.path.selectedCtrlPtHandles==nil or sim.packInt32Table(_S.path.selectedCtrlPtHandles)~=sim.packInt32Table(selectedCtrlPtHandles) then
+        _S.path.selectedCtrlPtHandles=selectedCtrlPtHandles  
+        _S.path.updateCtrlPtUi()
+    end
+end
+
+function _S.path.updateCtrlPtUi()
+    local vals
+    for i=1,#_S.path.selectedCtrlPtHandles,1 do
+        local h=_S.path.selectedCtrlPtHandles[i]
+        local data=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
+        data=sim.unpackTable(data)
+        local v={0,0,0,0,0}
+        if data.virtualDist then
+            v[1]=data.virtualDist
+        end
+        if data.auxChannels then
+            for j=1,4,1 do
+                v[1+j]=data.auxChannels[j]
+            end
+        end
+        if i==1 then
+            vals=v
+        else
+            for j=1,5,1 do
+                if vals[j]~=v[j] then
+                    vals[j]=''
+                end
+            end
+        end
+    end
+    for j=1,5,1 do
+        local n=tonumber(vals[j])
+        if n then
+            vals[j]=string.format("%.4f",n)
+        end
+    end
+    
+    local sel=simUI.getCurrentEditWidget(_S.path.ctrlPtUi)
+    simUI.setEditValue(_S.path.ctrlPtUi,11,vals[1])
+    for i=1,4,1 do
+        simUI.setEditValue(_S.path.ctrlPtUi,i,vals[1+i])
+    end
+    simUI.setCurrentEditWidget(_S.path.ctrlPtUi,sel)
+end
+
+function _S.path.hideCtrlPtDlg()
+    if _S.path.ctrlPtUi then
+        _S.path.ctrlPtDlgPos={}
+        _S.path.ctrlPtDlgPos[1],_S.path.ctrlPtDlgPos[2]=simUI.getPosition(_S.path.ctrlPtUi)
+        simUI.destroy(_S.path.ctrlPtUi)
+        _S.path.ctrlPtUi=nil
+    end
+    _S.path.selectedCtrlPtHandles=nil
+end
+
+function _S.path.ctrlPtClose_callback()
+    _S.path.hideCtrlPtDlg()
+    local c=_S.path.readInfo()
+    c.bitCoded=(c.bitCoded|64)-64
+    _S.path.writeInfo(c)
+end
+
+function _S.path.ctrlPtVdist_callback(ui,id,v)
+    v=tonumber(v)
+    if v then
+        for i=1,#_S.path.selectedCtrlPtHandles,1 do
+            local h=_S.path.selectedCtrlPtHandles[i]
+            local data=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
+            data=sim.unpackTable(data)
+            data.virtualDist=v
+            sim.writeCustomDataBlock(h,_S.path.ctrlPtsTag,sim.packTable(data))
+        end
+        _S.path.setup()
+        sim.announceSceneContentChange()
+    end
+    _S.path.updateCtrlPtUi()
+end
+
+function _S.path.ctrlPtChannel_callback(ui,id,v)
+    v=tonumber(v)
+    if v then
+        for i=1,#_S.path.selectedCtrlPtHandles,1 do
+            local h=_S.path.selectedCtrlPtHandles[i]
+            local data=sim.readCustomDataBlock(h,_S.path.ctrlPtsTag)
+            data=sim.unpackTable(data)
+            if not data.auxChannels then
+                data.auxChannels={0,0,0,0}
+            end
+            data.auxChannels[id]=v
+            sim.writeCustomDataBlock(h,_S.path.ctrlPtsTag,sim.packTable(data))
+        end
+        _S.path.setup()
+        sim.announceSceneContentChange()
+    end
+    _S.path.updateCtrlPtUi()
+end
+
 
 return _S.path

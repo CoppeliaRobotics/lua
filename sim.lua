@@ -1349,7 +1349,7 @@ function sim.rmlMoveToJointPositions(...)
     local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',size='1..*',item_type='int'},{type='int'},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size='1..*',default=NIL,nullable=true}},...)
     local dof=#jhandles
     
-    if dof<1 or (currentVel and dof~=#currentVel) or (currentAccel and dof~=#currentAccel) or dof~=#maxVel or dof~=#maxAccel or dof~=#maxJerk or dof~=#targetPos or (targetVel and dof~=#targetVel) or (direction and dof~=#direction) then
+    if dof<1 or (currentVel and dof>#currentVel) or (currentAccel and dof>#currentAccel) or dof>#maxVel or dof>#maxAccel or dof>#maxJerk or dof>#targetPos or (targetVel and dof>#targetVel) or (direction and dof>#direction) then
         error("Bad table size.")
     end
 
@@ -1473,6 +1473,67 @@ function sim.boolXor16(a,b)
     return math.floor(a)~math.floor(b)
 end
 
+function sim.setSimilarName(handle,original,suffix)
+    -- Undocumented function (for now)
+    sim.setObjectName(handle,'__setSimilarName__tmp__')
+    local base
+    local hash=''
+    local index=-1
+    local p=string.find(original,'#%d')
+    if p then
+        base=original:sub(1,p-1)
+        hash='#'
+        index=math.floor(tonumber(original:sub(p+1)))
+    else
+        base=original
+    end
+    base=base..suffix
+    local cnt=-1
+    local newName
+    while true do
+        local nm=base
+        if hash=='#' then
+            if cnt>=0 then
+                nm=nm..cnt
+            end
+            nm=nm..'#'..index
+            newName=nm
+            cnt=cnt+1
+        else
+            if index>=0 then
+                nm=nm..index
+            end
+            newName=nm
+            nm=nm..'#'
+            index=index+1
+        end
+        if sim.getObjectHandle(nm..'@silentError')==-1 then
+            break
+        end
+    end
+    sim.setObjectName(handle,newName)
+end
+
+function sim.getShapeBB(handle)
+    -- Undocumented function (for now)
+    local s={}
+    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_x)
+    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_x)
+    s[1]=m-n
+    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_y)
+    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_y)
+    s[2]=m-n
+    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_z)
+    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_z)
+    s[3]=m-n
+    return s
+end
+
+function sim.setShapeBB(handle,size)
+    -- Undocumented function (for now)
+    local s=sim.getShapeBB(handle)
+    sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
+end
 ----------------------------------------------------------
 
 
@@ -1855,7 +1916,7 @@ end
 
 function _S.debug.getVarDiff(pref,varName,oldV,newV)
     local t=''
-    local lf='<br>'--'\n'
+    local lf='\n'
     if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or _S.comparableTables(oldV,newV) )  then  -- comparableTables: an empty map is seen as an array
         if type(newV)~='table' then
             if newV~=oldV then

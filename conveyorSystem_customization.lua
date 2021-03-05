@@ -8,7 +8,7 @@ function _S.conveyorSystem.init(config)
     
     _S.conveyorSystem.velocity=_S.conveyorSystem.config.initVel
     _S.conveyorSystem.offset=_S.conveyorSystem.config.initPos
-    sim.writeCustomDataBlock(_S.conveyorSystem.model,'PATHMOV',sim.packTable({currentPos=_S.conveyorSystem.offset}))
+    sim.writeCustomDataBlock(_S.conveyorSystem.model,'CONVMOV',sim.packTable({currentPos=_S.conveyorSystem.offset}))
     
     path.init()
 
@@ -20,13 +20,13 @@ end
 function sysCall_afterSimulation()
     _S.conveyorSystem.velocity=_S.conveyorSystem.config.initVel
     _S.conveyorSystem.offset=_S.conveyorSystem.config.initPos
-    sim.writeCustomDataBlock(_S.conveyorSystem.model,'PATHMOV',sim.packTable({currentPos=_S.conveyorSystem.offset}))
+    sim.writeCustomDataBlock(_S.conveyorSystem.model,'CONVMOV',sim.packTable({currentPos=_S.conveyorSystem.offset}))
     
     path.afterSimulation()
 end
 
 function sysCall_actuation()
-    local dat=sim.readCustomDataBlock(_S.conveyorSystem.model,'PATHMOV')
+    local dat=sim.readCustomDataBlock(_S.conveyorSystem.model,'CONVMOV')
     local off
     if dat then
         dat=sim.unpackTable(dat)
@@ -49,7 +49,7 @@ function sysCall_actuation()
         dat={}
     end
     dat.currentPos=_S.conveyorSystem.offset
-    sim.writeCustomDataBlock(_S.conveyorSystem.model,'PATHMOV',sim.packTable(dat))
+    sim.writeCustomDataBlock(_S.conveyorSystem.model,'CONVMOV',sim.packTable(dat))
 end
 
 function path.refreshTrigger(ctrlPts,pathData,config)
@@ -73,10 +73,16 @@ function path.refreshTrigger(ctrlPts,pathData,config)
 
     local shapes=sim.getObjectsInTree(_S.conveyorSystem.model,sim.object_shape_type,1+2)
     local oldPads={}
+    local oldRespondable
     for i=1,#shapes,1 do
         local dat=sim.readCustomDataBlock(shapes[i],'PATHPAD')
         if dat then
-            oldPads[#oldPads+1]=shapes[i]
+            if dat=='a' then
+                oldPads[#oldPads+1]=shapes[i]
+            end
+            if dat=='b' then
+                oldRespondable=shapes[i]
+            end
         end
     end
     
@@ -88,17 +94,41 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         for i=1,#oldPads,1 do
             sim.removeObject(oldPads[i])
         end
+        if oldRespondable then
+            sim.removeObject(oldRespondable)
+        end
         for i=1,padCnt,1 do
             local opt=16
             if _S.conveyorSystem.config.respondablePads then
                 opt=opt+8
             end
             _S.conveyorSystem.padHandles[i]=sim.createPureShape(0,opt,_S.conveyorSystem.config.padSize,0.01)
-            path.setObjectName(_S.conveyorSystem.padHandles[i],"pad")
+            sim.setSimilarName(_S.conveyorSystem.padHandles[i],sim.getObjectName(_S.conveyorSystem.model),'__pad')
             sim.setShapeColor(_S.conveyorSystem.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.padCol)
             sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
             sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i],'PATHPAD','a')
             sim.setObjectProperty(_S.conveyorSystem.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
+        end
+        if _S.conveyorSystem.config.respondableBase then
+            local cnt=1+_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.respondableBaseElementLength*0.5)
+            local off=_S.conveyorSystem.config.respondableBaseElementLength*0.5
+            local el={}
+            local p=0
+            for i=1,cnt,1 do
+                el[i]=sim.createPureShape(0,24,{_S.conveyorSystem.config.respondableBaseElementLength,_S.conveyorSystem.config.padSize[2],_S.conveyorSystem.config.padSize[2]/2},0.01)
+                local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
+                pos[3]=pos[3]-_S.conveyorSystem.config.padSize[2]/4-_S.conveyorSystem.config.padSize[3]
+                local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
+                sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
+                sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+                p=p+off
+            end
+            local resp=sim.groupShapes(el)
+            sim.setObjectParent(resp,_S.conveyorSystem.model,true)
+            sim.writeCustomDataBlock(resp,'PATHPAD','b')
+            sim.setObjectProperty(resp,sim.objectproperty_selectmodelbaseinstead)
+            sim.setObjectInt32Parameter(resp,sim.objintparam_visibility_layer,256)
+            sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__respondable')
         end
     end
     _S.conveyorSystem.setPathPos(_S.conveyorSystem.offset)

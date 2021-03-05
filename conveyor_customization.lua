@@ -2,13 +2,21 @@ path=require('path_customization')
 
 _S.conveyor={}
 
+function sysCall_actuation()
+    _S.conveyor.actuation()
+end
+
+function sysCall_afterSimulation()
+    _S.conveyor.afterSimulation()
+end
+
 function _S.conveyor.init(config)
     _S.conveyor.config=config
     _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
     
     _S.conveyor.velocity=_S.conveyor.config.initVel
     _S.conveyor.offset=_S.conveyor.config.initPos
-    sim.writeCustomDataBlock(_S.conveyor.model,'PATHMOV',sim.packTable({currentPos=_S.conveyor.offset}))
+    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable({currentPos=_S.conveyor.offset}))
     
     local ctrlPts=path.init()
     for i=1,9,1 do
@@ -21,6 +29,17 @@ function _S.conveyor.init(config)
     _S.conveyor.pathPositions=m:slice(1,1,m:rows(),3):data()
     _S.conveyor.pathQuaternions=m:slice(1,4,m:rows(),7):data()
     _S.conveyor.pathLengths,_S.conveyor.totalLength=sim.getPathLengths(_S.conveyor.pathPositions,3)
+    -- shift positions towards the outside, by the half thickness of the pads:
+    for i=1,m:rows(),1 do
+        local rot=Matrix3x3:fromquaternion(m:slice(i,4,i,7):data())
+        local zaxis=rot:slice(1,3,3,3)
+        local p=m:slice(i,1,i,3):t()
+        p=p+zaxis*_S.conveyor.config.padSize[3]/2
+        _S.conveyor.pathPositions[3*(i-1)+1]=p[1]
+        _S.conveyor.pathPositions[3*(i-1)+2]=p[2]
+        _S.conveyor.pathPositions[3*(i-1)+3]=p[3]
+    end
+    
     local padCnt=_S.conveyor.totalLength//(_S.conveyor.config.padSize[1]+_S.conveyor.config.interPadSpace)
     _S.conveyor.padOffset=(_S.conveyor.totalLength/padCnt)
 
@@ -47,7 +66,7 @@ function _S.conveyor.init(config)
                 opt=opt+8
             end
             _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,_S.conveyor.config.padSize,0.01)
-            path.setObjectName(_S.conveyor.padHandles[i],"pad")
+            sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
             sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.padCol)
             sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
             sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')
@@ -57,16 +76,16 @@ function _S.conveyor.init(config)
     _S.conveyor.setPathPos(_S.conveyor.offset)
 end
 
-function sysCall_afterSimulation()
+function _S.conveyor.afterSimulation()
     _S.conveyor.velocity=_S.conveyor.config.initVel
     _S.conveyor.offset=_S.conveyor.config.initPos
-    sim.writeCustomDataBlock(_S.conveyor.model,'PATHMOV',sim.packTable({currentPos=_S.conveyor.offset}))
+    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable({currentPos=_S.conveyor.offset}))
     
     path.afterSimulation()
 end
 
-function sysCall_actuation()
-    local dat=sim.readCustomDataBlock(_S.conveyor.model,'PATHMOV')
+function _S.conveyor.actuation()
+    local dat=sim.readCustomDataBlock(_S.conveyor.model,'CONVMOV')
     local off
     if dat then
         dat=sim.unpackTable(dat)
@@ -89,11 +108,11 @@ function sysCall_actuation()
         dat={}
     end
     dat.currentPos=_S.conveyor.offset
-    sim.writeCustomDataBlock(_S.conveyor.model,'PATHMOV',sim.packTable(dat))
+    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable(dat))
 end
 
 function path.shaping(path,pathIsClosed,upVector)
-    local section={0.00-_S.conveyor.config.padSize[3]/2,-_S.conveyor.config.padSize[2]/2,0.00-_S.conveyor.config.padSize[3]/2,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.padSize[2]/2,0.00-_S.conveyor.config.padSize[3]/2,-_S.conveyor.config.padSize[2]/2}
+    local section={0,-_S.conveyor.config.padSize[2]/2,0,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.padSize[2]/2,0,-_S.conveyor.config.padSize[2]/2}
     local options=0
     if pathIsClosed then
         options=options|4

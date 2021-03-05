@@ -15,7 +15,7 @@ table.insert(__initFunctions, function()
             taskHandle=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                 },
                 ...
             )
@@ -28,7 +28,7 @@ table.insert(__initFunctions, function()
             taskHandle,path=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='float'},
                 },
                 ...
@@ -42,7 +42,7 @@ table.insert(__initFunctions, function()
             taskHandle,path,index=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='float'},
                     {type='int'},
                 },
@@ -57,7 +57,7 @@ table.insert(__initFunctions, function()
             taskHandle,path=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='float'},
                 },
                 ...
@@ -71,7 +71,7 @@ table.insert(__initFunctions, function()
             taskHandle,path=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='float'},
                 },
                 ...
@@ -85,7 +85,7 @@ table.insert(__initFunctions, function()
             taskHandle=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                 },
                 ...
             )
@@ -98,7 +98,7 @@ table.insert(__initFunctions, function()
             taskHandle,path,lineSize,color,extraAttributes=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='float'},
                     {type='float'},
                     {type='table',item_type='float',size='3'},
@@ -115,7 +115,7 @@ table.insert(__initFunctions, function()
             taskHandle,pointSize,lineSize,color,startColor,goalColor=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='float'},
                     {type='float'},
                     {type='table',item_type='float',size='3'},
@@ -133,7 +133,7 @@ table.insert(__initFunctions, function()
             taskHandle,dwos=checkargsEx(
                 {level=1},
                 {
-                    {type='int'},
+                    {type='string'},
                     {type='table',item_type='int'},
                 },
                 ...
