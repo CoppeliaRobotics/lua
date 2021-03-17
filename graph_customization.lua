@@ -101,8 +101,11 @@ end
 
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
-    local xml=[[
-            <label text="Visible while simulation not running"/>
+    if not _S.graph.previousDlgPos then
+        _S.graph.previousDlgPos=' placement="relative" position="-50,50">'
+    end
+    local xml='<ui title="'..sim.getObjectName(_S.graph.model)..'" closeable="true" on-close="_S.graph.removeDlg" modal="true" resizable="false" activate="false" layout="form" '.._S.graph.previousDlgPos..' enabled="'..tostring(simStopped)..'" >'
+          xml=xml..[[<label text="Visible while simulation not running"/>
             <checkbox text="" on-change="_S.graph.visibleDuringNonSimulation_callback" id="1" />
 
             <label text="Visible while simulation running"/>
@@ -124,9 +127,10 @@ function sysCall_userConfig()
             <combobox id="7" on-change="_S.graph.updateFreqChanged_callback"></combobox>
             
             <label text="Preferred graph position"/>
-            <combobox id="6" on-change="_S.graph.graphPosChanged_callback"></combobox>
+            <combobox id="6" on-change="_S.graph.graphPosChanged_callback"></combobox></ui>
     ]]
-    _S.graph.ui=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousDlgPos,true,'_S.graph.removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
+--    _S.graph.ui=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousDlgPos,true,'_S.graph.removeDlg',true,false,false,'layout="form" enabled="'..tostring(simStopped)..'"')
+    _S.graph.ui=simUI.create(xml)
     _S.graph.setDlgItemContent()
 end
 
@@ -134,7 +138,7 @@ _S.graph={}
 
 function _S.graph.removeDlg()
     local x,y=simUI.getPosition(_S.graph.ui)
-    _S.graph.previousDlgPos={x,y}
+    _S.graph.previousDlgPos=' placement="absolute" position="'..x..','..y..'" '
     simUI.destroy(_S.graph.ui)
     _S.graph.ui=nil
 end
@@ -213,7 +217,7 @@ function _S.graph.onlegendclick(ui,id,curveName)
             _S.graph.selectedCurve[2]=id+2
         end
 
-        local xml=[[
+        local xml=[[<ui title="Operation on selected curve" placement="center" closeable="true" on-close="_S.graph.onCloseModal_callback" modal="true">
         <button text="Copy curve to clipboard" on-click="_S.graph.toClipboardClick_callback"/>
                 <label text="" style="* {margin-left: 350px;font-size: 1px;}"/>
         ]]
@@ -222,7 +226,9 @@ function _S.graph.onlegendclick(ui,id,curveName)
         else
             xml=xml..'<button text="Duplicate curve to static curve" on-click="_S.graph.toStaticClick_callback"/>'
         end
-        _S.graph.modalDlg=_S.graph.utils.createCustomUi(xml,"Operation on Selected Curve","center",true,"_S.graph.onCloseModal_callback",true)
+        xml=xml..'</ui>'
+--        _S.graph.modalDlg=_S.graph.utils.createCustomUi(xml,"Operation on Selected Curve","center",true,"_S.graph.onCloseModal_callback",true)
+        _S.graph.modalDlg=simUI.create(xml)
     end
 end
 
@@ -529,9 +535,9 @@ end
 function _S.graph.removePlot()
     if _S.graph.plotUi then
         local x,y=simUI.getPosition(_S.graph.plotUi)
-        _S.graph.previousPlotDlgPos={x,y}
+        _S.graph.previousPlotDlgPos=' placement="absolute" position="'..x..','..y..'" '
         local x,y=simUI.getSize(_S.graph.plotUi)
-        _S.graph.previousPlotDlgSize={x,y}
+        _S.graph.previousPlotDlgSize=' size="'..x..','..y..'" '
         _S.graph.plotTabIndex=#_S.graph.plots>1 and simUI.getCurrentTab(_S.graph.plotUi,77) or 0
         simUI.destroy(_S.graph.plotUi)
         _S.graph.plotUi=nil
@@ -562,7 +568,19 @@ function _S.graph.createPlot()
         if ((c['bitCoded'] & 4)~=0) then table.insert(_S.graph.plots, 1) end
         if ((c['bitCoded'] & 8)~=0) then table.insert(_S.graph.plots, 2) end
 
-        local xml=''
+        if not _S.graph.previousPlotDlgPos then
+            if c['graphPos']==0 then _S.graph.previousPlotDlgPos=' placement="relative" position="-50,-50" ' end
+            if c['graphPos']==1 then _S.graph.previousPlotDlgPos=' placement="relative" position="-50,50" ' end
+            if c['graphPos']==2 then _S.graph.previousPlotDlgPos=' placement="relative" position="50,50" ' end
+            if c['graphPos']==3 then _S.graph.previousPlotDlgPos=' placement="relative" position="50,-50" ' end
+            if c['graphPos']==4 then _S.graph.previousPlotDlgPos=' placement="center" ' end
+        end
+        
+        if not _S.graph.previousPlotDlgSize then
+            _S.graph.previousPlotDlgSize=''
+        end
+        
+        local xml='<ui title="'..sim.getObjectName(_S.graph.model)..'" closeable="true" on-close="_S.graph.onClosePlot_callback" resizable="true" activate="false" layout="grid" '.._S.graph.previousPlotDlgPos.._S.graph.previousPlotDlgSize..'>'
         if #_S.graph.plots>1 then xml=xml..'<tabs id="77">' end
         if ((c['bitCoded'] & 4)~=0) then
             if #_S.graph.plots>1 then xml=xml..'<tab title="Time graph">' end
@@ -579,17 +597,10 @@ function _S.graph.createPlot()
             if #_S.graph.plots>1 then xml=xml..'</tab>' end
         end
         if #_S.graph.plots>1 then xml=xml..'</tabs><br/>' end
-        xml=xml..'<label id="3" />'
+        xml=xml..'<label id="3" /></ui>'
         
-        if not _S.graph.previousPlotDlgPos then
-            if c['graphPos']==0 then _S.graph.previousPlotDlgPos='bottomRight' end
-            if c['graphPos']==1 then _S.graph.previousPlotDlgPos='topRight' end
-            if c['graphPos']==2 then _S.graph.previousPlotDlgPos='topLeft' end
-            if c['graphPos']==3 then _S.graph.previousPlotDlgPos='bottomLeft' end
-            if c['graphPos']==4 then _S.graph.previousPlotDlgPos='center' end
-        end
-        
-        _S.graph.plotUi=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousPlotDlgPos,true,"_S.graph.onClosePlot_callback",false,true,false,'layout="grid"',_S.graph.previousPlotDlgSize)
+        _S.graph.plotUi=simUI.create(xml)
+        --_S.graph.plotUi=_S.graph.utils.createCustomUi(xml,sim.getObjectName(_S.graph.model),_S.graph.previousPlotDlgPos,true,"_S.graph.onClosePlot_callback",false,true,false,'layout="grid"',_S.graph.previousPlotDlgSize)
         if ((c['bitCoded'] & 4)~=0) then
             simUI.setPlotLabels(_S.graph.plotUi,1,"Time (seconds)","")
         end
@@ -669,7 +680,6 @@ function _S.graph.getUpdateTick(v)
 end
 
 function _S.graph.init()
-    _S.graph.utils=require('utils')
     _S.graph.model=sim.getObjectHandle(sim.handle_self)
 	if sim.getExplicitHandling(_S.graph.model)==0 then
 		sim.setExplicitHandling(_S.graph.model,1)

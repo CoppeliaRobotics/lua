@@ -25,11 +25,11 @@ end
 function sysCall_userConfig()
     local simStopped=sim.getSimulationState()==sim.simulation_stopped
     
-    local pos='position="-50,-50"'
+    local pos=' placement="relative" position="-50,50" '
     if _S.path.pathDlgPos then
-        pos='position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'"'
+        pos=' placement="absolute" position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'" '
     end
-    local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.removeDlg" modal="true" placement="relative" enabled="'..tostring(simStopped)..'" '..pos..[[>
+    local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.removeDlg" modal="true" enabled="'..tostring(simStopped)..'" '..pos..[[>
         <label text="Main properties:" style="* {font-weight: bold;}"/>
         <group layout="form" flat="true">
         
@@ -170,7 +170,6 @@ end
 _S.path={}
 
 function _S.path.init()
-    _S.path.utils=require('utils')
     _S.path.ctrlPtsTag='ABC_PATHCTRLPT'
     _S.path.pathObjectTag='ABC_PATH_INFO'
     _S.path.pathCreationTag='ABC_PATH_CREATION'
