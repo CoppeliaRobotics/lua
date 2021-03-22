@@ -13,8 +13,13 @@ function simZMQ.__init()
                 args[flags_idx]=sim.boolOr32(args[flags_idx],simZMQ.DONTWAIT)
                 while true do
                     local ret={simZMQ['__'..func_name](unpack(args))}
-                    if ret[1]==-1 and simZMQ.errnum()==simZMQ.EAGAIN then
-                        sim.switchThread()
+                    if ret[1]==-1 then
+                        local err=simZMQ.errnum()
+                        if err==simZMQ.EAGAIN then
+                            sim.switchThread()
+                        else
+                            return -1,nil
+                        end
                     else
                         return unpack(ret)
                     end

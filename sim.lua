@@ -768,33 +768,42 @@ function sim.generateTimeOptimalTrajectory(...)
         error("Bad table size.")
     end
     local lb=sim.setThreadAutomaticSwitch(false)
+
+    local pM=Matrix(confCnt,dof,path)
+    local mmvM=Matrix(2,dof,minMaxVel)
+    local mmaM=Matrix(2,dof,minMaxAccel)
     
-    local dkjson=require 'dkjson'
-    local r
-    sim.addLog(sim.verbosity_scriptinfos,"Checking if the BlueZero resolver is running, this can take a few seconds...")
-    if simB0.pingResolver() then
-        sim.addLog(sim.verbosity_scriptinfos,"Trying to connect via BlueZero to the 'toppra' service... make sure the 'docker-image-bluezero-toppra' container is running. Details can be found at https://github.com/CoppeliaRobotics/docker-image-bluezero-toppra")
-        local n=simB0.nodeCreate('toppra-service-client')
-        local c=simB0.serviceClientCreate(n,'toppra')
-        simB0.nodeInit(n)
-        simB0.socketSetOption(c,'readTimeout',timeout*1000)
-        
-        local pM=Matrix(confCnt,dof,path)
-        local mmvM=Matrix(2,dof,minMaxVel)
-        local mmaM=Matrix(2,dof,minMaxAccel)
-        
-        r=simB0.serviceClientCallJSON(c,{
-            samples=trajPtSamples,
-            ss_waypoints=pathLengths,
-            waypoints=pM:totable(),
-            velocity_limits=mmvM:totable(),
-            acceleration_limits=mmaM:totable(),
-            bc_type=boundaryCondition
-        })
-        simB0.nodeCleanup(n)
-    else
-        error('BlueZero resolver was not detected.')
+    sim.addLog(sim.verbosity_scriptinfos,"Trying to connect via ZeroMQ to the 'toppra' service... make sure the 'docker-image-zmq-toppra' container is running. Details can be found at https://github.com/CoppeliaRobotics/docker-image-zmq-toppra")
+    local context=simZMQ.ctx_new()
+    local socket=simZMQ.socket(context,simZMQ.REQ)
+    simZMQ.setsockopt(socket,simZMQ.RCVTIMEO,sim.packInt32Table{1000*timeout})
+    local result=simZMQ.connect(socket,'tcp://localhost:22505')
+    if result==-1 then
+        local err=simZMQ.errnum()
+        error('connect failed: '..err..': '..simZMQ.strerror(err))
     end
+    local json=require'dkjson'
+    local result=simZMQ.send(socket,json.encode{
+        samples=trajPtSamples,
+        ss_waypoints=pathLengths,
+        waypoints=pM:totable(),
+        velocity_limits=mmvM:totable(),
+        acceleration_limits=mmaM:totable(),
+        bc_type=boundaryCondition
+    },0)
+    if result==-1 then
+        local err=simZMQ.errnum()
+        error('send failed: '..err..': '..simZMQ.strerror(err))
+    end
+    local result,data=simZMQ.__recv(socket,0,16000000)
+    if result==-1 then
+        local err=simZMQ.errnum()
+        error('recv failed: '..err..': '..simZMQ.strerror(err))
+    end
+    local r=json.decode(data)
+    simZMQ.close(socket)
+    simZMQ.ctx_term(context)    
+
     sim.setThreadAutomaticSwitch(lb)
     return Matrix:fromtable(r.qs[1]):data(),r.ts
 end
