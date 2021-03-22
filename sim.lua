@@ -777,6 +777,7 @@ function sim.generateTimeOptimalTrajectory(...)
     local context=simZMQ.ctx_new()
     local socket=simZMQ.socket(context,simZMQ.REQ)
     simZMQ.setsockopt(socket,simZMQ.RCVTIMEO,sim.packInt32Table{1000*timeout})
+    simZMQ.setsockopt(socket,simZMQ.LINGER,sim.packInt32Table{500})
     local result=simZMQ.connect(socket,'tcp://localhost:22505')
     if result==-1 then
         local err=simZMQ.errnum()
