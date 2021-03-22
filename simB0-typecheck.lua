@@ -37,14 +37,15 @@ table.insert(__initFunctions, function()
 
     wrapFunc('serviceClientCallJSON',function(origFunc)
         return function(...)
-            serviceClientHandle=checkargsEx(
+            serviceClientHandle,request=checkargsEx(
                 {level=1},
                 {
                     {type='string'},
+                    {type='table'},
                 },
                 ...
             )
-            return origFunc(serviceClientHandle)
+            return origFunc(serviceClientHandle,request)
         end
     end)
 

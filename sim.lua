@@ -70,12 +70,12 @@ function printf(fmt,...)
 end
 
 function sim.switchThread()
-    local st=sim.getSystemTimeInMs(-1)
     if sim.getThreadSwitchAllowed() then
         if sim.isScriptRunningInThread()==1 then
             sim._switchThread()
         else
-            if coroutine.running() then
+            local thread,yieldForbidden=coroutine.running()
+            if not yieldForbidden then
                 coroutine.yield()
             end
         end
