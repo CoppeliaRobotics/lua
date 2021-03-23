@@ -162,7 +162,7 @@ function simIK.applySceneToIkEnvironment(...)
     sim.setThreadAutomaticSwitch(lb)
 end
 
-function simIK.applyIkToScene(...)
+function simIK.applyIkEnvironmentToScene(...)
     local ikEnv,ikGroup,applyOnlyWhenSuccessful=checkargs({{type='int'},{type='int'},{type='bool',default=false}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -408,7 +408,7 @@ function simIK.init()
     sim.registerScriptFunction('simIK.getAlternateConfigs@simIK','table configs=simIK.getAlternateConfigs(number environmentHandle,table jointHandles,table lowLimits=nil,table ranges=nil)')
     sim.registerScriptFunction('simIK.addIkElementFromScene@simIK','number ikElement,table simToIkObjectMap=simIK.addIkElementFromScene(number environmentHandle\n,number ikGroup,number baseHandle,number tipHandle,\nnumber targetHandle,number constraints)')
     sim.registerScriptFunction('simIK.applySceneToIkEnvironment@simIK','simIK.applySceneToIkEnvironment(number environmentHandle,number ikGroup)')
-    sim.registerScriptFunction('simIK.applyIkToScene@simIK','number result=simIK.applyIkToScene(number environmentHandle,number ikGroup,bool applyOnlyWhenSuccessful=false)')
+    sim.registerScriptFunction('simIK.applyIkEnvironmentToScene@simIK','number result=simIK.applyIkEnvironmentToScene(number environmentHandle,number ikGroup,bool applyOnlyWhenSuccessful=false)')
     sim.registerScriptFunction('simIK.eraseEnvironment@simIK','simIK.eraseEnvironment(number environmentHandle)')
     sim.registerScriptFunction('simIK.getConfigForTipPose@simIK','table jointPositions=simIK.getConfigForTipPose(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number thresholdDist=0.1,\nnumber maxTime=0.5,table_4 metric={1,1,1,0.1},function validationCallback=nil,\nauxData=nil,table jointOptions={},table lowLimits={},table ranges={})')
     sim.registerScriptFunction('simIK.generatePath@simIK','table path=simIK.generatePath(number environmentHandle,\nnumber ikGroupHandle,table jointHandles,number tipHandle,\nnumber pathPointCount,function validationCallback=nil,auxData=nil)')

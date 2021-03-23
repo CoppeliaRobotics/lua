@@ -796,11 +796,18 @@ function sim.generateTimeOptimalTrajectory(...)
         local err=simZMQ.errnum()
         error('send failed: '..err..': '..simZMQ.strerror(err))
     end
-    local result,data=simZMQ.__recv(socket,0,16000000)
+    local msg=simZMQ.msg_new()
+    simZMQ.msg_init(msg)
+    result=simZMQ.msg_recv(msg,socket,0)
+--    local result,data=simZMQ.__recv(socket,0,16000000)
     if result==-1 then
         local err=simZMQ.errnum()
         error('recv failed: '..err..': '..simZMQ.strerror(err))
     end
+    local result,data=simZMQ.msg_data(msg)
+    simZMQ.msg_close(msg)
+    simZMQ.msg_destroy(msg)
+    
     local r=json.decode(data)
     simZMQ.close(socket)
     simZMQ.ctx_term(context)    
