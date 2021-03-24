@@ -804,7 +804,7 @@ function sim.generateTimeOptimalTrajectory(...)
         local err=simZMQ.errnum()
         error('recv failed: '..err..': '..simZMQ.strerror(err))
     end
-    local result,data=simZMQ.msg_data(msg)
+    local data=simZMQ.msg_data(msg)
     simZMQ.msg_close(msg)
     simZMQ.msg_destroy(msg)
     

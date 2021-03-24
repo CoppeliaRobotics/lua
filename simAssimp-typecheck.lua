@@ -25,14 +25,15 @@ table.insert(__initFunctions, function()
 
     wrapFunc('exportDlg',function(origFunc)
         return function(...)
-            filename=checkargsEx(
+            filename,shapeHandles=checkargsEx(
                 {level=1},
                 {
                     {type='string'},
+                    {type='table'},
                 },
                 ...
             )
-            return origFunc(filename)
+            return origFunc(filename,shapeHandles)
         end
     end)
 

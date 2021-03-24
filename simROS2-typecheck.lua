@@ -25,13 +25,14 @@ table.insert(__initFunctions, function()
 
     wrapFunc('timeToFloat',function(origFunc)
         return function(...)
-            checkargsEx(
+            t=checkargsEx(
                 {level=1},
                 {
+                    {type='table'},
                 },
                 ...
             )
-            return origFunc()
+            return origFunc(t)
         end
     end)
 

@@ -12,14 +12,15 @@ table.insert(__initFunctions, function()
 
     wrapFunc('setGoalStates',function(origFunc)
         return function(...)
-            taskHandle=checkargsEx(
+            taskHandle,states=checkargsEx(
                 {level=1},
                 {
                     {type='string'},
+                    {type='table'},
                 },
                 ...
             )
-            return origFunc(taskHandle)
+            return origFunc(taskHandle,states)
         end
     end)
 
