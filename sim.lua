@@ -569,7 +569,7 @@ function sim.setObjectSelection(...)
 end
 
 function sim.moveToPose(...)
-    local flags,currentMatrix,maxVel,maxAccel,maxJerk,targetMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size=12},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size=12},{type='func'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
+    local flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size='7..12'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size='7..12'},{type='func'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
 
     if #maxVel<1 or #maxVel~=#maxAccel or #maxVel~=#maxJerk then
         error("Bad table size.")
@@ -580,7 +580,16 @@ function sim.moveToPose(...)
     
     local lb=sim.setThreadAutomaticSwitch(false)
     
-    local outMatrix=sim.unpackDoubleTable(sim.packDoubleTable(currentMatrix))
+    local usingMatrices=(#currentPoseOrMatrix>=12)
+    if usingMatrices then
+        currentMatrix=currentPoseOrMatrix
+        targetMatrix=targetPoseOrMatrix
+    else
+        currentMatrix=sim.buildMatrixQ(currentPoseOrMatrix,{currentPoseOrMatrix[4],currentPoseOrMatrix[5],currentPoseOrMatrix[6],currentPoseOrMatrix[7]})
+        targetMatrix=sim.buildMatrixQ(targetPoseOrMatrix,{targetPoseOrMatrix[4],targetPoseOrMatrix[5],targetPoseOrMatrix[6],targetPoseOrMatrix[7]})
+    end
+    
+    local outMatrix=sim.copyTable(currentMatrix)
     local axis,angle=sim.getRotationAxis(currentMatrix,targetMatrix)
     local timeLeft=0
     if metric then
@@ -609,6 +618,10 @@ function sim.moveToPose(...)
                     local mi=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
                     local nv={newPosVelAccel[2]}
                     local na={newPosVelAccel[3]}
+                    if not usingMatrices then
+                        local q=sim.getQuaternionFromMatrix(mi)
+                        mi={mi[4],mi[8],mi[12],q[1],q[2],q[3],q[4]}
+                    end
                     callback(mi,nv,na,auxData)
                 else
                     error('sim.rmlStep returned error code '..result)
@@ -650,6 +663,10 @@ function sim.moveToPose(...)
                 mi[12]=currentMatrix[12]+newPosVelAccel[3]
                 local nv={newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7],newPosVelAccel[8]}
                 local na={newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11],newPosVelAccel[12]}
+                if not usingMatrices then
+                    local q=sim.getQuaternionFromMatrix(mi)
+                    mi={mi[4],mi[8],mi[12],q[1],q[2],q[3],q[4]}
+                end
                 callback(mi,nv,na,auxData)
             else
                 error('sim.rmlStep returned error code '..result)
@@ -660,6 +677,12 @@ function sim.moveToPose(...)
         end
         sim.rmlRemove(rmlObject)
     end
+    
+    if not usingMatrices then
+        local q=sim.getQuaternionFromMatrix(outMatrix)
+        outMatrix={outMatrix[4],outMatrix[8],outMatrix[12],q[1],q[2],q[3],q[4]}
+    end
+
     sim.setThreadAutomaticSwitch(lb)
     return outMatrix,timeLeft
 end
@@ -1750,7 +1773,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','table[] configs=sim.getAlternateConfigs(table[] jointHandles,\ntable inputConfig,int tipHandle=-1,table[] lowLimits=nil,table[] ranges=nil)')
     sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(table[] handles)')
     
-    sim.registerScriptFunction('sim.moveToPose@sim','table_12 endMatrix,float timeLeft=sim.moveToPose(int flags,table_12 currentMatrix,\ntable maxVel,table[] maxAccel,table[] maxJerk,table_12 targetMatrix,\nfunction callback,auxData=nil,table_4 metric=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToPose@sim','table[7]/table[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,table[7]/table[12] currentPose/currentMatrix,\ntable maxVel,table[] maxAccel,table[] maxJerk,table[7]/table[12] targetPose/targetMatrix,\nfunction callback,auxData=nil,table[4] metric=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.moveToConfig@sim','table[] endPos,table[] endVel,table[] endAccel,float timeLeft=sim.moveToConfig(int flags,\ntable currentPos,table[] currentVel,table[] currentAccel,table[] maxVel,table[] maxAccel,\ntable maxJerk,table[] targetPos,table[] targetVel,function callback,auxData=nil,table[] cyclicJoints=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
@@ -1770,7 +1793,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.rmlMoveToJointPositions@sim',"Deprecated. Use 'sim.moveToConfig' instead")
     sim.registerScriptFunction('sim.rmlMoveToPosition@sim',"Deprecated. Use 'sim.moveToPose' instead")
     
-    sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table_3 newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
+    sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table[3] newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
     sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(table[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,table[3] upVector={0,0,1})')
     sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options)')
