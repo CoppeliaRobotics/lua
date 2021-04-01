@@ -43,7 +43,13 @@ function sysCall_actuation()
         else
             _S.conveyorSystem.offset=_S.conveyorSystem.offset+_S.conveyorSystem.velocity*sim.getSimulationTimeStep()
         end
-        _S.conveyorSystem.setPathPos(_S.conveyorSystem.offset)
+        if _S.conveyorSystem.config.useRollers then
+            for i=1,#_S.conveyorSystem.rolHandles,1 do
+                sim.setJointPosition(_S.conveyorSystem.rolHandles[i],2*_S.conveyorSystem.offset/_S.conveyorSystem.config.rollerSize[1])
+            end
+        else
+            _S.conveyorSystem.setPathPos(_S.conveyorSystem.offset)
+        end
     end
     if not dat then
         dat={}
@@ -57,19 +63,29 @@ function path.refreshTrigger(ctrlPts,pathData,config)
     _S.conveyorSystem.pathPositions=m:slice(1,1,m:rows(),3):data()
     _S.conveyorSystem.pathQuaternions=m:slice(1,4,m:rows(),7):data()
     _S.conveyorSystem.pathLengths,_S.conveyorSystem.totalLength=sim.getPathLengths(_S.conveyorSystem.pathPositions,3)
-    local padCnt
+    local padCnt,rolCnt
     if (config.bitCoded&2)==0 then
         -- open
-        padCnt=1+_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace)
-        _S.conveyorSystem.padOffset=_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace
-        _S.conveyorSystem.totalL=_S.conveyorSystem.padOffset*padCnt
+        if _S.conveyorSystem.config.useRollers then
+            rolCnt=1+_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.rollerSize[1]+_S.conveyorSystem.config.interPadSpace)
+            _S.conveyorSystem.totalL=_S.conveyorSystem.totalLength
+            _S.conveyorSystem.padOffset=_S.conveyorSystem.totalLength/(rolCnt-1)
+        else
+            padCnt=1+_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace)
+            _S.conveyorSystem.padOffset=_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace
+            _S.conveyorSystem.totalL=_S.conveyorSystem.padOffset*padCnt
+        end
     else
         -- closed
-        padCnt=_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace)
-        _S.conveyorSystem.padOffset=_S.conveyorSystem.totalLength/padCnt
-        _S.conveyorSystem.totalL=_S.conveyorSystem.totalLength
+        if _S.conveyorSystem.config.useRollers then
+            rolCnt=_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.rollerSize[1]+_S.conveyorSystem.config.interPadSpace)
+            _S.conveyorSystem.padOffset=_S.conveyorSystem.totalLength/rolCnt
+        else
+            padCnt=_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.padSize[1]+_S.conveyorSystem.config.interPadSpace)
+            _S.conveyorSystem.padOffset=_S.conveyorSystem.totalLength/padCnt
+            _S.conveyorSystem.totalL=_S.conveyorSystem.totalLength
+        end
     end
-    
 
     local shapes=sim.getObjectsInTree(_S.conveyorSystem.model,sim.object_shape_type,1+2)
     local oldPads={}
@@ -85,10 +101,21 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             end
         end
     end
+
+    local joints=sim.getObjectsInTree(_S.conveyorSystem.model,sim.object_joint_type,1+2)
+    local oldJoints={}
+    for i=1,#joints,1 do
+        local dat=sim.readCustomDataBlock(joints[i],'PATHROL')
+        if dat then
+            oldJoints[#oldJoints+1]=joints[i]
+        end
+    end
     
     _S.conveyorSystem.padHandles={}
-    if padCnt==#oldPads and sim.packTable(_S.conveyorSystem.config)==sim.readCustomDataBlock(_S.conveyorSystem.model,'CONVEYORSET') then
+    _S.conveyorSystem.rolHandles={}
+    if padCnt==#oldPads and rolCnt==#oldJoints and sim.packTable(_S.conveyorSystem.config)==sim.readCustomDataBlock(_S.conveyorSystem.model,'CONVEYORSET') then
         _S.conveyorSystem.padHandles=oldPads -- reuse old pads, they are the same
+        _S.conveyorSystem.rolHandles=oldJoints 
     else
         sim.writeCustomDataBlock(_S.conveyorSystem.model,'CONVEYORSET',sim.packTable(_S.conveyorSystem.config))
         for i=1,#oldPads,1 do
@@ -97,31 +124,75 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         if oldRespondable then
             sim.removeObject(oldRespondable)
         end
-        for i=1,padCnt,1 do
-            local opt=16
-            if _S.conveyorSystem.config.respondablePads then
-                opt=opt+8
+        for i=1,#oldJoints,1 do
+            sim.removeObject(sim.getObjectChild(oldJoints[i],0))
+            sim.removeObject(oldJoints[i])
+        end
+        if _S.conveyorSystem.config.useRollers then
+            for i=1,rolCnt,1 do
+                local opt=16
+                if _S.conveyorSystem.config.respondablePads then
+                    opt=opt+8
+                end
+                local cyl=sim.createPureShape(2,opt,{_S.conveyorSystem.config.rollerSize[1],_S.conveyorSystem.config.rollerSize[1],_S.conveyorSystem.config.rollerSize[2]*0.95},0.01)
+                local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
+                _S.conveyorSystem.rolHandles[i]=jnt
+                sim.setObjectParent(cyl,jnt,true)
+                sim.setSimilarName(jnt,sim.getObjectName(_S.conveyorSystem.model),'__jrol')
+                sim.setSimilarName(cyl,sim.getObjectName(_S.conveyorSystem.model),'__rol')
+                sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.padCol)
+                sim.setObjectParent(jnt,_S.conveyorSystem.model,true)
+                sim.writeCustomDataBlock(jnt,'PATHROL','a')
+                sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
+                sim.setObjectInt32Parameter(jnt,sim.objintparam_visibility_layer,512)
+                local o=(i-1)*_S.conveyorSystem.padOffset
+                local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,o)
+                pos[3]=pos[3]-_S.conveyorSystem.config.rollerSize[1]/2
+                local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,o,nil,{2,2,2,2})
+                local m=Matrix3x3:fromquaternion(quat)
+                m=m*Matrix3x3:rotx(-math.pi/2)
+                sim.setObjectPosition(jnt,_S.conveyorSystem.model,pos)
+                sim.setObjectQuaternion(jnt,_S.conveyorSystem.model,Matrix3x3:toquaternion(m))
             end
-            _S.conveyorSystem.padHandles[i]=sim.createPureShape(0,opt,_S.conveyorSystem.config.padSize,0.01)
-            sim.setSimilarName(_S.conveyorSystem.padHandles[i],sim.getObjectName(_S.conveyorSystem.model),'__pad')
-            sim.setShapeColor(_S.conveyorSystem.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.padCol)
-            sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
-            sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i],'PATHPAD','a')
-            sim.setObjectProperty(_S.conveyorSystem.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
+        else
+            for i=1,padCnt,1 do
+                local opt=16
+                if _S.conveyorSystem.config.respondablePads then
+                    opt=opt+8
+                end
+                _S.conveyorSystem.padHandles[i]=sim.createPureShape(0,opt,_S.conveyorSystem.config.padSize,0.01)
+                sim.setSimilarName(_S.conveyorSystem.padHandles[i],sim.getObjectName(_S.conveyorSystem.model),'__pad')
+                sim.setShapeColor(_S.conveyorSystem.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.padCol)
+                sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
+                sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i],'PATHPAD','a')
+                sim.setObjectProperty(_S.conveyorSystem.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
+            end
         end
         if _S.conveyorSystem.config.respondableBase then
             local cnt=1+_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.respondableBaseElementLength*0.5)
             local off=_S.conveyorSystem.config.respondableBaseElementLength*0.5
             local el={}
             local p=0
-            for i=1,cnt,1 do
-                el[i]=sim.createPureShape(0,24,{_S.conveyorSystem.config.respondableBaseElementLength,_S.conveyorSystem.config.padSize[2],_S.conveyorSystem.config.padSize[2]/2},0.01)
-                local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
-                pos[3]=pos[3]-_S.conveyorSystem.config.padSize[2]/4-_S.conveyorSystem.config.padSize[3]
-                local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
-                sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
-                sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
-                p=p+off
+            if _S.conveyorSystem.config.useRollers then
+                for i=1,cnt,1 do
+                    el[i]=sim.createPureShape(0,24,{_S.conveyorSystem.config.respondableBaseElementLength,_S.conveyorSystem.config.rollerSize[2],_S.conveyorSystem.config.rollerSize[2]/2},0.01)
+                    local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
+                    pos[3]=pos[3]-_S.conveyorSystem.config.rollerSize[2]/4-_S.conveyorSystem.config.rollerSize[1]/2
+                    local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
+                    sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
+                    sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+                    p=p+off
+                end
+            else
+                for i=1,cnt,1 do
+                    el[i]=sim.createPureShape(0,24,{_S.conveyorSystem.config.respondableBaseElementLength,_S.conveyorSystem.config.padSize[2],_S.conveyorSystem.config.padSize[2]/2},0.01)
+                    local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
+                    pos[3]=pos[3]-_S.conveyorSystem.config.padSize[2]/4-_S.conveyorSystem.config.padSize[3]
+                    local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
+                    sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
+                    sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+                    p=p+off
+                end
             end
             local resp=sim.groupShapes(el)
             sim.setObjectParent(resp,_S.conveyorSystem.model,true)
@@ -131,11 +202,18 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__respondable')
         end
     end
-    _S.conveyorSystem.setPathPos(_S.conveyorSystem.offset)
+    if not _S.conveyorSystem.config.useRollers then
+        _S.conveyorSystem.setPathPos(_S.conveyorSystem.offset)
+    end
 end
 
 function path.shaping(path,pathIsClosed,upVector)
-    local section={-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3],-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[3],_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[3],_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3],-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3]}
+    local section
+    if _S.conveyorSystem.config.useRollers then
+        section={-_S.conveyorSystem.config.rollerSize[2]/2,-_S.conveyorSystem.config.rollerSize[2]/2-_S.conveyorSystem.config.rollerSize[1]/2,-_S.conveyorSystem.config.rollerSize[2]/2,-_S.conveyorSystem.config.rollerSize[1]/2,_S.conveyorSystem.config.rollerSize[2]/2,-_S.conveyorSystem.config.rollerSize[1]/2,_S.conveyorSystem.config.rollerSize[2]/2,-_S.conveyorSystem.config.rollerSize[2]/2-_S.conveyorSystem.config.rollerSize[1]/2,-_S.conveyorSystem.config.rollerSize[2]/2,-_S.conveyorSystem.config.rollerSize[2]/2-_S.conveyorSystem.config.rollerSize[1]/2}
+    else
+        section={-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3],-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[3],_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[3],_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3],-_S.conveyorSystem.config.padSize[2]/2,-_S.conveyorSystem.config.padSize[2]/2-_S.conveyorSystem.config.padSize[3]}
+    end
     local options=0
     if pathIsClosed then
         options=options|4
