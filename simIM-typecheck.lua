@@ -10,6 +10,20 @@ table.insert(__initFunctions, function()
         _G['simIM'][funcName]=wrapperGenerator(_G['simIM'][funcName])
     end
 
+    wrapFunc('dataURL',function(origFunc)
+        return function(...)
+            imgHandle,format=checkargsEx(
+                {level=1},
+                {
+                    {type='string'},
+                    {type='string',default='BMP'},
+                },
+                ...
+            )
+            return origFunc(imgHandle,format)
+        end
+    end)
+
 end)
 
 return simIM
