@@ -1,3 +1,0 @@
-local simICP={}
-
-return simICP
