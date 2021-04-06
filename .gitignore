@@ -1,10 +1,6 @@
-jit
-socket
-protobuf
 dkjson.lua
-ltn12.lua
-mime.lua
-socket.lua
-pubsub_pb.lua
 messagePack.lua
 cbor.lua
+sim*.lua
+!sim.lua
+!sim_old.lua

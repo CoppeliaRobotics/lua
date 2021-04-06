@@ -1,3 +1,0 @@
-local simTraj={}
-
-return simTraj
