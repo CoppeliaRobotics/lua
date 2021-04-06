@@ -177,7 +177,7 @@ function _S.path.init()
     _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
     _S.path.model=sim.getObjectHandle(sim.handle_self)
     _S.path.uniqueId=sim.getStringParameter(sim.stringparam_uniqueid)
-    _S.path.refreshDelayInMs=500
+    _S.path.refreshDelayInMs=200
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
