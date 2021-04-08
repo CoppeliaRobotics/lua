@@ -1171,7 +1171,7 @@ end
 
 function Matrix4x4:fromeuler(e)
     local r=Matrix3x3:fromeuler(e)
-    return Matrix4x4:fromMatrix3x3(r)
+    return Matrix4x4:fromrt(r,Vector{0,0,0})
 end
 
 function Matrix4x4:fromposition(v)
