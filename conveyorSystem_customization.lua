@@ -219,13 +219,17 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             if (config.bitCoded&2)~=0 then
                 cnt2=cnt -- closed
             end
+            local w=_S.conveyorSystem.config.padSize[2]
+            if _S.conveyorSystem.config.useRollers then
+                w=_S.conveyorSystem.config.rollerSize[2]
+            end
             for i=1,cnt2,1 do
                 local pa=sim.createPureShape(0,24,_S.conveyorSystem.config.borderSize,0.01)
                 sim.setShapeColor(pa,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.col)
                 local pb=sim.createPureShape(0,24,_S.conveyorSystem.config.borderSize,0.01)
                 sim.setShapeColor(pb,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.col)
-                sim.setObjectPosition(pa,-1,{0,(_S.conveyorSystem.config.padSize[2]-_S.conveyorSystem.config.borderSize[2])/2,0})
-                sim.setObjectPosition(pb,-1,{0,-(_S.conveyorSystem.config.padSize[2]-_S.conveyorSystem.config.borderSize[2])/2,0})
+                sim.setObjectPosition(pa,-1,{0,(w-_S.conveyorSystem.config.borderSize[2])/2,0})
+                sim.setObjectPosition(pb,-1,{0,-(w-_S.conveyorSystem.config.borderSize[2])/2,0})
                 el[i]=sim.groupShapes({pa,pb})
                 sim.reorientShapeBoundingBox(el[i],-1)
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
@@ -277,13 +281,19 @@ function _S.conveyorSystem.setPathPos(p)
         local o=p
         if o>_S.conveyorSystem.totalLength then
             o=o-_S.conveyorSystem.padOffset
-            sim.resetDynamicObject(h)
         end
         local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,o)
         pos[3]=pos[3]-_S.conveyorSystem.config.padSize[3]/2
         local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,o,nil,{2,2,2,2})
+        local pp=sim.getObjectPosition(h,_S.conveyorSystem.model)
         sim.setObjectPosition(h,_S.conveyorSystem.model,pos)
         sim.setObjectQuaternion(h,_S.conveyorSystem.model,quat)
+        pp[1]=math.abs(pp[1]-pos[1])
+        pp[2]=math.abs(pp[2]-pos[2])
+        pp[3]=math.abs(pp[3]-pos[3])
+        if pp[1]>_S.conveyorSystem.config.padSize[2] or pp[2]>_S.conveyorSystem.config.padSize[2] or pp[3]>_S.conveyorSystem.config.padSize[2] then
+            sim.resetDynamicObject(h) -- otherwise the object would quickly 'fly back' to the start of the conveyor and possibly hit other objects on its way
+        end
         p=p+_S.conveyorSystem.padOffset
     end
 end
