@@ -63,7 +63,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
     _S.conveyorSystem.pathPositions=m:slice(1,1,m:rows(),3):data()
     _S.conveyorSystem.pathQuaternions=m:slice(1,4,m:rows(),7):data()
     _S.conveyorSystem.pathLengths,_S.conveyorSystem.totalLength=sim.getPathLengths(_S.conveyorSystem.pathPositions,3)
-    local padCnt,rolCnt
+    local padCnt=0
+    local rolCnt=0
     if (config.bitCoded&2)==0 then
         -- open
         if _S.conveyorSystem.config.useRollers then
