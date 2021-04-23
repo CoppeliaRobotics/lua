@@ -176,7 +176,7 @@ function _S.path.init()
     _S.path.shapeTag='ABC_PATHSHAPE_INFO'
     _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
     _S.path.model=sim.getObjectHandle(sim.handle_self)
-    _S.path.uniqueId=sim.getStringParameter(sim.stringparam_uniqueid)
+    _S.path.uniqueId=sim.getStringParam(sim.stringparam_uniqueid)
     _S.path.refreshDelayInMs=200
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
     _S.path.lineCont={-1,-1}
@@ -303,7 +303,7 @@ function _S.path.afterSimulation()
     end
     for i=1,#_S.path.ctrlPts,1 do
         local h=_S.path.ctrlPts[i].handle
-        sim.setObjectInt32Parameter(h,sim.objintparam_visibility_layer,v)
+        sim.setObjectInt32Param(h,sim.objintparam_visibility_layer,v)
     end
 end
 
@@ -316,7 +316,7 @@ function _S.path.beforeSimulation()
     end
     for i=1,#_S.path.ctrlPts,1 do
         local h=_S.path.ctrlPts[i].handle
-        sim.setObjectInt32Parameter(h,sim.objintparam_visibility_layer,0)
+        sim.setObjectInt32Param(h,sim.objintparam_visibility_layer,0)
     end
 end
 
@@ -361,7 +361,7 @@ function _S.path.setup()
         end
         if _S.path.shaping and (c.bitCoded&4)~=0 then
             local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,c.upVector)
-            if sim.isHandleValid(s)==1 then
+            if sim.isHandle(s) then
                 sim.writeCustomDataBlock(s,_S.path.shapeTag,"a")
                 sim.setObjectParent(s,_S.path.model,false)
                 local p=sim.getObjectProperty(s)
@@ -554,7 +554,7 @@ function _S.path.getCtrlPts()
     for i=1,#pts,1 do
         pts[i].index=i -- indices could be fractions and/or not contiguous
         sim.writeCustomDataBlock(pts[i].handle,_S.path.ctrlPtsTag,sim.packTable(pts[i]))
-        sim.setObjectInt32Parameter(pts[i].handle,sim.objintparam_visibility_layer,v)
+        sim.setObjectInt32Param(pts[i].handle,sim.objintparam_visibility_layer,v)
         local p=sim.getObjectPosition(pts[i].handle,_S.path.model)
         for j=1,3,1 do
             _max[j]=math.max(_max[j],p[j])
@@ -565,7 +565,7 @@ function _S.path.getCtrlPts()
     local handles={}
     for i=1,#pts,1 do
         if not config.ctrlPtFixedSize then
-            sim.setObjectFloatParameter(pts[i].handle,sim.dummyfloatparam_size,_S.path.ctrlPtsSize)
+            sim.setObjectFloatParam(pts[i].handle,sim.dummyfloatparam_size,_S.path.ctrlPtsSize)
         end
         handles[i]=pts[i].handle
     end

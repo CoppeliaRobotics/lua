@@ -167,7 +167,7 @@ function sim.fastIdleLoop(enable)
         stage=data[1]
         defaultIdleFps=data[2]
     else
-        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
+        defaultIdleFps=sim.getInt32Param(sim.intparam_idle_fps)
     end
     if enable then
         stage=stage+1
@@ -177,9 +177,9 @@ function sim.fastIdleLoop(enable)
         end
     end
     if stage>0 then
-        sim.setInt32Parameter(sim.intparam_idle_fps,0)
+        sim.setInt32Param(sim.intparam_idle_fps,0)
     else
-        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
+        sim.setInt32Param(sim.intparam_idle_fps,defaultIdleFps)
     end
     sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
 end
@@ -280,7 +280,7 @@ end
 function sim.displayDialog(...)
     local title,mainTxt,style,modal,initTxt,d1,d2,d3=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true}},...)
     
-    if sim.getBoolParameter(sim.boolparam_headless) then
+    if sim.getBoolParam(sim.boolparam_headless) then
         return -1
     end
     local retVal=-1
@@ -354,7 +354,7 @@ end
 function sim.endDialog(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if not sim.getBoolParameter(sim.boolparam_headless) then
+    if not sim.getBoolParam(sim.boolparam_headless) then
         if not _S.dlg.openDlgs[dlgHandle] then
             error("Argument #1 is not a valid dialog handle.")
         end
@@ -371,7 +371,7 @@ end
 function sim.getDialogInput(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if sim.getBoolParameter(sim.boolparam_headless) then
+    if sim.getBoolParam(sim.boolparam_headless) then
         return ''
     end
     if not _S.dlg.openDlgs[dlgHandle] then
@@ -385,7 +385,7 @@ end
 function sim.getDialogResult(...)
     local dlgHandle=checkargs({{type='int'}},...)
 
-    if sim.getBoolParameter(sim.boolparam_headless) then
+    if sim.getBoolParam(sim.boolparam_headless) then
         return -1
     end
     if not _S.dlg.openDlgs[dlgHandle] then
@@ -469,9 +469,9 @@ function sim.getAlternateConfigs(...)
         initConfig[i]=sim.getJointPosition(jointHandles[i])
         local c,interv=sim.getJointInterval(jointHandles[i])
         local t=sim.getJointType(jointHandles[i])
-        local res,sp=sim.getObjectFloatParameter(jointHandles[i],sim.jointfloatparam_screw_pitch)
+        local sp=sim.getObjectFloatParam(jointHandles[i],sim.jointfloatparam_screw_pitch)
         if t==sim.joint_revolute_subtype and not c then
-            if res==1 and sp==0 then
+            if sp==0 then
                 if inputConfig[i]-math.pi*2>=interv[1] or inputConfig[i]+math.pi*2<=interv[1]+interv[2] then
                     -- We use the low and range values from the joint's settings
                     local y=inputConfig[i]
@@ -1222,12 +1222,12 @@ function sim.changeEntityColor(...)
     local entityHandle,color,colorComponent=checkargs({{type='int'},{type='table', size=3, item_type='float'},{type='int',default=sim.colorcomponent_ambient_diffuse}},...)
     local colorData={}
     local objs={entityHandle}
-    if sim.isHandleValid(entityHandle,sim.appobj_collection_type)==1 then
+    if sim.isHandle(entityHandle,sim.appobj_collection_type) then
         objs=sim.getCollectionObjects(entityHandle)
     end
     for i=1,#objs,1 do
         if sim.getObjectType(objs[i])==sim.object_shape_type then
-            local res,visible=sim.getObjectInt32Parameter(objs[i],sim.objintparam_visible)
+            local visible=sim.getObjectInt32Param(objs[i],sim.objintparam_visible)
             if visible==1 then
                 local res,col=sim.getShapeColor(objs[i],'@compound',colorComponent)
                 colorData[#colorData+1]={handle=objs[i],data=col,comp=colorComponent}
@@ -1241,7 +1241,7 @@ end
 function sim.restoreEntityColor(...)
     local colorData=checkargs({{type='table'},size='1..*'},...)
     for i=1,#colorData,1 do
-        if sim.isHandleValid(colorData[i].handle,sim.appobj_object_type)==1 then
+        if sim.isHandle(colorData[i].handle,sim.appobj_object_type) then
             sim.setShapeColor(colorData[i].handle,'@compound',colorData[i].comp,colorData[i].data)
         end
     end
@@ -1557,14 +1557,14 @@ end
 function sim.getShapeBB(handle)
     -- Undocumented function (for now)
     local s={}
-    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_x)
-    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_x)
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_x)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_x)
     s[1]=m-n
-    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_y)
-    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_y)
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_y)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_y)
     s[2]=m-n
-    local r,m=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_max_z)
-    local r,n=sim.getObjectFloatParameter(handle,sim.objfloatparam_objbbox_min_z)
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_z)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_z)
     s[3]=m-n
     return s
 end

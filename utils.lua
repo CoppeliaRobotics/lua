@@ -89,8 +89,8 @@ end
 
 function include(relativePathAndFile,cmd)
     if not __notFirst__ then
-        local appPath=sim.getStringParameter(sim.stringparam_application_path)
-        if sim.getInt32Parameter(sim.intparam_platform)==1 then
+        local appPath=sim.getStringParam(sim.stringparam_application_path)
+        if sim.getInt32Param(sim.intparam_platform)==1 then
             appPath=appPath.."/../../.."
         end
         __notFirst__=true
@@ -149,14 +149,14 @@ function createOpenBox(size,baseThickness,wallThickness,density,inertiaCorrectio
         sim.setShapeMassAndInertia(shape,m0,i0,com0,transf)
     end
     if static then
-        sim.setObjectInt32Parameter(shape,sim.shapeintparam_static,1)
+        sim.setObjectInt32Param(shape,sim.shapeintparam_static,1)
     else
-        sim.setObjectInt32Parameter(shape,sim.shapeintparam_static,0)
+        sim.setObjectInt32Param(shape,sim.shapeintparam_static,0)
     end
     if respondable then
-        sim.setObjectInt32Parameter(shape,sim.shapeintparam_respondable,1)
+        sim.setObjectInt32Param(shape,sim.shapeintparam_respondable,1)
     else
-        sim.setObjectInt32Parameter(shape,sim.shapeintparam_respondable,0)
+        sim.setObjectInt32Param(shape,sim.shapeintparam_respondable,0)
     end
     sim.reorientShapeBoundingBox(shape,-1)
     return shape
@@ -201,21 +201,21 @@ function customUi_populateCombobox(ui,id,items_array,exceptItems_map,currentItem
 end
 
 function getObjectHandle_noError(name)
-    local err=sim.getInt32Parameter(sim.intparam_error_report_mode)
-    sim.setInt32Parameter(sim.intparam_error_report_mode,0)
+    local err=sim.getInt32Param(sim.intparam_error_report_mode)
+    sim.setInt32Param(sim.intparam_error_report_mode,0)
     local retVal=sim.getObjectHandle(name)
-    sim.setInt32Parameter(sim.intparam_error_report_mode,err)
+    sim.setInt32Param(sim.intparam_error_report_mode,err)
     return retVal
 end
 
 function getObjectHandle_noErrorNoSuffixAdjustment(name)
-    local err=sim.getInt32Parameter(sim.intparam_error_report_mode)
-    sim.setInt32Parameter(sim.intparam_error_report_mode,0)
+    local err=sim.getInt32Param(sim.intparam_error_report_mode)
+    sim.setInt32Param(sim.intparam_error_report_mode,0)
     local suff=sim.getNameSuffix(nil)
     sim.setNameSuffix(-1)
     local retVal=sim.getObjectHandle(name)
     sim.setNameSuffix(suff)
-    sim.setInt32Parameter(sim.intparam_error_report_mode,err)
+    sim.setInt32Param(sim.intparam_error_report_mode,err)
     return retVal
 end
 
@@ -287,7 +287,7 @@ function canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxi
         return false
     end
     if t==sim.object_proximitysensor_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.proxintparam_volume_type)
+        local p=sim.getObjectInt32Param(objHandle,sim.proxintparam_volume_type)
         if p==sim.volume_cylinder then
             return xIsY
         end
@@ -303,7 +303,7 @@ function canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxi
         return true
     end
     if t==sim.object_mill_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.millintparam_volume_type)
+        local p=sim.getObjectInt32Param(objHandle,sim.millintparam_volume_type)
         if p==sim.volume_cylinder then
             return xIsY
         end
@@ -602,7 +602,7 @@ function utils.createCustomUi(nakedXml,title,dlgPos,closeable,onCloseFunction,mo
     end
     --]]
     if not activate then
-        if 2==sim.getInt32Parameter(sim.intparam_platform) then
+        if 2==sim.getInt32Param(sim.intparam_platform) then
             -- To fix a Qt bug on Linux
             sim.auxFunc('activateMainWindow')
         end
@@ -612,7 +612,7 @@ end
 
 function utils.getSelectedEditWidget(ui)
     local ret=-1
-    if sim.getInt32Parameter(sim.intparam_program_version)>30302 then
+    if sim.getInt32Param(sim.intparam_program_version)>30302 then
         ret=simUI.getCurrentEditWidget(ui)
     end
     return ret
@@ -640,13 +640,13 @@ end
 
 function utils.writeSessionPersistentObjectData(objectHandle,dataName,...)
     local data={...}
-    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Parameter(sim.intparam_scene_unique_id)..sim.getObjectStringParameter(objectHandle,sim.objstringparam_dna)..dataName
+    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
     data=sim.packTable(data)
     sim.writeCustomDataBlock(sim.handle_app,nm,data)
 end
 
 function utils.readSessionPersistentObjectData(objectHandle,dataName)
-    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Parameter(sim.intparam_scene_unique_id)..sim.getObjectStringParameter(objectHandle,sim.objstringparam_dna)..dataName
+    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
     local data=sim.readCustomDataBlock(sim.handle_app,nm)
     if data then
         data=sim.unpackTable(data)
@@ -665,7 +665,7 @@ function utils.fastIdleLoop(enable)
         stage=data[1]
         defaultIdleFps=data[2]
     else
-        defaultIdleFps=sim.getInt32Parameter(sim.intparam_idle_fps)
+        defaultIdleFps=sim.getInt32Param(sim.intparam_idle_fps)
     end
     if enable then
         stage=stage+1
@@ -675,9 +675,9 @@ function utils.fastIdleLoop(enable)
         end
     end
     if stage>0 then
-        sim.setInt32Parameter(sim.intparam_idle_fps,0)
+        sim.setInt32Param(sim.intparam_idle_fps,0)
     else
-        sim.setInt32Parameter(sim.intparam_idle_fps,defaultIdleFps)
+        sim.setInt32Param(sim.intparam_idle_fps,defaultIdleFps)
     end
     sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
 end

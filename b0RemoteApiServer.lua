@@ -443,7 +443,7 @@ function RemoveObjects(...)
         if (options & 1)>0 then
             for i=1,#objHandles,1 do
                 local h=objHandles[i]
-                if sim.isHandleValid(h)>0 then
+                if sim.isHandle(h) then
                     local mp=sim.getModelProperty(h)
                     if (mp & sim.modelproperty_not_model)>0 then
                         sim.removeObject(objHandles[i])
@@ -473,7 +473,7 @@ function SetStringParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setStringParameter(paramId,val)
+    return sim.setStringParam(paramId,val)
 end
 
 function GetStringParameter(...)
@@ -482,7 +482,7 @@ function GetStringParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.getStringParameter(paramId)
+    return sim.getStringParam(paramId)
 end
 
 function SetFloatParameter(...)
@@ -491,7 +491,7 @@ function SetFloatParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setFloatParameter(paramId,val)
+    return sim.setFloatParam(paramId,val)
 end
 
 function GetFloatParameter(...)
@@ -500,7 +500,7 @@ function GetFloatParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.getFloatParameter(paramId)
+    return sim.getFloatParam(paramId)
 end
 
 function SetIntParameter(...)
@@ -509,7 +509,7 @@ function SetIntParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setInt32Parameter(paramId,val)
+    return sim.setInt32Param(paramId,val)
 end
 
 function GetIntParameter(...)
@@ -518,7 +518,7 @@ function GetIntParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.getInt32Parameter(paramId)
+    return sim.getInt32Param(paramId)
 end
 
 function SetBoolParameter(...)
@@ -527,7 +527,7 @@ function SetBoolParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setBoolParameter(paramId,val)
+    return sim.setBoolParam(paramId,val)
 end
 
 function GetBoolParameter(...)
@@ -536,7 +536,7 @@ function GetBoolParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.getBoolParameter(paramId)
+    return sim.getBoolParam(paramId)
 end
 
 function SetArrayParameter(...)
@@ -545,7 +545,7 @@ function SetArrayParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setArrayParameter(paramId,val)
+    return sim.setArrayParam(paramId,val)
 end
 
 function GetArrayParameter(...)
@@ -554,7 +554,7 @@ function GetArrayParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.getArrayParameter(paramId)
+    return sim.getArrayParam(paramId)
 end
 function DisplayDialog(...)
     debugFunc("DisplayDialog",...)
@@ -732,7 +732,7 @@ function GetObjectFloatParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    local r,retV=sim.getObjectFloatParameter(handle,paramId)
+    local retV=sim.getObjectFloatParam(handle,paramId)
     return retV
 end
 
@@ -742,7 +742,7 @@ function GetObjectIntParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    local r,retV=sim.getObjectInt32Parameter(handle,paramId)
+    local retV=sim.getObjectInt32Param(handle,paramId)
     return retV
 end
 
@@ -752,7 +752,7 @@ function GetObjectStringParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    local r,retV=sim.getObjectStringParameter(handle,paramId)
+    local r,retV=sim.getObjectStringParam(handle,paramId)
     return retV
 end
 
@@ -762,7 +762,7 @@ function SetObjectFloatParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setObjectFloatParameter(handle,paramId,v)
+    return sim.setObjectFloatParam(handle,paramId,v)
 end
 
 function SetObjectIntParameter(...)
@@ -771,7 +771,7 @@ function SetObjectIntParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setObjectInt32Parameter(handle,paramId,v)
+    return sim.setObjectInt32Param(handle,paramId,v)
 end
 
 function SetObjectStringParameter(...)
@@ -780,7 +780,7 @@ function SetObjectStringParameter(...)
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
-    return sim.setObjectStringParameter(handle,paramId,v)
+    return sim.setObjectStringParam(handle,paramId,v)
 end
 
 function GetSimulationTime(...)

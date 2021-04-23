@@ -1,8 +1,8 @@
 function sim.include(relativePathAndFile,cmd)
     -- Relative to the CoppeliaSimLib path
     if not __notFirst__ then
-        local appPath=sim.getStringParameter(sim.stringparam_application_path)
-        if sim.getInt32Parameter(sim.intparam_platform)==1 then
+        local appPath=sim.getStringParam(sim.stringparam_application_path)
+        if sim.getInt32Param(sim.intparam_platform)==1 then
             appPath=appPath.."/../../.."
         end
         sim.includeAbs(appPath..relativePathAndFile,cmd)
@@ -16,7 +16,7 @@ end
 function sim.includeRel(relativePathAndFile,cmd)
     -- Relative to the current scene path
     if not __notFirst__ then
-        local scenePath=sim.getStringParameter(sim.stringparam_scene_path)
+        local scenePath=sim.getStringParam(sim.stringparam_scene_path)
         sim.includeAbs(scenePath..relativePathAndFile,cmd)
     else
         if __scriptCodeToRun__ then
@@ -81,7 +81,7 @@ function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scal
         return false
     end
     if t==sim.object_proximitysensor_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.proxintparam_volume_type)
+        local p=sim.getObjectInt32Param(objHandle,sim.proxintparam_volume_type)
         if p==sim.volume_cylinder then
             return xIsY
         end
@@ -97,7 +97,7 @@ function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scal
         return true
     end
     if t==sim.object_mill_type then
-        local r,p=sim.getObjectInt32Parameter(objHandle,sim.millintparam_volume_type)
+        local p=sim.getObjectInt32Param(objHandle,sim.millintparam_volume_type)
         if p==sim.volume_cylinder then
             return xIsY
         end

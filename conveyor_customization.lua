@@ -99,7 +99,7 @@ function _S.conveyor.init(config)
                 sim.setObjectParent(jnt,_S.conveyor.model,true)
                 sim.writeCustomDataBlock(jnt,'PATHROL','a')
                 sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
-                sim.setObjectInt32Parameter(jnt,sim.objintparam_visibility_layer,512)
+                sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
                 local m=Matrix3x3:rotx(-math.pi/2)
                 sim.setObjectPosition(jnt,_S.conveyor.model,{-_S.conveyor.config.length/2+dx*(i-1),0,0})
                 sim.setObjectQuaternion(jnt,_S.conveyor.model,Matrix3x3:toquaternion(m))
@@ -184,7 +184,7 @@ function path.shaping(path,pathIsClosed,upVector)
     shape=sim.createMeshShape(0,0,vert,ind)
     sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.col)
     if _S.conveyor.config.respondablePads then
-        sim.setObjectInt32Parameter(shape,sim.shapeintparam_respondable,1)
+        sim.setObjectInt32Param(shape,sim.shapeintparam_respondable,1)
     end
     return shape
 end

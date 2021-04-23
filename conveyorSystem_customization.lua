@@ -143,7 +143,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                     opt=opt+8
                 end
                 local cyl=sim.createPureShape(2,opt,{_S.conveyorSystem.config.rollerSize[1],_S.conveyorSystem.config.rollerSize[1],_S.conveyorSystem.config.rollerSize[2]*0.95},0.01)
-                sim.setObjectInt32Parameter(cyl,sim.objintparam_visibility_layer,1+256)
+                sim.setObjectInt32Param(cyl,sim.objintparam_visibility_layer,1+256)
                 local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
                 _S.conveyorSystem.rolHandles[i]=jnt
                 sim.setObjectParent(cyl,jnt,true)
@@ -153,7 +153,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 sim.setObjectParent(jnt,_S.conveyorSystem.model,true)
                 sim.writeCustomDataBlock(jnt,'PATHROL','a')
                 sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
-                sim.setObjectInt32Parameter(jnt,sim.objintparam_visibility_layer,512)
+                sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
                 local o=(i-1)*_S.conveyorSystem.padOffset
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,o)
                 pos[3]=pos[3]-_S.conveyorSystem.config.rollerSize[1]/2
@@ -175,7 +175,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
                 sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i],'PATHPAD','a')
                 sim.setObjectProperty(_S.conveyorSystem.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
-                sim.setObjectInt32Parameter(_S.conveyorSystem.padHandles[i],sim.objintparam_visibility_layer,1+256)
+                sim.setObjectInt32Param(_S.conveyorSystem.padHandles[i],sim.objintparam_visibility_layer,1+256)
             end
         end
         if _S.conveyorSystem.config.respondableBase then
@@ -208,7 +208,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             sim.setObjectParent(resp,_S.conveyorSystem.model,true)
             sim.writeCustomDataBlock(resp,'PATHPAD','b')
             sim.setObjectProperty(resp,sim.objectproperty_selectmodelbaseinstead)
-            sim.setObjectInt32Parameter(resp,sim.objintparam_visibility_layer,256)
+            sim.setObjectInt32Param(resp,sim.objintparam_visibility_layer,256)
             sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__respondable')
         end
         if _S.conveyorSystem.config.useBorder then
@@ -248,7 +248,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             sim.setObjectParent(resp,_S.conveyorSystem.model,true)
             sim.writeCustomDataBlock(resp,'PATHPAD','c')
             sim.setObjectProperty(resp,sim.objectproperty_selectmodelbaseinstead)
-            sim.setObjectInt32Parameter(resp,sim.objintparam_visibility_layer,1+256)
+            sim.setObjectInt32Param(resp,sim.objintparam_visibility_layer,1+256)
             sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__border')
         end
     end

@@ -64,7 +64,7 @@ function sysCall_sensing()
 end
 
 function sysCall_nonSimulation()
-    local res,upd=sim.getObjectInt32Parameter(_S.graph.model,sim.graphintparam_needs_refresh)
+    local upd=sim.getObjectInt32Param(_S.graph.model,sim.graphintparam_needs_refresh)
     if upd==1 then
         _S.graph.refresh=true
         _S.graph.updateCurves(true)
@@ -236,7 +236,7 @@ function _S.graph.updateCurves(forceUpdate)
     _S.graph.updateCnt=_S.graph.updateCnt+1
     if _S.graph.updateCnt>=_S.graph.updateTick or forceUpdate then
         _S.graph.updateCnt=0
-        local res,upd=sim.getObjectInt32Parameter(_S.graph.model,sim.graphintparam_needs_refresh)
+        local upd=sim.getObjectInt32Param(_S.graph.model,sim.graphintparam_needs_refresh)
         if upd==1 or _S.graph.refresh then
             _S.graph.refresh=false
             _S.graph.removePlot()
