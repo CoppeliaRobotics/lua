@@ -435,6 +435,23 @@ function Matrix:mul(m)
     end
 end
 
+function Matrix:mult(v)
+    if getmetatable(v)==Matrix then
+        assert(self:sameshape{4,4},'not a 4x4 matrix')
+        assert(v:sameshape{3,1},'operand not a 3d vector')
+        return self:mul(v:hom()):nonhom()
+    else
+        error('unsupported operand')
+    end
+end
+
+function Matrix:axis(which)
+    assert(self:sameshape{3,3} or self:sameshape{4,4},'not a 3x3 or 4x4 matrix')
+    local c=({[1]=1,[2]=2,[3]=3,['x']=1,['y']=2,['z']=3})[which]
+    if not c then error('invalid argument') end
+    return self:slice(1,c,3,c)
+end
+
 function Matrix:div(m)
     return self:binop(m,function(a,b) return a/b end)
 end

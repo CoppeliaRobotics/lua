@@ -322,6 +322,10 @@ Returns the matrix of same shape as `rowidx` and `colidx` obtained by reading el
 
 Returns element-wise inverse-tangent value.
 
+#### `Matrix:axis(which)`
+
+Returns the specified axis of the 3x3 or 4x4 matrix. Argument must be 'x', 'y', or 'z' (also accepted: 1, 2, or 3).
+
 #### `Matrix:binop(m,op)`
 
 Returns the matrix obtained by applying function `op(x,y)` element-wise, where `x` and `y` are elements at same position if `m` is a matrix, or `y` is `m` if `m` is a scalar.
@@ -509,6 +513,10 @@ Returns pair-wise integer modulo (`%`) with matrix `m` which must have the same 
 #### `Matrix:mul(m)`
 
 Returns the result of multiplying this matrix by `m`, which can be a matrix of compatible size for matrix multipication, or a scalar.
+
+#### `Matrix:mult(v)`
+
+Transform the 3d vector `v` according to the 4x4 homogeneous transformation, and return the resulting 3d vector. No checks other than operands shape are performed. This is simply a convenient shorthand for `(m*v:hom()):nonhom()`.
 
 #### `Matrix:ne(m)`
 

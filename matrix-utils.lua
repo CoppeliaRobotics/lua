@@ -342,20 +342,6 @@ _S.wrapFunc('getObjectVelocity',function(origFunc)
     end
 end)
 
--- table_3 eulerAngles=sim.getOrientationOnPath (number pathHandle,number relativeDistance)
-_S.wrapFunc('getOrientationOnPath ',function(origFunc)
-    return function(pathHandle,relativeDistance)
-        return Vector(origFunc(pathHandle,relativeDistance))
-    end
-end)
-
--- table_3 position=sim.getPositionOnPath (number pathHandle,number relativeDistance)
-_S.wrapFunc('getPositionOnPath ',function(origFunc)
-    return function(pathHandle,relativeDistance)
-        return Vector(origFunc(pathHandle,relativeDistance))
-    end
-end)
-
 -- table_4 quaternion=sim.getQuaternionFromMatrix(table_12 matrix)
 _S.wrapFunc('getQuaternionFromMatrix',function(origFunc)
     return function(matrix)
