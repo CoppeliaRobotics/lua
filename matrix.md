@@ -510,6 +510,10 @@ Returns pair-wise integer modulo (`%`) with matrix `m` which must have the same 
 
 Returns the result of multiplying this matrix by `m`, which can be a matrix of compatible size for matrix multipication, or a scalar.
 
+#### `Matrix:mult(v)`
+
+Transform the 3d vector `v` according to the 4x4 homogeneous transformation, and return the resulting 3d vector. No checks other than operands shape are performed. This is simply a convenient shorthand for `(m*v:hom()):nonhom()`.
+
 #### `Matrix:ne(m)`
 
 Returns binary matrix obtained by comparing (~=) element-wise with `m` if it is a matrix, or with scalar `m`.

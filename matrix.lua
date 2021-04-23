@@ -435,6 +435,16 @@ function Matrix:mul(m)
     end
 end
 
+function Matrix:mult(v)
+    if getmetatable(v)==Matrix then
+        assert(self:sameshape{4,4},'not a 4x4 matrix')
+        assert(v:sameshape{3,1},'operand not a 3d vector')
+        return self:mul(v:hom()):nonhom()
+    else
+        error('unsupported operand')
+    end
+end
+
 function Matrix:div(m)
     return self:binop(m,function(a,b) return a/b end)
 end
