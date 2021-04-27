@@ -128,7 +128,7 @@ function ConfigUI:createUi()
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..' layout="grid"'
     xml=xml..'>\n'
-    local uiElems,uiTabs,uiTabsOrdered,uiElemsWithoutTab={},{},{},{}
+    local uiElems,uiTabs,uiTabsOrdered={},{},{}
     for k,v in pairs(self.schema) do
         table.insert(uiElems,k)
     end
@@ -139,43 +139,43 @@ function ConfigUI:createUi()
     end)
     for _,k in ipairs(uiElems) do
         local v=self.schema[k]
-        if v.ui.tab then
-            if not uiTabs[v.ui.tab] then
-                uiTabs[v.ui.tab]={}
-                table.insert(uiTabsOrdered,v.ui.tab)
-            end
-            table.insert(uiTabs[v.ui.tab],k)
-        else
-            table.insert(uiElemsWithoutTab,k)
+        local tab=v.ui.tab or ''
+        if not uiTabs[tab] then
+            uiTabs[tab]={}
+            table.insert(uiTabsOrdered,tab)
+        end
+        table.insert(uiTabs[tab],k)
+    end
+    local tabsAsColumns=self.tabsAsColumns
+    if #uiTabsOrdered>1 then
+        if not tabsAsColumns and not self.uiTabsID then
+            self.uiTabsID=self:uiElementNextID()
+            xml=xml..'<tabs id="'..self.uiTabsID..'">\n'
         end
     end
-    if #uiTabsOrdered>0 then
-        if not self.uiTabsID then
-            self.uiTabsID=self:uiElementNextID()
-        end
-        xml=xml..'<tabs'
-        xml=xml..' id="'..self.uiTabsID..'"'
-        xml=xml..'>\n'
-        for _,tab in ipairs(uiTabsOrdered) do
-            xml=xml..'<tab title="'..tab..'" layout="grid">\n'
-            for _,k in ipairs(uiTabs[tab]) do
-                xml=xml..self:uiElementXML(k,self.schema[k])
+    for _,tab in ipairs(uiTabsOrdered) do
+        if #uiTabsOrdered>1 then
+            if tabsAsColumns then
+                xml=xml..'<group flat="true" layout="grid">\n'
+            else
+                xml=xml..'<tab title="'..tab..'" layout="grid">\n'
             end
-            xml=xml..'<group flat="true" layout="vbox"><stretch/></group>'
-            xml=xml..'</tab>\n'
         end
-        if #uiElemsWithoutTab>0 then
-            xml=xml..'<tab title="" layout="grid">\n'
-            for _,k in ipairs(uiElemsWithoutTab) do
-                xml=xml..self:uiElementXML(k,self.schema[k])
-            end
-            xml=xml..'<group flat="true" layout="vbox"><stretch/></group>'
-            xml=xml..'</tab>\n'
-        end
-        xml=xml..'</tabs>\n'
-    else
-        for _,k in ipairs(uiElems) do
+        for _,k in ipairs(uiTabs[tab]) do
             xml=xml..self:uiElementXML(k,self.schema[k])
+        end
+        if #uiTabsOrdered>1 then
+            xml=xml..'<group flat="true" layout="vbox"><stretch/></group>\n'
+            if tabsAsColumns then
+                xml=xml..'</group>\n'
+            else
+                xml=xml..'</tab>\n'
+            end
+        end
+    end
+    if #uiTabsOrdered>1 then
+        if not tabsAsColumns then
+            xml=xml..'</tabs>\n'
         end
     end
     xml=xml..'</ui>'
