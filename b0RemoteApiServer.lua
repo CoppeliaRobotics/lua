@@ -467,8 +467,74 @@ function CloseScene(...)
     return sim.closeScene()
 end
 
+-- DEPRECATED START
 function SetStringParameter(...)
-    debugFunc("SetStringParameter",...)
+    return SetStringParam(...)
+end
+
+function GetStringParameter(...)
+    return GetStringParam(...)
+end
+
+function SetFloatParameter(...)
+    return SetFloatParam(...)
+end
+
+function GetFloatParameter(...)
+    return GetFloatParam(...)
+end
+
+function SetIntParameter(...)
+    return SetInt32Param(...)
+end
+
+function GetIntParameter(...)
+    return GetInt32Param(...)
+end
+
+function SetBoolParameter(...)
+    return SetBoolParam(...)
+end
+
+function GetBoolParameter(...)
+    return GetBoolParam(...)
+end
+
+function SetArrayParameter(...)
+    return SetArrayParam(...)
+end
+
+function GetArrayParameter(...)
+    return GetArrayParam(...)
+end
+
+function GetObjectFloatParameter(...)
+    return GetObjectFloatParam(...)
+end
+
+function GetObjectIntParameter(...)
+    return GetObjectInt32Param(...)
+end
+
+function GetObjectStringParameter(...)
+    return GetObjectStringParam(...)
+end
+
+function SetObjectFloatParameter(...)
+    return SetObjectFloatParam(...)
+end
+
+function SetObjectIntParameter(...)
+    return SetObjectInt32Param(...)
+end
+
+function SetObjectStringParameter(...)
+    return SetObjectStringParam(...)
+end
+-- DEPRECATED END
+
+function SetStringParam(...)
+    debugFunc("SetStringParam",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -476,8 +542,8 @@ function SetStringParameter(...)
     return sim.setStringParam(paramId,val)
 end
 
-function GetStringParameter(...)
-    debugFunc("GetStringParameter",...)
+function GetStringParam(...)
+    debugFunc("GetStringParam",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -485,8 +551,8 @@ function GetStringParameter(...)
     return sim.getStringParam(paramId)
 end
 
-function SetFloatParameter(...)
-    debugFunc("SetFloatParameter",...)
+function SetFloatParam(...)
+    debugFunc("SetFloatParam",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -494,8 +560,8 @@ function SetFloatParameter(...)
     return sim.setFloatParam(paramId,val)
 end
 
-function GetFloatParameter(...)
-    debugFunc("GetFloatParameter",...)
+function GetFloatParam(...)
+    debugFunc("GetFloatParam",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -503,8 +569,8 @@ function GetFloatParameter(...)
     return sim.getFloatParam(paramId)
 end
 
-function SetIntParameter(...)
-    debugFunc("SetIntParameter",...)
+function SetInt32Param(...)
+    debugFunc("SetInt32Param",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -512,8 +578,8 @@ function SetIntParameter(...)
     return sim.setInt32Param(paramId,val)
 end
 
-function GetIntParameter(...)
-    debugFunc("GetIntParameter",...)
+function GetInt32Param(...)
+    debugFunc("GetInt32Param",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -521,8 +587,8 @@ function GetIntParameter(...)
     return sim.getInt32Param(paramId)
 end
 
-function SetBoolParameter(...)
-    debugFunc("SetBoolParameter",...)
+function SetBoolParam(...)
+    debugFunc("SetBoolParam",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -530,8 +596,8 @@ function SetBoolParameter(...)
     return sim.setBoolParam(paramId,val)
 end
 
-function GetBoolParameter(...)
-    debugFunc("GetBoolParameter",...)
+function GetBoolParam(...)
+    debugFunc("GetBoolParam",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -539,8 +605,8 @@ function GetBoolParameter(...)
     return sim.getBoolParam(paramId)
 end
 
-function SetArrayParameter(...)
-    debugFunc("SetArrayParameter",...)
+function SetArrayParam(...)
+    debugFunc("SetArrayParam",...)
     local paramId,val=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
@@ -548,14 +614,72 @@ function SetArrayParameter(...)
     return sim.setArrayParam(paramId,val)
 end
 
-function GetArrayParameter(...)
-    debugFunc("GetArrayParameter",...)
+function GetArrayParam(...)
+    debugFunc("GetArrayParam",...)
     local paramId=...
     if type(paramId)=='string' then
         paramId=evalStr(paramId)
     end
     return sim.getArrayParam(paramId)
 end
+
+function GetObjectFloatParam(...)
+    debugFunc("GetObjectFloatParam",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local retV=sim.getObjectFloatParam(handle,paramId)
+    return retV
+end
+
+function GetObjectInt32Param(...)
+    debugFunc("GetObjectInt32Param",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local retV=sim.getObjectInt32Param(handle,paramId)
+    return retV
+end
+
+function GetObjectStringParam(...)
+    debugFunc("GetObjectStringParam",...)
+    local handle,paramId=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    local r,retV=sim.getObjectStringParam(handle,paramId)
+    return retV
+end
+
+function SetObjectFloatParam(...)
+    debugFunc("SetObjectFloatParam",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectFloatParam(handle,paramId,v)
+end
+
+function SetObjectInt32Param(...)
+    debugFunc("SetObjectInt32Param",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectInt32Param(handle,paramId,v)
+end
+
+function SetObjectStringParam(...)
+    debugFunc("SetObjectStringParam",...)
+    local handle,paramId,v=...
+    if type(paramId)=='string' then
+        paramId=evalStr(paramId)
+    end
+    return sim.setObjectStringParam(handle,paramId,v)
+end
+
 function DisplayDialog(...)
     debugFunc("DisplayDialog",...)
     local titleText,mainText,dlgType,initText=...
@@ -724,63 +848,6 @@ function GetObjectName(...)
         handle=handle+sim.handleflag_altname
     end
     return sim.getObjectName(handle)
-end
-
-function GetObjectFloatParameter(...)
-    debugFunc("GetObjectFloatParameter",...)
-    local handle,paramId=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    local retV=sim.getObjectFloatParam(handle,paramId)
-    return retV
-end
-
-function GetObjectIntParameter(...)
-    debugFunc("GetObjectIntParameter",...)
-    local handle,paramId=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    local retV=sim.getObjectInt32Param(handle,paramId)
-    return retV
-end
-
-function GetObjectStringParameter(...)
-    debugFunc("GetObjectStringParameter",...)
-    local handle,paramId=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    local r,retV=sim.getObjectStringParam(handle,paramId)
-    return retV
-end
-
-function SetObjectFloatParameter(...)
-    debugFunc("SetObjectFloatParameter",...)
-    local handle,paramId,v=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    return sim.setObjectFloatParam(handle,paramId,v)
-end
-
-function SetObjectIntParameter(...)
-    debugFunc("SetObjectIntParameter",...)
-    local handle,paramId,v=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    return sim.setObjectInt32Param(handle,paramId,v)
-end
-
-function SetObjectStringParameter(...)
-    debugFunc("SetObjectStringParameter",...)
-    local handle,paramId,v=...
-    if type(paramId)=='string' then
-        paramId=evalStr(paramId)
-    end
-    return sim.setObjectStringParam(handle,paramId,v)
 end
 
 function GetSimulationTime(...)
