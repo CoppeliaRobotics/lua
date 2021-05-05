@@ -130,6 +130,7 @@ function ConfigUI:createUi()
     xml=xml..'>\n'
     local uiElems,uiTabs,uiTabsOrdered={},{},{}
     for k,v in pairs(self.schema) do
+        v.ui=v.ui or {}
         table.insert(uiElems,k)
     end
     table.sort(uiElems,function(a,b)
