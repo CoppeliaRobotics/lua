@@ -11,10 +11,6 @@ function _S.wrapFunc(funcName,wrapperGenerator)
     sim[funcName]=wrapperGenerator(origFunc)
 end
 
-function _S.table12toMatrix4x4(t)
-    return Matrix(3,4,t):vertcat(Matrix(1,4,{0,0,0,1}))
-end
-
 -- number bannerID=sim.addBanner(string label,number size,number options,table_6 positionAndEulerAngles=nil,number parentObjectHandle=nil,table_12 labelColors=nil,table_12 backgroundColors=nil)
 _S.wrapFunc('addBanner',function(origFunc)
     return function(label,size,options,positionAndEulerAngles,parentObjectHandle,labelColors,backgroundColors)
@@ -127,7 +123,7 @@ _S.wrapFunc('buildMatrix',function(origFunc)
         if getmetatable(eulerAngles)==Matrix then
             eulerAngles=eulerAngles:data()
         end
-        return _S.table12toMatrix4x4(origFunc(position,eulerAngles))
+        return Matrix4x4(origFunc(position,eulerAngles))
     end
 end)
 
@@ -140,7 +136,7 @@ _S.wrapFunc('buildMatrixQ',function(origFunc)
         if getmetatable(quaternion)==Matrix then
             quaternion=quaternion:data()
         end
-        return _S.table12toMatrix4x4(origFunc(position,quaternion))
+        return Matrix4x4(origFunc(position,quaternion))
     end
 end)
 
@@ -285,7 +281,7 @@ end)
 -- table_12 matrix=sim.getJointMatrix(number objectHandle)
 _S.wrapFunc('getJointMatrix',function(origFunc)
     return function(objectHandle)
-        return _S.table12toMatrix4x4(origFunc(objectHandle))
+        return Matrix4x4(origFunc(objectHandle))
     end
 end)
 
@@ -303,7 +299,7 @@ end)
 -- table_12 matrix=sim.getObjectMatrix(number objectHandle,number relativeToObjectHandle)
 _S.wrapFunc('getObjectMatrix',function(origFunc)
     return function(objectHandle,relativeToObjectHandle)
-        return _S.table12toMatrix4x4(origFunc(objectHandle,relativeToObjectHandle))
+        return Matrix4x4(origFunc(objectHandle,relativeToObjectHandle))
     end
 end)
 
@@ -427,7 +423,7 @@ _S.wrapFunc('interpolateMatrices',function(origFunc)
         if getmetatable(matrixIn2)==Matrix then
             matrixIn2=matrixIn2:data()
         end
-        return _S.table12toMatrix4x4(origFunc(matrixIn1,matrixIn2,interpolFactor))
+        return Matrix4x4(origFunc(matrixIn1,matrixIn2,interpolFactor))
     end
 end)
 
@@ -463,7 +459,7 @@ _S.wrapFunc('rotateAroundAxis',function(origFunc)
         if getmetatable(axisPos)==Matrix then
             axisPos=axisPos:data()
         end
-        return _S.table12toMatrix4x4(origFunc(matrixIn,axis,axisPos,angle))
+        return Matrix4x4(origFunc(matrixIn,axis,axisPos,angle))
     end
 end)
 

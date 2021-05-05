@@ -1264,6 +1264,10 @@ function Matrix4x4:random(m)
 end
 
 setmetatable(Matrix4x4,{__call=function(self,data)
+    if type(data)=='table' and #data==12 then
+        -- special case of a homogeneous transform matrix from CoppeliaSim
+        return Matrix(3,4,data):vertcat(Vector{0,0,0,1}:t())
+    end
     return Matrix(4,4,data)
 end})
 

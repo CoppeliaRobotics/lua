@@ -738,7 +738,7 @@ Pass `Matrix` as parameter `t` to get the result as a `Matrix` object.
 
 #### `Matrix4x4(data)`
 
-Returns a new matrix of size 4x4 initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how data is interpreted).
+Returns a new matrix of size 4x4 initialized with data from `data` (see [`Matrix(rows,cols,data)`](#matrixrowscolsdata) for how data is interpreted). Alternatively, data can be a table of 12 numbers, as returned by CoppeliaSim functions.
 
 #### `Matrix4x4:fromeuler(e)`
 
