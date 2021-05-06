@@ -1,5 +1,46 @@
 ConfigUI={}
 
+function ConfigUI:readBlock(name)
+    local objectHandle=sim.getObjectHandle(sim.handle_self)
+    local data=sim.readCustomDataBlock(objectHandle,name)
+    return data
+end
+
+function ConfigUI:writeBlock(name,data)
+    local objectHandle=sim.getObjectHandle(sim.handle_self)
+    sim.writeCustomDataBlock(objectHandle,name,data)
+end
+
+function ConfigUI:findAllInstances()
+    local instances={}
+    for i,handle in ipairs(sim.getObjectsWithTag('modelType')) do
+        if self.modelType==sim.readCustomDataBlock(handle,'modelType') then
+            table.insert(instances,handle)
+        end
+    end
+    return instances
+end
+
+function ConfigUI:findLinkedInstances()
+    local instances={}
+    for i,handle in ipairs(self:findAllInstances()) do
+        if self.instanceTag==sim.readCustomDataBlock(handle,'instanceTag') then
+            table.insert(instances,handle)
+        end
+    end
+    return instances
+end
+
+function ConfigUI:copyConfigToLinkedInstances()
+    local cfg=self:readBlock('config')
+    local objectHandle=sim.getObjectHandle(sim.handle_self)
+    for i,handle in ipairs(self:findLinkedInstances()) do
+        if handle~=objectHandle then
+            sim.writeCustomDataBlock(handle,'config',cfg)
+        end
+    end
+end
+
 function ConfigUI:defaultConfig()
     local ret={}
     for k,v in pairs(self.schema) do ret[k]=v.default end
@@ -8,8 +49,7 @@ end
 
 function ConfigUI:readConfig()
     self.config=self:defaultConfig()
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    local data=sim.readCustomDataBlock(objectHandle,'config')
+    local data=self:readBlock('config')
     if data then
         for k,v in pairs(sim.unpackTable(data)) do
             self.config[k]=v
@@ -18,14 +58,12 @@ function ConfigUI:readConfig()
 end
 
 function ConfigUI:writeConfig()
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    sim.writeCustomDataBlock(objectHandle,'config',sim.packTable(self.config))
+    self:writeBlock('config',sim.packTable(self.config))
 end
 
 function ConfigUI:readUIState()
     self.uistate=self.uistate or {}
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    local data=sim.readCustomDataBlock(objectHandle,'@tmp/uistate')
+    local data=self:readBlock('@tmp/uistate')
     if data then
         for k,v in pairs(sim.unpackTable(data)) do
             self.uistate[k]=v
@@ -34,8 +72,7 @@ function ConfigUI:readUIState()
 end
 
 function ConfigUI:writeUIState()
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    sim.writeCustomDataBlock(objectHandle,'@tmp/uistate',sim.packTable(self.uistate))
+    self:writeBlock('@tmp/uistate',sim.packTable(self.uistate))
 end
 
 function ConfigUI:showUi()
@@ -283,6 +320,11 @@ function ConfigUI:setupSysCall(name,f)
 end
 
 function ConfigUI:sysCall_init()
+    self:writeBlock('modelType',self.modelType)
+
+    self.instanceTag=self:readBlock('instanceTag') or tostring(sim.getSystemTimeInMs(0))
+    self:writeBlock('instanceTag',self.instanceTag)
+
     self:readConfig()
     self:writeConfig()
     self:generate()
@@ -311,8 +353,7 @@ function ConfigUI:sysCall_nonSimulation()
     end
     
     -- poll for external config change:
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    local data=sim.readCustomDataBlock(objectHandle,'config')
+    local data=self:readBlock('config')
     if data and data~=sim.packTable(self.config) then
         self:readConfig()
         self:configChanged() -- updates ui
@@ -339,8 +380,8 @@ function ConfigUI:__index(k)
     return ConfigUI[k]
 end
 
-setmetatable(ConfigUI,{__call=function(meta,schema,genCb)
-    local self=setmetatable({schema=schema},meta)
+setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
+    local self=setmetatable({modelType=modelType,schema=schema},meta)
     self.generatePending=false
     self:setGenerateCallback(genCb)
     self:setupSysCall('init',function() self:sysCall_init() end)
