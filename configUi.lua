@@ -149,8 +149,10 @@ function ConfigUI:createUi()
     end
     local tabsAsColumns=self.tabsAsColumns
     if #uiTabsOrdered>1 then
-        if not tabsAsColumns and not self.uiTabsID then
-            self.uiTabsID=self:uiElementNextID()
+        if not tabsAsColumns then
+            if not self.uiTabsID then
+                self.uiTabsID=self:uiElementNextID()
+            end
             xml=xml..'<tabs id="'..self.uiTabsID..'">\n'
         end
     end
