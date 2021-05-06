@@ -247,6 +247,7 @@ function ConfigUI_close(ui)
 end
 
 function ConfigUI:configChanged()
+    if not self.uiHandle then return end
     for elemName,elemSchema in pairs(self.schema) do
         local v=self.config[elemName]
         if elemSchema.ui.toUiValue then
