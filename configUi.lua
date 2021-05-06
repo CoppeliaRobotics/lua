@@ -594,6 +594,10 @@ function ConfigUI.Controls.button.create(configUi,elemSchema)
     return xml
 end
 
+function ConfigUI.Controls.button.hasLabel(configUi,elemSchema)
+    return elemSchema.display
+end
+
 function ConfigUI.Controls.button.setValue(configUi,elemSchema,value)
     if elemSchema.display then
         if type(elemSchema.display=='function') then
@@ -603,6 +607,8 @@ function ConfigUI.Controls.button.setValue(configUi,elemSchema,value)
         else
             error('invalid type for "display"')
         end
+    else
+        value=elemSchema.name
     end
     if value==nil then value='' end
     simUI.setButtonText(configUi.uiHandle,elemSchema.ui.id,value)
