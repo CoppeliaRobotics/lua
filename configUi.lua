@@ -568,6 +568,13 @@ function ConfigUI.Controls.spinbox.create(configUi,elemSchema)
     elseif elemSchema.maximum then
         xml=xml..' maximum="'..elemSchema.maximum..'"'
     end
+    if elemSchema.ui.step then
+        xml=xml..' step="'..elemSchema.ui.step..'"'
+    elseif elemSchema.step then
+        xml=xml..' step="'..elemSchema.step..'"'
+    elseif elemSchema.type=='float' then
+        xml=xml..' step="0.001"'
+    end
     xml=xml..' float="'..(elemSchema.type=='float' and 'true' or 'false')..'"'
     xml=xml..' on-change="ConfigUI_changed"'
     xml=xml..'/>'
