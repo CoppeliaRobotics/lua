@@ -161,6 +161,8 @@ function ConfigUI:createUi()
     self:readUIState()
     if self.uistate.pos then
         xml=xml..string.format(' placement="absolute" position="%d,%d" ',self.uistate.pos[1],self.uistate.pos[2])
+    else
+        xml=xml..' placement="relative" position="-30,100" '
     end
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..' layout="grid"'
