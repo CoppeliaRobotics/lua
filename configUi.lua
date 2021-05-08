@@ -577,6 +577,9 @@ function ConfigUI.Controls.spinbox.create(configUi,elemSchema)
     elseif elemSchema.type=='float' then
         xml=xml..' step="0.001"'
     end
+    if elemSchema.ui.decimals then
+        xml=xml..' decimals="'..elemSchema.ui.decimals..'"'
+    end
     xml=xml..' float="'..(elemSchema.type=='float' and 'true' or 'false')..'"'
     xml=xml..' on-change="ConfigUI_changed"'
     xml=xml..'/>'
