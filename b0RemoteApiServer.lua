@@ -213,10 +213,10 @@ function ClearFloatSignal(...)
     return sim.clearFloatSignal(sig)
 end
 
-function ClearIntegerSignal(...)
-    debugFunc("ClearIntegerSignal",...)
+function ClearInt32Signal(...)
+    debugFunc("ClearInt32Signal",...)
     local sig=...
-    return sim.clearIntegerSignal(sig)
+    return sim.clearInt32Signal(sig)
 end
 
 function ClearStringSignal(...)
@@ -231,10 +231,10 @@ function SetFloatSignal(...)
     return sim.setFloatSignal(sig,v)
 end
 
-function SetIntSignal(...)
-    debugFunc("SetIntSignal",...)
+function SetInt32Signal(...)
+    debugFunc("SetInt32Signal",...)
     local sig,v=...
-    return sim.setIntegerSignal(sig,v)
+    return sim.setInt32Signal(sig,v)
 end
 
 function SetStringSignal(...)
@@ -249,10 +249,10 @@ function GetFloatSignal(...)
     return sim.getFloatSignal(sig)
 end
 
-function GetIntSignal(...)
-    debugFunc("GetIntSignal",...)
+function GetInt32Signal(...)
+    debugFunc("GetInt32Signal",...)
     local sig=...
-    return sim.getIntegerSignal(sig)
+    return sim.getInt32Signal(sig)
 end
 
 function GetStringSignal(...)
@@ -530,6 +530,15 @@ end
 
 function SetObjectStringParameter(...)
     return SetObjectStringParam(...)
+end
+function ClearIntegerSignal(...)
+    return ClearInt32Signal(...)
+end
+function SetIntSignal(...)
+    return SetInt32Signal(...)
+end
+function GetIntSignal(...)
+    return GetInt32Signal(...)
 end
 -- DEPRECATED END
 
