@@ -333,6 +333,7 @@ function ConfigUI:sysCall_nonSimulation()
     if self.generatePending then --and (self.generatePending+self.generationTime)<sim.getSystemTime() then
         self.generatePending=false
         self.generateCallback(self.config)
+        sim.announceSceneContentChange()
     end
     
     -- poll for external config change:
