@@ -19,86 +19,17 @@ function sysCall_beforeSimulation()
 end
 
 function sysCall_beforeInstanceSwitch()
-    _S.path.hideCtrlPtDlg()
+    _S.path.beforeInstanceSwitch()
+end
+
+function sysCall_afterInstanceSwitch()
+    _S.path.afterInstanceSwitch()
 end
 
 function sysCall_userConfig()
-    local simStopped=sim.getSimulationState()==sim.simulation_stopped
-    
-    local pos=' placement="relative" position="-50,50" '
-    if _S.path.pathDlgPos then
-        pos=' placement="absolute" position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'" '
+    if sim.getSimulationState()==sim.simulation_stopped then
+        _S.path.openUserConfigDlg()
     end
-    local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.removeDlg" modal="true" enabled="'..tostring(simStopped)..'" '..pos..[[>
-        <label text="Main properties:" style="* {font-weight: bold;}"/>
-        <group layout="form" flat="true">
-        
-        <checkbox text="Path is closed" on-change="_S.path.closed_callback" id="1" />
-        <label text=""/>
-
-        <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
-        <label text=""/>
-
-        <checkbox text="Hidden path during simulation" on-change="_S.path.hideDuringSimulation_callback" id="2" />
-        <label text=""/>
-
-        <checkbox text="Path && ctrl points always hidden" on-change="_S.path.alwaysHide_callback" id="16" />
-        <label text=""/>
-        
-        <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
-        <label text=""/>
-
-        <checkbox text="Show control point dialog" on-change="_S.path.noCtrlPtDlg_callback" id="17" />
-        <label text=""/>
-        
-        <label text="Smoothness"/>
-        <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
-
-        <label text="Subdivisions"/>
-        <edit on-editing-finished="_S.path.pointCnt_callback" id="5" />
-        </group>
-        
-        <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
-        <group layout="form" flat="true" id="15">
-
-        <radiobutton text="X axis along path, Y axis up" on-click="_S.path.align_callback" id="7"/>
-        <label text=""/>
-
-        <radiobutton text="X axis along path, Z axis up" on-click="_S.path.align_callback" id="8"/>
-        <label text=""/>
-
-        <radiobutton text="Y axis along path, X axis up" on-click="_S.path.align_callback" id="9"/>
-        <label text=""/>
-
-        <radiobutton text="Y axis along path, Z axis up" on-click="_S.path.align_callback" id="10"/>
-        <label text=""/>
-
-        <radiobutton text="Z axis along path, X axis up" on-click="_S.path.align_callback" id="11"/>
-        <label text=""/>
-
-        <radiobutton text="Z axis along path, Y axis up" on-click="_S.path.align_callback" id="12"/>
-        <label text=""/>
-        
-        <label text="Up vector"/>
-        <edit on-editing-finished="_S.path.upVector_callback" id="13" />
-        
-        </group>
-
-        <label text="Initialize path from ctrl point data:" style="* {font-weight: bold;}"/>
-        <group layout="vbox" flat="true">
-
-        <edit id="20" />
-        <button text="ctrl points as position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
-        <button text="ctrl points as pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
-        </group>
-        
-        <label text="Output path data:" style="* {font-weight: bold;}"/>
-        <group layout="vbox" flat="true">
-        <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
-        </group>
-    </ui>]]
-    _S.path.ui=simUI.create(xml)
-    _S.path.setDlgItemContent()
 end
 
 function sysCall_beforeCopy(inData)
@@ -185,6 +116,101 @@ function _S.path.init()
     return _S.path.setup()
 end
 
+function _S.path.beforeInstanceSwitch()
+    _S.path.hideCtrlPtDlg()
+    _S.path.closeToReopenUserConfigDlg()
+end
+
+function _S.path.afterInstanceSwitch()
+    _S.path.reopenUserConfigDlg()
+end
+
+function _S.path.reopenUserConfigDlg()
+    if _S.path.reopenUserConfDlg then
+        _S.path.openUserConfigDlg()
+    end
+end
+
+function _S.path.openUserConfigDlg()
+    if _S.path.ui==nil then
+        _S.path.reopenUserConfDlg=nil
+        local pos=' placement="relative" position="-50,50" '
+        if _S.path.pathDlgPos then
+            pos=' placement="absolute" position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'" '
+        end
+        local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.closeUserConfigDlg" modal="false" '..pos..[[>
+            <label text="Main properties:" style="* {font-weight: bold;}"/>
+            <group layout="form" flat="true">
+            
+            <checkbox text="Path is closed" on-change="_S.path.closed_callback" id="1" />
+            <label text=""/>
+
+            <checkbox text="Generate extruded shape" on-change="_S.path.generateShape_callback" id="3" />
+            <label text=""/>
+
+            <checkbox text="Hidden path during simulation" on-change="_S.path.hideDuringSimulation_callback" id="2" />
+            <label text=""/>
+
+            <checkbox text="Path && ctrl points always hidden" on-change="_S.path.alwaysHide_callback" id="16" />
+            <label text=""/>
+            
+            <checkbox text="Show orientation frames" on-change="_S.path.showOrientation_callback" id="14" />
+            <label text=""/>
+
+            <checkbox text="Show control point dialog" on-change="_S.path.noCtrlPtDlg_callback" id="17" />
+            <label text=""/>
+            
+            <label text="Smoothness"/>
+            <edit on-editing-finished="_S.path.smoothness_callback" id="4" />
+
+            <label text="Subdivisions"/>
+            <edit on-editing-finished="_S.path.pointCnt_callback" id="5" />
+            </group>
+            
+            <checkbox text="Automatic path orientation:" style="* {font-weight: bold;}" on-change="_S.path.autoOrient_callback" id="6"/>
+            <group layout="form" flat="true" id="15">
+
+            <radiobutton text="X axis along path, Y axis up" on-click="_S.path.align_callback" id="7"/>
+            <label text=""/>
+
+            <radiobutton text="X axis along path, Z axis up" on-click="_S.path.align_callback" id="8"/>
+            <label text=""/>
+
+            <radiobutton text="Y axis along path, X axis up" on-click="_S.path.align_callback" id="9"/>
+            <label text=""/>
+
+            <radiobutton text="Y axis along path, Z axis up" on-click="_S.path.align_callback" id="10"/>
+            <label text=""/>
+
+            <radiobutton text="Z axis along path, X axis up" on-click="_S.path.align_callback" id="11"/>
+            <label text=""/>
+
+            <radiobutton text="Z axis along path, Y axis up" on-click="_S.path.align_callback" id="12"/>
+            <label text=""/>
+            
+            <label text="Up vector"/>
+            <edit on-editing-finished="_S.path.upVector_callback" id="13" />
+            
+            </group>
+
+            <label text="Initialize path from ctrl point data:" style="* {font-weight: bold;}"/>
+            <group layout="vbox" flat="true">
+
+            <edit id="20" />
+            <button text="ctrl points as position data, i.e. x,y,z,..." on-click="_S.path.generate_callback" id="21"/>
+            <button text="ctrl points as pose data, i.e. x,y,z,qx,qy,qz,qw,..." on-click="_S.path.generate_callback" id="22"/>
+            </group>
+            
+            <label text="Output path data:" style="* {font-weight: bold;}"/>
+            <group layout="vbox" flat="true">
+            <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
+            </group>
+        </ui>]]
+        _S.path.ui=simUI.create(xml)
+        _S.path.setDlgItemContent()
+    end
+end
+
 function _S.path.createNewIfNeeded()
     local data=sim.readCustomDataBlock(_S.path.model,_S.path.pathCreationTag)
     if data then
@@ -247,9 +273,7 @@ end
 
 function _S.path.cleanup()
     _S.path.hideCtrlPtDlg()
-    if _S.path.ui then
-        simUI.destroy(_S.path.ui)
-    end
+    _S.path.closeUserConfigDlg()
     -- Untag path dummies that are not part of the control pts (e.g. from another path):
     local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
     for i=1,#d,1 do
@@ -305,6 +329,7 @@ function _S.path.afterSimulation()
         local h=_S.path.ctrlPts[i].handle
         sim.setObjectInt32Param(h,sim.objintparam_visibility_layer,v)
     end
+    _S.path.reopenUserConfigDlg()
 end
 
 function _S.path.beforeSimulation()
@@ -318,6 +343,7 @@ function _S.path.beforeSimulation()
         local h=_S.path.ctrlPts[i].handle
         sim.setObjectInt32Param(h,sim.objintparam_visibility_layer,0)
     end
+    _S.path.closeToReopenUserConfigDlg()
 end
 
 function _S.path.getCtrlPtsPoseId()
@@ -575,11 +601,18 @@ function _S.path.getCtrlPts()
     return handles
 end
 
-function _S.path.removeDlg()
-    local x,y=simUI.getPosition(_S.path.ui)
-    _S.path.pathDlgPos={x,y}
-    simUI.destroy(_S.path.ui)
-    _S.path.ui=nil
+function _S.path.closeToReopenUserConfigDlg()
+    _S.path.reopenUserConfDlg=_S.path.closeUserConfigDlg()
+end
+
+function _S.path.closeUserConfigDlg()
+    if _S.path.ui then
+        local x,y=simUI.getPosition(_S.path.ui)
+        _S.path.pathDlgPos={x,y}
+        simUI.destroy(_S.path.ui)
+        _S.path.ui=nil
+        return true
+    end
 end
 
 function _S.path.setDlgItemContent()
