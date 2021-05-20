@@ -210,6 +210,21 @@ function ConfigUI:createUi()
     self:configChanged()
 end
 
+function ConfigUI:closeUi(user)
+    if self.uiHandle then
+        self:saveUIPos()
+        if user==true then -- closed by user -> remember uistate
+            self.uistate.open=false
+        end
+        simUI.destroy(self.uiHandle)
+        self.uiHandle=nil
+        if user==false then -- has been closed programmatically, e.g. from cleanup
+            self.uistate.open=true
+        end
+        self:writeUIState()
+    end
+end
+
 function ConfigUI_changed(ui)
     local self=ConfigUI.handleMap[ui]
     if self then self:uiChanged() end
@@ -280,13 +295,7 @@ function ConfigUI:saveUIPos()
 end
 
 function ConfigUI:uiClosed()
-    if self.uiHandle then
-        self:saveUIPos()
-        self.uistate.open=false
-        self:writeUIState()
-        simUI.destroy(self.uiHandle)
-        self.uiHandle=nil
-    end
+    self:closeUi(true)
 end
 
 function ConfigUI:setupSysCall(name,f)
@@ -313,13 +322,7 @@ function ConfigUI:sysCall_init()
 end
 
 function ConfigUI:sysCall_cleanup()
-    if self.uiHandle then
-        self:saveUIPos()
-        simUI.destroy(self.uiHandle)
-        self.uiHandle=nil
-        self.uistate.open=true
-        self:writeUIState()
-    end
+    self:closeUi(false)
 end
 
 function ConfigUI:sysCall_userConfig()
@@ -342,8 +345,18 @@ function ConfigUI:sysCall_nonSimulation()
     end
 end
 
+function ConfigUI:sysCall_beforeSimulation()
+    self:closeUi()
+end
+
 function ConfigUI:sysCall_sensing()
     sysCall_nonSimulation()
+end
+
+function ConfigUI:sysCall_afterSimulation()
+    if self.uistate.open then
+        self:showUi()
+    end
 end
 
 function ConfigUI:setGenerateCallback(f)
@@ -368,7 +381,9 @@ setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
     self:setupSysCall('cleanup',function() self:sysCall_cleanup() end)
     self:setupSysCall('userConfig',function() self:sysCall_userConfig() end)
     self:setupSysCall('nonSimulation',function() self:sysCall_nonSimulation() end)
+    self:setupSysCall('beforeSimulation',function() self:sysCall_beforeSimulation() end)
     self:setupSysCall('sensing',function() self:sysCall_sensing() end)
+    self:setupSysCall('afterSimulation',function() self:sysCall_afterSimulation() end)
     return self
 end})
 
