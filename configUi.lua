@@ -21,26 +21,6 @@ function ConfigUI:findAllInstances()
     return instances
 end
 
-function ConfigUI:findLinkedInstances()
-    local instances={}
-    for i,handle in ipairs(self:findAllInstances()) do
-        if self.instanceTag==sim.readCustomDataBlock(handle,'instanceTag') then
-            table.insert(instances,handle)
-        end
-    end
-    return instances
-end
-
-function ConfigUI:copyConfigToLinkedInstances()
-    local cfg=self:readBlock('config')
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
-    for i,handle in ipairs(self:findLinkedInstances()) do
-        if handle~=objectHandle then
-            sim.writeCustomDataBlock(handle,'config',cfg)
-        end
-    end
-end
-
 function ConfigUI:defaultConfig()
     local ret={}
     for k,v in pairs(self.schema) do ret[k]=v.default end
@@ -324,9 +304,6 @@ end
 
 function ConfigUI:sysCall_init()
     self:writeBlock('modelType',self.modelType)
-
-    self.instanceTag=self:readBlock('instanceTag') or tostring(sim.getSystemTimeInMs(0))
-    self:writeBlock('instanceTag',self.instanceTag)
 
     self:readConfig()
     self:writeConfig()
