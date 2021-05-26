@@ -8,8 +8,8 @@ function sysCall_init()
     
     -- Create/update data streams/curves:
     sim.destroyGraphCurve(graphHandle,-1)
-    stream1=sim.addDataStream(graphHandle,'Object position X','m')
-    objectHandle=sim.getObjectHandle('Shape')
+    stream1=sim.addGraphStream(graphHandle,'Object position X','m')
+    objectHandle=sim.getObjectHandle('cube')
     startTime=sim.getSystemTime()
     
     graph.init()
@@ -21,11 +21,11 @@ function appendMeasurementPts()
     sim.setGraphStreamValue(graphHandle,stream1,p[1])
     
     graph.handle(sim.getSystemTime()-startTime)
+    graph.updateCurves()
 end
 
 function sysCall_sensing()
     appendMeasurementPts()
-    graph.updateCurves()
 end
 
 function sysCall_nonSimulation()
@@ -36,7 +36,6 @@ function sysCall_suspended()
     appendMeasurementPts()
 end
 
--- Overwrite following system callback functions:
 function sysCall_beforeSimulation()
 end
 

@@ -198,21 +198,17 @@ function sim.isPluginLoaded(pluginName)
 end
 
 function isArray(t)
-    -- found in lua-cjson (by Mark Pulford):
-    local m = 0
-    local count = 0
+    local m=0
+    local count=0
     for k, v in pairs(t) do
-        if type(k) == "number" then
-            if k > m then m = k end
-            count = count + 1
+        if type(k) == "number" and math.floor(k)==k and k>0 then
+            if k>m then m=k end
+            count=count+1
         else
             return false
         end
     end
-    if m > count * 2 then
-        return false
-    end
-    return true
+    return m<=count
 end
 
 function sim.setDebugWatchList(...)
