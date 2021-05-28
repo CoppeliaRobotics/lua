@@ -132,6 +132,57 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
     return xml
 end
 
+function ConfigUI:schemaSorted()
+    -- first order ui elements by 'order' key:
+    local uiElemsOrdered={}
+    for elemName,elemSchema in pairs(self.schema) do
+        elemSchema.ui=elemSchema.ui or {}
+        table.insert(uiElemsOrdered,elemName)
+    end
+    table.sort(uiElemsOrdered,function(a,b)
+        a=self.schema[a].ui.order or 0
+        b=self.schema[b].ui.order or 0
+        return a<b
+    end)
+
+    -- then collect the tabs ('tab' key) in the order they appear:
+    local uiTabs,uiTabsOrder={},{}
+    for _,elemName in ipairs(uiElemsOrdered) do
+        local elemSchema=self.schema[elemName]
+        local tabName=elemSchema.ui.tab or ''
+        if not uiTabs[tabName] then
+            uiTabs[tabName]={}
+            table.insert(uiTabsOrder,tabName)
+        end
+        table.insert(uiTabs[tabName],elemName)
+    end
+
+    -- for each tab:
+    for tabName,uiElems in pairs(uiTabs) do
+        -- split tab's ui elements by column:
+        local cols,byCol={},{}
+        for _,elemName in ipairs(uiElems) do
+            local col=self.schema[elemName].ui.col or 1
+            if not byCol[col] then
+                byCol[col]={}
+                table.insert(cols,col)
+            end
+            table.insert(byCol[col],elemName)
+        end
+        table.sort(cols)
+        uiTabs[tabName]={}
+        for _,col in ipairs(cols) do
+            local colContent={}
+            for _,elemName in ipairs(byCol[col]) do
+                table.insert(colContent,elemName)
+            end
+            table.insert(uiTabs[tabName],colContent)
+        end
+    end
+
+    return uiTabs,uiTabsOrder
+end
+
 function ConfigUI:createUi()
     if self.uiHandle then return end
     self.uiNextID=1
@@ -147,58 +198,32 @@ function ConfigUI:createUi()
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..' layout="grid"'
     xml=xml..'>\n'
-    local uiElems,uiTabs,uiTabsOrdered={},{},{}
-    for k,v in pairs(self.schema) do
-        v.ui=v.ui or {}
-        table.insert(uiElems,k)
-    end
-    table.sort(uiElems,function(a,b)
-        a=self.schema[a].ui.order or 0
-        b=self.schema[b].ui.order or 0
-        return a<b
-    end)
-    for _,k in ipairs(uiElems) do
-        local v=self.schema[k]
-        local tab=v.ui.tab or ''
-        if not uiTabs[tab] then
-            uiTabs[tab]={}
-            table.insert(uiTabsOrdered,tab)
+    local uiTabs,uiTabsOrder=self:schemaSorted()
+    if #uiTabsOrder>1 then
+        if not self.uiTabsID then
+            self.uiTabsID=self:uiElementNextID()
         end
-        table.insert(uiTabs[tab],k)
+        xml=xml..'<tabs id="'..self.uiTabsID..'">\n'
     end
-    local tabsAsColumns=self.tabsAsColumns
-    if #uiTabsOrdered>1 then
-        if not tabsAsColumns then
-            if not self.uiTabsID then
-                self.uiTabsID=self:uiElementNextID()
+    for _,tab in ipairs(uiTabsOrder) do
+        if #uiTabsOrder>1 then
+            xml=xml..'<tab title="'..tab..'" layout="grid">\n'
+        end
+        for _,col in ipairs(uiTabs[tab]) do
+            xml=xml..'<group flat="true" layout="grid">'
+            for _,k in ipairs(col) do
+                xml=xml..self:uiElementXML(k,self.schema[k])
             end
-            xml=xml..'<tabs id="'..self.uiTabsID..'">\n'
+            xml=xml..'<br/><group flat="true" layout="vbox"><stretch/></group>\n'
+            xml=xml..'</group>'
+        end
+        if #uiTabsOrder>1 then
+            xml=xml..'<br/><group flat="true" layout="vbox"><stretch/></group>\n'
+            xml=xml..'</tab>\n'
         end
     end
-    for _,tab in ipairs(uiTabsOrdered) do
-        if #uiTabsOrdered>1 then
-            if tabsAsColumns then
-                xml=xml..'<group flat="true" layout="grid">\n'
-            else
-                xml=xml..'<tab title="'..tab..'" layout="grid">\n'
-            end
-        end
-        for _,k in ipairs(uiTabs[tab]) do
-            xml=xml..self:uiElementXML(k,self.schema[k])
-        end
-        if #uiTabsOrdered>1 then
-            xml=xml..'<group flat="true" layout="vbox"><stretch/></group>\n'
-            if tabsAsColumns then
-                xml=xml..'</group>\n'
-            else
-                xml=xml..'</tab>\n'
-            end
-        end
-    end
-    if #uiTabsOrdered>1 then
-        if not tabsAsColumns then
-            xml=xml..'</tabs>\n'
-        end
+    if #uiTabsOrder>1 then
+        xml=xml..'</tabs>\n'
     end
     xml=xml..'</ui>'
     self.uiHandle=simUI.create(xml)
