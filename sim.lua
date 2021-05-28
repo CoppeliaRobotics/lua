@@ -1570,6 +1570,22 @@ function sim.setShapeBB(handle,size)
     local s=sim.getShapeBB(handle)
     sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
 end
+
+function sim.getModelBB(handle)
+    -- Undocumented function (for now)
+    local s={}
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_x)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_x)
+    s[1]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_y)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_y)
+    s[2]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_z)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_z)
+    s[3]=m-n
+    return s
+end
+
 ----------------------------------------------------------
 
 
