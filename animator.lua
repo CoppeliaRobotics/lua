@@ -38,6 +38,7 @@ function _S.animator.init(config)
                 sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_ambient_diffuse,_S.animator.config.color)
                 sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_specular,{0.1,0.1,0.1})
                 sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_emission,{0,0,0})
+                sim.setShapeTexture(_S.animator.handles[i],-1,-1,0,{1,1})
             end
         end
     end
