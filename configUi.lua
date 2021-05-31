@@ -1,12 +1,26 @@
 ConfigUI={}
 
+function ConfigUI:getObjectName()
+    if self.getObjectNameCallback then
+        return self:getObjectNameCallback()
+    end
+    local objectHandle=sim.getObjectHandle(sim.handle_self)
+    return sim.getObjectName(objectHandle)
+end
+
 function ConfigUI:readBlock(name)
+    if self.readBlockCallback then
+        return self:readBlockCallback(name)
+    end
     local objectHandle=sim.getObjectHandle(sim.handle_self)
     local data=sim.readCustomDataBlock(objectHandle,name)
     return data
 end
 
 function ConfigUI:writeBlock(name,data)
+    if self.writeBlockCallback then
+        return self:writeBlockCallback(name,data)
+    end
     local objectHandle=sim.getObjectHandle(sim.handle_self)
     sim.writeCustomDataBlock(objectHandle,name,data)
 end
@@ -190,9 +204,8 @@ end
 function ConfigUI:createUi()
     if self.uiHandle then return end
     self.uiNextID=1
-    local objectHandle=sim.getObjectHandle(sim.handle_self)
     local xml='<ui'
-    xml=xml..string.format(' title="%s config"',sim.getObjectName(objectHandle))
+    xml=xml..string.format(' title="%s config"',self:getObjectName())
     self:readUIState()
     if self.uistate.pos then
         xml=xml..string.format(' placement="absolute" position="%d,%d" ',self.uistate.pos[1],self.uistate.pos[2])
