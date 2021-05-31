@@ -11,14 +11,18 @@ function ConfigUI:writeBlock(name,data)
     sim.writeCustomDataBlock(objectHandle,name,data)
 end
 
-function ConfigUI:findAllInstances()
-    local instances={}
-    for i,handle in ipairs(sim.getObjectsWithTag('modelType')) do
-        if self.modelType==sim.readCustomDataBlock(handle,'modelType') then
-            table.insert(instances,handle)
+function ConfigUI:readInfo()
+    self.info={}
+    local data=self:readBlock(self.dataBlockName.info)
+    if data then
+        for k,v in pairs(sim.unpackTable(data)) do
+            self.info[k]=v
         end
     end
-    return instances
+end
+
+function ConfigUI:writeInfo()
+    self:writeBlock(self.dataBlockName.info,sim.packTable(self.info))
 end
 
 function ConfigUI:defaultConfig()
@@ -29,7 +33,7 @@ end
 
 function ConfigUI:readConfig()
     self.config=self:defaultConfig()
-    local data=self:readBlock('config')
+    local data=self:readBlock(self.dataBlockName.config)
     if data then
         for k,v in pairs(sim.unpackTable(data)) do
             self.config[k]=v
@@ -38,7 +42,7 @@ function ConfigUI:readConfig()
 end
 
 function ConfigUI:writeConfig()
-    self:writeBlock('config',sim.packTable(self.config))
+    self:writeBlock(self.dataBlockName.config,sim.packTable(self.config))
 end
 
 function ConfigUI:readUIState()
@@ -337,8 +341,8 @@ function ConfigUI:setupSysCall(name,f)
 end
 
 function ConfigUI:sysCall_init()
-    self:writeBlock('modelType',self.modelType)
-
+    self:readInfo()
+    self:writeInfo()
     self:readConfig()
     self:writeConfig()
     self:generate()
@@ -362,7 +366,7 @@ function ConfigUI:sysCall_nonSimulation()
     end
     
     -- poll for external config change:
-    local data=self:readBlock('config')
+    local data=self:readBlock(self.dataBlockName.config)
     if data and data~=sim.packTable(self.config) then
         self:readConfig()
         self:configChanged() -- updates ui
@@ -400,8 +404,15 @@ function ConfigUI:__index(k)
 end
 
 setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
-    local self=setmetatable({modelType=modelType,schema=schema},meta)
-    self.generatePending=false
+    local self=setmetatable({
+        dataBlockName={
+            config='__config__',
+            info='__info__',
+        },
+        modelType=modelType,
+        schema=schema,
+        generatePending=false,
+    },meta)
     self:setGenerateCallback(genCb)
     self:setupSysCall('init',function() self:sysCall_init() end)
     self:setupSysCall('cleanup',function() self:sysCall_cleanup() end)
