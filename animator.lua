@@ -33,13 +33,12 @@ function _S.animator.init(config)
         end
     end
     if _S.animator.config.color then
-        for i=2,#_S.animator.handles,1 do
-            if _S.animator.handles[i]~=-1 then
-                sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_ambient_diffuse,_S.animator.config.color)
-                sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_specular,{0.1,0.1,0.1})
-                sim.setShapeColor(_S.animator.handles[i],nil,sim.colorcomponent_emission,{0,0,0})
-                sim.setShapeTexture(_S.animator.handles[i],-1,-1,0,{1,1})
-            end
+        local h=sim.getObjectsInTree( _S.animator.self,sim.object_shape_type)
+        for i=1,#h,1 do
+            sim.setShapeColor(h[i],nil,sim.colorcomponent_ambient_diffuse,_S.animator.config.color)
+            sim.setShapeColor(h[i],nil,sim.colorcomponent_specular,{0.1,0.1,0.1})
+            sim.setShapeColor(h[i],nil,sim.colorcomponent_emission,{0,0,0})
+            sim.setShapeTexture(h[i],-1,-1,0,{1,1})
         end
     end
 end
