@@ -59,20 +59,6 @@ function ConfigUI:writeConfig()
     self:writeBlock(self.dataBlockName.config,sim.packTable(self.config))
 end
 
-function ConfigUI:readUIState()
-    self.uistate=self.uistate or {}
-    local data=self:readBlock('@tmp/uistate')
-    if data then
-        for k,v in pairs(sim.unpackTable(data)) do
-            self.uistate[k]=v
-        end
-    end
-end
-
-function ConfigUI:writeUIState()
-    self:writeBlock('@tmp/uistate',sim.packTable(self.uistate))
-end
-
 function ConfigUI:showUi()
     if not self.uiHandle then
         self:readConfig()
@@ -206,7 +192,6 @@ function ConfigUI:createUi()
     self.uiNextID=1
     local xml='<ui'
     xml=xml..string.format(' title="%s config"',self:getObjectName())
-    self:readUIState()
     if self.uistate.pos then
         xml=xml..string.format(' placement="absolute" position="%d,%d" ',self.uistate.pos[1],self.uistate.pos[2])
     else
@@ -263,7 +248,6 @@ function ConfigUI:closeUi(user)
         if user==false then -- has been closed programmatically, e.g. from cleanup
             self.uistate.open=true
         end
-        self:writeUIState()
     end
 end
 
@@ -332,7 +316,6 @@ function ConfigUI:saveUIPos()
         if self.uiTabsID then
             self.uistate.currentTab=simUI.getCurrentTab(self.uiHandle,self.uiTabsID)
         end
-        self:writeUIState()
     end
 end
 
@@ -359,12 +342,23 @@ function ConfigUI:sysCall_init()
     self:readConfig()
     self:writeConfig()
     self:generate()
-    self:readUIState()
+
+    -- read a saved uistate here if any (see ConfigUI:sysCall_cleanup):
+    self.uistate=self.uistate or {}
+    local data=self:readBlock('@tmp/uistate')
+    self:writeBlock('@tmp/uistate',nil)
+    if data then
+        for k,v in pairs(sim.unpackTable(data)) do
+            self.uistate[k]=v
+        end
+    end
     if self.uistate.open then self:showUi() end
 end
 
 function ConfigUI:sysCall_cleanup()
     self:closeUi(false)
+    -- save uistate here so it can persist a script restart:
+    self:writeBlock('@tmp/uistate',sim.packTable(self.uistate))
 end
 
 function ConfigUI:sysCall_userConfig()
