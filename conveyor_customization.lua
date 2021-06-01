@@ -11,6 +11,32 @@ function sysCall_afterSimulation()
 end
 
 function _S.conveyor.init(config)
+    if config.padSize then
+        -- backward compatibility
+        local c={}
+        c.length=config.length
+        if config.useRollers then
+            c.width=config.rollerLength
+        else
+            c.width=config.padSize[2]
+        end
+        c.radius=config.radius
+        c.color=config.padCol
+        c.frameColor=config.col
+        c.type=config.useRollers and 2 or 1
+        c.respondable=config.respondablePads
+        c.beltElementWidth=config.padSize[1]
+        c.beltElementThickness=config.padSize[3]
+        c.beltElementSpacing=config.interPadSpace
+        c.rollerCnt=config.rollerCnt
+        c.initPos=config.initPos
+        c.initVel=config.initVel
+        config=c
+    else
+        config.initPos=0
+        config.initVel=0
+    end
+
     _S.conveyor.config=config
     _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
     
@@ -20,7 +46,7 @@ function _S.conveyor.init(config)
     
     local ctrlPts=path.init()
     local r=_S.conveyor.config.radius
-    if _S.conveyor.config.useRollers then
+    if _S.conveyor.config.type==2 then
         r=r*0.5
     end
     for i=1,9,1 do
@@ -34,20 +60,20 @@ function _S.conveyor.init(config)
     _S.conveyor.pathPositions=m:slice(1,1,m:rows(),3):data()
     _S.conveyor.pathQuaternions=m:slice(1,4,m:rows(),7):data()
     _S.conveyor.pathLengths,_S.conveyor.totalLength=sim.getPathLengths(_S.conveyor.pathPositions,3)
-    if not _S.conveyor.config.useRollers then
+    if _S.conveyor.config.type==1 then
         -- shift positions towards the outside, by the half thickness of the pads:
         for i=1,m:rows(),1 do
             local rot=Matrix3x3:fromquaternion(m:slice(i,4,i,7):data())
             local zaxis=rot:slice(1,3,3,3)
             local p=m:slice(i,1,i,3):t()
-            p=p+zaxis*_S.conveyor.config.padSize[3]/2
+            p=p+zaxis*_S.conveyor.config.beltElementThickness/2
             _S.conveyor.pathPositions[3*(i-1)+1]=p[1]
             _S.conveyor.pathPositions[3*(i-1)+2]=p[2]
             _S.conveyor.pathPositions[3*(i-1)+3]=p[3]
         end
     end
     
-    padCnt=_S.conveyor.totalLength//(_S.conveyor.config.padSize[1]+_S.conveyor.config.interPadSpace)
+    padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
     _S.conveyor.padOffset=(_S.conveyor.totalLength/padCnt)
 
     local shapes=sim.getObjectsInTree(_S.conveyor.model,sim.object_shape_type,1+2)
@@ -82,20 +108,20 @@ function _S.conveyor.init(config)
             sim.removeObject(sim.getObjectChild(oldJoints[i],0))
             sim.removeObject(oldJoints[i])
         end
-        if _S.conveyor.config.useRollers then
+        if _S.conveyor.config.type==2 then
             local dx=_S.conveyor.config.length/(_S.conveyor.config.rollerCnt-1)
             for i=1,_S.conveyor.config.rollerCnt,1 do
                 local opt=16
-                if _S.conveyor.config.respondablePads then
+                if _S.conveyor.config.respondable then
                     opt=opt+8
                 end
-                local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.rollerLength*0.95},0.01)
+                local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95},0.01)
                 local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
                 _S.conveyor.rolHandles[i]=jnt
                 sim.setObjectParent(cyl,jnt,true)
                 sim.setSimilarName(jnt,sim.getObjectName(_S.conveyor.model),'__jrol')
                 sim.setSimilarName(cyl,sim.getObjectName(_S.conveyor.model),'__rol')
-                sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.padCol)
+                sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
                 sim.setObjectParent(jnt,_S.conveyor.model,true)
                 sim.writeCustomDataBlock(jnt,'PATHROL','a')
                 sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
@@ -107,19 +133,19 @@ function _S.conveyor.init(config)
         else
             for i=1,padCnt,1 do
                 local opt=16
-                if _S.conveyor.config.respondablePads then
+                if _S.conveyor.config.respondable then
                     opt=opt+8
                 end
-                _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,_S.conveyor.config.padSize,0.01)
+                _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
                 sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
-                sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.padCol)
+                sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
                 sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
                 sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')
                 sim.setObjectProperty(_S.conveyor.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
             end
         end
     end
-    if not _S.conveyor.config.useRollers then
+    if _S.conveyor.config.type==1 then
         _S.conveyor.setPathPos(_S.conveyor.offset)
     end
 end
@@ -150,7 +176,7 @@ function _S.conveyor.actuation()
         else
             _S.conveyor.offset=_S.conveyor.offset+_S.conveyor.velocity*sim.getSimulationTimeStep()
         end
-        if _S.conveyor.config.useRollers then
+        if _S.conveyor.config.type==2 then
             for i=1,#_S.conveyor.rolHandles,1 do
                 sim.setJointPosition(_S.conveyor.rolHandles[i],_S.conveyor.offset/_S.conveyor.config.radius)
             end
@@ -167,10 +193,10 @@ end
 
 function path.shaping(path,pathIsClosed,upVector)
     local section
-    if _S.conveyor.config.useRollers then
-        section={0,-_S.conveyor.config.rollerLength/2,0,_S.conveyor.config.rollerLength/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.rollerLength/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.rollerLength/2,0,-_S.conveyor.config.rollerLength/2}
+    if _S.conveyor.config.type==2 then
+        section={0,-_S.conveyor.config.width/2,0,_S.conveyor.config.width/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.width/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.width/2,0,-_S.conveyor.config.width/2}
     else
-        section={0,-_S.conveyor.config.padSize[2]/2,0,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.padSize[2]/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.padSize[2]/2,0,-_S.conveyor.config.padSize[2]/2}
+        section={0,-_S.conveyor.config.width/2,0,_S.conveyor.config.width/2,-3*_S.conveyor.config.radius/4,_S.conveyor.config.width/2,-3*_S.conveyor.config.radius/4,-_S.conveyor.config.width/2,0,-_S.conveyor.config.width/2}
     end
     local options=0
     if pathIsClosed then
@@ -182,8 +208,8 @@ function path.shaping(path,pathIsClosed,upVector)
     vert=sim.multiplyVector(sim.getObjectMatrix(shape,-1),vert)
     sim.removeObject(shape)
     shape=sim.createMeshShape(0,0,vert,ind)
-    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.col)
-    if _S.conveyor.config.respondablePads then
+    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
+    if _S.conveyor.config.respondable then
         sim.setObjectInt32Param(shape,sim.shapeintparam_respondable,1)
     end
     return shape
@@ -200,5 +226,117 @@ function _S.conveyor.setPathPos(p)
         p=p+_S.conveyor.padOffset
     end
 end
+
+require'configUi'
+sysCall_userConfig=nil
+
+function sysCall_init()
+    self=sim.getObjectHandle(sim.handle_self)
+    local c=sim.readCustomDataBlock(self,'__config__')
+    if not c then
+        local c={}
+        c.type=1 -- belt
+        c.length=1
+        c.width=0.2
+        c.radius=0.1
+        c.color={0.2,0.2,0.2}
+        c.frameColor={0.5,0.5,0.5}
+        c.respondable=true
+        c.rollerCnt=16
+        c.beltElementWidth=0.05
+        c.beltElementThickness=0.005
+        c.beltElementSpacing=0.002
+        c.initPos=0
+        c.initVel=0
+        sim.writeCustomDataBlock(self,'__config__',sim.packTable(c))
+    end
+    local c=sim.unpackTable(sim.readCustomDataBlock(self,'__config__'))
+    conveyor.init(c)
+end
+
+schema={
+    length={
+        type='float',
+        name='Conveyor length',
+        default=1,
+        minimum=0.1,
+        maximum=5,
+        ui={control='spinbox',order=1,col=1,tab='general'},
+    },
+    width={
+        type='float',
+        name='Conveyor width',
+        default=0.2,
+        minimum=0.01,
+        maximum=5,
+        ui={control='spinbox',order=2,col=1,tab='general'},
+    },
+    radius={
+        type='float',
+        name='Conveyor radius (ends)',
+        default=0.1,
+        minimum=0.01,
+        maximum=0.5,
+        ui={control='spinbox',order=3,col=1,tab='general'},
+    },
+    color={
+        type='color',
+        name='Belt/rollers color',
+        default={0.2,0.2,0.2},
+        ui={order=4,col=1,tab='general'},
+    },
+    frameColor={
+        type='color',
+        name='Frame color',
+        default={0.5,0.5,0.5},
+        ui={order=5,col=1,tab='general'},
+    },
+    type={
+        name='Conveyor type',
+        choices={[1]='belt',[2]='roller'},
+        default=1,
+        ui={control='radio',order=7,col=1,tab='general'},
+    },
+    respondable={
+        type='bool',
+        name='Conveyor is respondable',
+        default=true,
+        ui={order=6,col=1,tab='general'},
+    },
+    beltElementWidth={
+        type='float',
+        name='Belt element length',
+        default=0.05,
+        minimum=0.005,
+        maximum=0.5,
+        ui={control='spinbox',order=10,col=1,tab="belt-type"},
+    },
+    beltElementThickness={
+        type='float',
+        name='Belt element thickness',
+        default=0.005,
+        minimum=0.001,
+        maximum=0.2,
+        ui={control='spinbox',order=11,col=1,tab="belt-type"},
+    },
+    beltElementSpacing={
+        type='float',
+        name='Belt element spacing',
+        default=0.01,
+        minimum=-0.1,
+        maximum=2,
+        ui={control='spinbox',order=12,col=1,tab="belt-type"},
+    },
+    rollerCnt={
+        type='int',
+        name='Roller count',
+        default=8,
+        minimum=2,
+        maximum=100,
+        ui={control='spinbox',order=20,col=1,tab="roller-type"},
+    },
+}
+
+configUi=ConfigUI('Conveyor',schema,_S.conveyor.init)
 
 return _S.conveyor
