@@ -539,7 +539,7 @@ function ConfigUI.Controls.combo.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'<combobox id="'..elemSchema.ui.id..'">'
+    xml=xml..'<combobox id="'..elemSchema.ui.id..'" on-change="ConfigUI_changed">'
     for _,val in ipairs(elemSchema.ui.items) do
         xml=xml..'<item>'..choices[val]..'</item>'
     end
