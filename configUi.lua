@@ -511,6 +511,62 @@ end
 function ConfigUI.Controls.slider.onEvent(configUi,elemSchema)
 end
 
+ConfigUI.Controls.combo={}
+
+function ConfigUI.Controls.combo.create(configUi,elemSchema)
+    local xml=''
+    assert(elemSchema.type=='choices','unsupported type for combo: '..elemSchema.type)
+    assert(elemSchema.choices,'missing "choices"')
+    local choices=elemSchema.choices
+    if type(choices)=='function' then
+        choices=choices(configUi,elemSchema)
+    end
+
+    elemSchema.ui.items={}
+    for val,name in pairs(choices) do
+        table.insert(elemSchema.ui.items,val)
+    end
+    table.sort(elemSchema.ui.items)
+
+    elemSchema.ui.itemIndex={}
+    for index,value in ipairs(elemSchema.ui.items) do
+        if elemSchema.ui.itemIndex[value] then
+            error(string.format('value "%s" is not unique!',value))
+        end
+        elemSchema.ui.itemIndex[value]=index
+    end
+
+    if not elemSchema.ui.id then
+        elemSchema.ui.id=configUi:uiElementNextID()
+    end
+    xml=xml..'<combobox id="'..elemSchema.ui.id..'">'
+    for _,val in ipairs(elemSchema.ui.items) do
+        xml=xml..'<item>'..choices[val]..'</item>'
+    end
+    xml=xml..'</combobox>'
+    return xml
+end
+
+function ConfigUI.Controls.combo.setValue(configUi,elemSchema,value)
+    local choices=elemSchema.choices
+    if type(choices)=='function' then
+        choices=choices(configUi,elemSchema)
+    end
+    assert(choices[value]~=nil,'invalid value: '..tostring(value))
+    simUI.setComboboxSelectedIndex(configUi.uiHandle,elemSchema.ui.id,elemSchema.ui.itemIndex[value]-1)
+end
+
+function ConfigUI.Controls.combo.getValue(configUi,elemSchema)
+    local index=simUI.getComboboxSelectedIndex(configUi.uiHandle,elemSchema.ui.id)
+    if index~=-1 then
+        local value=elemSchema.ui.items[index+1]
+        return value
+    end
+end
+
+function ConfigUI.Controls.combo.onEvent(configUi,elemSchema)
+end
+
 ConfigUI.Controls.radio={}
 
 function ConfigUI.Controls.radio.create(configUi,elemSchema)
