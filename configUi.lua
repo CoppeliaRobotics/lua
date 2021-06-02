@@ -573,8 +573,13 @@ function ConfigUI.Controls.radio.create(configUi,elemSchema)
     local xml=''
     assert(elemSchema.type=='choices','unsupported type for radio: '..elemSchema.type)
     assert(elemSchema.choices,'missing "choices"')
+    local choices=elemSchema.choices
+    if type(choices)=='function' then
+        choices=choices(configUi,elemSchema)
+    end
+
     local vals={}
-    for val,name in pairs(elemSchema.choices) do table.insert(vals,val) end
+    for val,name in pairs(choices) do table.insert(vals,val) end
     table.sort(vals)
     if not elemSchema.ui.id then
         elemSchema.ui.id={}
@@ -586,7 +591,7 @@ function ConfigUI.Controls.radio.create(configUi,elemSchema)
     for _,val in ipairs(vals) do
         xml=xml..'<radiobutton'
         xml=xml..' id="'..elemSchema.ui.id[val]..'"'
-        xml=xml..' text="'..elemSchema.choices[val]..'"'
+        xml=xml..' text="'..choices[val]..'"'
         xml=xml..' on-click="ConfigUI_changed"'
         xml=xml..'/>'
     end
