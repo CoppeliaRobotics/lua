@@ -1,5 +1,3 @@
--- back-compatibility version for CoppeliaSim V4.2.0
-
 path=require('path_customization')
 
 _S.conveyor={}
@@ -13,38 +11,15 @@ function sysCall_afterSimulation()
 end
 
 function _S.conveyor.init(config)
-    if config.padSize then
-        -- backward compatibility
-        local c={}
-        c.length=config.length
-        if config.useRollers then
-            c.width=config.rollerLength
-        else
-            c.width=config.padSize[2]
-        end
-        c.radius=config.radius
-        c.color=config.padCol
-        c.frameColor=config.col
-        c.type=config.useRollers and 2 or 1
-        c.respondable=config.respondablePads
-        c.beltElementWidth=config.padSize[1]
-        c.beltElementThickness=config.padSize[3]
-        c.beltElementSpacing=config.interPadSpace
-        c.rollerCnt=config.rollerCnt
-        c.initPos=config.initPos
-        c.initVel=config.initVel
-        config=c
-    else
-        config.initPos=0
-        config.initVel=0
-    end
-
     _S.conveyor.config=config
     _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
+    sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor'})
     
-    _S.conveyor.velocity=_S.conveyor.config.initVel
-    _S.conveyor.offset=_S.conveyor.config.initPos
-    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable({currentPos=_S.conveyor.offset}))
+    _S.conveyor.vel=0
+    _S.conveyor.pos=0
+    _S.conveyor.targetVel=_S.conveyor.config.targetVel
+    _S.conveyor.targetPos=nil
+    sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     
     local ctrlPts=path.init()
     local r=_S.conveyor.config.radius
@@ -98,11 +73,12 @@ function _S.conveyor.init(config)
     
     _S.conveyor.padHandles={}
     _S.conveyor.rolHandles={}
-    if padCnt==#oldPads and _S.conveyor.config.rollerCnt==#oldJoints and sim.packTable(_S.conveyor.config)==sim.readCustomDataBlock(_S.conveyor.model,'CONVEYORSET') then
+    local fingerPrint=sim.readCustomDataBlock(_S.conveyor.model,'__fingerPrint__')
+    if padCnt==#oldPads and _S.conveyor.config.rollerCnt==#oldJoints and sim.packTable(_S.conveyor.config)==fingerPrint then
         _S.conveyor.padHandles=oldPads -- reuse old pads, they are the same
         _S.conveyor.rolHandles=oldJoints
     else
-        sim.writeCustomDataBlock(_S.conveyor.model,'CONVEYORSET',sim.packTable(_S.conveyor.config))
+        sim.writeCustomDataBlock(_S.conveyor.model,'fingerPrint',sim.packTable(_S.conveyor.config))
         for i=1,#oldPads,1 do
             sim.removeObject(oldPads[i])
         end
@@ -148,49 +124,68 @@ function _S.conveyor.init(config)
         end
     end
     if _S.conveyor.config.type==1 then
-        _S.conveyor.setPathPos(_S.conveyor.offset)
+        _S.conveyor.setPathPos(_S.conveyor.pos)
     end
 end
 
 function _S.conveyor.afterSimulation()
-    _S.conveyor.velocity=_S.conveyor.config.initVel
-    _S.conveyor.offset=_S.conveyor.config.initPos
-    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable({currentPos=_S.conveyor.offset}))
-    
+    _S.conveyor.vel=0
+    _S.conveyor.pos=0
+    _S.conveyor.targetVel=_S.conveyor.config.targetVel
+    _S.conveyor.targetPos=nil
+    sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     path.afterSimulation()
 end
 
 function _S.conveyor.actuation()
-    local dat=sim.readCustomDataBlock(_S.conveyor.model,'CONVMOV')
-    local off
-    if dat then
+    local prevPos=_S.conveyor.pos
+    local dat=sim.readCustomTableData(_S.conveyor.model,'__ctrl__')
+    if next(dat)~=nil then
+        sim.writeCustomTableData(_S.conveyor.model,'__ctrl__',{})
         dat=sim.unpackTable(dat)
-        if dat.offset then
-            off=dat.offset
+        if dat.pos then
+            _S.conveyor.targetPos=dat.pos
+            _S.conveyor.targetVel=nil
         end
         if dat.vel then
-            _S.conveyor.velocity=dat.vel
+            _S.conveyor.targetVel=dat.vel
+            _S.conveyor.targetPos=nil
         end
     end
-    if off or _S.conveyor.velocity~=0 then
-        if off then
-            _S.conveyor.offset=off
+    if _S.conveyor.targetVel then
+        local rml=sim.rmlVel(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,99999},{_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetVel})
+        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        if r==0 then
+            _S.conveyor.pos=newPosVelAccel[1]
+            _S.conveyor.vel=newPosVelAccel[2]
         else
-            _S.conveyor.offset=_S.conveyor.offset+_S.conveyor.velocity*sim.getSimulationTimeStep()
+            _S.conveyor.vel=_S.conveyor.targetVel
+            _S.conveyor.pos=_S.conveyor.pos+_S.conveyor.vel*sim.getSimulationTimeStep()
         end
+        sim.rmlRemove(rml)
+    end
+    if _S.conveyor.targetPos then
+        local rml=sim.rmlPos(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,99999},{99999,_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetPos,0})
+        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        if r==0 then
+            _S.conveyor.pos=newPosVelAccel[1]
+            _S.conveyor.vel=newPosVelAccel[2]
+        else
+            _S.conveyor.vel=0
+            _S.conveyor.pos=_S.conveyor.targetPos
+        end
+        sim.rmlRemove(rml)
+    end
+    if prevPos~=_S.conveyor.pos then
         if _S.conveyor.config.type==2 then
             for i=1,#_S.conveyor.rolHandles,1 do
-                sim.setJointPosition(_S.conveyor.rolHandles[i],_S.conveyor.offset/_S.conveyor.config.radius)
+                sim.setJointPosition(_S.conveyor.rolHandles[i],_S.conveyor.pos/_S.conveyor.config.radius)
             end
         else
-            _S.conveyor.setPathPos(_S.conveyor.offset)
+            _S.conveyor.setPathPos(_S.conveyor.pos)
         end
+        sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     end
-    if not dat then
-        dat={}
-    end
-    dat.currentPos=_S.conveyor.offset
-    sim.writeCustomDataBlock(_S.conveyor.model,'CONVMOV',sim.packTable(dat))
 end
 
 function path.shaping(path,pathIsClosed,upVector)
@@ -228,5 +223,131 @@ function _S.conveyor.setPathPos(p)
         p=p+_S.conveyor.padOffset
     end
 end
+
+sysCall_userConfig=nil -- path UI
+require'configUi'
+
+function sysCall_init()
+    self=sim.getObjectHandle(sim.handle_self)
+    local c=sim.readCustomTableData(self,'__config__')
+    if next(c)==nil then
+        c.type=1 -- belt
+        c.length=1
+        c.width=0.2
+        c.radius=0.1
+        c.color={0.2,0.2,0.2}
+        c.frameColor={0.5,0.5,0.5}
+        c.respondable=true
+        c.rollerCnt=16
+        c.beltElementWidth=0.05
+        c.beltElementThickness=0.005
+        c.beltElementSpacing=0.002
+        c.targetVel=0.1
+        c.accel=0.01
+        sim.writeCustomTableData(self,'__config__',c)
+    end
+    conveyor.init(c)
+end
+
+schema={
+    length={
+        type='float',
+        name='Conveyor length',
+        default=1,
+        minimum=0.1,
+        maximum=5,
+        ui={control='spinbox',order=1,col=1,tab='general'},
+    },
+    width={
+        type='float',
+        name='Conveyor width',
+        default=0.2,
+        minimum=0.01,
+        maximum=5,
+        ui={control='spinbox',order=2,col=1,tab='general'},
+    },
+    radius={
+        type='float',
+        name='Conveyor radius (ends)',
+        default=0.1,
+        minimum=0.01,
+        maximum=0.5,
+        ui={control='spinbox',order=3,col=1,tab='general'},
+    },
+    targetVel={
+        type='float',
+        name='Target velocity',
+        default=0.1,
+        minimum=0.001,
+        maximum=0.5,
+        ui={control='spinbox',order=4,col=1,tab='general'},
+    },
+    accel={
+        type='float',
+        name='Acceleration',
+        default=0.01,
+        minimum=0.001,
+        maximum=100,
+        ui={control='spinbox',order=5,col=1,tab='general'},
+    },
+    color={
+        type='color',
+        name='Belt/rollers color',
+        default={0.2,0.2,0.2},
+        ui={order=6,col=1,tab='general'},
+    },
+    frameColor={
+        type='color',
+        name='Frame color',
+        default={0.5,0.5,0.5},
+        ui={order=7,col=1,tab='general'},
+    },
+    type={
+        name='Conveyor type',
+        choices={[1]='belt',[2]='roller'},
+        default=1,
+        ui={control='radio',order=8,col=1,tab='general'},
+    },
+    respondable={
+        type='bool',
+        name='Conveyor is respondable',
+        default=true,
+        ui={order=9,col=1,tab='general'},
+    },
+    beltElementWidth={
+        type='float',
+        name='Belt element length',
+        default=0.05,
+        minimum=0.005,
+        maximum=0.5,
+        ui={control='spinbox',order=10,col=1,tab="belt-type"},
+    },
+    beltElementThickness={
+        type='float',
+        name='Belt element thickness',
+        default=0.005,
+        minimum=0.001,
+        maximum=0.2,
+        ui={control='spinbox',order=11,col=1,tab="belt-type"},
+    },
+    beltElementSpacing={
+        type='float',
+        name='Belt element spacing',
+        default=0.01,
+        minimum=-0.1,
+        maximum=2,
+        ui={control='spinbox',order=12,col=1,tab="belt-type"},
+    },
+    rollerCnt={
+        type='int',
+        name='Roller count',
+        default=8,
+        minimum=2,
+        maximum=100,
+        ui={control='spinbox',order=20,col=1,tab="roller-type"},
+    },
+}
+
+configUi=ConfigUI('Conveyor',schema,_S.conveyor.init)
 
 return _S.conveyor

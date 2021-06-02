@@ -549,7 +549,7 @@ function sim.getAlternateConfigs(...)
     for i=1,#jointHandles,1 do
         sim.setJointPosition(jointHandles[i],initConfig[i])
     end
-    if configs~={} then
+    if next(configs)~=nil then
         configs=Matrix:fromtable(configs)
         configs=configs:data()
     end
@@ -1586,6 +1586,26 @@ function sim.getModelBB(handle)
     return s
 end
 
+function sim.readCustomTableData(...)
+    local handle,tagName=checkargs({{type='int'},{type='string'}},...)
+    local data=sim.readCustomDataBlock(handle,tagName)
+    if data==nil then
+        data={}
+    else
+        data=sim.unpackTable(data)
+    end
+    return data
+end
+
+function sim.writeCustomTableData(...)
+    local handle,tagName,theTable=checkargs({{type='int'},{type='string'},{type='table'}},...)
+    if next(theTable)==nil then
+        sim.writeCustomDataBlock(handle,tagName,'')
+    else
+        sim.writeCustomDataBlock(handle,tagName,sim.packTable(theTable))
+    end
+end
+
 ----------------------------------------------------------
 
 
@@ -1809,8 +1829,8 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
     sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(table[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,table[3] upVector={0,0,1})')
     sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options)')
-
-
+    sim.registerScriptFunction('sim.readCustomTableData@sim','table data=sim.readCustomTableData(int objectHandle,string tagName)')
+    sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int objectHandle,string tagName,table data)')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
