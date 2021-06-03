@@ -4,23 +4,25 @@ function sysCall_actuation()
     _S.animator.actuation()
 end
 
-function sysCall_init()
-    local config={}
-    config.loop=false
-    config.backAndForth=false
-    config.dirAndSpeed=1
-    config.initPos=0
-    config.immobile=false
-    _S.animator.init(config)
-end
-
-function _S.animator.init(config)
-    _S.animator.config=config
+function sysCall_beforeSimulation()
+    local self=sim.getObjectHandle(sim.handle_self)
+    local c=sim.readCustomTableData(self,'__config__')
+    if next(c)==nil then
+        c.loop=false
+        c.loop=false
+        c.backAndForth=false
+        c.dirAndSpeed=1
+        c.initPos=0
+        c.immobile=false
+        c.color={1,1,1}
+        sim.writeCustomTableData(self,'__config__',c)
+    end
+    _S.animator.config=c
     _S.animator.self=sim.getObjectHandle(sim.handle_self)
     _S.animator.handles=sim.getReferencedHandles(_S.animator.self)
     _S.animator.animationData=sim.unpackTable(sim.readCustomDataBlock(_S.animator.self,'animationData'))
     _S.animator.totalTime=_S.animator.animationData.times[#_S.animator.animationData.times]
-    _S.animator.prevTime=sim.getSimulationTime()
+    _S.animator.prevTime=0
     _S.animator.pos=_S.animator.config.initPos*_S.animator.totalTime
     local initM=sim.getObjectMatrix(_S.animator.self,sim.handle_parent)
     local p=_S.animator.animationData.initPoses[1]
@@ -32,7 +34,7 @@ function _S.animator.init(config)
             _S.animator.handles[i]=-1 -- maybe the user remove one shape that was not needed in the animation?
         end
     end
-    if _S.animator.config.color then
+    if _S.animator.config.newColor then
         local h=sim.getObjectsInTree( _S.animator.self,sim.object_shape_type)
         for i=1,#h,1 do
             sim.setShapeColor(h[i],nil,sim.colorcomponent_ambient_diffuse,_S.animator.config.color)
@@ -49,6 +51,7 @@ function _S.animator.actuation()
     local stop=false
     _S.animator.prevTime=t
     local newPos=_S.animator.pos+_S.animator.config.dirAndSpeed*dt
+    print(_S.animator.config)
     if _S.animator.config.dirAndSpeed>=0 then
         if newPos>_S.animator.totalTime then
             if _S.animator.config.loop or _S.animator.config.backAndForth then
@@ -97,4 +100,71 @@ function _S.animator.applyPos()
     end
 end
 
-return _S.animator
+require'configUi'
+
+function gen(config)
+    if config.color[1]~=1 or config.color[2]~=1 or config.color[3]~=1 then
+        config.newColor=true
+        sim.writeCustomTableData(self,'__config__',config)
+    end
+end
+
+function sysCall_init()
+    self=sim.getObjectHandle(sim.handle_self)
+    local c=sim.readCustomTableData(self,'__config__')
+    if next(c)==nil then
+        c.loop=false
+        c.backAndForth=false
+        c.dirAndSpeed=1
+        c.initPos=0
+        c.immobile=false
+        c.color={1,1,1}
+        sim.writeCustomTableData(self,'__config__',c)
+    end
+    gen(c)
+end
+
+schema={
+    dirAndSpeed={
+        type='float',
+        name='Direction and rel. speed',
+        default=1,
+        minimum=-10,
+        maximum=10,
+        ui={control='spinbox',order=1,col=1},
+    },
+    initPos={
+        type='float',
+        name='Initial, rel. position',
+        default=0,
+        minimum=0,
+        maximum=1,
+        ui={control='spinbox',order=6,col=2},
+    },
+    color={
+        type='color',
+        name='Color',
+        default={1,1,1},
+        ui={order=7,col=2,},
+    },
+    loop={
+        type='bool',
+        name='Loop',
+        default=true,
+        ui={order=2,col=1},
+    },
+    backAndForth={
+        type='bool',
+        name='Back and forth',
+        default=true,
+        ui={order=3,col=1},
+    },
+    immobile={
+        type='bool',
+        name='Stay in place',
+        default=true,
+        ui={order=4,col=1},
+    },
+}
+
+configUi=ConfigUI('Animator',schema,gen)

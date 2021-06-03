@@ -356,52 +356,101 @@ function _S.path.getCtrlPtsPoseId()
     return sim.packTable(p)
 end
 
+function _S.path.computeFingerPrint()
+    local p={}
+    local p1={}
+    for i=1,#_S.path.ctrlPts,1 do
+        local pp=sim.getObjectPose(_S.path.ctrlPts[i].handle,sim.handle_parent)
+        for j=1,7,1 do
+            p1[#p1+1]=pp[j]
+        end
+    end
+    return {sim.packFloatTable(p1),sim.packTable(_S.path.readInfo())}
+end
+
+function _S.path.areFingerPrintSame(fp1,fp2)
+    if #fp1==0 or #fp2==0 or #fp1[1]~=#fp2[1] or fp1[2]~=fp2[2] then
+        return false
+    end
+    local p1=sim.unpackFloatTable(fp1[1])
+    local p2=sim.unpackFloatTable(fp2[1])
+    for i=1,#p1,1 do
+        if math.abs(p1[i]-p2[i])>0.0001 then
+            return false
+        end
+    end
+    return true
+end
+
+function _S.path.setPathShape(shape)
+    local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
+    for i=1,#shapes,1 do
+        local dat=sim.readCustomDataBlock(shapes[i],_S.path.shapeTag)
+        if dat then
+            sim.removeObject(shapes[i])
+        end
+    end
+    if sim.isHandle(shape) then
+        sim.writeCustomDataBlock(shape,_S.path.shapeTag,"a")
+        sim.setObjectParent(shape,_S.path.model,false)
+        local p=sim.getObjectProperty(shape)
+        sim.setObjectProperty(shape,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
+        sim.setSimilarName(shape,sim.getObjectName(_S.path.model),'__shape')
+        sim.writeCustomDataBlock(shape,_S.path.childTag,'') -- old: childTag not used anymore
+    end
+end
+
 function _S.path.setup()
     local ctrlPtsHandles=_S.path.getCtrlPts()
+    _S.path.removeLine(1)
+    _S.path.removeLine(2)
     if #_S.path.ctrlPts>1 then
+        local fingerPrint=_S.path.computeFingerPrint()
+        local ffp=sim.readCustomTableData(_S.path.model,'__pathFingerPrint__')
         local c=_S.path.readInfo()
         _S.path.paths={}
-        _S.path.paths[1],_S.path.paths[2],_S.path.paths[3],_S.path.paths[4]=_S.path.computePaths()
-        if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
-            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1],0,#_S.path.paths[1]-7))
-            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3],0,#_S.path.paths[3]-5))
+        if not _S.path.areFingerPrintSame(fingerPrint,ffp) or _S.path.forceFullRebuild then
+            _S.path.forceFullRebuild=nil
+            sim.writeCustomTableData(_S.path.model,'__pathFingerPrint__',fingerPrint)
+            _S.path.paths[1],_S.path.paths[2],_S.path.paths[3],_S.path.paths[4]=_S.path.computePaths()
+            if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
+                sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1],0,#_S.path.paths[1]-7))
+                sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3],0,#_S.path.paths[3]-5))
+            else
+                sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1]))
+                sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3]))
+            end
+            sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(_S.path.paths[2]))
+            sim.writeCustomDataBlock(_S.path.model,'PATH_X',sim.packDoubleTable(_S.path.paths[4]))
+
+            _S.path.setPathShape(-1)
+            if _S.path.shaping and (c.bitCoded&4)~=0 then
+                local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,c.upVector)
+                _S.path.setPathShape(s)
+            end
+            
+            if _S.path.refreshTrigger then
+                _S.path.refreshTrigger(ctrlPtsHandles,_S.path.paths[2],c)
+            end
         else
-            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS',sim.packDoubleTable(_S.path.paths[1]))
-            sim.writeCustomDataBlock(_S.path.model,'PATHCTRLPTS_X',sim.packDoubleTable(_S.path.paths[3]))
+            _S.path.paths[1]=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.path.model,'PATHCTRLPTS'))
+            _S.path.paths[2]=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.path.model,'PATH'))
+            _S.path.paths[3]=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.path.model,'PATHCTRLPTS_X'))
+            _S.path.paths[4]=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.path.model,'PATH_X'))
+            if (c.bitCoded & 2)~=0 then -- path is closed. First and last pts are duplicate
+                for i=1,7,1 do
+                    _S.path.paths[1][#_S.path.paths[1]+1]=_S.path.paths[1][i]
+                end
+                for i=1,5,1 do
+                    _S.path.paths[3][#_S.path.paths[3]+1]=_S.path.paths[3][i]
+                end
+            end
         end
-        sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(_S.path.paths[2]))
-        sim.writeCustomDataBlock(_S.path.model,'PATH_X',sim.packDoubleTable(_S.path.paths[4]))
-        _S.path.removeLine(1)
-        _S.path.removeLine(2)
         _S.path.displayLine(1)
         _S.path.displayLine(2)
-        if _S.path.refreshTrigger then
-            _S.path.refreshTrigger(ctrlPtsHandles,_S.path.paths[2],c)
-        end
-        local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
-        for i=1,#shapes,1 do
-            local dat=sim.readCustomDataBlock(shapes[i],_S.path.shapeTag)
-            if dat then
-                sim.removeObject(shapes[i])
-            end
-        end
-        if _S.path.shaping and (c.bitCoded&4)~=0 then
-            local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,c.upVector)
-            if sim.isHandle(s) then
-                sim.writeCustomDataBlock(s,_S.path.shapeTag,"a")
-                sim.setObjectParent(s,_S.path.model,false)
-                local p=sim.getObjectProperty(s)
-                sim.setObjectProperty(s,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
-                sim.setSimilarName(s,sim.getObjectName(_S.path.model),'__shape')
-                sim.writeCustomDataBlock(s,_S.path.childTag,'') -- old: childTag not used anymore
-            end
-        end
-        
         _S.path.refresh=false
         _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
     else
-        _S.path.removeLine(1)
-        _S.path.removeLine(2)
         sysCall_afterDelete=nil
         sysCall_beforeCopy=nil
         sysCall_afterCopy=nil

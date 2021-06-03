@@ -10,47 +10,19 @@ function sysCall_afterSimulation()
     _S.conveyor.afterSimulation()
 end
 
-function _S.conveyor.init(config)
-    _S.conveyor.config=config
+function _S.conveyor.init2(config)
+    _S.conveyor.config=sim.unpackTable(sim.packTable(config))
     _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
-    sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor'})
+    sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyor.vel=0
     _S.conveyor.pos=0
     _S.conveyor.targetVel=_S.conveyor.config.targetVel
     _S.conveyor.targetPos=nil
     sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
-    
-    local ctrlPts=path.init()
-    local r=_S.conveyor.config.radius
-    if _S.conveyor.config.type==2 then
-        r=r*0.5
-    end
-    for i=1,9,1 do
-        local a=math.pi/2-(i-1)*math.pi/8
-        sim.setObjectPosition(ctrlPts[i],_S.conveyor.model,{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)})
-        sim.setObjectPosition(ctrlPts[9+i],_S.conveyor.model,{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)})
-    end
-    local padCnt
-    local ctrlPts,pathData=path.setup()    
-    local m=Matrix(math.floor(#pathData/7),7,pathData)
-    _S.conveyor.pathPositions=m:slice(1,1,m:rows(),3):data()
-    _S.conveyor.pathQuaternions=m:slice(1,4,m:rows(),7):data()
-    _S.conveyor.pathLengths,_S.conveyor.totalLength=sim.getPathLengths(_S.conveyor.pathPositions,3)
-    if _S.conveyor.config.type==1 then
-        -- shift positions towards the outside, by the half thickness of the pads:
-        for i=1,m:rows(),1 do
-            local rot=Matrix3x3:fromquaternion(m:slice(i,4,i,7):data())
-            local zaxis=rot:slice(1,3,3,3)
-            local p=m:slice(i,1,i,3):t()
-            p=p+zaxis*_S.conveyor.config.beltElementThickness/2
-            _S.conveyor.pathPositions[3*(i-1)+1]=p[1]
-            _S.conveyor.pathPositions[3*(i-1)+2]=p[2]
-            _S.conveyor.pathPositions[3*(i-1)+3]=p[3]
-        end
-    end
-    
-    padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
+
+    _S.conveyor.getPathData()
+    local padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
     _S.conveyor.padOffset=(_S.conveyor.totalLength/padCnt)
 
     local shapes=sim.getObjectsInTree(_S.conveyor.model,sim.object_shape_type,1+2)
@@ -74,57 +46,101 @@ function _S.conveyor.init(config)
     _S.conveyor.padHandles={}
     _S.conveyor.rolHandles={}
     local fingerPrint=sim.readCustomDataBlock(_S.conveyor.model,'__fingerPrint__')
-    if padCnt==#oldPads and _S.conveyor.config.rollerCnt==#oldJoints and sim.packTable(_S.conveyor.config)==fingerPrint then
+    if sim.packTable(_S.conveyor.config)~=fingerPrint then
+        _S.conveyor.rebuildConveyor(oldPads,oldJoints)
+    else
         _S.conveyor.padHandles=oldPads -- reuse old pads, they are the same
         _S.conveyor.rolHandles=oldJoints
-    else
-        sim.writeCustomDataBlock(_S.conveyor.model,'fingerPrint',sim.packTable(_S.conveyor.config))
-        for i=1,#oldPads,1 do
-            sim.removeObject(oldPads[i])
-        end
-        for i=1,#oldJoints,1 do
-            sim.removeObject(sim.getObjectChild(oldJoints[i],0))
-            sim.removeObject(oldJoints[i])
-        end
-        if _S.conveyor.config.type==2 then
-            local dx=_S.conveyor.config.length/(_S.conveyor.config.rollerCnt-1)
-            for i=1,_S.conveyor.config.rollerCnt,1 do
-                local opt=16
-                if _S.conveyor.config.respondable then
-                    opt=opt+8
-                end
-                local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95},0.01)
-                local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
-                _S.conveyor.rolHandles[i]=jnt
-                sim.setObjectParent(cyl,jnt,true)
-                sim.setSimilarName(jnt,sim.getObjectName(_S.conveyor.model),'__jrol')
-                sim.setSimilarName(cyl,sim.getObjectName(_S.conveyor.model),'__rol')
-                sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
-                sim.setObjectParent(jnt,_S.conveyor.model,true)
-                sim.writeCustomDataBlock(jnt,'PATHROL','a')
-                sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
-                sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
-                local m=Matrix3x3:rotx(-math.pi/2)
-                sim.setObjectPosition(jnt,_S.conveyor.model,{-_S.conveyor.config.length/2+dx*(i-1),0,0})
-                sim.setObjectQuaternion(jnt,_S.conveyor.model,Matrix3x3:toquaternion(m))
-            end
-        else
-            for i=1,padCnt,1 do
-                local opt=16
-                if _S.conveyor.config.respondable then
-                    opt=opt+8
-                end
-                _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
-                sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
-                sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
-                sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
-                sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')
-                sim.setObjectProperty(_S.conveyor.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
-            end
-        end
     end
     if _S.conveyor.config.type==1 then
         _S.conveyor.setPathPos(_S.conveyor.pos)
+    end
+ end
+
+function _S.conveyor.getPathData()
+    local pathData=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model,'PATH'))
+    local m=Matrix(math.floor(#pathData/7),7,pathData)
+    _S.conveyor.pathPositions=m:slice(1,1,m:rows(),3):data()
+    _S.conveyor.pathQuaternions=m:slice(1,4,m:rows(),7):data()
+    _S.conveyor.pathLengths,_S.conveyor.totalLength=sim.getPathLengths(_S.conveyor.pathPositions,3)
+
+    if _S.conveyor.config.type==1 then
+        -- shift positions towards the outside, by the half thickness of the pads:
+        for i=1,m:rows(),1 do
+            local rot=Matrix3x3:fromquaternion(m:slice(i,4,i,7):data())
+            local zaxis=rot:slice(1,3,3,3)
+            local p=m:slice(i,1,i,3):t()
+            p=p+zaxis*_S.conveyor.config.beltElementThickness/2
+            _S.conveyor.pathPositions[3*(i-1)+1]=p[1]
+            _S.conveyor.pathPositions[3*(i-1)+2]=p[2]
+            _S.conveyor.pathPositions[3*(i-1)+3]=p[3]
+        end
+    end
+end
+
+function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
+    sim.writeCustomDataBlock(_S.conveyor.model,'__fingerPrint__',sim.packTable(_S.conveyor.config))
+    path.forceFullRebuild=true
+    local ctrlPts=path.init()
+    local r=_S.conveyor.config.radius
+    local vo=r+_S.conveyor.config.beltElementThickness
+    if _S.conveyor.config.type==2 then
+        vo=r
+        r=r*0.5
+    end
+    for i=1,9,1 do
+        local a=math.pi/2-(i-1)*math.pi/8
+        sim.setObjectPosition(ctrlPts[i],_S.conveyor.model,{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)-vo})
+        sim.setObjectPosition(ctrlPts[9+i],_S.conveyor.model,{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)-vo})
+    end
+    path.setup()
+
+    _S.conveyor.getPathData()    
+
+    for i=1,#oldPads,1 do
+        sim.removeObject(oldPads[i])
+    end
+    for i=1,#oldJoints,1 do
+        sim.removeObject(sim.getObjectChild(oldJoints[i],0))
+        sim.removeObject(oldJoints[i])
+    end
+    if _S.conveyor.config.type==2 then
+        local dx=_S.conveyor.config.length/(_S.conveyor.config.rollerCnt-1)
+        for i=1,_S.conveyor.config.rollerCnt,1 do
+            local opt=16
+            if _S.conveyor.config.respondable then
+                opt=opt+8
+            end
+            local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95},0.01)
+            local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
+            _S.conveyor.rolHandles[i]=jnt
+            sim.setObjectParent(cyl,jnt,true)
+            sim.setSimilarName(jnt,sim.getObjectName(_S.conveyor.model),'__jrol')
+            sim.setSimilarName(cyl,sim.getObjectName(_S.conveyor.model),'__rol')
+            sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
+            sim.setObjectParent(jnt,_S.conveyor.model,true)
+            sim.writeCustomDataBlock(jnt,'PATHROL','a')
+            sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
+            sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
+            local m=Matrix3x3:rotx(-math.pi/2)
+            sim.setObjectPosition(jnt,_S.conveyor.model,{-_S.conveyor.config.length/2+dx*(i-1),0,-_S.conveyor.config.radius})
+            sim.setObjectQuaternion(jnt,_S.conveyor.model,Matrix3x3:toquaternion(m))
+        end
+    else
+        local padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
+        _S.conveyor.padOffset=(_S.conveyor.totalLength/padCnt)
+        for i=1,padCnt,1 do
+            local opt=16
+            if _S.conveyor.config.respondable then
+                opt=opt+8
+            end
+            _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
+            sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
+            sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
+            sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
+            sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')
+            sim.setObjectProperty(_S.conveyor.padHandles[i],sim.objectproperty_selectmodelbaseinstead)
+        end
     end
 end
 
@@ -142,7 +158,6 @@ function _S.conveyor.actuation()
     local dat=sim.readCustomTableData(_S.conveyor.model,'__ctrl__')
     if next(dat)~=nil then
         sim.writeCustomTableData(_S.conveyor.model,'__ctrl__',{})
-        dat=sim.unpackTable(dat)
         if dat.pos then
             _S.conveyor.targetPos=dat.pos
             _S.conveyor.targetVel=nil
@@ -228,6 +243,10 @@ sysCall_userConfig=nil -- path UI
 require'configUi'
 
 function sysCall_init()
+    _S.conveyor.init()
+end
+
+function _S.conveyor.init()
     self=sim.getObjectHandle(sim.handle_self)
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
@@ -246,7 +265,9 @@ function sysCall_init()
         c.accel=0.01
         sim.writeCustomTableData(self,'__config__',c)
     end
-    conveyor.init(c)
+    _S.conveyor.config=c
+    path.init() -- might call path.shaping
+    _S.conveyor.init2(c)
 end
 
 schema={
@@ -278,7 +299,7 @@ schema={
         type='float',
         name='Target velocity',
         default=0.1,
-        minimum=0.001,
+        minimum=-0.5,
         maximum=0.5,
         ui={control='spinbox',order=4,col=1,tab='general'},
     },
@@ -348,6 +369,6 @@ schema={
     },
 }
 
-configUi=ConfigUI('Conveyor',schema,_S.conveyor.init)
+configUi=ConfigUI('Conveyor',schema,_S.conveyor.init2)
 
 return _S.conveyor

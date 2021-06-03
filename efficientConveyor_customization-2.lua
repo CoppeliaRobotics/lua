@@ -11,7 +11,7 @@ end
 function _S.conveyor.init(config)
     _S.conveyor.config=config
     _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
-    sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor'})
+    sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyor.vel=0
     _S.conveyor.pos=0
@@ -20,19 +20,23 @@ function _S.conveyor.init(config)
     _S.conveyor.targetPos=nil
     sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     
-    
-    local visible1=sim.getObjectHandle('efficientConveyor_visible1')
-    local visible2=sim.getObjectHandle('efficientConveyor_visible2')
     _S.conveyor.forwarder=sim.getObjectHandle('efficientConveyor_forwarder')
     
-    sim.setShapeColor(visible1,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
-    sim.setShapeColor(visible2,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
-    sim.setShapeBB(visible1,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
-    sim.setShapeBB(visible2,{_S.conveyor.config.length+0.005,_S.conveyor.config.width+0.005,_S.conveyor.config.height})
-    sim.setShapeBB(_S.conveyor.forwarder,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
-    sim.setObjectPosition(visible1,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
-    sim.setObjectPosition(visible2,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2-0.0025})
-    sim.setObjectPosition(_S.conveyor.forwarder,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
+    local fingerPrint=sim.readCustomDataBlock(_S.conveyor.model,'__fingerPrint__')
+    if sim.packTable(_S.conveyor.config)~=fingerPrint then
+        sim.writeCustomDataBlock(_S.conveyor.model,'__fingerPrint__',sim.packTable(_S.conveyor.config))
+        local visible1=sim.getObjectHandle('efficientConveyor_visible1')
+        local visible2=sim.getObjectHandle('efficientConveyor_visible2')
+        
+        sim.setShapeColor(visible1,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
+        sim.setShapeColor(visible2,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
+        sim.setShapeBB(visible1,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
+        sim.setShapeBB(visible2,{_S.conveyor.config.length+0.005,_S.conveyor.config.width+0.005,_S.conveyor.config.height})
+        sim.setShapeBB(_S.conveyor.forwarder,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
+        sim.setObjectPosition(visible1,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
+        sim.setObjectPosition(visible2,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2-0.0025})
+        sim.setObjectPosition(_S.conveyor.forwarder,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
+    end
 end
 
 function _S.conveyor.afterSimulation()
