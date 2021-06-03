@@ -121,7 +121,8 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
         error('unknown ui control: "'..elemSchema.ui.control..'"')
     end
     if (controlFuncs.hasLabel or function() return true end)(self,elemSchema) then
-        xml=xml..string.format('<label text="%s:" style="margin-top: 5px;" /><br/>\n',elemSchema.name)
+        elemSchema.ui.idLabel=configUi:uiElementNextID()
+        xml=xml..string.format('<label id="%d" text="%s:" style="margin-top: 5px;" /><br/>\n',elemSchema.ui.idLabel,elemSchema.name)
     end
     local xml2=controlFuncs.create(self,elemSchema)
     if xml2~=nil then xml=xml..xml2..'<br/>\n' end
@@ -282,6 +283,9 @@ function ConfigUI:updateEnabledFlag()
             end
         else
             setEnabled(self.uiHandle,elemSchema.ui.id,enabled)
+        end
+        if elemSchema.ui.idLabel then
+            setEnabled(self.uiHandle,elemSchema.ui.idLabel,enabled)
         end
     end
 end
