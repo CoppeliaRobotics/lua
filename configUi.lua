@@ -381,7 +381,9 @@ function ConfigUI:sysCall_cleanup()
 end
 
 function ConfigUI:sysCall_userConfig()
-    self:showUi()
+    if sim.getSimulationState()==sim.simulation_stopped then
+        self:showUi()
+    end
 end
 
 function ConfigUI:sysCall_nonSimulation()
