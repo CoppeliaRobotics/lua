@@ -121,7 +121,9 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
         error('unknown ui control: "'..elemSchema.ui.control..'"')
     end
     if (controlFuncs.hasLabel or function() return true end)(self,elemSchema) then
-        elemSchema.ui.idLabel=configUi:uiElementNextID()
+        if not elemSchema.ui.idLabel then
+            elemSchema.ui.idLabel=configUi:uiElementNextID()
+        end
         xml=xml..string.format('<label id="%d" text="%s:" style="margin-top: 5px;" /><br/>\n',elemSchema.ui.idLabel,elemSchema.name)
     end
     local xml2=controlFuncs.create(self,elemSchema)
