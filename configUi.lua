@@ -269,6 +269,23 @@ function ConfigUI_close(ui)
     if self then self:uiClosed() end
 end
 
+function ConfigUI:updateEnabledFlag()
+    if not self.uiHandle then return end
+    local setEnabled=simUI.setWidgetVisibility if self.hideDisabledWidgets else simUI.setEnabled
+    for elemName,elemSchema in pairs(self.schema) do
+        local enabled=elemSchema.ui.enabled
+        if enabled==nil then enabled=true end
+        if type(enabled)=='function' then enabled=enabled(self,self.config) end
+        if type(elemSchema.ui.id)=='table' then
+            for id,_ in pairs(elemSchema.ui.id) do
+                setEnabled(self.uiHandle,id,enabled)
+            end
+        else
+            setEnabled(self.uiHandle,elemSchema.ui.id,enabled)
+        end
+    end
+end
+
 function ConfigUI:configChanged()
     if not self.uiHandle then return end
     for elemName,elemSchema in pairs(self.schema) do
@@ -281,6 +298,7 @@ function ConfigUI:configChanged()
             controlFuncs.setValue(self,elemSchema,v)
         end
     end
+    self:updateEnabledFlag()
 end
 
 function ConfigUI:uiChanged()
@@ -299,6 +317,7 @@ function ConfigUI:uiChanged()
     end
     self:writeConfig()
     self:generate()
+    self:updateEnabledFlag()
 end
 
 function ConfigUI:uiEvent(elemName)
