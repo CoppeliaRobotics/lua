@@ -271,7 +271,7 @@ end
 
 function ConfigUI:updateEnabledFlag()
     if not self.uiHandle then return end
-    local setEnabled=simUI.setWidgetVisibility if self.hideDisabledWidgets else simUI.setEnabled
+    local setEnabled=self.hideDisabledWidgets and simUI.setWidgetVisibility or simUI.setEnabled
     for elemName,elemSchema in pairs(self.schema) do
         local enabled=elemSchema.ui.enabled
         if enabled==nil then enabled=true end
