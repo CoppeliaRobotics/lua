@@ -270,7 +270,7 @@ function ConfigUI:createUi()
             xml=xml..'</group>\n'
         end
         if #tabNames>1 then
-            xml=xml..'<group flat="true" layout="vbox"><stretch/></group><!-- tab vertical fill -->\n'
+            xml=xml..'<stretch/><!-- tab vertical fill -->\n'
             xml=xml..'</tab>\n'
         end
     end
