@@ -231,6 +231,7 @@ function ConfigUI:createUi()
         xml=xml..'</tabs>\n'
     end
     xml=xml..'</ui>'
+    self.uiXML=xml
     self.uiHandle=simUI.create(xml)
     if self.uiTabsID and self.uistate.currentTab then
         simUI.setCurrentTab(self.uiHandle,self.uiTabsID,self.uistate.currentTab)
