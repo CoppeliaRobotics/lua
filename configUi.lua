@@ -281,7 +281,7 @@ function ConfigUI:updateEnabledFlag()
         if enabled==nil then enabled=true end
         if type(enabled)=='function' then enabled=enabled(self,self.config) end
         if type(elemSchema.ui.id)=='table' then
-            for id,_ in pairs(elemSchema.ui.id) do
+            for _,id in pairs(elemSchema.ui.id) do
                 setEnabled(self.uiHandle,id,enabled)
             end
         else
