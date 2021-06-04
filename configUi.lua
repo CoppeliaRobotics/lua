@@ -1,5 +1,93 @@
 ConfigUI={}
 
+function ConfigUI:validateElemSchema(elemName,elemSchema)
+    -- try to fix what is possible to fix:
+    --   - infer missing information
+    --   - migrate deprecated notations to current
+    -- anything else -> error()
+
+    elemSchema.key=elemSchema.key or elemName
+
+    elemSchema.name=elemSchema.name or elemName
+
+    elemSchema.ui=elemSchema.ui or {}
+
+    if elemSchema.ui.fromUiValue or elemSchema.ui.toUiValue then
+        assert(elemSchema.ui.fromUiValue and elemSchema.ui.toUiValue,'"fromUiValue" and "toUiValue" must be both set')
+        if elemSchema.minimum then
+            elemSchema.ui.minimum=elemSchema.ui.toUiValue(elemSchema.minimum)
+        end
+        if elemSchema.maximum then
+            elemSchema.ui.maximum=elemSchema.ui.toUiValue(elemSchema.maximum)
+        end
+    end
+
+    -- auto-guess type if missing:
+    if not elemSchema.type then
+        if elemSchema.choices then
+            elemSchema.type='choices'
+        elseif elemSchema.callback then
+            elemSchema.type='callback'
+        else
+            error('missing type')
+        end
+    end
+
+    -- standard default value if not given:
+    if elemSchema.default==nil then
+        if elemSchema.type=='string' then
+            elemSchema.default=''
+        elseif elemSchema.type=='int' or elemSchema.type=='float' then
+            elemSchema.default=0
+        elseif elemSchema.type=='color' then
+            elemSchema.default={0.85,0.85,1.0}
+        elseif elemSchema.type=='bool' then
+            elemSchema.default=false
+        end
+    end
+
+    if elemSchema.default==nil then
+        error('missing "default" for key "'..elemName..'"')
+    end
+
+    -- auto-guess control if missing:
+    if not elemSchema.ui.control then
+        if elemSchema.type=='string' then
+            elemSchema.ui.control='edit'
+        elseif elemSchema.type=='float' and elemSchema.minimum and elemSchema.maximum then
+            elemSchema.ui.control='slider'
+        elseif elemSchema.type=='int' or elemSchema.type=='float' then
+            elemSchema.ui.control='spinbox'
+        elseif elemSchema.type=='bool' then
+            elemSchema.ui.control='checkbox'
+        elseif elemSchema.type=='color' then
+            elemSchema.ui.control='color'
+        elseif elemSchema.type=='choices' then
+            elemSchema.ui.control='radio'
+        elseif elemSchema.type=='callback' then
+            elemSchema.ui.control='button'
+        else
+            error('missing "ui.control" and cannot infer it from type')
+        end
+    end
+
+    local controlFuncs=ConfigUI.Controls[elemSchema.ui.control]
+    if controlFuncs==nil then
+        error('unknown ui control: "'..elemSchema.ui.control..'"')
+    end
+end
+
+function ConfigUI:validateSchema()
+    for elemName,elemSchema in pairs(self.schema) do
+        local success,errorMessage=pcall(function()
+            self:validateElemSchema(elemName,elemSchema)
+        end)
+        if not success then
+            error('element "'..elemName..'": '..errorMessage)
+        end
+    end
+end
+
 function ConfigUI:getObjectName()
     if self.getObjectNameCallback then
         return self:getObjectNameCallback()
@@ -75,66 +163,7 @@ end
 
 function ConfigUI:uiElementXML(elemName,elemSchema)
     local xml=''
-    elemSchema.key=elemSchema.key or elemName
-    elemSchema.ui=elemSchema.ui or {}
-    if elemSchema.ui.fromUiValue or elemSchema.ui.toUiValue then
-        assert(elemSchema.ui.fromUiValue and elemSchema.ui.toUiValue,'"fromUiValue" and "toUiValue" must be both set')
-        if elemSchema.minimum then
-            elemSchema.ui.minimum=elemSchema.ui.toUiValue(elemSchema.minimum)
-        end
-        if elemSchema.maximum then
-            elemSchema.ui.maximum=elemSchema.ui.toUiValue(elemSchema.maximum)
-        end
-    end
-    -- auto-guess type if missing:
-    if not elemSchema.type then
-        if elemSchema.choices then
-            elemSchema.type='choices'
-        elseif elemSchema.callback then
-            elemSchema.type='callback'
-        else
-            error('missing type')
-        end
-    end
-    -- standard default value if not given:
-    if elemSchema.default==nil then
-        if elemSchema.type=='string' then
-            elemSchema.default=''
-        elseif elemSchema.type=='int' or elemSchema.type=='float' then
-            elemSchema.default=0
-        elseif elemSchema.type=='color' then
-            elemSchema.default={0.85,0.85,1.0}
-        elseif elemSchema.type=='bool' then
-            elemSchema.default=false
-        end
-    end
-    if elemSchema.default==nil then
-        error('missing "default" for key "'..elemName..'"')
-    end
-    -- auto-guess control if missing:
-    if not elemSchema.ui.control then
-        if elemSchema.type=='string' then
-            elemSchema.ui.control='edit'
-        elseif elemSchema.type=='float' and elemSchema.minimum and elemSchema.maximum then
-            elemSchema.ui.control='slider'
-        elseif elemSchema.type=='int' or elemSchema.type=='float' then
-            elemSchema.ui.control='spinbox'
-        elseif elemSchema.type=='bool' then
-            elemSchema.ui.control='checkbox'
-        elseif elemSchema.type=='color' then
-            elemSchema.ui.control='color'
-        elseif elemSchema.type=='choices' then
-            elemSchema.ui.control='radio'
-        elseif elemSchema.type=='callback' then
-            elemSchema.ui.control='button'
-        else
-            error('missing "ui.control" and cannot infer it from type')
-        end
-    end
     local controlFuncs=ConfigUI.Controls[elemSchema.ui.control]
-    if controlFuncs==nil then
-        error('unknown ui control: "'..elemSchema.ui.control..'"')
-    end
     if (controlFuncs.hasLabel or function() return true end)(self,elemSchema) then
         if not elemSchema.ui.idLabel then
             elemSchema.ui.idLabel=configUi:uiElementNextID()
@@ -154,55 +183,54 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
     return xml
 end
 
-function ConfigUI:schemaSorted()
+function ConfigUI:splitElemsByKey(uiElemsOrdered,key,defaultValue)
+    local keyNames,seenKey={},{}
+    for _,elemName in ipairs(uiElemsOrdered) do
+        if self.schema[elemName]==nil then error('element "'..elemName..'" not present in schema') end
+        local elemSchema=self.schema[elemName]
+        local value=elemSchema.ui[key] or defaultValue
+        if not seenKey[value] then
+            seenKey[value]=true
+            table.insert(keyNames,value)
+        end
+    end
+    local elemsSplitByKey={}
+    for _,value in ipairs(keyNames) do
+        local elemsInCurrentKey={}
+        for _,elemName in ipairs(uiElemsOrdered) do
+            local elemSchema=self.schema[elemName]
+            if (elemSchema.ui[key] or defaultValue)==value then
+                table.insert(elemsInCurrentKey,elemName)
+            end
+        end
+        table.insert(elemsSplitByKey,elemsInCurrentKey)
+    end
+    return keyNames,elemsSplitByKey
+end
+
+function ConfigUI:splitElems()
     -- first order ui elements by 'order' key:
     local uiElemsOrdered={}
     for elemName,elemSchema in pairs(self.schema) do
         elemSchema.ui=elemSchema.ui or {}
+        elemSchema.ui.order=elemSchema.ui.order or 0
         table.insert(uiElemsOrdered,elemName)
     end
-    table.sort(uiElemsOrdered,function(a,b)
-        a=self.schema[a].ui.order or 0
-        b=self.schema[b].ui.order or 0
-        return a<b
-    end)
+    table.sort(uiElemsOrdered,function(a,b) return self.schema[a].ui.order<self.schema[b].ui.order end)
 
-    -- then collect the tabs ('tab' key) in the order they appear:
-    local uiTabs,uiTabsOrder={},{}
-    for _,elemName in ipairs(uiElemsOrdered) do
-        local elemSchema=self.schema[elemName]
-        local tabName=elemSchema.ui.tab or ''
-        if not uiTabs[tabName] then
-            uiTabs[tabName]={}
-            table.insert(uiTabsOrder,tabName)
-        end
-        table.insert(uiTabs[tabName],elemName)
-    end
-
-    -- for each tab:
-    for tabName,uiElems in pairs(uiTabs) do
-        -- split tab's ui elements by column:
-        local cols,byCol={},{}
-        for _,elemName in ipairs(uiElems) do
-            local col=self.schema[elemName].ui.col or 1
-            if not byCol[col] then
-                byCol[col]={}
-                table.insert(cols,col)
-            end
-            table.insert(byCol[col],elemName)
-        end
-        table.sort(cols)
-        uiTabs[tabName]={}
-        for _,col in ipairs(cols) do
-            local colContent={}
-            for _,elemName in ipairs(byCol[col]) do
-                table.insert(colContent,elemName)
-            end
-            table.insert(uiTabs[tabName],colContent)
+    -- split uiElemsOrdered by 'tab', then by 'group', then by 'col':
+    local uiElemsSplit={}
+    local tabNames,uiElemsSplitByTab=self:splitElemsByKey(uiElemsOrdered,'tab','')
+    for tabIndex,elems in ipairs(uiElemsSplitByTab) do
+        local groupNames,uiElemsSplitByGroup=self:splitElemsByKey(elems,'group',1)
+        uiElemsSplit[tabIndex]=uiElemsSplitByGroup
+        for groupIndex,elems in ipairs(uiElemsSplit[tabIndex]) do
+            local columnNames,uiElemsSplitByCol=self:splitElemsByKey(elems,'col',1)
+            uiElemsSplit[tabIndex][groupIndex]=uiElemsSplitByCol
         end
     end
 
-    return uiTabs,uiTabsOrder
+    return uiElemsSplit,tabNames
 end
 
 function ConfigUI:createUi()
@@ -218,31 +246,35 @@ function ConfigUI:createUi()
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..' layout="grid"'
     xml=xml..'>\n'
-    local uiTabs,uiTabsOrder=self:schemaSorted()
-    if #uiTabsOrder>1 then
+    local uiElemsSplit,tabNames=self:splitElems()
+    if #tabNames>1 then
         if not self.uiTabsID then
             self.uiTabsID=self:uiElementNextID()
         end
         xml=xml..'<tabs id="'..self.uiTabsID..'">\n'
     end
-    for _,tab in ipairs(uiTabsOrder) do
-        if #uiTabsOrder>1 then
-            xml=xml..'<tab title="'..tab..'" layout="grid">\n'
+    for tabIndex,tabName in ipairs(tabNames) do
+        if #tabNames>1 then
+            xml=xml..'<tab title="'..tabName..'" layout="vbox">\n'
         end
-        for _,col in ipairs(uiTabs[tab]) do
-            xml=xml..'<group flat="true" layout="grid">'
-            for _,k in ipairs(col) do
-                xml=xml..self:uiElementXML(k,self.schema[k])
+        for groupIndex,groupElems in ipairs(uiElemsSplit[tabIndex]) do
+            xml=xml..'<group flat="true" layout="hbox"><!-- group '..groupIndex..' -->\n'
+            for colIndex,colElems in ipairs(groupElems) do
+                xml=xml..'<group flat="true" layout="grid"><!-- group '..groupIndex..', col '..colIndex..' -->\n'
+                for _,elemName in ipairs(colElems) do
+                    xml=xml..self:uiElementXML(k,self.schema[elemName])
+                end
+                xml=xml..'<group flat="true" layout="vbox"><stretch/></group><!-- column vertical fill -->\n'
+                xml=xml..'</group>\n'
             end
-            xml=xml..'<br/><group flat="true" layout="vbox"><stretch/></group>\n'
-            xml=xml..'</group>'
+            xml=xml..'</group>\n'
         end
-        if #uiTabsOrder>1 then
-            xml=xml..'<br/><group flat="true" layout="vbox"><stretch/></group>\n'
+        if #tabNames>1 then
+            xml=xml..'<group flat="true" layout="vbox"><stretch/></group><!-- tab vertical fill -->\n'
             xml=xml..'</tab>\n'
         end
     end
-    if #uiTabsOrder>1 then
+    if #tabNames>1 then
         xml=xml..'</tabs>\n'
     end
     xml=xml..'</ui>'
@@ -378,6 +410,7 @@ function ConfigUI:setupSysCall(name,f)
 end
 
 function ConfigUI:sysCall_init()
+    self:validateSchema()
     self:readInfo()
     self:writeInfo()
     self:readConfig()
@@ -414,7 +447,7 @@ function ConfigUI:sysCall_nonSimulation()
         self.generateCallback(self.config)
         -- sim.announceSceneContentChange() leave this out for now
     end
-    
+
     -- poll for external config change:
     local data=self:readBlock(self.dataBlockName.config)
     if data and data~=sim.packTable(self.config) then
