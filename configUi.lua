@@ -96,6 +96,21 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
             error('missing type')
         end
     end
+    -- standard default value if not given:
+    if elemSchema.default==nil then
+        if elemSchema.type=='string' then
+            elemSchema.default=''
+        elseif elemSchema.type=='int' or elemSchema.type=='float' then
+            elemSchema.default=0
+        elseif elemSchema.type=='color' then
+            elemSchema.default={0.85,0.85,1.0}
+        elseif elemSchema.type=='bool' then
+            elemSchema.default=false
+        end
+    end
+    if elemSchema.default==nil then
+        error('missing "default" for key "'..elemName..'"')
+    end
     -- auto-guess control if missing:
     if not elemSchema.ui.control then
         if elemSchema.type=='string' then
