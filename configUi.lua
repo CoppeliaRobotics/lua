@@ -245,6 +245,7 @@ function ConfigUI:createUi()
     end
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..' layout="grid"'
+    xml=xml..' content-margins="0,0,0,0"'
     xml=xml..'>\n'
     local uiElemsSplit,tabNames=self:splitElems()
     if #tabNames>1 then
@@ -255,16 +256,16 @@ function ConfigUI:createUi()
     end
     for tabIndex,tabName in ipairs(tabNames) do
         if #tabNames>1 then
-            xml=xml..'<tab title="'..tabName..'" layout="vbox">\n'
+            xml=xml..'<tab title="'..tabName..'" layout="vbox" content-margins="0,0,0,0">\n'
         end
         for groupIndex,groupElems in ipairs(uiElemsSplit[tabIndex]) do
-            xml=xml..'<group flat="true" layout="hbox"><!-- group '..groupIndex..' -->\n'
+            xml=xml..'<group flat="true" layout="hbox" content-margins="0,0,0,0"><!-- group '..groupIndex..' -->\n'
             for colIndex,colElems in ipairs(groupElems) do
-                xml=xml..'<group flat="true" layout="grid"><!-- group '..groupIndex..', col '..colIndex..' -->\n'
+                xml=xml..'<group flat="true" layout="grid" content-margins="0,0,0,0"><!-- group '..groupIndex..', col '..colIndex..' -->\n'
                 for _,elemName in ipairs(colElems) do
                     xml=xml..self:uiElementXML(k,self.schema[elemName])
                 end
-                xml=xml..'<group flat="true" layout="vbox"><stretch/></group><!-- column vertical fill -->\n'
+                xml=xml..'<group flat="true" layout="vbox" content-margins="0,0,0,0"><stretch/></group><!-- column vertical fill -->\n'
                 xml=xml..'</group>\n'
             end
             xml=xml..'</group>\n'
