@@ -259,7 +259,7 @@ function ConfigUI:createUi()
             xml=xml..'<tab title="'..tabName..'" layout="vbox" content-margins="0,0,0,0">\n'
         end
         for groupIndex,groupElems in ipairs(uiElemsSplit[tabIndex]) do
-            xml=xml..'<group flat="true" layout="hbox" content-margins="0,0,0,0"><!-- group '..groupIndex..' -->\n'
+            xml=xml..'<group flat="'..(#uiElemsSplit[tabIndex]>0 and 'false' or 'true')..'" layout="hbox" content-margins="0,0,0,0"><!-- group '..groupIndex..' -->\n'
             for colIndex,colElems in ipairs(groupElems) do
                 xml=xml..'<group flat="true" layout="grid" content-margins="0,0,0,0"><!-- group '..groupIndex..', col '..colIndex..' -->\n'
                 for _,elemName in ipairs(colElems) do
