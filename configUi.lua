@@ -244,7 +244,7 @@ function ConfigUI:createUi()
         xml=xml..' placement="relative" position="-30,100" '
     end
     xml=xml..' closeable="true" on-close="ConfigUI_close"'
-    xml=xml..' layout="grid"'
+    xml=xml..' layout="vbox"'
     xml=xml..' content-margins="0,0,0,0"'
     xml=xml..'>\n'
     local uiElemsSplit,tabNames=self:splitElems()
