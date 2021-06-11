@@ -1606,6 +1606,23 @@ function sim.writeCustomTableData(...)
     end
 end
 
+function sim.getObjectHandle(path,options)
+    options=options or {}
+    local proxy=-1
+    local index=-1
+    local option=0
+    if options.proxy then
+        proxy=options.proxy
+    end
+    if options.index then
+        index=options.index
+    end
+    if options.noError and options.noError~=false then
+        option=1
+    end
+    return sim._getObjectHandle(path,index,proxy,option)
+end
+
 ----------------------------------------------------------
 
 
@@ -1831,6 +1848,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options)')
     sim.registerScriptFunction('sim.readCustomTableData@sim','table data=sim.readCustomTableData(int objectHandle,string tagName)')
     sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int objectHandle,string tagName,table data)')
+    sim.registerScriptFunction('sim.getObjectHandle@sim','sim.getObjectHandle(string path,table options)')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do
