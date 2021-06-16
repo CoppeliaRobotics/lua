@@ -263,7 +263,7 @@ function ConfigUI:createUi()
             for colIndex,colElems in ipairs(groupElems) do
                 xml=xml..'<group flat="true" layout="grid" content-margins="0,0,0,0"><!-- group '..groupIndex..', col '..colIndex..' -->\n'
                 for _,elemName in ipairs(colElems) do
-                    xml=xml..self:uiElementXML(k,self.schema[elemName])
+                    xml=xml..self:uiElementXML(elemName,self.schema[elemName])
                 end
                 xml=xml..'<group flat="true" layout="vbox" content-margins="0,0,0,0"><stretch/></group><!-- column vertical fill -->\n'
                 xml=xml..'</group>\n'
