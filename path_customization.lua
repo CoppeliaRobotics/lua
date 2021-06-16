@@ -106,7 +106,7 @@ function _S.path.init()
     _S.path.pathCreationTag='ABC_PATH_CREATION'
     _S.path.shapeTag='ABC_PATHSHAPE_INFO'
     _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
-    _S.path.model=sim.getObjectHandle(sim.handle_self)
+    _S.path.model=sim.getObjectHandle('.')
     _S.path.uniqueId=sim.getStringParam(sim.stringparam_uniqueid)
     _S.path.refreshDelayInMs=200
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
@@ -138,7 +138,7 @@ function _S.path.openUserConfigDlg()
         if _S.path.pathDlgPos then
             pos=' placement="absolute" position="'.._S.path.pathDlgPos[1]..','.._S.path.pathDlgPos[2]..'" '
         end
-        local xml ='<ui title="'..sim.getObjectName(_S.path.model)..'" closeable="true" on-close="_S.path.closeUserConfigDlg" modal="false" '..pos..[[>
+        local xml ='<ui title="'..sim.getObjectAlias(_S.path.model,1)..'" closeable="true" on-close="_S.path.closeUserConfigDlg" modal="false" '..pos..[[>
             <label text="Main properties:" style="* {font-weight: bold;}"/>
             <group layout="form" flat="true">
             
@@ -256,7 +256,7 @@ function _S.path.createNew(ctrlPts,onlyPosData,options,pointCount,smoothing,auto
         ctrlPt=sim.createDummy(0.01,{0,0.96,0.66,0,0,0,0,0,0,0,0,0})
         sim.setObjectParent(ctrlPt,_S.path.model,true)
         sim.setObjectPosition(ctrlPt,_S.path.model,fp(ctrlPts,i))
-        sim.setSimilarName(ctrlPt,sim.getObjectName(_S.path.model),'__ctrlPt')
+        sim.setObjectAlias(ctrlPt,'ctrlPt')
         if onlyPosData then
             sim.setObjectQuaternion(ctrlPt,_S.path.model,{0,0,0,1})
         else
@@ -395,7 +395,7 @@ function _S.path.setPathShape(shape)
         sim.setObjectParent(shape,_S.path.model,false)
         local p=sim.getObjectProperty(shape)
         sim.setObjectProperty(shape,p|sim.objectproperty_selectmodelbaseinstead|sim.objectproperty_dontshowasinsidemodel)
-        sim.setSimilarName(shape,sim.getObjectName(_S.path.model),'__shape')
+        sim.setObjectAlias(shape,'shape')
         sim.writeCustomDataBlock(shape,_S.path.childTag,'') -- old: childTag not used anymore
     end
 end

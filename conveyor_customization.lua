@@ -40,7 +40,7 @@ function _S.conveyor.init(config)
     end
 
     _S.conveyor.config=config
-    _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
+    _S.conveyor.model=sim.getObjectHandle('.')
     
     _S.conveyor.velocity=_S.conveyor.config.initVel
     _S.conveyor.offset=_S.conveyor.config.initPos
@@ -121,8 +121,8 @@ function _S.conveyor.init(config)
                 local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
                 _S.conveyor.rolHandles[i]=jnt
                 sim.setObjectParent(cyl,jnt,true)
-                sim.setSimilarName(jnt,sim.getObjectName(_S.conveyor.model),'__jrol')
-                sim.setSimilarName(cyl,sim.getObjectName(_S.conveyor.model),'__rol')
+                sim.setObjectAlias(jnt,'jrol')
+                sim.setObjectAlias(cyl,'rol')
                 sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
                 sim.setObjectParent(jnt,_S.conveyor.model,true)
                 sim.writeCustomDataBlock(jnt,'PATHROL','a')
@@ -139,7 +139,7 @@ function _S.conveyor.init(config)
                     opt=opt+8
                 end
                 _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
-                sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
+                sim.setObjectAlias(_S.conveyor.padHandles[i],'pad')
                 sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
                 sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
                 sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')

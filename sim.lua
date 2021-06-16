@@ -140,14 +140,6 @@ function sim.getObjectsWithTag(tagName,justModels)
     return retObjs
 end
 
-function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
-    local suff=sim.getNameSuffix(nil)
-    sim.setNameSuffix(-1)
-    local retVal=sim.getObjectHandle(name..'@silentError')
-    sim.setNameSuffix(suff)
-    return retVal
-end
-
 function sim.executeLuaCode(theCode)
     local f=loadstring(theCode)
     if f then
@@ -966,15 +958,7 @@ function sim.createPath(...)
         local ctrlPts,options,subdiv,smoothness,orientationMode,upVector=checkargs({{type='table',item_type='float',size='14..*'},{type='int',default=0},{type='int',default=100},{type='float',default=1.0},{type='int',default=0},{type='table',item_type='float',size='3',default={0,0,1}}},...)
         local fl=sim.setThreadSwitchAllowed(false)
         retVal=sim.createDummy(0.04,{0,0.68,0.47,0,0,0,0,0,0,0,0,0})
-        local nmBase='Path'
-        local nm=nmBase..'#'
-        local suff=0
-        while sim.getObjectHandle(nm..'@silentError')~=-1 do
-            nm=nmBase..'#'..suff
-            suff=suff+1
-        end
-        if suff==0 then nm=nmBase end
-        sim.setObjectName(retVal,nm)
+        sim.setObjectAlias(retVal,"Path")
         local scriptHandle=sim.addScript(sim.scripttype_customizationscript)
         local code=[[path=require('path_customization')
 
@@ -1275,24 +1259,6 @@ function sim.waitForSignal(...)
     return retVal
 end
 
-function sim.tubeRead(...)
-    -- For backward compatibility (01.10.2020)
-    local tubeHandle,blocking=checkargs({{type='int'},{type='bool',default=false}},...)
-    local retVal
-    if blocking then
-        while true do
-            retVal=sim._tubeRead(tubeHandle)
-            if retVal then
-                break
-            end
-            sim.switchThread()
-        end
-    else
-        retVal=sim._tubeRead(tubeHandle)
-    end
-    return retVal
-end
-
 function sim.serialRead(...)
     local portHandle,length,blocking,closingStr,timeout=checkargs({{type='int'},{type='int'},{type='bool',default=false},{type='string',default=''},{type='float',default=0}},...)
     
@@ -1374,6 +1340,79 @@ function sim.serialClose(...)
     end
 end
 
+function sim.getShapeBB(handle)
+    -- Undocumented function (for now)
+    local s={}
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_x)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_x)
+    s[1]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_y)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_y)
+    s[2]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_z)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_z)
+    s[3]=m-n
+    return s
+end
+
+function sim.setShapeBB(handle,size)
+    -- Undocumented function (for now)
+    local s=sim.getShapeBB(handle)
+    sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
+end
+
+function sim.getModelBB(handle)
+    -- Undocumented function (for now)
+    local s={}
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_x)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_x)
+    s[1]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_y)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_y)
+    s[2]=m-n
+    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_z)
+    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_z)
+    s[3]=m-n
+    return s
+end
+
+function sim.readCustomTableData(...)
+    local handle,tagName=checkargs({{type='int'},{type='string'}},...)
+    local data=sim.readCustomDataBlock(handle,tagName)
+    if data==nil then
+        data={}
+    else
+        data=sim.unpackTable(data)
+    end
+    return data
+end
+
+function sim.writeCustomTableData(...)
+    local handle,tagName,theTable=checkargs({{type='int'},{type='string'},{type='table'}},...)
+    if next(theTable)==nil then
+        sim.writeCustomDataBlock(handle,tagName,'')
+    else
+        sim.writeCustomDataBlock(handle,tagName,sim.packTable(theTable))
+    end
+end
+
+function sim.getObjectHandle(path,options)
+    options=options or {}
+    local proxy=-1
+    local index=-1
+    local option=0
+    if options.proxy then
+        proxy=options.proxy
+    end
+    if options.index then
+        index=options.index
+    end
+    if options.noError and options.noError~=false then
+        option=1
+    end
+    return sim._getObjectHandle(path,index,proxy,option)
+end
+
 function simRMLMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
     -- For backward compatibility (02.10.2020)
     return sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
@@ -1452,7 +1491,6 @@ end
 
 function sim.rmlMoveToPosition(...)
     -- For backward compatibility (02.10.2020)
-    
     local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -1510,7 +1548,7 @@ function sim.boolXor16(a,b)
 end
 
 function sim.setSimilarName(handle,original,suffix)
-    -- Undocumented function (for now)
+    -- For backward compatibility (16.06.2021)
     sim.setObjectName(handle,'__setSimilarName__tmp__')
     local base
     local hash=''
@@ -1543,84 +1581,38 @@ function sim.setSimilarName(handle,original,suffix)
             nm=nm..'#'
             index=index+1
         end
-        if sim.getObjectHandle(nm..'@silentError')==-1 then
+        if sim.getObjectHandle(nm,{noError=true})==-1 then
             break
         end
     end
     sim.setObjectName(handle,newName)
 end
 
-function sim.getShapeBB(handle)
-    -- Undocumented function (for now)
-    local s={}
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_x)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_x)
-    s[1]=m-n
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_y)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_y)
-    s[2]=m-n
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_z)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_z)
-    s[3]=m-n
-    return s
-end
-
-function sim.setShapeBB(handle,size)
-    -- Undocumented function (for now)
-    local s=sim.getShapeBB(handle)
-    sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
-end
-
-function sim.getModelBB(handle)
-    -- Undocumented function (for now)
-    local s={}
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_x)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_x)
-    s[1]=m-n
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_y)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_y)
-    s[2]=m-n
-    local m=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_max_z)
-    local n=sim.getObjectFloatParam(handle,sim.objfloatparam_modelbbox_min_z)
-    s[3]=m-n
-    return s
-end
-
-function sim.readCustomTableData(...)
-    local handle,tagName=checkargs({{type='int'},{type='string'}},...)
-    local data=sim.readCustomDataBlock(handle,tagName)
-    if data==nil then
-        data={}
+function sim.tubeRead(...)
+    -- For backward compatibility (01.10.2020)
+    local tubeHandle,blocking=checkargs({{type='int'},{type='bool',default=false}},...)
+    local retVal
+    if blocking then
+        while true do
+            retVal=sim._tubeRead(tubeHandle)
+            if retVal then
+                break
+            end
+            sim.switchThread()
+        end
     else
-        data=sim.unpackTable(data)
+        retVal=sim._tubeRead(tubeHandle)
     end
-    return data
+    return retVal
 end
 
-function sim.writeCustomTableData(...)
-    local handle,tagName,theTable=checkargs({{type='int'},{type='string'},{type='table'}},...)
-    if next(theTable)==nil then
-        sim.writeCustomDataBlock(handle,tagName,'')
-    else
-        sim.writeCustomDataBlock(handle,tagName,sim.packTable(theTable))
-    end
-end
-
-function sim.getObjectHandle(path,options)
-    options=options or {}
-    local proxy=-1
-    local index=-1
-    local option=0
-    if options.proxy then
-        proxy=options.proxy
-    end
-    if options.index then
-        index=options.index
-    end
-    if options.noError and options.noError~=false then
-        option=1
-    end
-    return sim._getObjectHandle(path,index,proxy,option)
+function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
+    -- For backward compatibility (16.06.2021)
+    local suff=sim.getNameSuffix(nil)
+    sim.setNameSuffix(-1)
+    local retVal=sim.getObjectHandle(name,{noError=true})
+    sim.setNameSuffix(suff)
+    return retVal
 end
 
 ----------------------------------------------------------

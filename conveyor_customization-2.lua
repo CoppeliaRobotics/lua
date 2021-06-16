@@ -12,7 +12,7 @@ end
 
 function _S.conveyor.init2(config)
     _S.conveyor.config=sim.unpackTable(sim.packTable(config))
-    _S.conveyor.model=sim.getObjectHandle(sim.handle_self)
+    _S.conveyor.model=sim.getObjectHandle('.')
     sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyor.vel=0
@@ -115,8 +115,8 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
             local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
             _S.conveyor.rolHandles[i]=jnt
             sim.setObjectParent(cyl,jnt,true)
-            sim.setSimilarName(jnt,sim.getObjectName(_S.conveyor.model),'__jrol')
-            sim.setSimilarName(cyl,sim.getObjectName(_S.conveyor.model),'__rol')
+            sim.setObjectAlias(jnt,'jrol')
+            sim.setObjectAlias(cyl,'rol')
             sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
             sim.setObjectParent(jnt,_S.conveyor.model,true)
             sim.writeCustomDataBlock(jnt,'PATHROL','a')
@@ -135,7 +135,7 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
                 opt=opt+8
             end
             _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
-            sim.setSimilarName(_S.conveyor.padHandles[i],sim.getObjectName(_S.conveyor.model),'__pad')
+            sim.setObjectAlias(_S.conveyor.padHandles[i],'pad')
             sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
             sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)
             sim.writeCustomDataBlock(_S.conveyor.padHandles[i],'PATHPAD','a')
@@ -247,7 +247,7 @@ function sysCall_init()
 end
 
 function _S.conveyor.init()
-    self=sim.getObjectHandle(sim.handle_self)
+    self=sim.getObjectHandle('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.type=1 -- belt

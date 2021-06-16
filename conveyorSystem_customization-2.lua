@@ -12,7 +12,7 @@ end
 
 function _S.conveyorSystem.init(config)
     _S.conveyorSystem.config=config
-    _S.conveyorSystem.model=sim.getObjectHandle(sim.handle_self)
+    _S.conveyorSystem.model=sim.getObjectHandle('.')
     sim.writeCustomTableData(_S.conveyorSystem.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyorSystem.vel=0
@@ -199,8 +199,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
             _S.conveyorSystem.rolHandles[i]=jnt
             sim.setObjectParent(cyl,jnt,true)
-            sim.setSimilarName(jnt,sim.getObjectName(_S.conveyorSystem.model),'__jrol')
-            sim.setSimilarName(cyl,sim.getObjectName(_S.conveyorSystem.model),'__rol')
+            sim.setObjectAlias(jnt,'jrol')
+            sim.setObjectAlias(cyl,'rol')
             sim.setShapeColor(cyl,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.color)
             sim.setObjectParent(jnt,_S.conveyorSystem.model,true)
             sim.writeCustomDataBlock(jnt,'PATHROL','a')
@@ -222,7 +222,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 opt=opt+8
             end
             _S.conveyorSystem.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyorSystem.config.beltElementWidth,_S.conveyorSystem.config.width*0.95,_S.conveyorSystem.config.beltElementThickness},0.01)
-            sim.setSimilarName(_S.conveyorSystem.padHandles[i],sim.getObjectName(_S.conveyorSystem.model),'__pad')
+            sim.setObjectAlias(_S.conveyorSystem.padHandles[i],'pad')
             sim.setShapeColor(_S.conveyorSystem.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.color)
             sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
             sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i],'PATHPAD','a')
@@ -261,7 +261,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         sim.writeCustomDataBlock(resp,'PATHPAD','b')
         sim.setObjectProperty(resp,sim.objectproperty_selectmodelbaseinstead)
         sim.setObjectInt32Param(resp,sim.objintparam_visibility_layer,256)
-        sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__respondable')
+        sim.setObjectAlias(resp,'respondable')
     end
     if _S.conveyorSystem.config.border then
         local cnt=_S.conveyorSystem.totalLength//(_S.conveyorSystem.config.borderElementLength*0.5)
@@ -298,7 +298,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         sim.writeCustomDataBlock(resp,'PATHPAD','c')
         sim.setObjectProperty(resp,sim.objectproperty_selectmodelbaseinstead)
         sim.setObjectInt32Param(resp,sim.objintparam_visibility_layer,1+256)
-        sim.setSimilarName(resp,sim.getObjectName(_S.conveyorSystem.model),'__border')
+        sim.setObjectAlias(resp,'border')
     end
     path.setPathShape(_S.conveyorSystem.pathShaping(pathData,closed,{0,0,1}))
 
@@ -351,7 +351,7 @@ sysCall_userConfig=nil -- path UI
 require'configUi'
 
 function sysCall_init()
-    self=sim.getObjectHandle(sim.handle_self)
+    self=sim.getObjectHandle('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.type=1 -- belt

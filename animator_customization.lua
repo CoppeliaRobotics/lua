@@ -5,7 +5,7 @@ function sysCall_actuation()
 end
 
 function sysCall_beforeSimulation()
-    local self=sim.getObjectHandle(sim.handle_self)
+    local self=sim.getObjectHandle('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.loop=false
@@ -18,7 +18,7 @@ function sysCall_beforeSimulation()
         sim.writeCustomTableData(self,'__config__',c)
     end
     _S.animator.config=c
-    _S.animator.self=sim.getObjectHandle(sim.handle_self)
+    _S.animator.self=sim.getObjectHandle('.')
     _S.animator.handles=sim.getReferencedHandles(_S.animator.self)
     _S.animator.animationData=sim.unpackTable(sim.readCustomDataBlock(_S.animator.self,'animationData'))
     _S.animator.totalTime=_S.animator.animationData.times[#_S.animator.animationData.times]
@@ -110,7 +110,7 @@ function gen(config)
 end
 
 function sysCall_init()
-    self=sim.getObjectHandle(sim.handle_self)
+    self=sim.getObjectHandle('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.loop=false

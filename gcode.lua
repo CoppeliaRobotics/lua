@@ -24,7 +24,7 @@ GCodeInterpreter = {
     wordNumber=0,
     pathNumber=0,
     param=0,
-    visualizationMethod=1, -- 0=none, 1=drawing objects, 2=path objects
+    visualizationMethod=1, -- 0=none, 1=drawing objects
     greenLineContainer=-1,
     redLineContainer=-1,
     bluePointContainer=-1,
@@ -270,15 +270,6 @@ GCodeInterpreter = {
 
         local d=math.hypotn(from,to)
 
-        local createDummyContainer=function()
-            local status,dh=pcall(function() return sim.getObjectHandle('Path') end)
-            if not status then
-                dh=sim.createDummy(0)
-                sim.setObjectName(dh,'Path')
-            end
-            sim.writeCustomDataBlock(dh,'count',self.pathNumber)
-            return dh
-        end
         if self.motion==1 or self.motion==2 or self.motion==3 then
             local direction=2*self.motion-5
             local p={}
@@ -295,24 +286,6 @@ GCodeInterpreter = {
             log(LOG.TRACE,'generated %d path points',#p)
             self.pathNumber=self.pathNumber+1
             
-            if self.visualizationMethod==2 then
-                local dh=createDummyContainer()
-                local h=sim.createPath(sim.pathproperty_show_line,{1,sim.distcalcmethod_dl,0},{0.001,1,1},(self.rapid and red or green))
-                sim.writeCustomDataBlock(h,'duration',sim.packFloatTable({len/self.speed}))
-                sim.setObjectName(h,string.format('Path_%06d',self.pathNumber))
-                sim.setObjectParent(h,dh,true)
-                local data={}
-                for i=1,#p do
-                    local tau=(i-1)/(#p-1)
-                    for j=1,3 do table.insert(data,p[i][j]) end
-                    -- for j=1,3 do table.insert(data,self.currentOrient[j]*(1-tau)+self.targetOrient[j]*tau) end
-                    local m=sim.interpolateMatrices(self.currentM,self.targetM,tau)
-                    local euler=sim.getEulerAnglesFromMatrix(m)
-                    for j=1,3 do table.insert(data,euler[j]) end
-                    for j=1,5 do table.insert(data,0) end
-                end
-                sim.insertPathCtrlPoints(h,0,0,#p,data)
-            end
             if self.visualizationMethod==1 then
                 for i=1,#p-1 do
                     local data={p[i][1],p[i][2],p[i][3],p[i+1][1],p[i+1][2],p[i+1][3]}
@@ -337,13 +310,6 @@ GCodeInterpreter = {
             -- pause
             local seconds=0.001*self.param
             self.pathNumber=self.pathNumber+1
-            if self.visualizationMethod==2 then
-                local dh=createDummyContainer()
-                local h=sim.createDummy(0)
-                sim.setObjectName(h,string.format('Path_%06d',self.pathNumber))
-                sim.setObjectParent(h,dh,true)
-                sim.writeCustomDataBlock(h,'duration',sim.packFloatTable({seconds}))
-            end
             if self.visualizationMethod==1 then
                 -- sim.addDrawingObjectItem(self.bluePointContainer,{self.currentPos[1]*self.unitMultiplier,self.currentPos[2]*self.unitMultiplier,self.currentPos[3]*self.unitMultiplier})
                 sim.addDrawingObjectItem(self.bluePointContainer,{self.currentM[4]*self.unitMultiplier,self.currentM[8]*self.unitMultiplier,self.currentM[12]*self.unitMultiplier})

@@ -201,21 +201,15 @@ function customUi_populateCombobox(ui,id,items_array,exceptItems_map,currentItem
 end
 
 function getObjectHandle_noError(name)
-    local err=sim.getInt32Param(sim.intparam_error_report_mode)
-    sim.setInt32Param(sim.intparam_error_report_mode,0)
-    local retVal=sim.getObjectHandle(name)
-    sim.setInt32Param(sim.intparam_error_report_mode,err)
+    local retVal=sim.getObjectHandle(name,{noError=true})
     return retVal
 end
 
 function getObjectHandle_noErrorNoSuffixAdjustment(name)
-    local err=sim.getInt32Param(sim.intparam_error_report_mode)
-    sim.setInt32Param(sim.intparam_error_report_mode,0)
     local suff=sim.getNameSuffix(nil)
     sim.setNameSuffix(-1)
-    local retVal=sim.getObjectHandle(name)
+    local retVal=sim.getObjectHandle(name,{noError=true})
     sim.setNameSuffix(suff)
-    sim.setInt32Param(sim.intparam_error_report_mode,err)
     return retVal
 end
 
@@ -640,13 +634,13 @@ end
 
 function utils.writeSessionPersistentObjectData(objectHandle,dataName,...)
     local data={...}
-    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
+    local nm="___"..sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)..sim.getObjectAlias(objectHandle,2)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
     data=sim.packTable(data)
     sim.writeCustomDataBlock(sim.handle_app,nm,data)
 end
 
 function utils.readSessionPersistentObjectData(objectHandle,dataName)
-    local nm="___"..sim.getScriptHandle()..sim.getObjectName(objectHandle)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
+    local nm="___"..sim.getScriptAttribute(sim.handle_self,sim.scriptattribute_scripthandle)..sim.getObjectAlias(objectHandle,2)..sim.getInt32Param(sim.intparam_scene_unique_id)..sim.getObjectStringParam(objectHandle,sim.objstringparam_dna)..dataName
     local data=sim.readCustomDataBlock(sim.handle_app,nm)
     if data then
         data=sim.unpackTable(data)

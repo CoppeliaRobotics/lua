@@ -279,8 +279,11 @@ end
 function GetObjectHandle(...)
     debugFunc("GetObjectHandle",...)
     local objName=...
-    if string.find(objName,'#')==nil then
-        objName=objName..'#'
+    if (string.find(objName,'/')==nil) and (string.find(objName,'.')==nil) and (string.find(objName,':')==nil) then
+        -- Old way of accessing objects
+        if string.find(objName,'#')==nil then
+            objName=objName..'#'
+        end
     end
     return sim.getObjectHandle(objName)
 end
