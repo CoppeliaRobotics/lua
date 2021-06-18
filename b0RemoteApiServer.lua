@@ -543,6 +543,15 @@ end
 function GetIntSignal(...)
     return GetInt32Signal(...)
 end
+function GetObjectName(...)
+    -- For backward compatibility:
+    debugFunc("GetObjectName",...)
+    local handle,altName=...
+    if altName then
+        handle=handle+sim.handleflag_altname
+    end
+    return sim.getObjectName(handle)
+end
 -- DEPRECATED END
 
 function SetStringParam(...)
@@ -853,13 +862,10 @@ function GetObjectsInTree(...)
     return sim.getObjectsInTree(treeBase,objType,options)
 end
 
-function GetObjectName(...)
-    debugFunc("GetObjectName",...)
-    local handle,altName=...
-    if altName then
-        handle=handle+sim.handleflag_altname
-    end
-    return sim.getObjectName(handle)
+function GetObjectAlias(...)
+    debugFunc("GetObjectAlias",...)
+    local handle,options=...
+    return sim.getObjectAlias(handle,options)
 end
 
 function GetSimulationTime(...)
@@ -1641,12 +1647,10 @@ function sysCall_addOnScriptSuspend()
 end
 
 function sysCall_init()
-    local res
-    res,model=PCALL(sim.getObjectAssociatedWithScript,false,sim.handle_self) -- if call made directly, will fail with add-on script
+    local model=sim.getObjectHandle('.',{noError=true})
     local abort=false
-    if not res or model==-1 then
+    if model==-1 then
         -- We are running this script via an Add-On script
-        
         model=-1
         modelData={nodeName='b0RemoteApi_CoppeliaSim-addOn',channelName='b0RemoteApiAddOn',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}
     else
