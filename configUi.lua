@@ -366,6 +366,9 @@ function ConfigUI:uiChanged()
         if v~=nil and elemSchema.ui.fromUiValue then
             v=elemSchema.ui.fromUiValue(v)
         end
+        if v~=nil and elemSchema.type=='int' then
+            v=math.floor(v)
+        end
         if v~=nil then
             self.config[elemName]=v
         end
