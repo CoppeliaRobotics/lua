@@ -1647,7 +1647,7 @@ function sysCall_addOnScriptSuspend()
 end
 
 function sysCall_init()
-    local model=sim.getObjectHandle('.',{noError=true})
+    model=sim.getObjectHandle('.',{noError=true})
     local abort=false
     if model==-1 then
         -- We are running this script via an Add-On script

@@ -20,13 +20,13 @@ function _S.conveyor.init(config)
     _S.conveyor.targetPos=nil
     sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     
-    _S.conveyor.forwarder=sim.getObjectHandle('./efficientConveyor_forwarder')
+    _S.conveyor.forwarder=sim.getObjectHandle('./forwarder')
     
     local fingerPrint=sim.readCustomDataBlock(_S.conveyor.model,'__fingerPrint__')
     if sim.packTable(_S.conveyor.config)~=fingerPrint then
         sim.writeCustomDataBlock(_S.conveyor.model,'__fingerPrint__',sim.packTable(_S.conveyor.config))
-        local visible1=sim.getObjectHandle('./efficientConveyor_visible1')
-        local visible2=sim.getObjectHandle('./efficientConveyor_visible2')
+        local visible1=sim.getObjectHandle('./visible1')
+        local visible2=sim.getObjectHandle('./visible2')
         
         sim.setShapeColor(visible1,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
         sim.setShapeColor(visible2,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
