@@ -1341,7 +1341,6 @@ function sim.serialClose(...)
 end
 
 function sim.getShapeBB(handle)
-    -- Undocumented function (for now)
     local s={}
     local m=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_max_x)
     local n=sim.getObjectFloatParam(handle,sim.objfloatparam_objbbox_min_x)
@@ -1356,7 +1355,6 @@ function sim.getShapeBB(handle)
 end
 
 function sim.setShapeBB(handle,size)
-    -- Undocumented function (for now)
     local s=sim.getShapeBB(handle)
     sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
 end
@@ -1841,6 +1839,8 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.readCustomTableData@sim','table data=sim.readCustomTableData(int objectHandle,string tagName)')
     sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int objectHandle,string tagName,table data)')
     sim.registerScriptFunction('sim.getObjectHandle@sim','sim.getObjectHandle(string path,table options)')
+    sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
+    sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
     
     if __initFunctions then
         for i=1,#__initFunctions,1 do

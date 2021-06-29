@@ -5,8 +5,7 @@ function sysCall_actuation()
 end
 
 function sysCall_beforeSimulation()
-    local self=sim.getObjectHandle('.')
-    local c=sim.readCustomTableData(self,'__config__')
+    local c=sim.readCustomTableData(_S.animator.self,'__config__')
     if next(c)==nil then
         c.loop=false
         c.loop=false
@@ -15,10 +14,9 @@ function sysCall_beforeSimulation()
         c.initPos=0
         c.immobile=false
         c.color={1,1,1}
-        sim.writeCustomTableData(self,'__config__',c)
+        sim.writeCustomTableData(_S.animator.self,'__config__',c)
     end
     _S.animator.config=c
-    _S.animator.self=sim.getObjectHandle('.')
     _S.animator.handles=sim.getReferencedHandles(_S.animator.self)
     _S.animator.animationData=sim.unpackTable(sim.readCustomDataBlock(_S.animator.self,'animationData'))
     _S.animator.totalTime=_S.animator.animationData.times[#_S.animator.animationData.times]
@@ -34,14 +32,15 @@ function sysCall_beforeSimulation()
             _S.animator.handles[i]=-1 -- maybe the user remove one shape that was not needed in the animation?
         end
     end
-    if _S.animator.config.newColor then
-        local h=sim.getObjectsInTree( _S.animator.self,sim.object_shape_type)
-        for i=1,#h,1 do
-            sim.setShapeColor(h[i],nil,sim.colorcomponent_ambient_diffuse,_S.animator.config.color)
-            sim.setShapeColor(h[i],nil,sim.colorcomponent_specular,{0.1,0.1,0.1})
-            sim.setShapeColor(h[i],nil,sim.colorcomponent_emission,{0,0,0})
-            sim.setShapeTexture(h[i],-1,-1,0,{1,1})
-        end
+end
+
+function _S.animator.updateColor(col)
+    local h=sim.getObjectsInTree( _S.animator.self,sim.object_shape_type)
+    for i=1,#h,1 do
+        sim.setShapeColor(h[i],nil,sim.colorcomponent_ambient_diffuse,col)
+        sim.setShapeColor(h[i],nil,sim.colorcomponent_specular,{0.1,0.1,0.1})
+        sim.setShapeColor(h[i],nil,sim.colorcomponent_emission,{0,0,0})
+        sim.setShapeTexture(h[i],-1,-1,0,{1,1})
     end
 end
 
@@ -104,14 +103,14 @@ require'configUi'
 
 function gen(config)
     if config.color[1]~=1 or config.color[2]~=1 or config.color[3]~=1 then
-        config.newColor=true
-        sim.writeCustomTableData(self,'__config__',config)
+        sim.writeCustomTableData(_S.animator.self,'__config__',config)
+        _S.animator.updateColor(config.color)
     end
 end
 
 function sysCall_init()
-    self=sim.getObjectHandle('.')
-    local c=sim.readCustomTableData(self,'__config__')
+    _S.animator.self=sim.getObjectHandle('.')
+    local c=sim.readCustomTableData(_S.animator.self,'__config__')
     if next(c)==nil then
         c.loop=false
         c.backAndForth=false
@@ -119,7 +118,7 @@ function sysCall_init()
         c.initPos=0
         c.immobile=false
         c.color={1,1,1}
-        sim.writeCustomTableData(self,'__config__',c)
+        sim.writeCustomTableData(_S.animator.self,'__config__',c)
     end
     gen(c)
 end
