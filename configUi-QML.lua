@@ -1,5 +1,7 @@
 ConfigUI={}
 
+local json=require'dkjson'
+
 function ConfigUI:validateElemSchema(elemName,elemSchema)
     -- try to fix what is possible to fix:
     --   - infer missing information
@@ -245,9 +247,13 @@ function ConfigUI:createUi()
     xml=xml..'import QtQuick.Window 2.15\n'
     xml=xml..'import QtQuick.Controls 2.12\n'
     xml=xml..'import QtQuick.Layouts 1.12\n'
+    xml=xml..'import QtQuick.Dialogs 1.3\n'
     xml=xml..'import CoppeliaSimPlugin 1.0\n'
     xml=xml..'\n'
     xml=xml..'PluginWindow {\n'
+    xml=xml..'    id: window\n'
+    xml=xml..'    property bool suppressEvents: false\n'
+    xml=xml..'    onSuppressEventsChanged: console.log("window.suppressEvents: ", suppressEvents)\n'
     xml=xml..'    width: 320\n'
     xml=xml..'    height: 480\n'
     --if self.uistate.pos then
@@ -257,8 +263,13 @@ function ConfigUI:createUi()
     --end
     --xml=xml..' closeable="true" on-close="ConfigUI_close"'
     xml=xml..'    visible: true\n'
-    xml=xml..'    title: qsTr("'..self:getObjectName()..' config")\n'
-    xml=xml..'    onClosing: console.log("window is closing")\n'
+    xml=xml..'    title: "'..self:getObjectName()..' config"\n'
+    xml=xml..'    onXChanged: saveUIState()\n'
+    xml=xml..'    onYChanged: saveUIState()\n'
+    xml=xml..'    onClosing: saveUIState()\n'
+    xml=xml..'    function saveUIState() {\n'
+    xml=xml..'        simBridge.sendEvent("saveUIState", {x: x, y: y, open: true})\n'
+    xml=xml..'    }\n'
     xml=xml..'\n'
     if #tabNames>1 then
         xml=xml..'    TabBar {\n'
@@ -305,13 +316,50 @@ function ConfigUI:createUi()
         xml=xml..'        } // tab '..tabName..'\n'
     end
     xml=xml..'    } // stack layout\n'
+    xml=xml..'\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        var data={}\n'
+    for elemName,elemSchema in pairs(self.schema) do
+        xml=xml..'        data.'..elemName..' = id'..elemSchema.ui.id..'.getConfig()\n'
+    end
+    xml=xml..'        return data\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function sendConfig() {\n'
+    xml=xml..'        if(window.suppressEvents) return\n'
+    xml=xml..'        simBridge.sendEvent("print","sendConfig()")\n'
+    xml=xml..'        simBridge.sendEvent("uiChanged",getConfig())\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        var oldSuppressEvents = window.suppressEvents\n'
+    xml=xml..'        window.suppressEvents = true\n'
+    for elemName,elemSchema in pairs(self.schema) do
+        xml=xml..'        id'..elemSchema.ui.id..'.setConfig(data.'..elemName..')\n'
+    end
+    xml=xml..'        window.suppressEvents = oldSuppressEvents\n'
+    xml=xml..'    }\n'
     xml=xml..'} // window\n'
     self.uiXML=xml
-    if self.qmlEngine==nil then
-        self.qmlEngine=simQML.createEngine()
-    end
+    self.qmlEngine=simQML.createEngine()
+    ConfigUI_QML_ENGINE_MAP=ConfigUI_QML_ENGINE_MAP or {}
+    ConfigUI_QML_ENGINE_MAP[self.qmlEngine]=self
+    simQML.setEventHandler(self.qmlEngine,'ConfigUI_QML_EVENT_HANDLER')
     simQML.loadData(self.qmlEngine,xml)
-    self:configChanged()
+    self:configChanged() -- will call QML's setConfig() above
+end
+
+function ConfigUI_QML_EVENT_HANDLER(engineHandle,eventName,eventData)
+    local self=ConfigUI_QML_ENGINE_MAP[engineHandle]
+    if self~=nil then
+        self[eventName](self,eventData)
+    end
+end
+
+function ConfigUI:saveUIState(data)
+    --called by QML
+end
+
+function ConfigUI:print(what)
+    print('QML:',what)
 end
 
 function ConfigUI:closeUi(user)
@@ -326,11 +374,6 @@ function ConfigUI:closeUi(user)
             self.uistate.open=true
         end
     end
-end
-
-function ConfigUI_changed(ui)
-    local self=ConfigUI.handleMap[ui]
-    if self then self:uiChanged() end
 end
 
 function ConfigUI_event(ui,id)
@@ -368,37 +411,33 @@ function ConfigUI:updateEnabledFlag()
 end
 
 function ConfigUI:configChanged()
+    print('configChanged',self.config)
     if not self.qmlEngine then return end
+    local uiConfig={}
     for elemName,elemSchema in pairs(self.schema) do
         local v=self.config[elemName]
         if elemSchema.ui.toUiValue then
             v=elemSchema.ui.toUiValue(v)
         end
-        local controlFuncs=ConfigUI.Controls[elemSchema.ui.control]
-        if controlFuncs.setValue then
-            controlFuncs.setValue(self,elemSchema,v)
-        end
+        uiConfig[elemName]=v
     end
+    simQML.sendEvent(self.qmlEngine,'setConfig',uiConfig)
     self:updateEnabledFlag()
 end
 
-function ConfigUI:uiChanged()
-    for elemName,elemSchema in pairs(self.schema) do
-        local v=nil
-        local controlFuncs=ConfigUI.Controls[elemSchema.ui.control]
-        if controlFuncs.getValue then
-            v=controlFuncs.getValue(self,elemSchema)
+function ConfigUI:uiChanged(newConfig)
+    print('uiChanged',newConfig)
+    for elemName,newValue in pairs(newConfig) do
+        local elemSchema=self.schema[elemName]
+        if elemSchema.ui.fromUiValue then
+            newValue=elemSchema.ui.fromUiValue(newValue)
         end
-        if v~=nil and elemSchema.ui.fromUiValue then
-            v=elemSchema.ui.fromUiValue(v)
+        if elemSchema.type=='int' then
+            newValue=math.floor(newValue)
         end
-        if v~=nil and elemSchema.type=='int' then
-            v=math.floor(v)
-        end
-        if v~=nil then
-            self.config[elemName]=v
-        end
+        self.config[elemName]=newValue
     end
+    print('uiChanged',self.config)
     self:writeConfig()
     self:generate()
     self:updateEnabledFlag()
@@ -548,19 +587,23 @@ function ConfigUI.Controls.edit.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'TextField { id: id'..elemSchema.ui.id..' }'
+    xml=xml..'TextField {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onTextChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return text\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        text=data\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
-end
-
-function ConfigUI.Controls.edit.setValue(configUi,elemSchema,value)
-    --.setEditValue(configUi.uiHandle,elemSchema.ui.id,value)
-end
-
-function ConfigUI.Controls.edit.getValue(configUi,elemSchema)
-    return ''--.getEditValue(configUi.uiHandle,elemSchema.ui.id)
-end
-
-function ConfigUI.Controls.edit.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.slider={}
@@ -587,7 +630,8 @@ function ConfigUI.Controls.slider.create(configUi,elemSchema)
     else
         error('unsupported type for slider: '..elemSchema.type)
     end
-    xml=xml..'Slider { id: id'..elemSchema.ui.id..';'
+    xml=xml..'Slider {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
     --if elemSchema.ui.minimum then
     --    xml=xml..' minimum="'..math.floor(elemSchema.ui.minimum)..'"'
     --elseif elemSchema.minimum then
@@ -599,19 +643,21 @@ function ConfigUI.Controls.slider.create(configUi,elemSchema)
     --    xml=xml..' maximum="'..math.floor(elemSchema.maximum)..'"'
     --end
     --xml=xml..' on-change="ConfigUI_changed"'
-    xml=xml..'}'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onValueChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return value\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        value=data\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
-end
-
-function ConfigUI.Controls.slider.setValue(configUi,elemSchema,value)
-    --.setSliderValue(configUi.uiHandle,elemSchema.ui.id,value)
-end
-
-function ConfigUI.Controls.slider.getValue(configUi,elemSchema)
-    return 0--.getSliderValue(configUi.uiHandle,elemSchema.ui.id)
-end
-
-function ConfigUI.Controls.slider.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.combo={}
@@ -642,36 +688,32 @@ function ConfigUI.Controls.combo.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'ComboBox { id: id'..elemSchema.ui.id..';'
-    xml=xml..' model: ['
+    xml=xml..'ComboBox {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    model: ['
     local sep=''
     for _,val in ipairs(elemSchema.ui.items) do
         xml=xml..sep..'"'..choices[val]..'"'
-        sep=','
+        sep=', '
     end
-    xml=xml..' ];'
+    xml=xml..'];\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onCurrentIndexChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return model[currentIndex]\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        for(var i = 0; i < model.length; i++)\n'
+    xml=xml..'            if(model[i] == data)\n'
+    xml=xml..'                currentIndex = i;\n'
+    xml=xml..'    }\n'
     xml=xml..'}'
     return xml
-end
-
-function ConfigUI.Controls.combo.setValue(configUi,elemSchema,value)
-    local choices=elemSchema.choices
-    if type(choices)=='function' then
-        choices=choices(configUi,elemSchema)
-    end
-    assert(choices[value]~=nil,'invalid value: '..tostring(value))
-    --.setComboboxSelectedIndex(configUi.uiHandle,elemSchema.ui.id,elemSchema.ui.itemIndex[value]-1)
-end
-
-function ConfigUI.Controls.combo.getValue(configUi,elemSchema)
-    local index=-1--.getComboboxSelectedIndex(configUi.uiHandle,elemSchema.ui.id)
-    if index~=-1 then
-        local value=elemSchema.ui.items[index+1]
-        return value
-    end
-end
-
-function ConfigUI.Controls.combo.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.radio={}
@@ -689,36 +731,38 @@ function ConfigUI.Controls.radio.create(configUi,elemSchema)
     for val,name in pairs(choices) do table.insert(vals,val) end
     table.sort(vals)
     if not elemSchema.ui.id then
-        elemSchema.ui.id={}
+        elemSchema.ui.id=configUi:uiElementNextID()
+        elemSchema.ui.ids={}
         for _,val in ipairs(vals) do
-            elemSchema.ui.id[val]=configUi:uiElementNextID()
+            elemSchema.ui.ids[val]=configUi:uiElementNextID()
         end
     end
-    xml=xml..'ButtonGroup { id: id'..elemSchema.ui.id[vals[1]]..'_bg }'
+    xml=xml..'ButtonGroup {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    property string value: "'..elemSchema.default..'"\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onValueChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return value\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        value=data\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     for _,val in ipairs(vals) do
-        xml=xml..'\nRadioButton {'
-        xml=xml..' id: id'..elemSchema.ui.id[val]..';'
-        xml=xml..' ButtonGroup.group: id'..elemSchema.ui.id[vals[1]]..'_bg;'
-        xml=xml..' text: "'..val..'";'
-        xml=xml..'}'
+        xml=xml..'RadioButton {\n'
+        xml=xml..'    id: id'..elemSchema.ui.ids[val]..'\n'
+        xml=xml..'    ButtonGroup.group: id'..elemSchema.ui.id..'\n'
+        xml=xml..'    text: "'..val..'"\n'
+        xml=xml..'    onCheckedChanged: if(checked) id'..elemSchema.ui.id..'.value = "'..val..'"\n'
+        xml=xml..'}\n'
     end
     return xml
-end
-
-function ConfigUI.Controls.radio.setValue(configUi,elemSchema,value)
-    assert(elemSchema.ui.id[value]~=nil,'invalid value: '..tostring(value))
-    --.setRadiobuttonValue(configUi.uiHandle,elemSchema.ui.id[value],1)
-end
-
-function ConfigUI.Controls.radio.getValue(configUi,elemSchema)
-    for val,id in pairs(elemSchema.ui.id) do
-        --if .getRadiobuttonValue(configUi.uiHandle,id)>0 then
-        --    return val
-        --end
-    end
-end
-
-function ConfigUI.Controls.radio.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.checkbox={}
@@ -734,22 +778,24 @@ function ConfigUI.Controls.checkbox.create(configUi,elemSchema)
         elemSchema.ui.id=configUi:uiElementNextID()
     end
     label=''
-    xml=xml..'CheckBox {'
-    xml=xml..' id: id'..elemSchema.ui.id..';'
-    xml=xml..' text: "'..elemSchema.name..'";'
-    xml=xml..'}'
+    xml=xml..'CheckBox {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    text: "'..elemSchema.name..'"\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onCheckedChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return checked\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        checked=data\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
-end
-
-function ConfigUI.Controls.checkbox.setValue(configUi,elemSchema,value)
-    --.setCheckboxValue(configUi.uiHandle,elemSchema.ui.id,value and 2 or 0)
-end
-
-function ConfigUI.Controls.checkbox.getValue(configUi,elemSchema)
-    return false--.getCheckboxValue(configUi.uiHandle,elemSchema.ui.id)>0
-end
-
-function ConfigUI.Controls.checkbox.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.spinbox={}
@@ -760,43 +806,65 @@ function ConfigUI.Controls.spinbox.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'SpinBox {'
-    xml=xml..' id: id'..elemSchema.ui.id..';'
-    --if elemSchema.ui.minimum then
-    --    xml=xml..' minimum="'..elemSchema.ui.minimum..'"'
-    --elseif elemSchema.minimum then
-    --    xml=xml..' minimum="'..elemSchema.minimum..'"'
-    --end
-    --if elemSchema.ui.maximum then
-    --    xml=xml..' maximum="'..elemSchema.ui.maximum..'"'
-    --elseif elemSchema.maximum then
-    --    xml=xml..' maximum="'..elemSchema.maximum..'"'
-    --end
-    --if elemSchema.ui.step then
-    --    xml=xml..' step="'..elemSchema.ui.step..'"'
-    --elseif elemSchema.step then
-    --    xml=xml..' step="'..elemSchema.step..'"'
-    --elseif elemSchema.type=='float' then
-    --    xml=xml..' step="0.001"'
-    --end
-    --if elemSchema.ui.decimals then
-    --    xml=xml..' decimals="'..elemSchema.ui.decimals..'"'
-    --end
+    xml=xml..'SpinBox {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    local min,max,step,decimals
+    if elemSchema.ui.minimum then
+        min=elemSchema.ui.minimum
+    elseif elemSchema.minimum then
+        min=elemSchema.minimum
+    end
+    if elemSchema.ui.maximum then
+        max=elemSchema.ui.maximum
+    elseif elemSchema.maximum then
+        max=elemSchema.maximum
+    end
+    if elemSchema.ui.step then
+        step=elemSchema.ui.step
+    elseif elemSchema.step then
+        step=elemSchema.step
+    elseif elemSchema.type=='float' then
+        step=0.001
+    else
+        step=1
+    end
+    if elemSchema.ui.decimals then
+        decimals=elemSchema.ui.decimals
+    else
+        decimals=math.max(0,math.floor(-math.log10(step)))
+    end
+    xml=xml..'    property int decimals: '..decimals..'\n'
+    xml=xml..'    property int multiplier: Math.pow(10, decimals)\n'
+    xml=xml..'    property real realValue: value / multiplier\n'
+    xml=xml..'    from:     Math.floor(multiplier * '..min..')\n'
+    xml=xml..'    to:       Math.floor(multiplier * '..max..')\n'
+    xml=xml..'    stepSize: Math.floor(multiplier * '..step..')\n'
+    xml=xml..'    validator: DoubleValidator {\n'
+    xml=xml..'        bottom: Math.min(id'..elemSchema.ui.id..'.from, id'..elemSchema.ui.id..'.to)\n'
+    xml=xml..'        top:    Math.max(id'..elemSchema.ui.id..'.from, id'..elemSchema.ui.id..'.to)\n'
+    xml=xml..'    }\n'
+    xml=xml..'    textFromValue: function(value, locale) {\n'
+    xml=xml..'        return Number(value / id'..elemSchema.ui.id..'.multiplier).toLocaleString(locale, "f", id'..elemSchema.ui.id..'.decimals)\n'
+    xml=xml..'    }\n'
+    xml=xml..'    valueFromText: function(text, locale) {\n'
+    xml=xml..'        return Number.fromLocaleString(locale, text) * id'..elemSchema.ui.id..'.multiplier\n'
+    xml=xml..'    }\n'
     --xml=xml..' float="'..(elemSchema.type=='float' and 'true' or 'false')..'"'
-    --xml=xml..' on-change="ConfigUI_changed"'
-    xml=xml..'}'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onValueChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return realValue\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        value=data * multiplier\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
-end
-
-function ConfigUI.Controls.spinbox.setValue(configUi,elemSchema,value)
-    --.setSpinboxValue(configUi.uiHandle,elemSchema.ui.id,value)
-end
-
-function ConfigUI.Controls.spinbox.getValue(configUi,elemSchema)
-    return 0--.getSpinboxValue(configUi.uiHandle,elemSchema.ui.id)
-end
-
-function ConfigUI.Controls.spinbox.onEvent(configUi,elemSchema)
 end
 
 ConfigUI.Controls.color={}
@@ -807,33 +875,37 @@ function ConfigUI.Controls.color.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'Button {'
-    xml=xml..' id: id'..elemSchema.ui.id..';'
-    xml=xml..' text: "...";'
-    xml=xml..' property color color: "#000";'
-    xml=xml..' background: Rectangle { anchors.fill: parent; color: parent.color; }'
-    xml=xml..' onClicked: console.log("ConfigUI_event");'
-    xml=xml..'}'
+    xml=xml..'Button {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    text: "..."\n'
+    xml=xml..'    property color color: "#000"\n'
+    xml=xml..'    background: Rectangle {\n'
+    xml=xml..'        anchors.fill: parent\n'
+    xml=xml..'        color: parent.color\n'
+    xml=xml..'    }\n'
+    xml=xml..'    ColorDialog {\n'
+    xml=xml..'        id: id'..elemSchema.ui.id..'_colorDialog\n'
+    xml=xml..'        color: id'..elemSchema.ui.id..'.color\n'
+    xml=xml..'        onAccepted: id'..elemSchema.ui.id..'.color = color\n'
+    xml=xml..'    }\n'
+    xml=xml..'    onClicked: {\n'
+    xml=xml..'        id'..elemSchema.ui.id..'_colorDialog.open()\n'
+    xml=xml..'    }\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onColorChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return [color.r, color.g, color.b]\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        color=Qt.rgba(data[0], data[1], data[2], 1)\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
-end
-
-function ConfigUI.Controls.color.setValue(configUi,elemSchema,value)
-    assert(type(value)=='table','incorrect type: must be table')
-    assert(#value==3,'incorrect length: must be 3')
-    local v=sim.unpackTable(sim.packTable(value))
-    for i=1,3 do v[i]=math.floor(255*value[i]) end
-    local style=string.format('background-color: rgb(%d,%d,%d)',v[1],v[2],v[3])
-    --.setStyleSheet(configUi.uiHandle,elemSchema.ui.id,style)
-end
-
-function ConfigUI.Controls.color.onEvent(configUi,elemSchema)
-    local col=simUI.colorDialog(configUi.config[elemSchema.key])
-    if col then
-        configUi.config[elemSchema.key]=col
-        configUi:writeConfig()
-        configUi:generate()
-        ConfigUI.Controls.color.setValue(configUi,elemSchema,col)
-    end
 end
 
 ConfigUI.Controls.button={}
@@ -844,11 +916,27 @@ function ConfigUI.Controls.button.create(configUi,elemSchema)
     if not elemSchema.ui.id then
         elemSchema.ui.id=configUi:uiElementNextID()
     end
-    xml=xml..'Button {'
-    xml=xml..' id: id'..elemSchema.ui.id..';'
-    xml=xml..' text: "...";'
-    xml=xml..' onClicked: console.log("ConfigUI_event");'
-    xml=xml..'}'
+    xml=xml..'Button {\n'
+    xml=xml..'    id: id'..elemSchema.ui.id..'\n'
+    xml=xml..'    property string value: "..."\n'
+    xml=xml..'    text: value\n'
+    xml=xml..'    onClicked: {\n'
+    xml=xml..'        simBridge.sendEvent("uiEvent","'..elemSchema.name..'")\n'
+    xml=xml..'    }\n'
+    xml=xml..'    Connections {\n'
+    xml=xml..'        enabled: !window.suppressEvents\n'
+    xml=xml..'        target: id'..elemSchema.ui.id..'\n'
+    xml=xml..'        function onValueChanged() {\n'
+    xml=xml..'            window.sendConfig()\n'
+    xml=xml..'        }\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function getConfig() {\n'
+    xml=xml..'        return value\n'
+    xml=xml..'    }\n'
+    xml=xml..'    function setConfig(data) {\n'
+    xml=xml..'        value=data\n'
+    xml=xml..'    }\n'
+    xml=xml..'}\n'
     return xml
 end
 
