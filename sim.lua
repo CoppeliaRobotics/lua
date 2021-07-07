@@ -72,7 +72,7 @@ end
 function sim.switchThread()
     if sim.getThreadSwitchAllowed() then
         if sim.isScriptRunningInThread()==1 then
-            sim._switchThread()
+            sim._switchThread() -- old, deprecated threads
         else
             local thread,yieldForbidden=coroutine.running()
             if not yieldForbidden then
@@ -1412,12 +1412,12 @@ function sim.getObjectHandle(path,options)
 end
 
 function simRMLMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
 end
 
 function sim.rmlMoveToJointPositions(...)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     
     local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',size='1..*',item_type='int'},{type='int'},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size='1..*',default=NIL,nullable=true}},...)
     local dof=#jhandles
@@ -1483,12 +1483,12 @@ function sim.rmlMoveToJointPositions(...)
 end
 
 function simRMLMoveToPosition(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return sim.rmlMoveToPose(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
 end
 
 function sim.rmlMoveToPosition(...)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
 
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -1521,32 +1521,32 @@ function sim.rmlMoveToPosition(...)
 end
 
 function sim.boolOr32(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)|math.floor(b)
 end
 function sim.boolAnd32(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)&math.floor(b)
 end
 function sim.boolXor32(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)~math.floor(b)
 end
 function sim.boolOr16(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)|math.floor(b)
 end
 function sim.boolAnd16(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)&math.floor(b)
 end
 function sim.boolXor16(a,b)
-    -- For backward compatibility (02.10.2020)
+    -- Deprecated function, for backward compatibility (02.10.2020)
     return math.floor(a)~math.floor(b)
 end
 
 function sim.setSimilarName(handle,original,suffix)
-    -- For backward compatibility (16.06.2021)
+    -- Deprecated function, for backward compatibility (16.06.2021)
     sim.setObjectName(handle,'__setSimilarName__tmp__')
     local base
     local hash=''
@@ -1587,7 +1587,7 @@ function sim.setSimilarName(handle,original,suffix)
 end
 
 function sim.tubeRead(...)
-    -- For backward compatibility (01.10.2020)
+    -- Deprecated function, for backward compatibility (01.10.2020)
     local tubeHandle,blocking=checkargs({{type='int'},{type='bool',default=false}},...)
     local retVal
     if blocking then
@@ -1605,7 +1605,7 @@ function sim.tubeRead(...)
 end
 
 function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
-    -- For backward compatibility (16.06.2021)
+    -- Deprecated function, for backward compatibility (16.06.2021)
     local suff=sim.getNameSuffix(nil)
     sim.setNameSuffix(-1)
     local retVal=sim.getObjectHandle(name,{noError=true})
@@ -1613,6 +1613,73 @@ function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
     return retVal
 end
 
+function sim.moveToPosition(objH,relH,p,o,v,a,m)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToPos_1(objH,relH,p,o,v,a,m)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToPos_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.moveToJointPositions(t1,t2,v,a,al)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToJointPos_1(t1,t2,v,a,al)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToJointPos_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.moveToObject(objH,obj2H,op,rd,v,a)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToObj_1(objH,obj2H,op,rd,v,a)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToObj_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.followPath(objH,pathH,op,p,v,a)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._followPath_1(objH,pathH,op,p,v,a)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._followPath_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
 ----------------------------------------------------------
 
 

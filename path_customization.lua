@@ -457,6 +457,9 @@ function _S.path.setup()
         sysCall_afterCreate=nil
         sim.removeModel(_S.path.model)
     end
+    if sim.getSimulationState()~=sim.simulation_stopped then
+        _S.path.beforeSimulation()
+    end
     return ctrlPtsHandles,_S.path.paths[2]
 end
 
