@@ -1,3 +1,277 @@
+-----------------------------------------
+-- Required for backward compatibility --
+-----------------------------------------
+
+function simRMLMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
+end
+
+function sim.rmlMoveToJointPositions(...)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    
+    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',size='1..*',item_type='int'},{type='int'},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size='1..*',default=NIL,nullable=true}},...)
+    local dof=#jhandles
+    
+    if dof<1 or (currentVel and dof>#currentVel) or (currentAccel and dof>#currentAccel) or dof>#maxVel or dof>#maxAccel or dof>#maxJerk or dof>#targetPos or (targetVel and dof>#targetVel) or (direction and dof>#direction) then
+        error("Bad table size.")
+    end
+
+    local lb=sim.setThreadAutomaticSwitch(false)
+    
+    if direction==nil then
+        direction={}
+        for i=1,#jhandles,1 do
+            direction[i]=0
+        end
+    end
+    function _S.tmpCb(conf,vel,accel,jhandles)
+        for i=1,#conf,1 do
+            local k=jhandles[i]
+            if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
+                sim.setJointTargetPosition(k,conf[i])
+            else    
+                sim.setJointPosition(k,conf[i])
+            end
+        end
+    end
+    
+    local currentConf={}
+    local cycl={}
+    for i=1,#jhandles,1 do
+        currentConf[i]=sim.getJointPosition(jhandles[i])
+        local c,interv=sim.getJointInterval(jhandles[i])
+        local t=sim.getJointType(jhandles[i])
+        local isCyclic=(t==sim.joint_revolute_subtype and c)
+        cycl[i]=isCyclic
+        if isCyclic and (direction[i]~=0) then
+            cycl[i]=false
+            if direction[i]>0 then
+                while targetPos[i]>currentConf[i]+2*math.pi*direction[i] do
+                    targetPos[i]=targetPos[i]-2*math.pi
+                end
+                while targetPos[i]<currentConf[i]+2*math.pi*(direction[i]-1) do
+                    targetPos[i]=targetPos[i]+2*math.pi
+                end
+            else
+                while targetPos[i]<currentConf[i]+2*math.pi*direction[i] do
+                    targetPos[i]=targetPos[i]+2*math.pi
+                end
+                while targetPos[i]>currentConf[i]+2*math.pi*(direction[i]+1) do
+                    targetPos[i]=targetPos[i]-2*math.pi
+                end
+            end
+        end
+    end
+    
+    local endPos,endVel,endAccel,timeLeft=sim.moveToConfig(flags,currentConf,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,_S.tmpCb,jhandles,cycl)
+    local res=0
+    if endPos then res=1 end
+    
+    _S.tmpCb=nil
+    sim.setThreadAutomaticSwitch(lb)
+    return res,endPos,endVel,endAccel,timeLeft
+end
+
+function simRMLMoveToPosition(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return sim.rmlMoveToPose(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
+end
+
+function sim.rmlMoveToPosition(...)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
+
+    local lb=sim.setThreadAutomaticSwitch(false)
+    
+    local mStart=sim.getObjectMatrix(handle,rel)
+    if targetPos==nil then
+        targetPos={mStart[4],mStart[8],mStart[12]}
+    end
+    if targetQuat==nil then
+        targetQuat=sim.getObjectQuaternion(handle,rel)
+    end
+    local mGoal=sim.buildMatrixQ(targetPos,targetQuat)
+    function _S.tmpCb(m,v,a,data)
+        sim.setObjectMatrix(data.handle,data.rel,m)
+    end
+    local data={}
+    data.handle=handle
+    data.rel=rel
+    local endMatrix,timeLeft=sim.moveToPose(flags,mStart,maxVel,maxAccel,maxJerk,mGoal,_S.tmpCb,data)
+    local res=0
+    local nPos,nQuat
+    if endMatrix then 
+        nPos={endMatrix[4],endMatrix[8],endMatrix[12]}
+        nQuat=sim.getQuaternionFromMatrix(endMatrix)
+        res=1 
+    end
+    _S.tmpCb=nil
+    sim.setThreadAutomaticSwitch(lb)
+    return res,nPos,nQuat,{0,0,0,0},{0,0,0,0},timeLeft
+end
+
+function sim.boolOr32(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)|math.floor(b)
+end
+function sim.boolAnd32(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)&math.floor(b)
+end
+function sim.boolXor32(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)~math.floor(b)
+end
+function sim.boolOr16(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)|math.floor(b)
+end
+function sim.boolAnd16(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)&math.floor(b)
+end
+function sim.boolXor16(a,b)
+    -- Deprecated function, for backward compatibility (02.10.2020)
+    return math.floor(a)~math.floor(b)
+end
+
+function sim.setSimilarName(handle,original,suffix)
+    -- Deprecated function, for backward compatibility (16.06.2021)
+    sim.setObjectName(handle,'__setSimilarName__tmp__')
+    local base
+    local hash=''
+    local index=-1
+    local p=string.find(original,'#%d')
+    if p then
+        base=original:sub(1,p-1)
+        hash='#'
+        index=math.floor(tonumber(original:sub(p+1)))
+    else
+        base=original
+    end
+    base=base..suffix
+    local cnt=-1
+    local newName
+    while true do
+        local nm=base
+        if hash=='#' then
+            if cnt>=0 then
+                nm=nm..cnt
+            end
+            nm=nm..'#'..index
+            newName=nm
+            cnt=cnt+1
+        else
+            if index>=0 then
+                nm=nm..index
+            end
+            newName=nm
+            nm=nm..'#'
+            index=index+1
+        end
+        if sim.getObjectHandle(nm,{noError=true})==-1 then
+            break
+        end
+    end
+    sim.setObjectName(handle,newName)
+end
+
+function sim.tubeRead(...)
+    -- Deprecated function, for backward compatibility (01.10.2020)
+    local tubeHandle,blocking=checkargs({{type='int'},{type='bool',default=false}},...)
+    local retVal
+    if blocking then
+        while true do
+            retVal=sim._tubeRead(tubeHandle)
+            if retVal then
+                break
+            end
+            sim.switchThread()
+        end
+    else
+        retVal=sim._tubeRead(tubeHandle)
+    end
+    return retVal
+end
+
+function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
+    -- Deprecated function, for backward compatibility (16.06.2021)
+    local suff=sim.getNameSuffix(nil)
+    sim.setNameSuffix(-1)
+    local retVal=sim.getObjectHandle(name,{noError=true})
+    sim.setNameSuffix(suff)
+    return retVal
+end
+
+function sim.moveToPosition(objH,relH,p,o,v,a,m)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToPos_1(objH,relH,p,o,v,a,m)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToPos_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.moveToJointPositions(t1,t2,v,a,al)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToJointPos_1(t1,t2,v,a,al)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToJointPos_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.moveToObject(objH,obj2H,op,rd,v,a)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._moveToObj_1(objH,obj2H,op,rd,v,a)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._moveToObj_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
+function sim.followPath(objH,pathH,op,p,v,a)
+    -- Deprecated function, for backward compatibility (06.07.2021)
+    local dt=0
+    local r=sim._followPath_1(objH,pathH,op,p,v,a)
+    if r>=0 then
+        local lb=sim.setThreadAutomaticSwitch(false)
+        local res=0
+        while res==0 do
+            res,dt=sim._followPath_2(r)
+            sim.switchThread()
+        end
+        sim._del(r)
+        sim.setThreadAutomaticSwitch(lb)
+    end
+    return dt
+end
+
 function sim.include(relativePathAndFile,cmd)
     -- Relative to the CoppeliaSimLib path
     if not __notFirst__ then

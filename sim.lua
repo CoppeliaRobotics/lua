@@ -203,11 +203,6 @@ function isArray(t)
     return m<=count
 end
 
-function sim.setDebugWatchList(...)
-    local l=checkargs({{type='table',default=NIL,nullable=true}},...)
-    _S.debug.watchList=l
-end
-
 function sim.getUserVariables()
     local ng={}
     if _S.initGlobals then
@@ -225,6 +220,8 @@ function sim.getUserVariables()
     ng.__notFirst__=nil
     ng.__scriptCodeToRun__=nil
     ng._S=nil
+    ng.H=nil
+    ng.restart=nil
     return ng
 end
 
@@ -997,116 +994,6 @@ function sim.createCollection(arg1,arg2)
     return retVal
 end
 
---[[
-now implemented in c++
-function sim.generateShapeFromPath(...)
-    local ppath,section,zvect,closedPath=checkargs({{type='table',item_type='float',size='6..*'},{type='table',item_type='float',size='4..*'},{type='table',item_type='float',size=3,default={0,0,1},nullable=true},{type='bool',default=false}},...)
-    local confCnt=math.floor(#ppath/3)
-    local elementCount=confCnt
-    local secVertCnt=math.floor(#section/2)
-
-    local mppath=Matrix(confCnt,3,ppath)
-    
-    local zvect=Vector3(zvect)
-
-    local path={}
-    for i=1,mppath:rows(),1 do
-        local p0,p1,p2
-        if i~=1 then
-            p0=Vector3(mppath[i-1])
-        else
-            if closedPath then
-                p0=Vector3(mppath[mppath:rows()-1])
-            end
-        end
-        p1=Vector3(mppath[i+0])
-        if i~=mppath:rows() then
-            p2=Vector3(mppath[i+1])
-        else
-            if closedPath then
-                p2=Vector3(mppath[2])
-            end
-        end
-        local vy
-        if p0 and p2 then
-            vy=(p1-p0)+(p2-p1)
-        else
-            if i==1 then
-                vy=(p2-p1)
-            else
-                vy=(p1-p0)
-            end
-        end
-        vy=vy/vy:norm()
-        local vx=vy:cross(zvect)
-        vx=vx/vx:norm()
-        local m=vx
-        m=m:horzcat(vy)
-        m=m:horzcat(vx:cross(vy))
-        m=Matrix4x4:fromrotation(m)
-        m[1][4]=p1[1]
-        m[2][4]=p1[2]
-        m[3][4]=p1[3]
-        local p=Matrix4x4:topose(m)
-        path[#path+1]=p
-    end
-
-    local sectionClosed=(section[1]==section[#section-1] and section[2]==section[#section-0])
-    if sectionClosed then
-        secVertCnt=secVertCnt-1
-    end
-    
-    local vertices={}
-    local indices={}
-    local c0=path[1]
-    local m0=Matrix4x4:frompose(c0)
-    for i=0,secVertCnt-1,1 do
-        local v=Vector3:hom({section[i*2+1],0,section[i*2+2]})
-        v=m0*v
-        vertices[#vertices+1]=v[1]
-        vertices[#vertices+1]=v[2]
-        vertices[#vertices+1]=v[3]
-    end
-
-    local previousVerticesOffset=0
-    for ec=2,elementCount,1 do
-        local c=path[ec]
-        local m=Matrix4x4:frompose(c)
-        local forwOff=secVertCnt
-        for i=0,secVertCnt-1,1 do
-            local v=Vector3:hom({section[i*2+1],0,section[i*2+2]})
-            if closedPath and ec==elementCount then
-                forwOff=-previousVerticesOffset
-            else
-                v=m*v
-                vertices[#vertices+1]=v[1]
-                vertices[#vertices+1]=v[2]
-                vertices[#vertices+1]=v[3]
-            end
-            if i~=secVertCnt-1 then
-                indices[#indices+1]=previousVerticesOffset+0+i
-                indices[#indices+1]=previousVerticesOffset+forwOff+i
-                indices[#indices+1]=previousVerticesOffset+1+i
-                indices[#indices+1]=previousVerticesOffset+1+i
-                indices[#indices+1]=previousVerticesOffset+forwOff+i
-                indices[#indices+1]=previousVerticesOffset+forwOff+i+1
-            else
-                if sectionClosed then
-                    indices[#indices+1]=previousVerticesOffset+0+i
-                    indices[#indices+1]=previousVerticesOffset+forwOff+i
-                    indices[#indices+1]=previousVerticesOffset+0
-                    indices[#indices+1]=previousVerticesOffset+0
-                    indices[#indices+1]=previousVerticesOffset+forwOff+i
-                    indices[#indices+1]=previousVerticesOffset+forwOff+0
-                end
-            end
-        end
-        previousVerticesOffset=previousVerticesOffset+secVertCnt
-    end
-    return sim.createMeshShape(0,0,vertices,indices)
-end
---]]
-
 function sim.resamplePath(...)
     local path,pathLengths,finalConfigCnt,method,types=checkargs({{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='int'},{type='table',default={type='linear',strength=1.0,forceOpen=false}},{type='table',item_type='int',size='1..*',default=NIL,nullable=true}},...)
 
@@ -1411,281 +1298,9 @@ function sim.getObjectHandle(path,options)
     return sim._getObjectHandle(path,index,proxy,option)
 end
 
-function simRMLMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return sim.rmlMoveToJointPositions(jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction)
-end
-
-function sim.rmlMoveToJointPositions(...)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    
-    local jhandles,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,direction=checkargs({{type='table',size='1..*',item_type='int'},{type='int'},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float',nullable=true},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float'},{type='table',size='1..*',item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size='1..*',default=NIL,nullable=true}},...)
-    local dof=#jhandles
-    
-    if dof<1 or (currentVel and dof>#currentVel) or (currentAccel and dof>#currentAccel) or dof>#maxVel or dof>#maxAccel or dof>#maxJerk or dof>#targetPos or (targetVel and dof>#targetVel) or (direction and dof>#direction) then
-        error("Bad table size.")
-    end
-
-    local lb=sim.setThreadAutomaticSwitch(false)
-    
-    if direction==nil then
-        direction={}
-        for i=1,#jhandles,1 do
-            direction[i]=0
-        end
-    end
-    function _S.tmpCb(conf,vel,accel,jhandles)
-        for i=1,#conf,1 do
-            local k=jhandles[i]
-            if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
-                sim.setJointTargetPosition(k,conf[i])
-            else    
-                sim.setJointPosition(k,conf[i])
-            end
-        end
-    end
-    
-    local currentConf={}
-    local cycl={}
-    for i=1,#jhandles,1 do
-        currentConf[i]=sim.getJointPosition(jhandles[i])
-        local c,interv=sim.getJointInterval(jhandles[i])
-        local t=sim.getJointType(jhandles[i])
-        local isCyclic=(t==sim.joint_revolute_subtype and c)
-        cycl[i]=isCyclic
-        if isCyclic and (direction[i]~=0) then
-            cycl[i]=false
-            if direction[i]>0 then
-                while targetPos[i]>currentConf[i]+2*math.pi*direction[i] do
-                    targetPos[i]=targetPos[i]-2*math.pi
-                end
-                while targetPos[i]<currentConf[i]+2*math.pi*(direction[i]-1) do
-                    targetPos[i]=targetPos[i]+2*math.pi
-                end
-            else
-                while targetPos[i]<currentConf[i]+2*math.pi*direction[i] do
-                    targetPos[i]=targetPos[i]+2*math.pi
-                end
-                while targetPos[i]>currentConf[i]+2*math.pi*(direction[i]+1) do
-                    targetPos[i]=targetPos[i]-2*math.pi
-                end
-            end
-        end
-    end
-    
-    local endPos,endVel,endAccel,timeLeft=sim.moveToConfig(flags,currentConf,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,_S.tmpCb,jhandles,cycl)
-    local res=0
-    if endPos then res=1 end
-    
-    _S.tmpCb=nil
-    sim.setThreadAutomaticSwitch(lb)
-    return res,endPos,endVel,endAccel,timeLeft
-end
-
-function simRMLMoveToPosition(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return sim.rmlMoveToPose(handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel)
-end
-
-function sim.rmlMoveToPosition(...)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
-
-    local lb=sim.setThreadAutomaticSwitch(false)
-    
-    local mStart=sim.getObjectMatrix(handle,rel)
-    if targetPos==nil then
-        targetPos={mStart[4],mStart[8],mStart[12]}
-    end
-    if targetQuat==nil then
-        targetQuat=sim.getObjectQuaternion(handle,rel)
-    end
-    local mGoal=sim.buildMatrixQ(targetPos,targetQuat)
-    function _S.tmpCb(m,v,a,data)
-        sim.setObjectMatrix(data.handle,data.rel,m)
-    end
-    local data={}
-    data.handle=handle
-    data.rel=rel
-    local endMatrix,timeLeft=sim.moveToPose(flags,mStart,maxVel,maxAccel,maxJerk,mGoal,_S.tmpCb,data)
-    local res=0
-    local nPos,nQuat
-    if endMatrix then 
-        nPos={endMatrix[4],endMatrix[8],endMatrix[12]}
-        nQuat=sim.getQuaternionFromMatrix(endMatrix)
-        res=1 
-    end
-    _S.tmpCb=nil
-    sim.setThreadAutomaticSwitch(lb)
-    return res,nPos,nQuat,{0,0,0,0},{0,0,0,0},timeLeft
-end
-
-function sim.boolOr32(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)|math.floor(b)
-end
-function sim.boolAnd32(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)&math.floor(b)
-end
-function sim.boolXor32(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)~math.floor(b)
-end
-function sim.boolOr16(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)|math.floor(b)
-end
-function sim.boolAnd16(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)&math.floor(b)
-end
-function sim.boolXor16(a,b)
-    -- Deprecated function, for backward compatibility (02.10.2020)
-    return math.floor(a)~math.floor(b)
-end
-
-function sim.setSimilarName(handle,original,suffix)
-    -- Deprecated function, for backward compatibility (16.06.2021)
-    sim.setObjectName(handle,'__setSimilarName__tmp__')
-    local base
-    local hash=''
-    local index=-1
-    local p=string.find(original,'#%d')
-    if p then
-        base=original:sub(1,p-1)
-        hash='#'
-        index=math.floor(tonumber(original:sub(p+1)))
-    else
-        base=original
-    end
-    base=base..suffix
-    local cnt=-1
-    local newName
-    while true do
-        local nm=base
-        if hash=='#' then
-            if cnt>=0 then
-                nm=nm..cnt
-            end
-            nm=nm..'#'..index
-            newName=nm
-            cnt=cnt+1
-        else
-            if index>=0 then
-                nm=nm..index
-            end
-            newName=nm
-            nm=nm..'#'
-            index=index+1
-        end
-        if sim.getObjectHandle(nm,{noError=true})==-1 then
-            break
-        end
-    end
-    sim.setObjectName(handle,newName)
-end
-
-function sim.tubeRead(...)
-    -- Deprecated function, for backward compatibility (01.10.2020)
-    local tubeHandle,blocking=checkargs({{type='int'},{type='bool',default=false}},...)
-    local retVal
-    if blocking then
-        while true do
-            retVal=sim._tubeRead(tubeHandle)
-            if retVal then
-                break
-            end
-            sim.switchThread()
-        end
-    else
-        retVal=sim._tubeRead(tubeHandle)
-    end
-    return retVal
-end
-
-function sim.getObjectHandle_noErrorNoSuffixAdjustment(name)
-    -- Deprecated function, for backward compatibility (16.06.2021)
-    local suff=sim.getNameSuffix(nil)
-    sim.setNameSuffix(-1)
-    local retVal=sim.getObjectHandle(name,{noError=true})
-    sim.setNameSuffix(suff)
-    return retVal
-end
-
-function sim.moveToPosition(objH,relH,p,o,v,a,m)
-    -- Deprecated function, for backward compatibility (06.07.2021)
-    local dt=0
-    local r=sim._moveToPos_1(objH,relH,p,o,v,a,m)
-    if r>=0 then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        local res=0
-        while res==0 do
-            res,dt=sim._moveToPos_2(r)
-            sim.switchThread()
-        end
-        sim._del(r)
-        sim.setThreadAutomaticSwitch(lb)
-    end
-    return dt
-end
-
-function sim.moveToJointPositions(t1,t2,v,a,al)
-    -- Deprecated function, for backward compatibility (06.07.2021)
-    local dt=0
-    local r=sim._moveToJointPos_1(t1,t2,v,a,al)
-    if r>=0 then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        local res=0
-        while res==0 do
-            res,dt=sim._moveToJointPos_2(r)
-            sim.switchThread()
-        end
-        sim._del(r)
-        sim.setThreadAutomaticSwitch(lb)
-    end
-    return dt
-end
-
-function sim.moveToObject(objH,obj2H,op,rd,v,a)
-    -- Deprecated function, for backward compatibility (06.07.2021)
-    local dt=0
-    local r=sim._moveToObj_1(objH,obj2H,op,rd,v,a)
-    if r>=0 then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        local res=0
-        while res==0 do
-            res,dt=sim._moveToObj_2(r)
-            sim.switchThread()
-        end
-        sim._del(r)
-        sim.setThreadAutomaticSwitch(lb)
-    end
-    return dt
-end
-
-function sim.followPath(objH,pathH,op,p,v,a)
-    -- Deprecated function, for backward compatibility (06.07.2021)
-    local dt=0
-    local r=sim._followPath_1(objH,pathH,op,p,v,a)
-    if r>=0 then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        local res=0
-        while res==0 do
-            res,dt=sim._followPath_2(r)
-            sim.switchThread()
-        end
-        sim._del(r)
-        sim.setThreadAutomaticSwitch(lb)
-    end
-    return dt
-end
-----------------------------------------------------------
-
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
-
 function _S.linearInterpolate(conf1,conf2,t,types)
     local retVal={}
     local qcnt=0
@@ -1866,7 +1481,6 @@ function _S.executeAfterLuaStateInit()
     exit=sim.quitSimulator
     sim.registerScriptFunction('quit@sim','quit()')
     sim.registerScriptFunction('exit@sim','exit()')
-    sim.registerScriptFunction('sim.setDebugWatchList@sim','sim.setDebugWatchList(table[] vars=nil)')
     sim.registerScriptFunction('sim.getUserVariables@sim','table[] variables=sim.getUserVariables()')
     sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table[] tags=sim.getMatchingPersistentDataTags(string pattern)')
 
@@ -1879,7 +1493,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','table[] configs=sim.getAlternateConfigs(table[] jointHandles,\ntable inputConfig,int tipHandle=-1,table[] lowLimits=nil,table[] ranges=nil)')
     sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(table[] handles)')
     
-    sim.registerScriptFunction('sim.moveToPose@sim','table[7]/table[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,table[7]/table[12] currentPose/currentMatrix,\ntable maxVel,table[] maxAccel,table[] maxJerk,table[7]/table[12] targetPose/targetMatrix,\nfunction callback,auxData=nil,table[4] metric=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToPose@sim','table[7]/table[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,table[7]/table[12] currentPose/currentMatrix,\ntable[] maxVel,table[] maxAccel,table[] maxJerk,table[7]/table[12] targetPose/targetMatrix,\nfunction callback,auxData=nil,table[4] metric=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.moveToConfig@sim','table[] endPos,table[] endVel,table[] endAccel,float timeLeft=sim.moveToConfig(int flags,\ntable currentPos,table[] currentVel,table[] currentAccel,table[] maxVel,table[] maxAccel,\ntable maxJerk,table[] targetPos,table[] targetVel,function callback,auxData=nil,table[] cyclicJoints=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
@@ -1988,176 +1602,32 @@ function _S.dlg.switchBack()
 end
 ----------------------------------------------------------
 
--- Hidden, debugging functions:
-----------------------------------------------------------
-_S.debug={}
-function _S.debug.entryFunc(info)
-    local scriptName=info[1]
-    local funcName=info[2]
-    local funcType=info[3]
-    local callIn=info[4]
-    local debugLevel=info[5]
-    local sysCall=info[6]
-    local simTime=info[7]
-    local simTimeStr=''
-    if (debugLevel~=sim.scriptdebug_vars_interval) or (not _S.debug.lastInterval) or (sim.getSystemTimeInMs(-1)>_S.debug.lastInterval+1000) then
-        _S.debug.lastInterval=sim.getSystemTimeInMs(-1)
-        if sim.getSimulationState()~=sim.simulation_stopped then
-            simTimeStr=simTime..' '
-        end
-        if (debugLevel>=sim.scriptdebug_vars) or (debugLevel==sim.scriptdebug_vars_interval) then
-            local prefix='DEBUG: '..simTimeStr..' '
-            local t=_S.debug.getVarChanges(prefix)
-            if t then
-                sim.addLog(sim.verbosity_msgs,t)
-            end
-        end
-        if (debugLevel==sim.scriptdebug_allcalls) or (debugLevel==sim.scriptdebug_callsandvars) or ( (debugLevel==sim.scriptdebug_syscalls) and sysCall) then
-            local t='DEBUG: '..simTimeStr
-            if callIn then
-                t=t..' --> '
-            else
-                t=t..' <-- '
-            end
-            t=t..funcName..' ('..funcType..')'
-            sim.addLog(sim.verbosity_msgs,t)
-        end
-    end
-end
-
-function _S.debug.getVarChanges(pref)
-    local t=''
-    _S.debug.userVarsOld=_S.debug.userVars
-    _S.debug.userVars=sim.unpackTable(sim.packTable(sim.getUserVariables())) -- deep copy
-    if _S.debug.userVarsOld then
-        if _S.debug.watchList and type(_S.debug.watchList)=='table' and #_S.debug.watchList>0 then
-            for i=1,#_S.debug.watchList,1 do
-                local str=_S.debug.watchList[i]
-                if type(str)=='string' then
-                    local var1=_S.debug.getVar('_S.debug.userVarsOld.'..str)
-                    local var2=_S.debug.getVar('_S.debug.userVars.'..str)
-                    if var1~=nil or var2~=nil then
-                        t=_S.debug.getVarDiff(pref,str,var1,var2)
-                    end
-                end
-            end
-        else
-            t=_S.debug.getVarDiff(pref,'',_S.debug.userVarsOld,_S.debug.userVars)
-        end
-    end
-    _S.debug.userVarsOld=nil
-    if #t>0 then
---        t=t:sub(1,-2) -- remove last linefeed
-        t=t:sub(1,-4) -- remove last linefeed
-        return t
-    end
-end
-
-function _S.debug.getVar(varName)
-    local f=loadstring('return '..varName)
-    if f then
-        local res,val=pcall(f)
-        if res and val then
-            return val
-        end
-    end
-end
-
-function _S.debug.getVarDiff(pref,varName,oldV,newV)
-    local t=''
-    local lf='\n'
-    if ( type(oldV)==type(newV) ) and ( (type(oldV)~='table') or _S.comparableTables(oldV,newV) )  then  -- comparableTables: an empty map is seen as an array
-        if type(newV)~='table' then
-            if newV~=oldV then
-                t=t..pref..'mod: '..varName..' ('..type(newV)..'): '.._S.getShortString(tostring(newV))..lf
-            end
-        else
-            if isArray(oldV) and isArray(newV) then -- an empty map is seen as an array
-                -- removed items:
-                if #oldV>#newV then
-                    for i=1,#oldV-#newV,1 do
-                        t=t.._S.debug.getVarDiff(pref,varName..'['..i+#oldV-#newV..']',oldV[i+#oldV-#newV],nil)
-                    end
-                end
-                -- added items:
-                if #newV>#oldV then
-                    for i=1,#newV-#oldV,1 do
-                        t=t.._S.debug.getVarDiff(pref,varName..'['..i+#newV-#oldV..']',nil,newV[i+#newV-#oldV])
-                    end
-                end
-                -- modified items:
-                local l=math.min(#newV,#oldV)
-                for i=1,l,1 do
-                    t=t.._S.debug.getVarDiff(pref,varName..'['..i..']',oldV[i],newV[i])
-                end
-            else
-                local nvarName=varName
-                if nvarName~='' then nvarName=nvarName..'.' end
-                -- removed items:
-                for k,vo in pairs(oldV) do
-                    if newV[k]==nil then
-                        t=t.._S.debug.getVarDiff(pref,nvarName..k,vo,nil)
-                    end
-                end
-                
-                -- added items:
-                for k,vn in pairs(newV) do
-                    if oldV[k]==nil then
-                        t=t.._S.debug.getVarDiff(pref,nvarName..k,nil,vn)
-                    end
-                end
-                
-                -- modified items:
-                for k,vo in pairs(oldV) do
-                    if newV[k] then
-                        t=t.._S.debug.getVarDiff(pref,nvarName..k,vo,newV[k])
-                    end
-                end
-            end
-        end
-    else
-        if oldV==nil then
-            if type(newV)~='table' then
-                t=t..pref..'new: '..varName..' ('..type(newV)..'): '.._S.getShortString(tostring(newV))..lf
-            else
-                t=t..pref..'new: '..varName..' ('..type(newV)..')'..lf
-                if isArray(newV) then
-                    for i=1,#newV,1 do
-                        t=t.._S.debug.getVarDiff(pref,varName..'['..i..']',nil,newV[i])
-                    end
-                else
-                    local nvarName=varName
-                    if nvarName~='' then nvarName=nvarName..'.' end
-                    for k,v in pairs(newV) do
-                        t=t.._S.debug.getVarDiff(pref,nvarName..k,nil,v)
-                    end
-                end
-            end
-        elseif newV==nil then
-            if type(oldV)~='table' then
-                t=t..pref..'del: '..varName..' ('..type(oldV)..'): '.._S.getShortString(tostring(oldV))..lf
-            else
-                t=t..pref..'del: '..varName..' ('..type(oldV)..')'..lf
-            end
-        else
-            -- variable changed type.. register that as del and new:
-            t=t.._S.debug.getVarDiff(pref,varName,oldV,nil)
-            t=t.._S.debug.getVarDiff(pref,varName,nil,newV)
-        end
-    end
-    return t
-end
-----------------------------------------------------------
-
 -- Old stuff, mainly for backward compatibility:
 ----------------------------------------------------------
-function sim.include(relativePathAndFile,cmd) require("sim_old") return sim.include(relativePathAndFile,cmd) end
-function sim.includeRel(relativePathAndFile,cmd) require("sim_old") return sim.includeRel(relativePathAndFile,cmd) end
-function sim.includeAbs(absPathAndFile,cmd) require("sim_old") return sim.includeAbs(absPathAndFile,cmd) end
-function sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ) require("sim_old") return sim.canScaleObjectNonIsometrically(objHandle,scaleAxisX,scaleAxisY,scaleAxisZ) end
-function sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems) require("sim_old") return sim.canScaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ,ignoreNonScalableItems) end
-function sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) require("sim_old") return sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ) end
-function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array) require("sim_old") return sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,sort,additionalItemsToTop_array) end
+function simRMLMoveToJointPositions(...) require("sim_old") return simRMLMoveToJointPositions(...) end
+function sim.rmlMoveToJointPositions(...) require("sim_old") return sim.rmlMoveToJointPositions(...) end
+function simRMLMoveToPosition(...) require("sim_old") return simRMLMoveToPosition(...) end
+function sim.rmlMoveToPosition(...) require("sim_old") return sim.rmlMoveToPosition(...) end
+function sim.boolOr32(...) require("sim_old") return sim.boolOr32(...) end
+function sim.boolAnd32(...) require("sim_old") return sim.boolAnd32(...) end
+function sim.boolXor32(...) require("sim_old") return sim.boolXor32(...) end
+function sim.boolOr16(...) require("sim_old") return sim.boolOr16(...) end
+function sim.boolAnd16(...) require("sim_old") return sim.boolAnd16(...) end
+function sim.boolXor16(...) require("sim_old") return sim.boolXor16(...) end
+function sim.setSimilarName(...) require("sim_old") return sim.setSimilarName(...) end
+function sim.tubeRead(...) require("sim_old") return sim.tubeRead(...) end
+function sim.getObjectHandle_noErrorNoSuffixAdjustment(...) require("sim_old") return sim.getObjectHandle_noErrorNoSuffixAdjustment(...) end
+function sim.moveToPosition(...) require("sim_old") return sim.moveToPosition(...) end
+function sim.moveToJointPositions(...) require("sim_old") return sim.moveToJointPositions(...) end
+function sim.moveToObject(...) require("sim_old") return sim.moveToObject(...) end
+function sim.followPath(...) require("sim_old") return sim.followPath(...) end
+function sim.include(...) require("sim_old") return sim.include(...) end
+function sim.includeRel(...) require("sim_old") return sim.includeRel(...) end
+function sim.includeAbs(...) require("sim_old") return sim.includeAbs(...) end
+function sim.canScaleObjectNonIsometrically(...) require("sim_old") return sim.canScaleObjectNonIsometrically(...) end
+function sim.canScaleModelNonIsometrically(...) require("sim_old") return sim.canScaleModelNonIsometrically(...) end
+function sim.scaleModelNonIsometrically(...) require("sim_old") return sim.scaleModelNonIsometrically(...) end
+function sim.UI_populateCombobox(...) require("sim_old") return sim.UI_populateCombobox(...) end
 ----------------------------------------------------------
 
 require('checkargs')
