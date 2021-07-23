@@ -1,4 +1,3 @@
-sim={}
 _S={}
 _S.dlg={}
 
@@ -411,30 +410,6 @@ function sim.throttle(t,f)
     if _S.lastExecTime[h]==nil or _S.lastExecTime[h]+t<now then
         f()
         _S.lastExecTime[h]=now
-    end
-end
-
-function sysCallEx_beforeInstanceSwitch()
-    _S.dlg.switch()
-end
-
-function sysCallEx_afterInstanceSwitch()
-    _S.dlg.switchBack()
-end
-
-function sysCallEx_addOnScriptSuspend()
-    _S.dlg.switch()
-end
-
-function sysCallEx_addOnScriptResume()
-    _S.dlg.switchBack()
-end
-
-function sysCallEx_cleanup()
-    if _S.dlg.openDlgsUi then
-        for key,val in pairs(_S.dlg.openDlgsUi) do
-            simUI.destroy(key)
-        end
     end
 end
 
@@ -1476,7 +1451,37 @@ function _S.getShortString(x,omitQuotes)
     return "[not a string]"
 end
 
-function _S.executeAfterLuaStateInit()
+function _S.sysCallEx_beforeInstanceSwitch()
+    -- Hook function, registered further down
+    _S.dlg.switch()
+end
+
+function _S.sysCallEx_afterInstanceSwitch()
+    -- Hook function, registered further down
+    _S.dlg.switchBack()
+end
+
+function _S.sysCallEx_addOnScriptSuspend()
+    -- Hook function, registered further down
+    _S.dlg.switch()
+end
+
+function _S.sysCallEx_addOnScriptResume()
+    -- Hook function, registered further down
+    _S.dlg.switchBack()
+end
+
+function _S.sysCallEx_cleanup()
+    -- Hook function, registered further down
+    if _S.dlg.openDlgsUi then
+        for key,val in pairs(_S.dlg.openDlgsUi) do
+            simUI.destroy(key)
+        end
+    end
+end
+
+function _S.sysCallEx_init()
+    -- Hook function, registered further down
     quit=sim.quitSimulator
     exit=sim.quitSimulator
     sim.registerScriptFunction('quit@sim','quit()')
@@ -1522,7 +1527,7 @@ function _S.executeAfterLuaStateInit()
     sim.registerScriptFunction('sim.getObjectHandle@sim','sim.getObjectHandle(string path,table options)')
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
-    
+
     if __initFunctions then
         for i=1,#__initFunctions,1 do
             __initFunctions[i]()
@@ -1535,7 +1540,6 @@ function _S.executeAfterLuaStateInit()
         _S.initGlobals[key]=true
     end
     _S.initGlobals._S=nil
-    _S.executeAfterLuaStateInit=nil
 end
 
 function _S.dlg.ok_callback(ui)
@@ -1630,8 +1634,13 @@ function sim.scaleModelNonIsometrically(...) require("sim_old") return sim.scale
 function sim.UI_populateCombobox(...) require("sim_old") return sim.UI_populateCombobox(...) end
 ----------------------------------------------------------
 
+sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',true)
+sim.registerScriptFuncHook('sysCall_cleanup','_S.sysCallEx_cleanup',false)
+sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeInstanceSwitch',false)
+sim.registerScriptFuncHook('sysCall_afterInstanceSwitch','_S.sysCallEx_afterInstanceSwitch',false)
+sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScriptSuspend',false)
+sim.registerScriptFuncHook('sysCall_addOnScriptResume','_S.sysCallEx_addOnScriptResume',false)
+
 require('checkargs')
 require('matrix')
 require('grid')
-
-return sim
