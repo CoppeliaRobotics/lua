@@ -561,7 +561,7 @@ function sim.moveToPose(...)
             local currentPosVelAccel={0,0,0}
             local maxVelAccelJerk={maxVel[1],maxAccel[1],maxJerk[1]}
             local targetPosVel={distance,0}
-            local rmlObject=sim.rmlPos(1,0.0001,-1,currentPosVelAccel,maxVelAccelJerk,{1},targetPosVel)
+            local ruckigObject=sim.ruckigPos(1,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,{1},targetPosVel)
             local result=0
             while result==0 do
                 local dt=timeStep
@@ -569,7 +569,7 @@ function sim.moveToPose(...)
                     dt=sim.getSimulationTimeStep()
                 end
                 local syncTime
-                result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
+                result,newPosVelAccel,syncTime=sim.ruckigStep(ruckigObject,dt)
                 if result>=0 then
                     if result==0 then
                         timeLeft=dt-syncTime
@@ -584,23 +584,23 @@ function sim.moveToPose(...)
                     end
                     callback(mi,nv,na,auxData)
                 else
-                    error('sim.rmlStep returned error code '..result)
+                    error('sim.ruckigStep returned error code '..result)
                 end
                 if result==0 then
                     sim.switchThread()
                 end
             end
-            sim.rmlRemove(rmlObject)
+            sim.ruckigRemove(ruckigObject)
         end
     else
         -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
         -- is handled and controlled individually. This can result in non-straight line movement paths,
-        -- due to how the RML functions operate depending on 'flags'
+        -- due to how the Ruckig functions operate depending on 'flags'
         local dx={targetMatrix[4]-currentMatrix[4],targetMatrix[8]-currentMatrix[8],targetMatrix[12]-currentMatrix[12],angle}
         local currentPosVelAccel={0,0,0,0,0,0,0,0,0,0,0,0}
         local maxVelAccelJerk={maxVel[1],maxVel[2],maxVel[3],maxVel[4],maxAccel[1],maxAccel[2],maxAccel[3],maxAccel[4],maxJerk[1],maxJerk[2],maxJerk[3],maxJerk[4]}
         local targetPosVel={dx[1],dx[2],dx[3],dx[4],0,0,0,0,0}
-        local rmlObject=sim.rmlPos(4,0.0001,-1,currentPosVelAccel,maxVelAccelJerk,{1,1,1,1},targetPosVel)
+        local ruckigObject=sim.ruckigPos(4,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,{1,1,1,1},targetPosVel)
         local result=0
         while result==0 do
             local dt=timeStep
@@ -608,7 +608,7 @@ function sim.moveToPose(...)
                 dt=sim.getSimulationTimeStep()
             end
             local syncTime
-            result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
+            result,newPosVelAccel,syncTime=sim.ruckigStep(ruckigObject,dt)
             if result>=0 then
                 if result==0 then
                     timeLeft=dt-syncTime
@@ -629,13 +629,13 @@ function sim.moveToPose(...)
                 end
                 callback(mi,nv,na,auxData)
             else
-                error('sim.rmlStep returned error code '..result)
+                error('sim.ruckigStep returned error code '..result)
             end
             if result==0 then
                 sim.switchThread()
             end
         end
-        sim.rmlRemove(rmlObject)
+        sim.ruckigRemove(ruckigObject)
     end
     
     if not usingMatrices then
@@ -709,7 +709,7 @@ function sim.moveToConfig(...)
         maxVelAccelJerk[i]=maxJerk[i-#currentPos*2]
     end
 
-    local rmlObject=sim.rmlPos(#currentPos,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
+    local ruckigObject=sim.ruckigPos(#currentPos,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
     local result=0
     local timeLeft=0
     while result==0 do
@@ -718,7 +718,7 @@ function sim.moveToConfig(...)
             dt=sim.getSimulationTimeStep()
         end
         local syncTime
-        result,newPosVelAccel,syncTime=sim.rmlStep(rmlObject,dt)
+        result,newPosVelAccel,syncTime=sim.ruckigStep(ruckigObject,dt)
         if result>=0 then
             if result==0 then
                 timeLeft=dt-syncTime
@@ -730,13 +730,13 @@ function sim.moveToConfig(...)
             end
             callback(outPos,outVel,outAccel,auxData)
         else
-            error('sim.rmlStep returned error code '..result)
+            error('sim.ruckigStep returned error code '..result)
         end
         if result==0 then
             sim.switchThread()
         end
     end
-    sim.rmlRemove(rmlObject)
+    sim.ruckigRemove(ruckigObject)
     sim.setThreadAutomaticSwitch(lb)
     return outPos,outVel,outAccel,timeLeft
 end
@@ -1515,8 +1515,6 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.serialOpen@sim','int portHandle=sim.serialOpen(string portString,int baudrate)')
     sim.registerScriptFunction('sim.serialClose@sim','sim.serialClose(int portHandle)')
     sim.registerScriptFunction('sim.serialRead@sim',"string data=sim.serialRead(int portHandle,int dataLengthToRead,boolean blockingOperation,string closingString='',float timeout=0)")
-    sim.registerScriptFunction('sim.rmlMoveToJointPositions@sim',"Deprecated. Use 'sim.moveToConfig' instead")
-    sim.registerScriptFunction('sim.rmlMoveToPosition@sim',"Deprecated. Use 'sim.moveToPose' instead")
     
     sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table[3] newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
@@ -1528,18 +1526,29 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
 
+    -- Keep following a while, some plugins still use __initFunctions
+    --------------
     if __initFunctions then
         for i=1,#__initFunctions,1 do
             __initFunctions[i]()
         end
         __initFunctions=nil
     end
+    --------------
     
     _S.initGlobals={}
     for key,val in pairs(_G) do
         _S.initGlobals[key]=true
     end
     _S.initGlobals._S=nil
+    
+    -- Keep for backward compatibility:
+    if sim.ruckigPos then
+        sim.rmlPos=sim.ruckigPos
+        sim.rmlVel=sim.ruckigVel
+        sim.rmlStep=sim.ruckigStep
+        sim.rmlRemove=sim.ruckigRemove
+    end
 end
 
 function _S.dlg.ok_callback(ui)
