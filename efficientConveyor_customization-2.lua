@@ -64,8 +64,8 @@ function _S.conveyor.actuation()
         end
     end
     if _S.conveyor.targetVel then
-        local rml=sim.rmlVel(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,99999},{_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetVel})
-        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        local rml=sim.ruckigVel(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,0},{_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetVel})
+        local r,newPosVelAccel=sim.ruckigStep(rml,sim.getSimulationTimeStep())
         if r==0 then
             _S.conveyor.pos=newPosVelAccel[1]
             _S.conveyor.vel=newPosVelAccel[2]
@@ -73,11 +73,11 @@ function _S.conveyor.actuation()
             _S.conveyor.vel=_S.conveyor.targetVel
             _S.conveyor.pos=_S.conveyor.pos+_S.conveyor.vel*sim.getSimulationTimeStep()
         end
-        sim.rmlRemove(rml)
+        sim.ruckigRemove(rml)
     end
     if _S.conveyor.targetPos then
-        local rml=sim.rmlPos(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,99999},{99999,_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetPos,0})
-        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        local rml=sim.ruckigPos(1,0.0001,-1,{_S.conveyor.pos,_S.conveyor.vel,0},{99999,_S.conveyor.config.accel,99999},{1},{_S.conveyor.targetPos,0})
+        local r,newPosVelAccel=sim.ruckigStep(rml,sim.getSimulationTimeStep())
         if r==0 then
             _S.conveyor.pos=newPosVelAccel[1]
             _S.conveyor.vel=newPosVelAccel[2]
@@ -85,7 +85,7 @@ function _S.conveyor.actuation()
             _S.conveyor.vel=0
             _S.conveyor.pos=_S.conveyor.targetPos
         end
-        sim.rmlRemove(rml)
+        sim.ruckigRemove(rml)
     end
     if prevPos~=_S.conveyor.pos then
         _S.conveyor.setPos(_S.conveyor.pos)

@@ -112,8 +112,8 @@ function _S.conveyorSystem.actuation()
         end
     end
     if _S.conveyorSystem.targetVel then
-        local rml=sim.rmlVel(1,0.0001,-1,{_S.conveyorSystem.pos,_S.conveyorSystem.vel,99999},{_S.conveyorSystem.config.accel,99999},{1},{_S.conveyorSystem.targetVel})
-        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        local rml=sim.ruckigVel(1,0.0001,-1,{_S.conveyorSystem.pos,_S.conveyorSystem.vel,0},{_S.conveyorSystem.config.accel,99999},{1},{_S.conveyorSystem.targetVel})
+        local r,newPosVelAccel=sim.ruckigStep(rml,sim.getSimulationTimeStep())
         if r==0 then
             _S.conveyorSystem.pos=newPosVelAccel[1]
             _S.conveyorSystem.vel=newPosVelAccel[2]
@@ -121,11 +121,11 @@ function _S.conveyorSystem.actuation()
             _S.conveyorSystem.vel=_S.conveyorSystem.targetVel
             _S.conveyorSystem.pos=_S.conveyorSystem.pos+_S.conveyorSystem.vel*sim.getSimulationTimeStep()
         end
-        sim.rmlRemove(rml)
+        sim.ruckigRemove(rml)
     end
     if _S.conveyorSystem.targetPos then
-        local rml=sim.rmlPos(1,0.0001,-1,{_S.conveyorSystem.pos,_S.conveyorSystem.vel,99999},{99999,_S.conveyorSystem.config.accel,99999},{1},{_S.conveyorSystem.targetPos,0})
-        local r,newPosVelAccel=sim.rmlStep(rml,sim.getSimulationTimeStep())
+        local rml=sim.ruckigPos(1,0.0001,-1,{_S.conveyorSystem.pos,_S.conveyorSystem.vel,0},{99999,_S.conveyorSystem.config.accel,99999},{1},{_S.conveyorSystem.targetPos,0})
+        local r,newPosVelAccel=sim.ruckigStep(rml,sim.getSimulationTimeStep())
         if r==0 then
             _S.conveyorSystem.pos=newPosVelAccel[1]
             _S.conveyorSystem.vel=newPosVelAccel[2]
@@ -133,7 +133,7 @@ function _S.conveyorSystem.actuation()
             _S.conveyorSystem.vel=0
             _S.conveyorSystem.pos=_S.conveyorSystem.targetPos
         end
-        sim.rmlRemove(rml)
+        sim.ruckigRemove(rml)
     end
     if prevPos~=_S.conveyorSystem.pos then
         if _S.conveyorSystem.config.type==2 then
