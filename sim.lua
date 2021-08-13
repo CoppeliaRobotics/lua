@@ -1526,29 +1526,21 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
 
-    -- Keep following a while, some plugins still use __initFunctions
-    --------------
-    if __initFunctions then
-        for i=1,#__initFunctions,1 do
-            __initFunctions[i]()
-        end
-        __initFunctions=nil
-    end
-    --------------
-    
-    _S.initGlobals={}
-    for key,val in pairs(_G) do
-        _S.initGlobals[key]=true
-    end
-    _S.initGlobals._S=nil
-    
     -- Keep for backward compatibility:
+    -----------------------------------
     if sim.ruckigPos then
         sim.rmlPos=sim.ruckigPos
         sim.rmlVel=sim.ruckigVel
         sim.rmlStep=sim.ruckigStep
         sim.rmlRemove=sim.ruckigRemove
     end
+    -----------------------------------
+
+    _S.initGlobals={}
+    for key,val in pairs(_G) do
+        _S.initGlobals[key]=true
+    end
+    _S.initGlobals._S=nil
 end
 
 function _S.dlg.ok_callback(ui)
