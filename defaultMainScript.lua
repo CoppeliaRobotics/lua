@@ -5,7 +5,6 @@ backCompatibility=require('defaultMainScriptBackCompatibility')
 
 function sysCall_init()
     sim.handleSimulationStart()
-    sim.openModule(sim.handle_all)
     backCompatibility.handle(0)
 end
 
@@ -16,7 +15,6 @@ function sysCall_actuation()
     sim.handleCustomizationScripts(sim.syscb_actuation)
     sim.handleAddOnScripts(sim.syscb_actuation)
     sim.handleSandboxScript(sim.syscb_actuation)
-    sim.handleModule(sim.handle_all,false)
     backCompatibility.handle(3)
     sim.handleDynamics(sim.getSimulationTimeStep())
 end
@@ -32,7 +30,6 @@ function sysCall_sensing()
     sim.handleCustomizationScripts(sim.syscb_sensing)
     sim.handleAddOnScripts(sim.syscb_sensing)
     sim.handleSandboxScript(sim.syscb_sensing)
-    sim.handleModule(sim.handle_all,true)
     backCompatibility.handle(7)
 end
 
@@ -41,7 +38,7 @@ function sysCall_cleanup()
     backCompatibility.handle(8)
     sim.resetProximitySensor(sim.handle_all_except_explicit)
     sim.resetVisionSensor(sim.handle_all_except_explicit)
-    sim.closeModule(sim.handle_all)
+    backCompatibility.handle(9)
 end
 
 function sysCall_suspend()
