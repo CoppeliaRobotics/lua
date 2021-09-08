@@ -644,3 +644,114 @@ function sim.UI_populateCombobox(ui,id,items_array,exceptItems_map,currentItem,s
     simUI.setComboboxItems(ui,id,_itemsTxt,index,true)
     return tableToReturn,index
 end
+
+function sim.displayDialog(...)
+    local title,mainTxt,style,modal,initTxt,d1,d2,d3=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true}},...)
+    
+    if sim.getBoolParam(sim.boolparam_headless) then
+        return -1
+    end
+    local retVal=-1
+    local center=true
+    if (style & sim.dlgstyle_dont_center)>0 then
+        center=false
+        style=style-sim.dlgstyle_dont_center
+    end
+    if modal and style==sim.dlgstyle_message then
+        modal=false
+    end
+    local xml='<ui title="'..title..'" closeable="false" resizable="false"'
+    if modal then
+        xml=xml..' modal="true"'
+    else
+        xml=xml..' modal="false"'
+    end
+
+    if center then
+        xml=xml..' placement="center">'
+    else
+        xml=xml..' placement="relative" position="-50,50">'
+    end
+    mainTxt=string.gsub(mainTxt,"&&n","\n")
+    xml=xml..'<label text="'..mainTxt..'"/>'
+    if style==sim.dlgstyle_input then
+        xml=xml..'<edit on-editing-finished="_S.dlg.input_callback" id="1"/>'
+    end
+    if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
+        xml=xml..'</group>'
+    end
+    if style==sim.dlgstyle_ok_cancel then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
+        xml=xml..'<button text="Cancel" on-click="_S.dlg.cancel_callback"/>'
+        xml=xml..'</group>'
+    end
+    if style==sim.dlgstyle_yes_no then
+        xml=xml..'<group layout="hbox" flat="true">'
+        xml=xml..'<button text="Yes" on-click="_S.dlg.yes_callback"/>'
+        xml=xml..'<button text="No" on-click="_S.dlg.no_callback"/>'
+        xml=xml..'</group>'
+    end
+    xml=xml..'</ui>'
+    local ui=simUI.create(xml)
+    if style==sim.dlgstyle_input then
+        simUI.setEditValue(ui,1,initTxt)
+    end
+    if not _S.dlg.allDlgResults then
+        _S.dlg.allDlgResults={}
+    end
+    if not _S.dlg.openDlgs then
+        _S.dlg.openDlgs={}
+        _S.dlg.openDlgsUi={}
+    end
+    if not _S.dlg.nextHandle then
+        _S.dlg.nextHandle=0
+    end
+    retVal=_S.dlg.nextHandle
+    _S.dlg.nextHandle=_S.dlg.nextHandle+1
+    _S.dlg.openDlgs[retVal]=ui
+    _S.dlg.openDlgsUi[ui]=retVal
+    _S.dlg.allDlgResults[retVal]={state=sim.dlgret_still_open,input=initTxt,style=style}
+    
+    if modal then
+        while _S.dlg.allDlgResults[retVal]==sim.dlgret_still_open do
+            sim.switchThread()
+        end
+    end
+    return retVal
+end
+
+function sim.endDialog(...)
+    local dlgHandle=checkargs({{type='int'}},...)
+
+    if not sim.getBoolParam(sim.boolparam_headless) then
+        if _S.dlg.allDlgResults[dlgHandle].state==sim.dlgret_still_open then
+            _S.dlg.removeUi(dlgHandle)
+        end
+    end
+end
+
+function sim.getDialogInput(...)
+    local dlgHandle=checkargs({{type='int'}},...)
+    local retVal=''
+    if not sim.getBoolParam(sim.boolparam_headless) then
+        if _S.dlg.allDlgResults[dlgHandle] then
+            retVal=_S.dlg.allDlgResults[dlgHandle].input
+        end
+    end
+    return retVal
+end
+
+function sim.getDialogResult(...)
+    local dlgHandle=checkargs({{type='int'}},...)
+    local retVal=-1
+    if not sim.getBoolParam(sim.boolparam_headless) then
+        if _S.dlg.allDlgResults[dlgHandle] then
+            retVal=_S.dlg.allDlgResults[dlgHandle].state
+        end
+    end
+    return retVal
+end
+

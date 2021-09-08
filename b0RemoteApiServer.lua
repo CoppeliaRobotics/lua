@@ -707,7 +707,7 @@ function DisplayDialog(...)
     if type(dlgType)=='string' then
         dlgType=evalStr(dlgType)
     end
-    return sim.displayDialog(titleText,mainText,dlgType,initText)
+    return sim.displayDialog(titleText,mainText,dlgType,initText) -- func is actually deprecated
 end
 
 function GetDialogResult(...)

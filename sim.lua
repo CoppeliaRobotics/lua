@@ -1,5 +1,4 @@
 _S={}
-_S.dlg={}
 
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
@@ -259,125 +258,6 @@ function getAsString(...)
     end
     sim.setThreadAutomaticSwitch(lb)
     return(t)
-end
-
-function sim.displayDialog(...)
-    local title,mainTxt,style,modal,initTxt,d1,d2,d3=checkargs({{type='string'},{type='string'},{type='int'},{type='bool'},{type='string',default='',nullable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true},{type='any',default=NIL,nillable=true}},...)
-    
-    if sim.getBoolParam(sim.boolparam_headless) then
-        return -1
-    end
-    local retVal=-1
-    local center=true
-    if (style & sim.dlgstyle_dont_center)>0 then
-        center=false
-        style=style-sim.dlgstyle_dont_center
-    end
-    if modal and style==sim.dlgstyle_message then
-        modal=false
-    end
-    local xml='<ui title="'..title..'" closeable="false" resizable="false"'
-    if modal then
-        xml=xml..' modal="true"'
-    else
-        xml=xml..' modal="false"'
-    end
-
-    if center then
-        xml=xml..' placement="center">'
-    else
-        xml=xml..' placement="relative" position="-50,50">'
-    end
-    mainTxt=string.gsub(mainTxt,"&&n","\n")
-    xml=xml..'<label text="'..mainTxt..'"/>'
-    if style==sim.dlgstyle_input then
-        xml=xml..'<edit on-editing-finished="_S.dlg.input_callback" id="1"/>'
-    end
-    if style==sim.dlgstyle_ok or style==sim.dlgstyle_input then
-        xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
-        xml=xml..'</group>'
-    end
-    if style==sim.dlgstyle_ok_cancel then
-        xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Ok" on-click="_S.dlg.ok_callback"/>'
-        xml=xml..'<button text="Cancel" on-click="_S.dlg.cancel_callback"/>'
-        xml=xml..'</group>'
-    end
-    if style==sim.dlgstyle_yes_no then
-        xml=xml..'<group layout="hbox" flat="true">'
-        xml=xml..'<button text="Yes" on-click="_S.dlg.yes_callback"/>'
-        xml=xml..'<button text="No" on-click="_S.dlg.no_callback"/>'
-        xml=xml..'</group>'
-    end
-    xml=xml..'</ui>'
-    local ui=simUI.create(xml)
-    if style==sim.dlgstyle_input then
-        simUI.setEditValue(ui,1,initTxt)
-    end
-    if not _S.dlg.openDlgs then
-        _S.dlg.openDlgs={}
-        _S.dlg.openDlgsUi={}
-    end
-    if not _S.dlg.nextHandle then
-        _S.dlg.nextHandle=0
-    end
-    retVal=_S.dlg.nextHandle
-    _S.dlg.nextHandle=_S.dlg.nextHandle+1
-    _S.dlg.openDlgs[retVal]={ui=ui,style=style,state=sim.dlgret_still_open,input=initTxt,title=title,mainTxt=mainTxt}
-    _S.dlg.openDlgsUi[ui]=retVal
-    
-    if modal then
-        while _S.dlg.openDlgs[retVal].state==sim.dlgret_still_open do
-            sim.switchThread()
-        end
-    end
-    return retVal
-end
-
-function sim.endDialog(...)
-    local dlgHandle=checkargs({{type='int'}},...)
-
-    if not sim.getBoolParam(sim.boolparam_headless) then
-        if not _S.dlg.openDlgs[dlgHandle] then
-            error("Argument #1 is not a valid dialog handle.")
-        end
-        if _S.dlg.openDlgs[dlgHandle].state==sim.dlgret_still_open then
-            _S.dlg.removeUi(dlgHandle)
-        end
-        if _S.dlg.openDlgs[dlgHandle].ui then
-            _S.dlg.openDlgsUi[_S.dlg.openDlgs[dlgHandle].ui]=nil
-        end
-        _S.dlg.openDlgs[dlgHandle]=nil
-    end
-end
-
-function sim.getDialogInput(...)
-    local dlgHandle=checkargs({{type='int'}},...)
-
-    if sim.getBoolParam(sim.boolparam_headless) then
-        return ''
-    end
-    if not _S.dlg.openDlgs[dlgHandle] then
-        error("Argument #1 is not a valid dialog handle.")
-    end
-    local retVal
-    retVal=_S.dlg.openDlgs[dlgHandle].input
-    return retVal
-end
-
-function sim.getDialogResult(...)
-    local dlgHandle=checkargs({{type='int'}},...)
-
-    if sim.getBoolParam(sim.boolparam_headless) then
-        return -1
-    end
-    if not _S.dlg.openDlgs[dlgHandle] then
-        error("Argument #1 is not a valid dialog handle.")
-    end
-    local retVal=-1
-    retVal=_S.dlg.openDlgs[dlgHandle].state
-    return retVal
 end
 
 function math.random2(lower,upper)
@@ -1451,35 +1331,6 @@ function _S.getShortString(x,omitQuotes)
     return "[not a string]"
 end
 
-function _S.sysCallEx_beforeInstanceSwitch()
-    -- Hook function, registered further down
-    _S.dlg.switch()
-end
-
-function _S.sysCallEx_afterInstanceSwitch()
-    -- Hook function, registered further down
-    _S.dlg.switchBack()
-end
-
-function _S.sysCallEx_addOnScriptSuspend()
-    -- Hook function, registered further down
-    _S.dlg.switch()
-end
-
-function _S.sysCallEx_addOnScriptResume()
-    -- Hook function, registered further down
-    _S.dlg.switchBack()
-end
-
-function _S.sysCallEx_cleanup()
-    -- Hook function, registered further down
-    if _S.dlg.openDlgsUi then
-        for key,val in pairs(_S.dlg.openDlgsUi) do
-            simUI.destroy(key)
-        end
-    end
-end
-
 function _S.sysCallEx_init()
     -- Hook function, registered further down
     quit=sim.quitSimulator
@@ -1489,10 +1340,6 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getUserVariables@sim','table[] variables=sim.getUserVariables()')
     sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','table[] tags=sim.getMatchingPersistentDataTags(string pattern)')
 
-    sim.registerScriptFunction('sim.displayDialog@sim','int dlgHandle=sim.displayDialog(string title,string mainText,int style,\nboolean modal,string initTxt)')
-    sim.registerScriptFunction('sim.getDialogResult@sim','int result=sim.getDialogResult(int dlgHandle)')
-    sim.registerScriptFunction('sim.getDialogInput@sim','string input=sim.getDialogInput(int dlgHandle)')
-    sim.registerScriptFunction('sim.endDialog@sim','int result=sim.endDialog(int dlgHandle)')
     sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','float alphaAngle,float betaAngle,float gammaAngle=sim.yawPitchRollToAlphaBetaGamma(\nfloat yawAngle,float pitchAngle,float rollAngle)')
     sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','float yawAngle,float pitchAngle,float rollAngle=sim.alphaBetaGammaToYawPitchRoll(\nfloat alphaAngle,float betaAngle,float gammaAngle)')
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','table[] configs=sim.getAlternateConfigs(table[] jointHandles,\ntable inputConfig,int tipHandle=-1,table[] lowLimits=nil,table[] ranges=nil)')
@@ -1543,68 +1390,6 @@ function _S.sysCallEx_init()
     _S.initGlobals._S=nil
 end
 
-function _S.dlg.ok_callback(ui)
-    local h=_S.dlg.openDlgsUi[ui]
-    _S.dlg.openDlgs[h].state=sim.dlgret_ok
-    if _S.dlg.openDlgs[h].style==sim.dlgstyle_input then
-        _S.dlg.openDlgs[h].input=simUI.getEditValue(ui,1)
-    end
-    _S.dlg.removeUi(h)
-end
-
-function _S.dlg.cancel_callback(ui)
-    local h=_S.dlg.openDlgsUi[ui]
-    _S.dlg.openDlgs[h].state=sim.dlgret_cancel
-    _S.dlg.removeUi(h)
-end
-
-function _S.dlg.input_callback(ui,id,val)
-    local h=_S.dlg.openDlgsUi[ui]
-    _S.dlg.openDlgs[h].input=val
-end
-
-function _S.dlg.yes_callback(ui)
-    local h=_S.dlg.openDlgsUi[ui]
-    _S.dlg.openDlgs[h].state=sim.dlgret_yes
-    _S.dlg.removeUi(h)
-end
-
-function _S.dlg.no_callback(ui)
-    local h=_S.dlg.openDlgsUi[ui]
-    _S.dlg.openDlgs[h].state=sim.dlgret_no
-    _S.dlg.removeUi(h)
-end
-
-function _S.dlg.removeUi(handle)
-    local ui=_S.dlg.openDlgs[handle].ui
-    local x,y=simUI.getPosition(ui)
-    _S.dlg.openDlgs[handle].previousPos={x,y}
-    simUI.destroy(ui)
-    _S.dlg.openDlgsUi[ui]=nil
-    _S.dlg.openDlgs[handle].ui=nil
-end
-
-function _S.dlg.switch()
-    if _S.dlg.openDlgsUi then
-        for key,val in pairs(_S.dlg.openDlgsUi) do
-            local ui=key
-            local h=val
-            _S.dlg.removeUi(h)
-        end
-    end
-end
-
-function _S.dlg.switchBack()
-    if _S.dlg.openDlgsUi then
-        local dlgs=sim.unpackTable(sim.packTable(_S.dlg.openDlgs)) -- make a deep copy
-        for key,val in pairs(dlgs) do
-            if val.state==sim.dlgret_still_open then
-                _S.dlg.openDlgs[key]=nil
-                sim.displayDialog(val.title,val.mainTxt,val.style,false,val.input,val.titleCols,val.dlgCols,val.previousPos,key)
-            end
-        end
-    end
-end
 ----------------------------------------------------------
 
 -- Old stuff, mainly for backward compatibility:
@@ -1633,14 +1418,84 @@ function sim.canScaleObjectNonIsometrically(...) require("sim_old") return sim.c
 function sim.canScaleModelNonIsometrically(...) require("sim_old") return sim.canScaleModelNonIsometrically(...) end
 function sim.scaleModelNonIsometrically(...) require("sim_old") return sim.scaleModelNonIsometrically(...) end
 function sim.UI_populateCombobox(...) require("sim_old") return sim.UI_populateCombobox(...) end
-----------------------------------------------------------
-
+function sim.displayDialog(...) require("sim_old") return sim.displayDialog(...) end
+function sim.endDialog(...) require("sim_old") return sim.endDialog(...) end
+function sim.getDialogInput(...) require("sim_old") return sim.getDialogInput(...) end
+function sim.getDialogResult(...) require("sim_old") return sim.getDialogResult(...) end
+_S.dlg={}
+function _S.dlg.ok_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.allDlgResults[h].state=sim.dlgret_ok
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+        _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
+    end
+    _S.dlg.removeUi(h)
+end
+function _S.dlg.cancel_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.allDlgResults[h].state=sim.dlgret_cancel
+    _S.dlg.removeUi(h)
+end
+function _S.dlg.input_callback(ui,id,val)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.allDlgResults[h].input=val
+end
+function _S.dlg.yes_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.allDlgResults[h].state=sim.dlgret_yes
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+        _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
+    end
+    _S.dlg.removeUi(h)
+end
+function _S.dlg.no_callback(ui)
+    local h=_S.dlg.openDlgsUi[ui]
+    _S.dlg.allDlgResults[h].state=sim.dlgret_no
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+        _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
+    end
+    _S.dlg.removeUi(h)
+end
+function _S.dlg.removeUi(handle)
+    local ui=_S.dlg.openDlgs[handle]
+    simUI.destroy(ui)
+    _S.dlg.openDlgsUi[ui]=nil
+    _S.dlg.openDlgs[handle]=nil
+    if _S.dlg.allDlgResults[handle].state==sim.dlgret_still_open then
+        _S.dlg.allDlgResults[handle].state=sim.dlgret_cancel
+    end
+end
+function _S.dlg.switch()
+    -- remove all
+    if _S.dlg.openDlgsUi then
+        local toRem={}
+        for key,val in pairs(_S.dlg.openDlgsUi) do
+            toRem[#toRem+1]=val
+        end
+        for i=1,#toRem,1 do
+            _S.dlg.removeUi(toRem[i])
+        end
+        _S.dlg.openDlgsUi=nil
+        _S.dlg.openDlgs=nil
+    end
+end
+function _S.sysCallEx_beforeInstanceSwitch()
+    -- Hook function, registered further down
+    _S.dlg.switch() -- remove all
+end
+function _S.sysCallEx_addOnScriptSuspend()
+    -- Hook function, registered further down
+    _S.dlg.switch() -- remove all
+end
+function _S.sysCallEx_cleanup()
+    -- Hook function, registered further down
+    _S.dlg.switch() -- remove all
+end
 sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',true)
 sim.registerScriptFuncHook('sysCall_cleanup','_S.sysCallEx_cleanup',false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeInstanceSwitch',false)
-sim.registerScriptFuncHook('sysCall_afterInstanceSwitch','_S.sysCallEx_afterInstanceSwitch',false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScriptSuspend',false)
-sim.registerScriptFuncHook('sysCall_addOnScriptResume','_S.sysCallEx_addOnScriptResume',false)
+----------------------------------------------------------
 
 require('checkargs')
 require('matrix')
