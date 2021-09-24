@@ -401,13 +401,6 @@ function sim.getAlternateConfigs(...)
     return configs
 end
 
-function sim.setObjectSelection(...)
-    local handles=checkargs({{type='table',item_type='int'}},...)
-    
-    sim.removeObjectFromSelection(sim.handle_all)
-    sim.addObjectToSelection(handles)
-end
-
 function sim.moveToPose(...)
     local flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size='7..12'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size='7..12'},{type='func'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
 
