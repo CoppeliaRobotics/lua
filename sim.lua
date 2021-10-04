@@ -23,10 +23,10 @@ function require(...)
     local fl
     if sim.setThreadSwitchAllowed then
         fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
-    end 
+    end
     local retVals={_S.require(...)}
-    if fl then 
-        sim.setThreadSwitchAllowed(fl) 
+    if fl then
+        sim.setThreadSwitchAllowed(fl)
     end
     return table.unpack(retVals)
 end
@@ -36,10 +36,10 @@ function pcall(...)
     local fl
     if sim.setThreadSwitchAllowed then
         fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
-    end 
+    end
     local retVals={_S.pcall(...)}
-    if fl then 
-        sim.setThreadSwitchAllowed(fl) 
+    if fl then
+        sim.setThreadSwitchAllowed(fl)
     end
     return table.unpack(retVals)
 end
@@ -299,7 +299,7 @@ function sim.getAlternateConfigs(...)
     if #jointHandles<1 or #jointHandles~=#inputConfig or (lowLimits and #jointHandles~=#lowLimits) or (ranges and #jointHandles~=#ranges) then
         error("Bad table size.")
     end
-    
+
     local lb=sim.setThreadAutomaticSwitch(false)
     local initConfig={}
     local x={}
@@ -332,7 +332,7 @@ function sim.getAlternateConfigs(...)
                         if l<interv[1] then
                             -- correct for user bad input
                             r=r-(interv[1]-l)
-                            l=interv[1] 
+                            l=interv[1]
                         end
                         if l>interv[1]+interv[2] then
                             -- bad user input. No alternative position for this joint
@@ -389,7 +389,7 @@ function sim.getAlternateConfigs(...)
         end
         configs=_S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,1,tipHandle)
     end
-    
+
     for i=1,#jointHandles,1 do
         sim.setJointPosition(jointHandles[i],initConfig[i])
     end
@@ -408,11 +408,11 @@ function sim.moveToPose(...)
         error("Bad table size.")
     end
     if not metric and #maxVel<4 then
-        error("Arguments #3, #4 and #5 should be of size 4. (in function 'sim.moveToPose')")    
+        error("Arguments #3, #4 and #5 should be of size 4. (in function 'sim.moveToPose')")
     end
-    
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    
+
     local usingMatrices=(#currentPoseOrMatrix>=12)
     if usingMatrices then
         currentMatrix=currentPoseOrMatrix
@@ -421,7 +421,7 @@ function sim.moveToPose(...)
         currentMatrix=sim.buildMatrixQ(currentPoseOrMatrix,{currentPoseOrMatrix[4],currentPoseOrMatrix[5],currentPoseOrMatrix[6],currentPoseOrMatrix[7]})
         targetMatrix=sim.buildMatrixQ(targetPoseOrMatrix,{targetPoseOrMatrix[4],targetPoseOrMatrix[5],targetPoseOrMatrix[6],targetPoseOrMatrix[7]})
     end
-    
+
     local outMatrix=sim.copyTable(currentMatrix)
     local axis,angle=sim.getRotationAxis(currentMatrix,targetMatrix)
     local timeLeft=0
@@ -510,7 +510,7 @@ function sim.moveToPose(...)
         end
         sim.ruckigRemove(ruckigObject)
     end
-    
+
     if not usingMatrices then
         local q=sim.getQuaternionFromMatrix(outMatrix)
         outMatrix={outMatrix[4],outMatrix[8],outMatrix[12],q[1],q[2],q[3],q[4]}
@@ -526,9 +526,9 @@ function sim.moveToConfig(...)
     if #currentPos<1 or #currentPos>#maxVel or #currentPos>#maxAccel or #currentPos>#maxJerk or #currentPos>#targetPos or (currentVel and #currentPos>#currentVel) or (currentAccel and #currentPos>#currentAccel) or (targetVel and #currentPos>#targetVel) or (cyclicJoints and #currentPos>#cyclicJoints) then
         error("Bad table size.")
     end
-    
+
     local lb=sim.setThreadAutomaticSwitch(false)
-    
+
     local currentPosVelAccel={}
     local maxVelAccelJerk={}
     local targetPosVel={}
@@ -551,7 +551,7 @@ function sim.moveToConfig(...)
             end
             if w-v>math.pi then
                 w=w-math.pi*2
-            end            
+            end
         end
         targetPosVel[i]=w
         sel[i]=1
@@ -619,7 +619,7 @@ function sim.generateTimeOptimalTrajectory(...)
 
     local confCnt=#pathLengths
     local dof=math.floor(#path/confCnt)
-    
+
     if (dof*confCnt~=#path) or dof<1 or confCnt<2 or dof~=#minMaxVel/2 or dof~=#minMaxAccel/2 then
         error("Bad table size.")
     end
@@ -628,7 +628,7 @@ function sim.generateTimeOptimalTrajectory(...)
     local pM=Matrix(confCnt,dof,path)
     local mmvM=Matrix(2,dof,minMaxVel)
     local mmaM=Matrix(2,dof,minMaxAccel)
-    
+
     sim.addLog(sim.verbosity_scriptinfos,"Trying to connect via ZeroMQ to the 'toppra' service... make sure the 'docker-image-zmq-toppra' container is running. Details can be found at https://github.com/CoppeliaRobotics/docker-image-zmq-toppra")
     local context=simZMQ.ctx_new()
     local socket=simZMQ.socket(context,simZMQ.REQ)
@@ -663,10 +663,10 @@ function sim.generateTimeOptimalTrajectory(...)
     local data=simZMQ.msg_data(msg)
     simZMQ.msg_close(msg)
     simZMQ.msg_destroy(msg)
-    
+
     local r=json.decode(data)
     simZMQ.close(socket)
-    simZMQ.ctx_term(context)    
+    simZMQ.ctx_term(context)
 
     sim.setThreadAutomaticSwitch(lb)
     return Matrix:fromtable(r.qs[1]):data(),r.ts
@@ -699,12 +699,12 @@ function sim.getPathInterpolatedConfig(...)
 
     local confCnt=#times
     local dof=math.floor(#path/confCnt)
-    
+
     if (dof*confCnt~=#path) or (types and dof~=#types) then
         error("Bad table size.")
     end
 
-    if types==nil then 
+    if types==nil then
         types={}
         for i=1,dof,1 do
             types[i]=0
@@ -847,7 +847,7 @@ function sim.resamplePath(...)
 
     local confCnt=#pathLengths
     local dof=math.floor(#path/confCnt)
-    
+
     if dof*confCnt~=#path or (confCnt<2) or (types and dof~=#types) then
         error("Bad table size.")
     end
@@ -877,13 +877,13 @@ function _S.getConfigDistance(confA,confB,metric,types)
             metric[i]=1
         end
     end
-    if types==nil then 
+    if types==nil then
         types={}
         for i=1,#confA,1 do
             types[i]=0
         end
-    end 
-    
+    end
+
     local d=0
     local qcnt=0
     for j=1,#confA,1 do
@@ -913,7 +913,7 @@ end
 
 function sim.getPathLengths(...)
     local path,dof,cb=checkargs({{type='table',item_type='float',size='2..*'},{type='int'},{type='func',default=NIL,nullable=true}},...)
-    local confCnt=math.floor(#path/dof)    
+    local confCnt=math.floor(#path/dof)
     if dof<1 or (confCnt<2) then
         error("Bad table size.")
     end
@@ -964,7 +964,7 @@ end
 
 function sim.wait(...)
     local dt,simTime=checkargs({{type='float'},{type='bool',default=true}},...)
-    
+
     local retVal=0
     if simTime then
         local st=sim.getSimulationTime()
@@ -996,11 +996,11 @@ end
 
 function sim.serialRead(...)
     local portHandle,length,blocking,closingStr,timeout=checkargs({{type='int'},{type='int'},{type='bool',default=false},{type='string',default=''},{type='float',default=0}},...)
-    
+
     local retVal
     if blocking then
         local st=sim.getSystemTimeInMs(-1)
-        while true do 
+        while true do
             local data=_S.serialPortData[portHandle]
             _S.serialPortData[portHandle]=''
             if #data<length then
@@ -1057,7 +1057,7 @@ end
 
 function sim.serialOpen(...)
     local portString,baudRate=checkargs({{type='string'},{type='int'}},...)
-    
+
     local retVal=sim._serialOpen(portString,baudRate)
     if not _S.serialPortData then
         _S.serialPortData={}
@@ -1337,13 +1337,13 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','float yawAngle,float pitchAngle,float rollAngle=sim.alphaBetaGammaToYawPitchRoll(\nfloat alphaAngle,float betaAngle,float gammaAngle)')
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','table[] configs=sim.getAlternateConfigs(table[] jointHandles,\ntable inputConfig,int tipHandle=-1,table[] lowLimits=nil,table[] ranges=nil)')
     sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(table[] handles)')
-    
+
     sim.registerScriptFunction('sim.moveToPose@sim','table[7]/table[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,table[7]/table[12] currentPose/currentMatrix,\ntable[] maxVel,table[] maxAccel,table[] maxJerk,table[7]/table[12] targetPose/targetMatrix,\nfunction callback,auxData=nil,table[4] metric=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.moveToConfig@sim','table[] endPos,table[] endVel,table[] endAccel,float timeLeft=sim.moveToConfig(int flags,\ntable currentPos,table[] currentVel,table[] currentAccel,table[] maxVel,table[] maxAccel,\ntable maxJerk,table[] targetPos,table[] targetVel,function callback,auxData=nil,table[] cyclicJoints=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
     sim.registerScriptFunction('sim.copyTable@sim',"table[] copy=sim.copyTable(table[] original)")
-    
+
     sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table[] config=sim.getPathInterpolatedConfig(table[] path,table[] pathLengths,float t,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
     sim.registerScriptFunction('sim.resamplePath@sim',"table[] path=sim.resamplePath(table[] path,table[] pathLengths,int finalConfigCnt,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
     sim.registerScriptFunction('sim.getPathLengths@sim','table[] pathLengths,float totalLength=sim.getPathLengths(table[] path,int dof,function distCallback=nil)')
@@ -1351,11 +1351,11 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table[] path,table[] times=sim.generateTimeOptimalTrajectory(table[] path,table[] pathLengths,\ntable minMaxVel,table[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,boolean simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','number/string sigVal=sim.waitForSignal(string sigName)')
-    
+
     sim.registerScriptFunction('sim.serialOpen@sim','int portHandle=sim.serialOpen(string portString,int baudrate)')
     sim.registerScriptFunction('sim.serialClose@sim','sim.serialClose(int portHandle)')
     sim.registerScriptFunction('sim.serialRead@sim',"string data=sim.serialRead(int portHandle,int dataLengthToRead,boolean blockingOperation,string closingString='',float timeout=0)")
-    
+
     sim.registerScriptFunction('sim.changeEntityColor@sim','table[] originalColorData=sim.changeEntityColor(int entityHandle,table[3] newColor,\nint colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(table[] originalColorData)')
     sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(table[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,table[3] upVector={0,0,1})')
@@ -1419,7 +1419,7 @@ _S.dlg={}
 function _S.dlg.ok_callback(ui)
     local h=_S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state=sim.dlgret_ok
-    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then
         _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
     end
     _S.dlg.removeUi(h)
@@ -1436,7 +1436,7 @@ end
 function _S.dlg.yes_callback(ui)
     local h=_S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state=sim.dlgret_yes
-    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then
         _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
     end
     _S.dlg.removeUi(h)
@@ -1444,7 +1444,7 @@ end
 function _S.dlg.no_callback(ui)
     local h=_S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state=sim.dlgret_no
-    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then    
+    if _S.dlg.allDlgResults[h].style==sim.dlgstyle_input then
         _S.dlg.allDlgResults[h].input=simUI.getEditValue(ui,1)
     end
     _S.dlg.removeUi(h)
