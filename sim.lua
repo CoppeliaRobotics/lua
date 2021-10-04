@@ -67,6 +67,14 @@ function printf(fmt,...)
     print(string.format(fmt,table.unpack(a,1,a.n)))
 end
 
+function printBytes(x)
+    s=''
+    for i=1,#x do
+        s=s..string.format('%s%02x',i>1 and ' ' or '',string.byte(x:sub(i,i)))
+    end
+    print(s)
+end
+
 function sim.switchThread()
     if sim.getThreadSwitchAllowed() then
         if sim.isScriptRunningInThread()==1 then
