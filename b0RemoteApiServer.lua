@@ -1639,7 +1639,7 @@ function onDlgClose()
 end
 
 function sysCall_info()
-    return {autoStart=false}
+    return {autoStart=false,menu='Connectivity\nB0 remote API server'}
 end
 
 function sysCall_addOnScriptSuspend()

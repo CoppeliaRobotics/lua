@@ -400,6 +400,17 @@ function _S.path.setPathShape(shape)
     end
 end
 
+function _S.path.getPathShapeColor()
+    local shapes=sim.getObjectsInTree(_S.path.model,sim.object_shape_type,1+2)
+    for i=1,#shapes,1 do
+        local dat=sim.readCustomDataBlock(shapes[i],_S.path.shapeTag)
+        if dat then
+            local r,col=sim.getShapeColor(shapes[i],'',sim.colorcomponent_ambient_diffuse)
+            return col
+        end
+    end
+end
+
 function _S.path.setup()
     local ctrlPtsHandles=_S.path.getCtrlPts()
     _S.path.removeLine(1)
@@ -423,10 +434,14 @@ function _S.path.setup()
             sim.writeCustomDataBlock(_S.path.model,'PATH',sim.packDoubleTable(_S.path.paths[2]))
             sim.writeCustomDataBlock(_S.path.model,'PATH_X',sim.packDoubleTable(_S.path.paths[4]))
 
+            local prevColor=_S.path.getPathShapeColor()
             _S.path.setPathShape(-1)
             if _S.path.shaping and (c.bitCoded&4)~=0 then
                 local s=_S.path.shaping(_S.path.paths[2],(c.bitCoded&2)~=0,c.upVector)
                 _S.path.setPathShape(s)
+                if prevColor then
+                    sim.setShapeColor(s,'',sim.colorcomponent_ambient_diffuse,prevColor)
+                end
             end
             
             if _S.path.refreshTrigger then
