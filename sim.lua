@@ -1154,6 +1154,46 @@ function sim.getObjectHandle(path,options)
     return sim._getObjectHandle(path,index,proxy,option)
 end
 
+function sim.getNamedBoolParam(name)
+    local v=sim.getNamedStringParam(name)
+    if v==nil then return nil end
+    if v=='true' then return true end
+    if v=='false' then return false end
+    if v=='on' then return true end
+    if v=='off' then return false end
+    if v=='1' then return true end
+    if v=='0' then return false end
+    error(string.format('expected a bool value for param "%s"',name))
+end
+
+function sim.getNamedFloatParam(name)
+    local v=sim.getNamedStringParam(name)
+    if v==nil then return nil end
+    return tonumber(v)
+end
+
+function sim.getNamedInt32Param(name)
+    local v=sim.getNamedStringParam(name)
+    if v==nil then return nil end
+    v=tonumber(v)
+    if math.type(v)=='integer' then return v end
+    error(string.format('expected an integer value for param "%s"',name))
+end
+
+function sim.setNamedBoolParam(name,value)
+    return sim.setNamedStringParam(name,tostring(value))
+end
+
+function sim.setNamedFloatParam(name,value)
+    return sim.setNamedStringParam(name,tostring(value))
+end
+
+function sim.setNamedInt32Param(name,value)
+    return sim.setNamedStringParam(name,tostring(value))
+end
+
+sim.getStringNamedParam=sim.getNamedStringParam
+sim.setStringNamedParam=sim.setNamedStringParam
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
