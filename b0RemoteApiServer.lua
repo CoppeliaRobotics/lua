@@ -201,12 +201,6 @@ function ReadForceSensor(...)
     return sim.readForceSensor(handle)
 end
 
-function BreakForceSensor(...)
-    debugFunc("BreakForceSensor",...)
-    local handle=...
-    return sim.breakForceSensor(handle)
-end
-
 function ClearFloatSignal(...)
     debugFunc("ClearFloatSignal",...)
     local sig=...
@@ -551,6 +545,12 @@ function GetObjectName(...)
         handle=handle+sim.handleflag_altname
     end
     return sim.getObjectName(handle)
+end
+function BreakForceSensor(...)
+    debugFunc("BreakForceSensor",...)
+    local handle=...
+    local c=sim.getObjectChild(handle,0)
+    return sim.setObjectParent(c,-1,true)
 end
 -- DEPRECATED END
 
