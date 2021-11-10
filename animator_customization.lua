@@ -50,7 +50,6 @@ function _S.animator.actuation()
     local stop=false
     _S.animator.prevTime=t
     local newPos=_S.animator.pos+_S.animator.config.dirAndSpeed*dt
-    print(_S.animator.config)
     if _S.animator.config.dirAndSpeed>=0 then
         if newPos>_S.animator.totalTime then
             if _S.animator.config.loop or _S.animator.config.backAndForth then
