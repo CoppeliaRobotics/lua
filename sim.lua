@@ -422,6 +422,7 @@ function sim.moveToPose(...)
     local lb=sim.setThreadAutomaticSwitch(false)
 
     local usingMatrices=(#currentPoseOrMatrix>=12)
+    local currentMatrix,targetMatrix
     if usingMatrices then
         currentMatrix=currentPoseOrMatrix
         targetMatrix=targetPoseOrMatrix
