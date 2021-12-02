@@ -1100,7 +1100,12 @@ end
 
 function sim.setShapeBB(handle,size)
     local s=sim.getShapeBB(handle)
-    sim.scaleObject(handle,size[1]/s[1],size[2]/s[2],size[3]/s[3],0)
+    for i=1,3,1 do
+        if math.abs(s[i])>0.00001 then
+            s[i]=size[i]/s[i]
+        end
+    end
+    sim.scaleObject(handle,s[1],s[2],s[3],0)
 end
 
 function sim.getModelBB(handle)
