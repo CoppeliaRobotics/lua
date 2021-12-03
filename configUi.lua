@@ -491,6 +491,14 @@ function ConfigUI:__index(k)
 end
 
 setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
+    if not schema then
+        local objectHandle=sim.getObjectHandle('.')
+        schema=sim.readCustomDataBlock(objectHandle,'__schema__')
+        if not schema then
+            error('schema not provided, and not found in the custom data block __schema__')
+        end
+        schema=sim.unpackTable(schema)
+    end
     local self=setmetatable({
         dataBlockName={
             config='__config__',
