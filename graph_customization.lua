@@ -4,12 +4,12 @@
 graph=require('graph_customization')
 
 function sysCall_init()
-    graphHandle=sim.getObjectHandle('.')
+    graphHandle=sim.getObject('.')
     
     -- Create/update data streams/curves:
     sim.destroyGraphCurve(graphHandle,-1)
     stream1=sim.addGraphStream(graphHandle,'Object position X','m')
-    objectHandle=sim.getObjectHandle('./cube')
+    objectHandle=sim.getObject('./cube')
     startTime=sim.getSystemTime()
     
     graph.init()
@@ -679,7 +679,7 @@ function _S.graph.getUpdateTick(v)
 end
 
 function _S.graph.init()
-    _S.graph.model=sim.getObjectHandle('.')
+    _S.graph.model=sim.getObject('.')
 	if sim.getExplicitHandling(_S.graph.model)==0 then
 		sim.setExplicitHandling(_S.graph.model,1)
 	end

@@ -40,7 +40,7 @@ function _S.conveyor.init(config)
     end
 
     _S.conveyor.config=config
-    _S.conveyor.model=sim.getObjectHandle('.')
+    _S.conveyor.model=sim.getObject('.')
     
     _S.conveyor.velocity=_S.conveyor.config.initVel
     _S.conveyor.offset=_S.conveyor.config.initPos

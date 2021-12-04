@@ -108,7 +108,7 @@ function gen(config)
 end
 
 function sysCall_init()
-    _S.animator.self=sim.getObjectHandle('.')
+    _S.animator.self=sim.getObject('.')
     local c=sim.readCustomTableData(_S.animator.self,'__config__')
     if next(c)==nil then
         c.loop=false

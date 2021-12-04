@@ -12,7 +12,7 @@ end
 
 function _S.conveyor.init2(config)
     _S.conveyor.config=sim.unpackTable(sim.packTable(config))
-    _S.conveyor.model=sim.getObjectHandle('.')
+    _S.conveyor.model=sim.getObject('.')
     sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyor.vel=0
@@ -247,7 +247,7 @@ function sysCall_init()
 end
 
 function _S.conveyor.init()
-    self=sim.getObjectHandle('.')
+    self=sim.getObject('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.type=1 -- belt

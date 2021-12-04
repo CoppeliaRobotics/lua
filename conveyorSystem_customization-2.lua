@@ -12,7 +12,7 @@ end
 
 function _S.conveyorSystem.init(config)
     _S.conveyorSystem.config=config
-    _S.conveyorSystem.model=sim.getObjectHandle('.')
+    _S.conveyorSystem.model=sim.getObject('.')
     sim.writeCustomTableData(_S.conveyorSystem.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyorSystem.vel=0
@@ -351,7 +351,7 @@ sysCall_userConfig=nil -- path UI
 require'configUi'
 
 function sysCall_init()
-    self=sim.getObjectHandle('.')
+    self=sim.getObject('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.type=1 -- belt

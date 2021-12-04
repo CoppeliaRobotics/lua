@@ -94,7 +94,7 @@ function ConfigUI:getObjectName()
     if self.getObjectNameCallback then
         return self:getObjectNameCallback()
     end
-    local objectHandle=sim.getObjectHandle('.')
+    local objectHandle=sim.getObject('.')
     return sim.getObjectAlias(objectHandle,1)
 end
 
@@ -102,7 +102,7 @@ function ConfigUI:readBlock(name)
     if self.readBlockCallback then
         return self:readBlockCallback(name)
     end
-    local objectHandle=sim.getObjectHandle('.')
+    local objectHandle=sim.getObject('.')
     local data=sim.readCustomDataBlock(objectHandle,name)
     return data
 end
@@ -111,7 +111,7 @@ function ConfigUI:writeBlock(name,data)
     if self.writeBlockCallback then
         return self:writeBlockCallback(name,data)
     end
-    local objectHandle=sim.getObjectHandle('.')
+    local objectHandle=sim.getObject('.')
     sim.writeCustomDataBlock(objectHandle,name,data)
 end
 

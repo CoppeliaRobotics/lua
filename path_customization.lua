@@ -106,7 +106,7 @@ function _S.path.init()
     _S.path.pathCreationTag='ABC_PATH_CREATION'
     _S.path.shapeTag='ABC_PATHSHAPE_INFO'
     _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
-    _S.path.model=sim.getObjectHandle('.')
+    _S.path.model=sim.getObject('.')
     _S.path.uniqueId=sim.getStringParam(sim.stringparam_uniqueid)
     _S.path.refreshDelayInMs=200
     _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)

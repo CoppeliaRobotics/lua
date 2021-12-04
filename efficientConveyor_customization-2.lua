@@ -10,7 +10,7 @@ end
 
 function _S.conveyor.init(config)
     _S.conveyor.config=config
-    _S.conveyor.model=sim.getObjectHandle('.')
+    _S.conveyor.model=sim.getObject('.')
     sim.writeCustomTableData(_S.conveyor.model,'__info__',{type='conveyor',blocks={__config__={type="table"},__ctrl__={type="table"},__state__={type="table"}}})
     
     _S.conveyor.vel=0
@@ -20,13 +20,13 @@ function _S.conveyor.init(config)
     _S.conveyor.targetPos=nil
     sim.writeCustomTableData(_S.conveyor.model,'__state__',{pos=_S.conveyor.pos,vel=_S.conveyor.vel})
     
-    _S.conveyor.forwarder=sim.getObjectHandle('./forwarder')
+    _S.conveyor.forwarder=sim.getObject('./forwarder')
     
     local fingerPrint=sim.readCustomDataBlock(_S.conveyor.model,'__fingerPrint__')
     if sim.packTable(_S.conveyor.config)~=fingerPrint then
         sim.writeCustomDataBlock(_S.conveyor.model,'__fingerPrint__',sim.packTable(_S.conveyor.config))
-        local visible1=sim.getObjectHandle('./visible1')
-        local visible2=sim.getObjectHandle('./visible2')
+        local visible1=sim.getObject('./visible1')
+        local visible2=sim.getObject('./visible2')
         
         sim.setShapeColor(visible1,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
         sim.setShapeColor(visible2,'',sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
@@ -117,7 +117,7 @@ end
 require'configUi'
 
 function sysCall_init()
-    self=sim.getObjectHandle('.')
+    self=sim.getObject('.')
     local c=sim.readCustomTableData(self,'__config__')
     if next(c)==nil then
         c.length=1

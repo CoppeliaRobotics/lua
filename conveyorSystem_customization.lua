@@ -6,7 +6,7 @@ _S.conveyorSystem={}
 
 function _S.conveyorSystem.init(config)
     _S.conveyorSystem.config=config
-    _S.conveyorSystem.model=sim.getObjectHandle('.')
+    _S.conveyorSystem.model=sim.getObject('.')
     
     _S.conveyorSystem.velocity=_S.conveyorSystem.config.initVel
     _S.conveyorSystem.offset=_S.conveyorSystem.config.initPos
