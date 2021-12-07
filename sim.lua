@@ -1444,7 +1444,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int objectHandle,string tagName,table data)')
     sim.registerScriptFunction('sim.getObject@sim','sim.getObject(string path,table options)')
     sim.registerScriptFunction('sim.getObjectFromUid@sim','sim.getObjectFromUid(string path,table options)')
-    sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
+    --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
 
