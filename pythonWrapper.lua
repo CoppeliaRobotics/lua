@@ -196,10 +196,6 @@ function sysCall_actuation()
     pythonWrapper.publishStepCount()
 end
 
-function sysCall_sensing()
-    handleRemote('sysCall_sensing')
-end
-
 function sysCall_nonSimulation()
     pythonWrapper.publishStepCount() -- so that the last client.step(True) doesn't block
     handleRemote('sysCall_nonSimulation')
@@ -216,36 +212,68 @@ function sysCall_afterSimulation()
     handleRemote('sysCall_afterSimulation')
 end
 
+function sysCall_sensing()
+    local nm='sysCall_sensing'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
+end
+
 function sysCall_suspend()
-    handleRemote('sysCall_suspend')
+    local nm='sysCall_suspend'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_suspended()
-    handleRemote('sysCall_suspended')
+    local nm='sysCall_suspended'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_resume()
-    handleRemote('sysCall_resume')
+    local nm='sysCall_resume'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_beforeInstanceSwitch()
-    handleRemote('sysCall_beforeInstanceSwitch')
+    local nm='sysCall_beforeInstanceSwitch'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_afterInstanceSwitch()
-    handleRemote('sysCall_afterInstanceSwitch')
+    local nm='sysCall_afterInstanceSwitch'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_addOnScriptSuspend()
-    handleRemote('sysCall_addOnScriptSuspend')
+    local nm='sysCall_addOnScriptSuspend'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_addOnScriptResume()
-    handleRemote('sysCall_addOnScriptResume')
-end
-
-function sysCall_userConfig()
-    handleRemote('sysCall_userConfig',inData)
+    local nm='sysCall_addOnScriptResume'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 --[[
@@ -254,47 +282,99 @@ end
     - They do not work in Python, since they can be called while already inside of a system callback
     
 function sysCall_dynCallback(inData)
-    handleRemote('sysCall_dynCallback',inData)
+    local nm='sysCall_dynCallback'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_jointCallback(inData)
+    local nm='sysCall_jointCallback'
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
     return handleRemote('sysCall_jointCallback',inData)
 end
 
 function sysCall_contactCallback(inData)
+    local nm='sysCall_contactCallback'
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
     return handleRemote('sysCall_contactCallback',inData)
 end
 
 function sysCall_event(inData)
-    handleRemote('sysCall_event',inData)
+    local nm='sysCall_event'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_beforeCopy(inData)
-    handleRemote('sysCall_beforeCopy',inData)
+    local nm='sysCall_beforeCopy'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_afterCopy(inData)
-    handleRemote('sysCall_afterCopy',inData)
+    local nm='sysCall_afterCopy'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_afterCreate(inData)
-    handleRemote('sysCall_afterCreate',inData)
+    local nm='sysCall_afterCreate'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_beforeDelete(inData)
-    handleRemote('sysCall_beforeDelete',inData)
+    local nm='sysCall_beforeDelete'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_afterDelete(inData)
-    handleRemote('sysCall_afterDelete',inData)
+    local nm='sysCall_afterDelete'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 
 function sysCall_vision(inData)
+    local nm='sysCall_vision'
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
     return handleRemote('sysCall_vision',inData)
 end
 
 function sysCall_trigger(inData)
+    local nm='sysCall_trigger'
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
     return handleRemote('sysCall_trigger',inData)
+end
+
+function sysCall_userConfig()
+    local nm='sysCall_userConfig'
+    handleRemote(nm)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
 end
 --]]
 
