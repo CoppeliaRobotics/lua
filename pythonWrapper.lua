@@ -614,29 +614,33 @@ def start():
     if threadFunc==None:
         # Run as 'non-threaded'
         funcToRun = "sysCall_init"
-        try:
-            while funcToRun!="sysCall_cleanup":
-                func=getFuncIfExists(funcToRun)
-                if (func!=None):
-                    if args:
-                        func(args)
-                    else:    
-                        func()
-                client.call('serviceCall', ["callDone"])
-                f = client.call('serviceCall', ["getNextCall"])
-                while f == None:
+        func=getFuncIfExists(funcToRun)
+        if func:
+            try:
+                while funcToRun!="sysCall_cleanup":
+                    func=getFuncIfExists(funcToRun)
+                    if (func!=None):
+                        if args:
+                            func(args)
+                        else:    
+                            func()
+                    client.call('serviceCall', ["callDone"])
                     f = client.call('serviceCall', ["getNextCall"])
-                if isinstance(f, tuple):
-                    funcToRun = f[0].decode("utf-8")
-                    args = f[1]
-                else:
-                    funcToRun = f.decode("utf-8")
-                    args = None
-        finally:
-            # We expect to be able to run the cleanup code:
-            func = getFuncIfExists("sysCall_cleanup")
-            func()
-            client.call('serviceCall', ["callDone"])
+                    while f == None:
+                        f = client.call('serviceCall', ["getNextCall"])
+                    if isinstance(f, tuple):
+                        funcToRun = f[0].decode("utf-8")
+                        args = f[1]
+                    else:
+                        funcToRun = f.decode("utf-8")
+                        args = None
+            finally:
+                # We expect to be able to run the cleanup code:
+                func = getFuncIfExists("sysCall_cleanup")
+                func()
+                client.call('serviceCall', ["callDone"])
+        else:
+            raise RuntimeError("sysCall_init function not found")
     else:
         # Run as 'threaded'
         setThreadAutomaticSwitch(False)
