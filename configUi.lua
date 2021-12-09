@@ -127,6 +127,19 @@ function ConfigUI:writeInfo()
     self:writeBlock(self.dataBlockName.info,sim.packTable(self.info))
 end
 
+function ConfigUI:readSchema()
+    local data=self:readBlock(self.dataBlockName.schema)
+    if data then
+        data=sim.unpackTable(data)
+        self.schema={}
+        for k,v in pairs(data) do
+            self.schema[k]=v
+        end
+    elseif self.schema==nil then
+        error('schema not provided, and not found in the custom data block '..self.dataBlockName.schema)
+    end
+end
+
 function ConfigUI:defaultConfig()
     local ret={}
     for k,v in pairs(self.schema) do ret[k]=v.default end
@@ -414,6 +427,7 @@ function ConfigUI:setupSysCall(name,f)
 end
 
 function ConfigUI:sysCall_init()
+    self:readSchema()
     self:validateSchema()
     self:readInfo()
     self:writeInfo()
@@ -491,18 +505,11 @@ function ConfigUI:__index(k)
 end
 
 setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
-    if not schema then
-        local objectHandle=sim.getObject('.')
-        schema=sim.readCustomDataBlock(objectHandle,'__schema__')
-        if not schema then
-            error('schema not provided, and not found in the custom data block __schema__')
-        end
-        schema=sim.unpackTable(schema)
-    end
     local self=setmetatable({
         dataBlockName={
             config='__config__',
             info='__info__',
+            schema='__schema__',
         },
         modelType=modelType,
         schema=schema,
