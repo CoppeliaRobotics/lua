@@ -1566,6 +1566,20 @@ function _S.sysCallEx_cleanup()
     -- Hook function, registered further down
     _S.dlg.switch() -- remove all
 end
+
+-- Make sim.registerScriptFuncHook work also with a function as arg 2:
+function _S.registerScriptFuncHook(funcNm,func,before)
+    if type(func)=='string' then
+        _S.registerScriptFuncHookOrig(funcNm,func,before)
+    else
+        local str=tostring(func)
+        _S.registerScriptFuncHookOrig(funcNm,'_S.'..str,before)
+        _S[str]=func
+    end
+end
+_S.registerScriptFuncHookOrig=sim.registerScriptFuncHook
+sim.registerScriptFuncHook=_S.registerScriptFuncHook
+
 sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',true)
 sim.registerScriptFuncHook('sysCall_cleanup','_S.sysCallEx_cleanup',false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeInstanceSwitch',false)
