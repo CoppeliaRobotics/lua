@@ -511,7 +511,7 @@ setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
     sim.registerScriptFuncHook('sysCall_cleanup',function() self:sysCall_cleanup() end)
     sim.registerScriptFuncHook('sysCall_userConfig',function() self:sysCall_userConfig() end)
     sim.registerScriptFuncHook('sysCall_nonSimulation',function() self:sysCall_nonSimulation() end)
-    sim.registerScriptFuncHook('beforeSimulation',function() self:sysCall_beforeSimulation() end)
+    sim.registerScriptFuncHook('sysCall_beforeSimulation',function() self:sysCall_beforeSimulation() end)
     sim.registerScriptFuncHook('sysCall_sensing',function() self:sysCall_sensing() end)
     sim.registerScriptFuncHook('sysCall_afterSimulation',function() self:sysCall_afterSimulation() end)
     return self
