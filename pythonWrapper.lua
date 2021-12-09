@@ -592,6 +592,10 @@ def setThreadAutomaticSwitch(level):
         if prev == 0 and threadLocLevel == 1:
             client.setStepping(True)
     return level
+    
+def print(a):
+    global sim
+    sim.addLog(sim.verbosity_scriptinfos|sim.verbosity_undecorated,str(a))    
 
 def start():
     global client
