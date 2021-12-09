@@ -1,3 +1,6 @@
+-- XXX: required for hook into sysCall_init to work if not defined
+sysCall_init=sysCall_init or function() end
+
 ConfigUI={}
 
 function ConfigUI:validateElemSchema(elemName,elemSchema)
@@ -413,19 +416,6 @@ function ConfigUI:uiClosed()
     self:closeUi(true)
 end
 
-function ConfigUI:setupSysCall(name,f)
-    name='sysCall_'..name
-    if _G[name] then
-        local oldFn=_G[name]
-        _G[name]=function()
-            oldFn()
-            f()
-        end
-    else
-        _G[name]=f
-    end
-end
-
 function ConfigUI:sysCall_init()
     self:readSchema()
     self:validateSchema()
@@ -517,13 +507,13 @@ setmetatable(ConfigUI,{__call=function(meta,modelType,schema,genCb)
         generatePending=false,
     },meta)
     self:setGenerateCallback(genCb)
-    self:setupSysCall('init',function() self:sysCall_init() end)
-    self:setupSysCall('cleanup',function() self:sysCall_cleanup() end)
-    self:setupSysCall('userConfig',function() self:sysCall_userConfig() end)
-    self:setupSysCall('nonSimulation',function() self:sysCall_nonSimulation() end)
-    self:setupSysCall('beforeSimulation',function() self:sysCall_beforeSimulation() end)
-    self:setupSysCall('sensing',function() self:sysCall_sensing() end)
-    self:setupSysCall('afterSimulation',function() self:sysCall_afterSimulation() end)
+    sim.registerScriptFuncHook('sysCall_init',function() self:sysCall_init() end)
+    sim.registerScriptFuncHook('sysCall_cleanup',function() self:sysCall_cleanup() end)
+    sim.registerScriptFuncHook('sysCall_userConfig',function() self:sysCall_userConfig() end)
+    sim.registerScriptFuncHook('sysCall_nonSimulation',function() self:sysCall_nonSimulation() end)
+    sim.registerScriptFuncHook('beforeSimulation',function() self:sysCall_beforeSimulation() end)
+    sim.registerScriptFuncHook('sysCall_sensing',function() self:sysCall_sensing() end)
+    sim.registerScriptFuncHook('sysCall_afterSimulation',function() self:sysCall_afterSimulation() end)
     return self
 end})
 
