@@ -88,19 +88,29 @@ function pythonWrapper.publishStepCount()
     simZMQ.send(cntSocket,sim.packUInt32Table{simulationTimeStepCount},0)
 end
 
-function getFreePortStr()
-    local context=simZMQ.ctx_new()
-    local socket=simZMQ.socket(context,simZMQ.REP)
-    local p=23259
-    while true do
-        if simZMQ.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
-            break
-        end
-        p=p+1
+function getFreePort()
+    local d=sim.readCustomDataBlock(sim.handle_app,'pythonClientZmqPort@tmp')
+    if not d then
+        d={}
+    else
+        d=sim.unpackTable(d)
     end
-    simZMQ.close(socket)
-    simZMQ.ctx_term(context)
-    return string.format('tcp://127.0.0.1:%d',p)
+    local p=23059
+    while d[p] do
+        p=p+2
+    end
+    d[p]=true
+    sim.writeCustomDataBlock(sim.handle_app,'pythonClientZmqPort@tmp',sim.packTable(d))
+    return p
+end
+
+function releasePort(p)
+    local d=sim.readCustomDataBlock(sim.handle_app,'pythonClientZmqPort@tmp')
+    if d then
+        d=sim.unpackTable(d)
+        d[p]=nil
+        sim.writeCustomDataBlock(sim.handle_app,'pythonClientZmqPort@tmp',sim.packTable(d))
+    end
 end
 
 function sysCall_beforeMainScript()
@@ -120,35 +130,32 @@ function sysCall_beforeMainScript()
 end
 
 function sysCall_init()
+    rpcPort=getFreePort()
     if not simZMQ then
         sim.addLog(sim.verbosity_errors,'pythonWrapper: the ZMQ plugin is not available')
         return {cmd='cleanup'}
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
+    cntPort=tonumber(sim.getStringNamedParam('pythonWrapper.cntPort') or (rpcPort+1))
     json=require 'dkjson'
     cbor=require 'cbor'
-    
     context=simZMQ.ctx_new()
     rpcSocket=simZMQ.socket(context,simZMQ.REP)
-    rpcPortStr=getFreePortStr()
-    simZMQ.setsockopt(rpcSocket,simZMQ.LINGER,sim.packUInt32Table{0})
-    simZMQ.bind(rpcSocket,rpcPortStr)
+    simZMQ.bind(rpcSocket,string.format('tcp://*:%d',rpcPort))
     cntSocket=simZMQ.socket(context,simZMQ.PUB)
     simZMQ.setsockopt(cntSocket,simZMQ.CONFLATE,sim.packUInt32Table{1})
-    simZMQ.setsockopt(cntSocket,simZMQ.LINGER,sim.packUInt32Table{0})
-    cntPortStr=getFreePortStr()
-    simZMQ.bind(cntSocket,cntPortStr)
+    simZMQ.bind(cntSocket,string.format('tcp://*:%d',cntPort))
     simulationTimeStepCount=0
     steppingClients={}
     steppedClients={}
     endSignal=false
-
-    local prog=pythonProg..otherProg
-    prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
-    prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
     
-    initPython(prog,0)
-    pythonInitialized=true
+    local prog=pythonProg..otherProg
+    prog=prog:gsub("XXXrpcPortXXX",tostring(rpcPort))
+
+    state=simPython.initState()
+    simPython.loadCode(state,prog)
+    callHandle=simPython.callFuncAsync(state,"start")
     handleRemote('sysCall_init')
 end
 
@@ -157,154 +164,29 @@ function sim.getEndSignal()
 end
 
 function sysCall_cleanup()
-    if pythonInitialized then
-        endSignal=true
-        simulationTimeStepCount=simulationTimeStepCount+1
-        pythonWrapper.publishStepCount()
-        
-        local st=sim.getSystemTimeInMs(-1)
-        while sim.getSystemTimeInMs(st)<300 do
-            if threaded then
-                if threadEnded then
-                    break
-                end
-                pythonWrapper.handleQueue()
-            else
-                handleRemote('sysCall_cleanup',nil,0.31)
+    endSignal=true
+    simulationTimeStepCount=simulationTimeStepCount+1
+    pythonWrapper.publishStepCount()
+    
+    local st=sim.getSystemTimeInMs(-1)
+    while sim.getSystemTimeInMs(st)<300 do
+        if threaded then
+            if threadEnded then
+                break
             end
+            pythonWrapper.handleQueue()
+        else
+            handleRemote('sysCall_cleanup',nil,0.31)
         end
-        
-        cleanupPython()
     end
+    
+    simPython.cleanupState(state)
 
+    if not simZMQ then return end
     simZMQ.close(cntSocket)
     simZMQ.close(rpcSocket)
     simZMQ.ctx_term(context)
-end
-
-function initPython(p,method)
-    callMethod=method
-    if method==0 then
-        local portStr=getFreePortStr()
-        baseProg=baseProg:gsub("XXXconnectionAddress1XXX",portStr)
-        local pyth=sim.getStringParam(sim.stringparam_defaultpython)
-        local pyth2=sim.getNamedStringParam("pythonWrapper.python")
-        if pyth2 then
-            pyth=pyth2
-        end
-        local errMsg
-        if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},true) end)
-            if res then
-                subprocess=ret
-                pyContext=simZMQ.ctx_new()
-                socket=simZMQ.socket(pyContext,simZMQ.REQ)
-                simZMQ.setsockopt(socket,simZMQ.LINGER,sim.packUInt32Table{0})
-                simZMQ.connect(socket,portStr)
-                simZMQ.send(socket,cbor.encode({cmd='loadCode',code=p}),0)
-                local st=sim.getSystemTimeInMs(-1)
-                local r,rep
-                while sim.getSystemTimeInMs(st)<2000 do
-                    r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
-                    if r>=0 then
-                        break
-                    end
-                end
-                if r>=0 then
-                    local rep,o,t=cbor.decode(rep)
-                    if rep.success then
-                        simZMQ.send(socket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
-                    else
-                        msg=rep.error
-                        if msg and #msg>0 then
-                            local p1=string.find(msg,'File "<string>"')
-                            local p2=string.find(msg,'File "<string>"',p1+1)
-                            msg="\n"..string.sub(msg,p2)
-                            local obj=sim.getObject('.',{noError=true})
-                            if obj>=0 then
-                                msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
-                            end
-                        end
-                        if simSubprocess.isRunning(subprocess) then
-                            simSubprocess.kill(subprocess)
-                        end
-                        simZMQ.close(socket)
-                        simZMQ.ctx_term(pyContext)
-                        error(msg)
-                    end
-                else
-                    errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ pip install cbor\n$ pip install pyzmq"
-                    if simSubprocess.isRunning(subprocess) then
-                        simSubprocess.kill(subprocess)
-                    end
-                    simZMQ.close(socket)
-                    simZMQ.ctx_term(pyContext)
-                end
-            else
-                errMsg="The Python interpreter could not be called. It is currently set at: '"..pyth.."'. You can specify it in system/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
-            end
-        else
-            errMsg="The Python interpreter was not set. Specify it in system/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
-        end
-        if errMsg then
-            local r=sim.readCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown')
-            if r==nil then
-                -- show this only once
-                sim.writeCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown',"yes")
-                simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,"Python interpreter",errMsg)
-            end
-            error(errMsg)
-        end
-    end
-    if method==1 then
-        state=simPython.initState()
-        simPython.loadCode(state,p)
-        callHandle=simPython.callFuncAsync(state,"__startClientScript__")
-    end
-end
-
-function cleanupPython()
-    if callMethod==0 then
-        if subprocess then
-            if simSubprocess.isRunning(subprocess) then
-                simSubprocess.kill(subprocess)
-            end
-        end
-        simZMQ.close(socket)
-        simZMQ.ctx_term(pyContext)
-    end
-    if callMethod==1 then
-        simPython.cleanupState(state)
-    end
-end
-
-function getErrorPython()
-    local a,msg
-    if callMethod==0 then
-        if subprocess then
-            if simSubprocess.isRunning(subprocess) then
-                local r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
-                if r>=0 then
-                    local rep,o,t=cbor.decode(rep)
-                    a=rep.success==false
-                    msg=rep.error
-                    if msg and #msg>0 then
-                        local p1=string.find(msg,'__startClientScript__')
-                        local p2=string.find(msg,'\n',p1)
-                        msg=string.sub(msg,p2)
-                        local obj=sim.getObject('.',{noError=true})
-                        if obj>=0 then
-                            msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
-                        end
-                    end
-                end
-            end
-        end
-    end
-    if callMethod==1 then
-        a,msg=simPython.pollResult(state,callHandle)
-    end
-    return a,msg
+    releasePort(rpcPort)
 end
 
 function sysCall_actuation()
@@ -497,7 +379,7 @@ end
 --]]
 
 function handleErrors()
-    local a,pr=getErrorPython()
+    local a,pr=simPython.pollResult(state,callHandle)
     if a and #pr>0 then
         pythonError=true
         error(pr)
@@ -523,16 +405,14 @@ function handleRemote(callType,args,timeout)
         end
         retVal=returnData
     else
-        if callType=='sysCall_nonSimulation' or callType=='sysCall_suspended' or callType=='sysCall_actuation' then
-            if timeout == nil then
-                timeout = 0.001
-            end
-            while true do
-                handleErrors()
-                pythonWrapper.handleQueue()
-                if sim.getSystemTimeInMs(st)>timeout*1000 then
-                    break
-                end
+        if timeout == nil then
+            timeout = 0.002
+        end
+        while true do
+            handleErrors()
+            pythonWrapper.handleQueue()
+            if sim.getSystemTimeInMs(st)>timeout*1000 then
+                break
             end
         end
     end
@@ -586,42 +466,6 @@ function step(uuid)
     steppedClients[uuid]=true
 end
 
-baseProg=[=[
-
-import cbor
-import zmq
-
-context = zmq.Context()
-socket = context.socket(zmq.REP)
-socket.bind(f'XXXconnectionAddress1XXX')
-module = {}
-while True:
-    req = cbor.loads(socket.recv())
-    rep = {'success': True}
-    
-    req['cmd']=req['cmd'].decode("utf-8")
-
-    if req['cmd'] == 'loadCode':
-        try:
-            req['code']=req['code'].decode("utf-8")
-            exec(req['code'],module)
-        except Exception as e:
-            import traceback
-            rep = {'success': False, 'error': traceback.format_exc()}
-    elif req['cmd'] == 'callFunc':
-        try:
-            req['func']=req['func'].decode("utf-8")
-            func = module[req['func']]
-            rep['ret'] = func(*req['args'])
-        except Exception as e:
-            import traceback
-            rep = {'success': False, 'error': traceback.format_exc()}
-    else:
-        rep = {'success': False, 'error': f'unknown command: "{req["cmd"]}"'}
-
-    socket.send(cbor.dumps(rep))
-]=]
-
 otherProg=[[
 
 import time
@@ -638,14 +482,16 @@ def b64(b):
 class RemoteAPIClient:
     """Client to connect to CoppeliaSim's ZMQ Remote API."""
 
-    def __init__(self):
+    def __init__(self, host='localhost', port=23000, cntport=None, *, verbose=None):
+        """Create client and connect to the ZMQ Remote API server."""
+        self.verbose = int(os.environ.get('VERBOSE', '0')) if verbose is None else verbose
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.cntsocket = self.context.socket(zmq.SUB)
-        self.socket.connect(f'XXXconnectionAddress1XXX')
+        self.socket.connect(f'tcp://{host}:{port}')
         self.cntsocket.setsockopt(zmq.SUBSCRIBE, b'')
         self.cntsocket.setsockopt(zmq.CONFLATE, 1)
-        self.cntsocket.connect(f'XXXconnectionAddress2XXX')
+        self.cntsocket.connect(f'tcp://{host}:{cntport if cntport else port+1}')
         self.uuid=str(uuid.uuid4())
 
     def __del__(self):
@@ -655,12 +501,20 @@ class RemoteAPIClient:
         self.context.term()
 
     def _send(self, req):
+        if self.verbose > 0:
+            print('Sending:', req)
         rawReq = cbor.dumps(req)
+        if self.verbose > 1:
+            print(f'Sending raw len={len(rawReq)}, base64={b64(rawReq)}')
         self.socket.send(rawReq)
 
     def _recv(self):
         rawResp = self.socket.recv()
+        if self.verbose > 1:
+            print(f'Received raw len={len(rawResp)}, base64={b64(rawResp)}')
         resp = cbor.loads(rawResp)
+        if self.verbose > 0:
+            print('Received:', resp)
         return resp
 
     def _process_response(self, resp):
@@ -743,9 +597,9 @@ def print(a):
     global sim
     sim.addLog(sim.verbosity_scriptinfos|sim.verbosity_undecorated,str(a))    
 
-def __startClientScript__():
+def start():
     global client
-    client = RemoteAPIClient()
+    client = RemoteAPIClient("localhost",XXXrpcPortXXX)
     global sim
     sim = client.getObject('sim')
     global threadLocLevel
