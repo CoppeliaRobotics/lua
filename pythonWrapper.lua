@@ -126,7 +126,8 @@ function sysCall_init()
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
     json=require 'dkjson'
-    cbor=require 'cbor'
+    -- cbor=require 'cbor' -- encodes strings as buffers too, always
+    cbor=require'org.conman.cbor'
     
     context=simZMQ.ctx_new()
     rpcSocket=simZMQ.socket(context,simZMQ.REP)
@@ -599,18 +600,18 @@ while True:
     req = cbor.loads(socket.recv())
     rep = {'success': True}
     
-    req['cmd']=req['cmd'].decode("utf-8")
+    req['cmd']=req['cmd']#.decode("utf-8")
 
     if req['cmd'] == 'loadCode':
         try:
-            req['code']=req['code'].decode("utf-8")
+            req['code']=req['code']#.decode("utf-8")
             exec(req['code'],module)
         except Exception as e:
             import traceback
             rep = {'success': False, 'error': traceback.format_exc()}
     elif req['cmd'] == 'callFunc':
         try:
-            req['func']=req['func'].decode("utf-8")
+            req['func']=req['func']#.decode("utf-8")
             func = module[req['func']]
             rep['ret'] = func(*req['args'])
         except Exception as e:
@@ -779,10 +780,10 @@ def __startClientScript__():
                     while f == None:
                         f = client.call('serviceCall', ["getNextCall"])
                     if isinstance(f, tuple):
-                        funcToRun = f[0].decode("utf-8")
+                        funcToRun = f[0]#.decode("utf-8")
                         args = f[1]
                     else:
-                        funcToRun = f.decode("utf-8")
+                        funcToRun = f#.decode("utf-8")
                         args = None
             finally:
                 # We expect to be able to run the cleanup code:
