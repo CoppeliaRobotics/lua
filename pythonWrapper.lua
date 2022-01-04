@@ -193,9 +193,28 @@ function initPython(p,method)
         if pyth2 then
             pyth=pyth2
         end
+        if pyth==nil or #pyth==0 then
+            local p=sim.getInt32Param(sim.intparam_platform)
+            if p==1 then
+                pyth='/usr/local/bin/python3' -- via Homebrew
+            end
+            if p==2 then
+                pyth='/usr/bin/python3'
+            end
+        end
         local errMsg
         if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},true) end)
+            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true,openNewConsole=false}) end)
+            --[[ using a temp file:
+            local td=sim.getStringParam(sim.stringparam_tempdir)
+            pythonFilename=td..'/'..sim.getStringParam(sim.stringparam_uniqueid)..'.py'
+            local pythonFile=io.open(pythonFilename,'w+')
+            pythonFile:write(baseProg)
+            pythonFile:close()
+            sim.launchExecutable(pyth,pythonFilename,0)
+            res=true
+            --]]
+            
             if res then
                 subprocess=ret
                 pyContext=simZMQ.ctx_new()
