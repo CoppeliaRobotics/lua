@@ -204,7 +204,7 @@ function initPython(p,method)
         end
         local errMsg
         if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true,openNewConsole=false}) end)
+            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true}) end)
             --[[ using a temp file:
             local td=sim.getStringParam(sim.stringparam_tempdir)
             pythonFilename=td..'/'..sim.getStringParam(sim.stringparam_uniqueid)..'.py'
@@ -647,6 +647,7 @@ otherProg=[[
 import time
 import sys
 import os
+import math
 import uuid
 import cbor
 import zmq
@@ -727,7 +728,7 @@ class RemoteAPIClient:
         except zmq.ZMQError:
             pass
 
-def getFuncIfExists(name):
+def _getFuncIfExists(name):
     method=None
     try:
         method=globals()[name]
@@ -736,10 +737,10 @@ def getFuncIfExists(name):
         pass
     return method
 
-def switchThread():
+def _switchThread():
     client.step()
 
-def setThreadAutomaticSwitch(level):
+def _setThreadAutomaticSwitch(level):
     global threadLocLevel
     prev = threadLocLevel
     if isinstance(level,bool):
@@ -761,7 +762,101 @@ def setThreadAutomaticSwitch(level):
     
 def print(a):
     global sim
-    sim.addLog(sim.verbosity_scriptinfos|sim.verbosity_undecorated,str(a))    
+    sim.addLog(sim.verbosity_scriptinfos|sim.verbosity_undecorated,str(a))
+
+def _wait(dt,simTime=True):
+    retVal = 0.0
+    if simTime:
+        st = sim.getSimulationTime()
+        while sim.getSimulationTime()-st<dt:
+            _switchThread()
+        retVal=sim.getSimulationTime()-st-dt
+    else:
+        st = sim.getSystemTimeInMs(-1)
+        while sim.getSystemTimeInMs(st)<dt*1000:
+            _switchThread()
+    return retVal
+
+def _waitForSignal(sigName):
+    retVal = 0.0
+    while True:
+        retVal = sim.getInt32Signal(sigName)!=None or sim.getFloatSignal(sigName)!=None or sim.getDoubleSignal(sigName)!=None or sim.getStringSignal(sigName)!=None
+        if retVal:
+            break
+        _switchThread()
+    return retVal
+
+def _moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData=None,cyclicJoints=None,timeStep=0):
+    lb=_setThreadAutomaticSwitch(False)
+
+    currentPosVelAccel=[]
+    maxVelAccelJerk=[]
+    targetPosVel=[]
+    sel=[]
+    outPos=[]
+    outVel=[]
+    outAccel=[]
+    for i in range(len(currentPos)):
+        v=currentPos[i]
+        currentPosVelAccel.append(v)
+        outPos.append(v)
+        maxVelAccelJerk.append(maxVel[i])
+        w=targetPos[i]
+        if cyclicJoints and cyclicJoints[i]:
+            while w-v>=math.pi*2:
+                w=w-math.pi*2
+            while w-v<0:
+                w=w+math.pi*2
+            if w-v>math.pi:
+                w=w-math.pi*2
+        targetPosVel.append(w)
+        sel.append(1)
+    for i in range(len(currentPos)):
+        if currentVel:
+            currentPosVelAccel.append(currentVel[i])
+            outVel.append(currentVel[i])
+        else:
+            currentPosVelAccel.append(0)
+            outVel.append(0)
+        maxVelAccelJerk.append(maxAccel[i])
+        if targetVel:
+            targetPosVel.append(targetVel[i])
+        else:
+            targetPosVel.append(0)
+    for i in range(len(currentPos)):
+        if currentAccel:
+            currentPosVelAccel.append(currentAccel[i])
+            outAccel.append(currentAccel[i])
+        else:
+            currentPosVelAccel.append(0)
+            outAccel.append(0)
+        maxVelAccelJerk.append(maxJerk[i])
+
+    ruckigObject = sim.ruckigPos(len(currentPos),0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
+    result = 0
+    timeLeft = 0
+    while result == 0:
+        dt = timeStep
+        if dt == 0:
+            dt=sim.getSimulationTimeStep()
+        syncTime = 0
+        result,newPosVelAccel,syncTime = sim.ruckigStep(ruckigObject,dt)
+        if result >= 0:
+            if result == 0:
+                timeLeft = dt-syncTime
+            for i in range(len(currentPos)):
+                outPos[i]=newPosVelAccel[i]
+                outVel[i]=newPosVelAccel[len(currentPos)+i]
+                outAccel[i]=newPosVelAccel[len(currentPos)*2+i]
+            callback(outPos,outVel,outAccel,auxData)
+        else:
+            raise RuntimeError("sim.ruckigStep returned error code "+result)
+        if result == 0:
+            _switchThread()
+    sim.ruckigRemove(ruckigObject)
+    _setThreadAutomaticSwitch(lb)
+    return outPos,outVel,outAccel,timeLeft
+
 
 def __startClientScript__():
     global client
@@ -777,18 +872,21 @@ def __startClientScript__():
             l[k]=True
     client.call('serviceCall', ["pythonFuncs",l])
     
-    sim.switchThread = switchThread
-    sim.setThreadAutomaticSwitch = setThreadAutomaticSwitch
-    threadFunc = getFuncIfExists("threadMain")
+    sim.switchThread = _switchThread
+    sim.setThreadAutomaticSwitch = _setThreadAutomaticSwitch
+    sim.wait = _wait
+    sim.waitForSignal = _waitForSignal
+    sim.moveToConfig = _moveToConfig
+    threadFunc = _getFuncIfExists("threadMain")
     args=None
     if threadFunc==None:
         # Run as 'non-threaded'
         funcToRun = "sysCall_init"
-        func=getFuncIfExists(funcToRun)
+        func=_getFuncIfExists(funcToRun)
         if func:
             try:
                 while funcToRun!="sysCall_cleanup":
-                    func=getFuncIfExists(funcToRun)
+                    func=_getFuncIfExists(funcToRun)
                     if (func!=None):
                         if args:
                             func(args)
@@ -806,14 +904,14 @@ def __startClientScript__():
                         args = None
             finally:
                 # We expect to be able to run the cleanup code:
-                func = getFuncIfExists("sysCall_cleanup")
+                func = _getFuncIfExists("sysCall_cleanup")
                 func()
                 client.call('serviceCall', ["callDone"])
         else:
             raise RuntimeError("sysCall_init function not found")
     else:
         # Run as 'threaded'
-        setThreadAutomaticSwitch(False)
+        _setThreadAutomaticSwitch(False)
         client.call('serviceCall', ["runningThread"])
         try:
             threadFunc()

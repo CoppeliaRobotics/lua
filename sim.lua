@@ -994,7 +994,7 @@ function sim.waitForSignal(...)
     local sigName=checkargs({{type='string'}},...)
     local retVal
     while true do
-        retVal=sim.getIntegerSignal(sigName) or sim.getFloatSignal(sigName) or sim.getDoubleSignal(sigName) or sim.getStringSignal(sigName)
+        retVal=sim.getInt32Signal(sigName) or sim.getFloatSignal(sigName) or sim.getDoubleSignal(sigName) or sim.getStringSignal(sigName)
         if retVal then
             break
         end
