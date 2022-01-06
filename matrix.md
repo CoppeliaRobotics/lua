@@ -670,7 +670,7 @@ Returns element-wise integer value.
 
 #### `Matrix:totable(format)`
 
-Returns a 2d table representation of this matrix.
+If format is `{}`, returns a grid representation of this matrix, otherwise (the default) returns a 2d table representation of this matrix.
 
 #### `Matrix:trace()`
 
