@@ -104,19 +104,21 @@ function getFreePortStr()
 end
 
 function sysCall_beforeMainScript()
-    pythonWrapper.handleQueue()
-    local outData
-    if next(steppingClients)~=nil then
-        local canStep=true
-        for uuid,v in pairs(steppingClients) do
-            if steppedClients[uuid]==nil then
-                canStep=false
-                break
+    if sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_type)~=sim.scripttype_childscript then
+        pythonWrapper.handleQueue()
+        local outData
+        if next(steppingClients)~=nil then
+            local canStep=true
+            for uuid,v in pairs(steppingClients) do
+                if steppedClients[uuid]==nil then
+                    canStep=false
+                    break
+                end
             end
+            outData={doNotRunMainScript=(not canStep)}
         end
-        outData={doNotRunMainScript=(not canStep)}
+        return outData
     end
-    return outData
 end
 
 function sysCall_init()
@@ -528,6 +530,7 @@ function handleRemote(callType,args,timeout)
     local retVal
     local st=sim.getSystemTimeInMs(-1)
     if callType=='sysCall_init' or ( pythonFuncs and pythonFuncs[callType]) then
+        -- non-threaded, or first time, i.e. in init
         if timeout == nil then
             timeout = 9999
         end
@@ -543,6 +546,7 @@ function handleRemote(callType,args,timeout)
         end
         retVal=returnData
     else
+        -- threaded
         if callType=='sysCall_nonSimulation' or callType=='sysCall_suspended' or callType=='sysCall_actuation' then
             if timeout == nil then
                 timeout = 0.001
@@ -550,8 +554,23 @@ function handleRemote(callType,args,timeout)
             while true do
                 handleErrors()
                 pythonWrapper.handleQueue()
-                if sim.getSystemTimeInMs(st)>timeout*1000 then
-                    break
+                if sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_type)~=sim.scripttype_childscript or next(steppingClients)==nil then
+                    -- Customization scripts in general (stepping handled elsewhere), or scripts in non-stepping mode
+                    if sim.getSystemTimeInMs(st)>timeout*1000 then
+                        break
+                    end
+                else
+                    -- stepping mode child scripts
+                    local breakout=true
+                    for uuid,v in pairs(steppingClients) do
+                        if steppedClients[uuid]==nil then
+                            breakout=false
+                            break
+                        end
+                    end
+                    if breakout then
+                        break
+                    end
                 end
             end
         end
@@ -738,7 +757,8 @@ def _getFuncIfExists(name):
     return method
 
 def _switchThread():
-    client.step()
+    if client.threaded:
+        client.step()
 
 def _setThreadAutomaticSwitch(level):
     global threadLocLevel
@@ -911,6 +931,7 @@ def __startClientScript__():
             raise RuntimeError("sysCall_init function not found")
     else:
         # Run as 'threaded'
+        client.threaded = True
         _setThreadAutomaticSwitch(False)
         client.call('serviceCall', ["runningThread"])
         try:
