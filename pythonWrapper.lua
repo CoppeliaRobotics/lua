@@ -1080,6 +1080,9 @@ def __startClientScript__():
         _setThreadAutomaticSwitch(False)
         client.call('serviceCall', ["runningThread"])
         try:
+            initFunc = _getFuncIfExists("sysCall_init")
+            if initFunc:
+                initFunc()
             threadFunc()
         finally:
             client.setStepping(False)
