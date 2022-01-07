@@ -689,6 +689,14 @@ def b64(b):
     import base64
     return base64.b64encode(b).decode('ascii')
 
+class LazyProxyObj:
+    def __init__(self, client, name):
+        self.client, self.name, self.obj = client, name, None
+    def __getattr__(self, k):
+        if not self.obj:
+            self.obj = self.client.getObject(self.name)
+        return getattr(self.obj, k)
+
 class RemoteAPIClient:
     """Client to connect to CoppeliaSim's ZMQ Remote API."""
 
@@ -994,9 +1002,7 @@ def __startClientScript__():
     client = RemoteAPIClient()
     allApiFuncs = client.getApi()
     for a in allApiFuncs:
-        globals()[a] = client.getObject(a)
-    #global sim
-    #sim = client.getObject('sim')
+        globals()[a] = LazyProxyObj(client,a)
     global threadLocLevel
     threadLocLevel = 0
     glob=globals()
