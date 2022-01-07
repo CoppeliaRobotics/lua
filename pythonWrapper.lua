@@ -124,6 +124,20 @@ function sysCall_beforeMainScript()
 end
 
 function sysCall_init()
+    -- Following callbacks are not implemented in Python because either:
+    -- They would be quite slow, since called very often
+    -- They do not work in Python, since they can be called while already inside of a system callback
+    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true,sysCall_userConfig=true}
+    -- But they can be enabled via additionalFuncs:
+    if additionalFuncs and type(additionalFuncs)=='table' then
+        for i=1,#additionalFuncs,1 do
+            cbFuncsToExclude[additionalFuncs[i]]=nil
+        end
+    end
+    for k,v in pairs(cbFuncsToExclude) do
+        _G[k]=nil
+    end
+
     if not simZMQ then
         sim.addLog(sim.verbosity_errors,'pythonWrapper: the ZMQ plugin is not available')
         return {cmd='cleanup'}
@@ -151,8 +165,6 @@ function sysCall_init()
     local prog=pythonProg..otherProg
     prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
     prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
-    if auxInstr==nil then auxInstr="" end
-    prog=prog:gsub("XXXauxInstructionsXXX",auxInstr)
     
     initPython(prog,0)
     pythonInitialized=true
@@ -420,11 +432,6 @@ function sysCall_addOnScriptResume()
     end
 end
 
---[[
--- Following are not implemented because either:
-    - They would be quite slow, since called very often
-    - They do not work in Python, since they can be called while already inside of a system callback
-    
 function sysCall_dynCallback(inData)
     local nm='sysCall_dynCallback'
     handleRemote(nm)
@@ -520,7 +527,6 @@ function sysCall_userConfig()
         _G[nm]=nil
     end
 end
---]]
 
 function handleErrors()
     local a,pr=getErrorPython()
@@ -997,7 +1003,6 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
 
 
 def __startClientScript__():
-    XXXauxInstructionsXXX
     global client
     client = RemoteAPIClient()
     allApiFuncs = client.getApi()
