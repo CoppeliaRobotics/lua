@@ -127,7 +127,7 @@ function sysCall_init()
     -- Following callbacks are not implemented in Python because either:
     -- They would be quite slow, since called very often
     -- They do not work in Python, since they can be called while already inside of a system callback
-    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true,sysCall_userConfig=true}
+    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true}--,sysCall_userConfig=true}
     -- But they can be enabled via additionalFuncs:
     if additionalFuncs and type(additionalFuncs)=='table' then
         for i=1,#additionalFuncs,1 do
@@ -168,7 +168,7 @@ function sysCall_init()
     
     initPython(prog,0)
     pythonInitialized=true
-    handleRemote('sysCall_init')
+    return handleRemote('sysCall_init')
 end
 
 function sim.getEndSignal()
@@ -347,97 +347,107 @@ end
 
 function sysCall_actuation()
     steppedClients={}
-    handleRemote('sysCall_actuation')
+    local retVal=handleRemote('sysCall_actuation')
     simulationTimeStepCount=simulationTimeStepCount+1
     pythonWrapper.publishStepCount()
+    return retVal
 end
 
 function sysCall_nonSimulation()
     pythonWrapper.publishStepCount() -- so that the last client.step(True) doesn't block
-    handleRemote('sysCall_nonSimulation')
+    return handleRemote('sysCall_nonSimulation')
 end
 
 function sysCall_beforeSimulation()
     simulationTimeStepCount=0
-    handleRemote('sysCall_beforeSimulation')
+    return handleRemote('sysCall_beforeSimulation')
 end
 
 function sysCall_afterSimulation()
     steppingClients={} 
     steppedClients={}
-    handleRemote('sysCall_afterSimulation')
+    return handleRemote('sysCall_afterSimulation')
 end
 
 function sysCall_sensing()
     local nm='sysCall_sensing'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_suspend()
     local nm='sysCall_suspend'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_suspended()
     local nm='sysCall_suspended'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_resume()
     local nm='sysCall_resume'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_beforeInstanceSwitch()
     local nm='sysCall_beforeInstanceSwitch'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_afterInstanceSwitch()
     local nm='sysCall_afterInstanceSwitch'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_addOnScriptSuspend()
     local nm='sysCall_addOnScriptSuspend'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_addOnScriptResume()
     local nm='sysCall_addOnScriptResume'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_dynCallback(inData)
     local nm='sysCall_dynCallback'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_jointCallback(inData)
@@ -458,50 +468,56 @@ end
 
 function sysCall_event(inData)
     local nm='sysCall_event'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_beforeCopy(inData)
     local nm='sysCall_beforeCopy'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_afterCopy(inData)
     local nm='sysCall_afterCopy'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_afterCreate(inData)
     local nm='sysCall_afterCreate'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_beforeDelete(inData)
     local nm='sysCall_beforeDelete'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_afterDelete(inData)
     local nm='sysCall_afterDelete'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function sysCall_vision(inData)
@@ -522,10 +538,11 @@ end
 
 function sysCall_userConfig()
     local nm='sysCall_userConfig'
-    handleRemote(nm)
+    local retVal=handleRemote(nm)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
+    return retVal
 end
 
 function handleErrors()
@@ -590,6 +607,7 @@ end
 
 function serviceCall(cmd,msg)
     local retArg1,retArg2
+    returnData=nil
     if cmd=='callDone' then
         callDone=true
         nextCall=nil
@@ -597,7 +615,6 @@ function serviceCall(cmd,msg)
         returnData=msg
     end
     if cmd=='getNextCall' then
-        returnData=nil
         retArg1=nextCall
         retArg2=nextCallArgs
     end
@@ -1034,12 +1051,13 @@ def __startClientScript__():
             try:
                 while funcToRun!="sysCall_cleanup":
                     func=_getFuncIfExists(funcToRun)
+                    ret=None
                     if (func!=None):
                         if args:
-                            func(args)
+                            ret=func(args)
                         else:    
-                            func()
-                    client.call('serviceCall', ["callDone"])
+                            ret=func()
+                    client.call('serviceCall', ["callDone",ret])
                     f = client.call('serviceCall', ["getNextCall"])
                     while f == None:
                         f = client.call('serviceCall', ["getNextCall"])
@@ -1052,8 +1070,8 @@ def __startClientScript__():
             finally:
                 # We expect to be able to run the cleanup code:
                 func = _getFuncIfExists("sysCall_cleanup")
-                func()
-                client.call('serviceCall', ["callDone"])
+                ret=func()
+                client.call('serviceCall', ["callDone",ret])
         else:
             raise RuntimeError("sysCall_init function not found")
     else:
