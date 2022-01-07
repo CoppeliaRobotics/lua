@@ -1,7 +1,9 @@
 pythonWrapper={}
 
 function pythonWrapper.info(obj)
-    if type(obj)=='string' then obj=pythonWrapper.getField(obj) end
+    if type(obj)=='string' then
+        obj=pythonWrapper.getField(obj) 
+    end
     if type(obj)~='table' then return obj end
     local ret={}
     for k,v in pairs(obj) do
@@ -149,6 +151,8 @@ function sysCall_init()
     local prog=pythonProg..otherProg
     prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
     prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
+    if auxInstr==nil then auxInstr="" end
+    prog=prog:gsub("XXXauxInstructionsXXX",auxInstr)
     
     initPython(prog,0)
     pythonInitialized=true
@@ -206,7 +210,7 @@ function initPython(p,method)
         end
         local errMsg
         if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true}) end)
+            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true,openNewConsole=false}) end)
             --[[ using a temp file:
             local td=sim.getStringParam(sim.stringparam_tempdir)
             pythonFilename=td..'/'..sim.getStringParam(sim.stringparam_uniqueid)..'.py'
@@ -606,6 +610,16 @@ function serviceCall(cmd,msg)
     return retArg1,retArg2
 end
 
+function getApi()
+    str={}
+    for k,v in pairs(_G) do
+        if type(v)=='table' and k:find('sim',1,true)==1 then
+            str[#str+1]=k
+        end
+    end
+    return str
+end
+
 function setStepping(enable,uuid)
     if uuid==nil then
         uuid='ANY' -- to support older clients
@@ -735,6 +749,9 @@ class RemoteAPIClient:
 
     def setStepping(self, enable=True):
         return self.call('setStepping', [enable,self.uuid])
+
+    def getApi(self):
+        return self.call('getApi', [])
 
     def step(self, *, wait=True):
         self.getStepCount(False)
@@ -972,10 +989,14 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
 
 
 def __startClientScript__():
+    XXXauxInstructionsXXX
     global client
     client = RemoteAPIClient()
-    global sim
-    sim = client.getObject('sim')
+    allApiFuncs = client.getApi()
+    for a in allApiFuncs:
+        globals()[a] = client.getObject(a)
+    #global sim
+    #sim = client.getObject('sim')
     global threadLocLevel
     threadLocLevel = 0
     glob=globals()
