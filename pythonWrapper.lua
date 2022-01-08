@@ -123,6 +123,38 @@ function sysCall_beforeMainScript()
     end
 end
 
+function loadExternalFile(file,absPath)
+    local f
+    if absPath then
+        f=io.open(file,'rb')
+    else
+        local b={sim.getStringParam(sim.stringparam_application_path),sim.getStringParam(sim.stringparam_application_path)..'/python',sim.getStringParam(sim.stringparam_scene_path),sim.getStringParam(sim.stringparam_additionalpythonpath)}
+        for i=1,#b,1 do
+            if b[i]~='' then
+                f=io.open(b[i]..'/'..file,'rb')
+                if f then
+                    file=b[i]..'/'..file
+                    break
+                end
+            end
+        end
+    end
+    if f==nil then
+        error("include file '"..file.."' not found")
+    end
+    pythonProg=f:read('*all')
+    f:close()
+    while #file>0 do
+        local c=file:sub(#file,#file)
+        if c~='/' and c~='\\' then
+            file=file:sub(1,#file-1)
+        else
+            break
+        end
+    end
+    _additionalPaths={file}
+end
+
 function sysCall_init()
     -- Following callbacks are not implemented in Python because either:
     -- They would be quite slow, since called very often
@@ -165,6 +197,18 @@ function sysCall_init()
     local prog=pythonProg..otherProg
     prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
     prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
+    local tmp=''
+    if _additionalPaths then 
+        for i=1,#_additionalPaths,1 do
+            tmp=tmp..'sys.path.append("'.._additionalPaths[i]..'")\n'
+        end
+    end
+    if additionalPaths then 
+        for i=1,#additionalPaths,1 do
+            tmp=tmp..'sys.path.append("'..additionalPaths[i]..'")\n'
+        end
+    end
+    prog=prog:gsub("XXXadditionalPathsXXX",tmp)
     
     initPython(prog,0)
     pythonInitialized=true
@@ -707,6 +751,8 @@ import math
 import uuid
 import cbor
 import zmq
+
+XXXadditionalPathsXXX
 
 def b64(b):
     import base64
