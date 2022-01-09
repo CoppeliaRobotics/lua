@@ -123,8 +123,14 @@ function sysCall_beforeMainScript()
     end
 end
 
-function loadExternalFile(file,absPath)
+function loadExternalFile(file)
     local f
+    local absPath
+    if sim.getInt32Param(sim.intparam_platform)==0 then
+        absPath=( (file:sub(1,1)=='/') or (file:sub(1,1)=='\\') or (file:sub(2,2)==':') )
+    else
+        absPath=(file:sub(1,1)=='/')
+    end
     if absPath then
         f=io.open(file,'rb')
     else
