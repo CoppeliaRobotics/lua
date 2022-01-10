@@ -422,6 +422,19 @@ function sysCall_afterSimulation()
     return handleRemote('sysCall_afterSimulation')
 end
 
+function sysCall_ext(funcName,...)
+    if threaded then
+        extCall_funcName=funcName
+        extCall_args={...}
+        while extCall_funcName do
+            pythonWrapper.handleQueue()
+        end
+        return extCall_ret
+    else
+        return handleRemote(funcName,{...})
+    end
+end
+
 function sysCall_sensing()
     local nm='sysCall_sensing'
     local retVal=handleRemote(nm)
@@ -496,7 +509,7 @@ end
 
 function sysCall_dynCallback(inData)
     local nm='sysCall_dynCallback'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -508,7 +521,7 @@ function sysCall_jointCallback(inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
-    return handleRemote('sysCall_jointCallback',inData)
+    return handleRemote('sysCall_jointCallback',{inData})
 end
 
 function sysCall_contactCallback(inData)
@@ -516,12 +529,12 @@ function sysCall_contactCallback(inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
-    return handleRemote('sysCall_contactCallback',inData)
+    return handleRemote('sysCall_contactCallback',{inData})
 end
 
 function sysCall_moduleEntry(inData)
     local nm='sysCall_moduleEntry'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -530,7 +543,7 @@ end
 
 function sysCall_event(inData)
     local nm='sysCall_event'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -539,7 +552,7 @@ end
 
 function sysCall_beforeCopy(inData)
     local nm='sysCall_beforeCopy'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -548,7 +561,7 @@ end
 
 function sysCall_afterCopy(inData)
     local nm='sysCall_afterCopy'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -557,7 +570,7 @@ end
 
 function sysCall_afterCreate(inData)
     local nm='sysCall_afterCreate'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -566,7 +579,7 @@ end
 
 function sysCall_beforeDelete(inData)
     local nm='sysCall_beforeDelete'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -575,7 +588,7 @@ end
 
 function sysCall_afterDelete(inData)
     local nm='sysCall_afterDelete'
-    local retVal=handleRemote(nm,inData)
+    local retVal=handleRemote(nm,{inData})
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -587,7 +600,7 @@ function sysCall_vision(inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
-    return handleRemote('sysCall_vision',inData)
+    return handleRemote('sysCall_vision',{inData})
 end
 
 function sysCall_trigger(inData)
@@ -595,7 +608,7 @@ function sysCall_trigger(inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
-    return handleRemote('sysCall_trigger',inData)
+    return handleRemote('sysCall_trigger',{inData})
 end
 
 function sysCall_userConfig()
@@ -667,14 +680,14 @@ function handleRemote(callType,args,timeout)
     return retVal
 end
 
-function serviceCall(cmd,msg)
+function serviceCall(cmd,data)
     local retArg1,retArg2
     returnData=nil
     if cmd=='callDone' then
         callDone=true
         nextCall=nil
         nextCallArgs=nil
-        returnData=msg
+        returnData=data
     end
     if cmd=='getNextCall' then
         retArg1=nextCall
@@ -687,11 +700,23 @@ function serviceCall(cmd,msg)
         threadEnded=true
     end
     if cmd=='print' then
-        print(msg)
+        print(data)
     end
     if cmd=='pythonFuncs' then
-        pythonFuncs=msg
+        pythonFuncs=data
     end
+    -- Following to handle threaded scripts and their external calls, see also sysCall_ext:
+    ----
+    if cmd=='getExtCall' then
+        retArg1=extCall_funcName
+        retArg2=extCall_args
+    end
+    if cmd=='setExtCall' then
+        extCall_ret=data
+        extCall_funcName=nil
+        extCall_args=nil
+    end
+    ----
     return retArg1,retArg2
 end
 
@@ -894,6 +919,34 @@ def _setThreadAutomaticSwitch(level):
         return level
     else:
         return 0
+
+def _handleExtCalls():
+    # only for threaded scripts
+    try:
+        f = client.call('serviceCall',['getExtCall'])
+        if f != None:
+            args = list(f)
+            if isinstance(f, tuple):
+                funcName = f[0]
+                funcToRun = funcName#.decode("utf-8")
+                args.pop(0)
+            else:
+                funcName = f
+                funcToRun = funcName#.decode("utf-8")
+                args = None
+            try:
+                func=_getFuncIfExists(funcToRun)
+                if func:
+                    arg = func(*args[0])
+                else:
+                    arg = None
+                    sim.addLog(sim.verbosity_scripterrors,"Failed calling user callback "+funcName)
+            except Exception as e:
+                sim.addLog(sim.verbosity_scripterrors,"Failed calling user callback "+funcName)
+            client.call('serviceCall',['setExtCall', arg])
+    except Exception as e:
+        raise RuntimeError("sim.handleExtCalls failed")
+    
     
 def print(a):
     global sim
@@ -1118,7 +1171,7 @@ def __startClientScript__():
                     ret=None
                     if (func!=None):
                         if args:
-                            ret=func(args)
+                            ret=func(*args)
                         else:    
                             ret=func()
                     client.call('serviceCall', ["callDone",ret])
@@ -1140,6 +1193,7 @@ def __startClientScript__():
             raise RuntimeError("sysCall_init (or sysCall_thread) function not found")
     else:
         # Run as 'threaded'
+        sim.handleExtCalls = _handleExtCalls
         client.threaded = True
         _setThreadAutomaticSwitch(False)
         client.call('serviceCall', ["runningThread"])
