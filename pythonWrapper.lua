@@ -148,7 +148,10 @@ function loadExternalFile(file)
     if f==nil then
         error("include file '"..file.."' not found")
     end
-    pythonProg=f:read('*all')
+    if not pythonProg then
+        pythonProg=''
+    end
+    pythonProg=f:read('*all')..pythonProg
     f:close()
     while #file>0 do
         local c=file:sub(#file,#file)
