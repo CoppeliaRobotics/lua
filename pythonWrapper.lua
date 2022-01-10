@@ -493,7 +493,7 @@ end
 
 function sysCall_dynCallback(inData)
     local nm='sysCall_dynCallback'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -516,9 +516,18 @@ function sysCall_contactCallback(inData)
     return handleRemote('sysCall_contactCallback',inData)
 end
 
+function sysCall_moduleEntry(inData)
+    local nm='sysCall_moduleEntry'
+    local retVal=handleRemote(nm,inData)
+    if pythonFuncs==nil or pythonFuncs[nm]==nil then
+        _G[nm]=nil
+    end
+    return retVal
+end
+
 function sysCall_event(inData)
     local nm='sysCall_event'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -527,7 +536,7 @@ end
 
 function sysCall_beforeCopy(inData)
     local nm='sysCall_beforeCopy'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -536,7 +545,7 @@ end
 
 function sysCall_afterCopy(inData)
     local nm='sysCall_afterCopy'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -545,7 +554,7 @@ end
 
 function sysCall_afterCreate(inData)
     local nm='sysCall_afterCreate'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -554,7 +563,7 @@ end
 
 function sysCall_beforeDelete(inData)
     local nm='sysCall_beforeDelete'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
@@ -563,7 +572,7 @@ end
 
 function sysCall_afterDelete(inData)
     local nm='sysCall_afterDelete'
-    local retVal=handleRemote(nm)
+    local retVal=handleRemote(nm,inData)
     if pythonFuncs==nil or pythonFuncs[nm]==nil then
         _G[nm]=nil
     end
