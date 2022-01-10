@@ -1092,7 +1092,7 @@ def __startClientScript__():
     sim.waitForSignal = _waitForSignal
     sim.moveToConfig = _moveToConfig
     sim.moveToPose = _moveToPose
-    threadFunc = _getFuncIfExists("threadMain")
+    threadFunc = _getFuncIfExists("sysCall_thread")
     args = None
     if threadFunc==None:
         # Run as 'non-threaded'
@@ -1125,7 +1125,7 @@ def __startClientScript__():
                 ret=func()
                 client.call('serviceCall', ["callDone",ret])
         else:
-            raise RuntimeError("sysCall_init function not found")
+            raise RuntimeError("sysCall_init (or sysCall_thread) function not found")
     else:
         # Run as 'threaded'
         client.threaded = True

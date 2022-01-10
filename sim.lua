@@ -1447,6 +1447,7 @@ function _S.sysCallEx_init()
     --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
+    sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
 
     -- Keep for backward compatibility:
     -----------------------------------
