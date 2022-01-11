@@ -1453,8 +1453,9 @@ function _S.sysCallEx_init()
     --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
-    sim.registerScriptFunction('sim.generateTextShape@sim','int modelHandle=sim.generateTextShape(string txt,table[3] color,\nfloat height,bool centered,string alphabetLocation)')
+    sim.registerScriptFunction('sim.generateTextShape@sim','int modelHandle=sim.generateTextShape(string txt,table[3] color={1,1,1},\nfloat height=0.1,bool centered=false,string alphabetLocation=nil)')
     sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
+    sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=getThreadExistRequest() (Python only)') -- actually only for syntax highlighting and call tip
 
     -- Keep for backward compatibility:
     -----------------------------------

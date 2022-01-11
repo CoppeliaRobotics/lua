@@ -224,7 +224,7 @@ function sysCall_init()
     return handleRemote('sysCall_init')
 end
 
-function sim.getEndSignal()
+function sim.getThreadExistRequest()
     return endSignal
 end
 
@@ -235,13 +235,15 @@ function sysCall_cleanup()
         pythonWrapper.publishStepCount()
         
         local st=sim.getSystemTimeInMs(-1)
-        while sim.getSystemTimeInMs(st)<300 do
-            if threaded then
+        if threaded then
+            while sim.getSystemTimeInMs(st)<500 do
                 if threadEnded then
                     break
                 end
                 pythonWrapper.handleQueue()
-            else
+            end
+        else
+            while sim.getSystemTimeInMs(st)<300 do
                 handleRemote('sysCall_cleanup',nil,0.31)
             end
         end
@@ -956,18 +958,18 @@ def _wait(dt,simTime=True):
     retVal = 0.0
     if simTime:
         st = sim.getSimulationTime()
-        while sim.getSimulationTime()-st<dt:
+        while (sim.getSimulationTime()-st < dt) and (sim.getThreadExistRequest() == False):
             _switchThread()
         retVal=sim.getSimulationTime()-st-dt
     else:
         st = sim.getSystemTimeInMs(-1)
-        while sim.getSystemTimeInMs(st)<dt*1000:
+        while (sim.getSystemTimeInMs(st) < dt*1000) and (sim.getThreadExistRequest() == False):
             _switchThread()
     return retVal
 
 def _waitForSignal(sigName):
     retVal = 0.0
-    while True:
+    while sim.getThreadExistRequest() == False:
         retVal = sim.getInt32Signal(sigName)!=None or sim.getFloatSignal(sigName)!=None or sim.getDoubleSignal(sigName)!=None or sim.getStringSignal(sigName)!=None
         if retVal:
             break
@@ -1023,7 +1025,7 @@ def _moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJe
     ruckigObject = sim.ruckigPos(len(currentPos),0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
     result = 0
     timeLeft = 0
-    while result == 0:
+    while (result == 0) and (sim.getThreadExistRequest() == False):
         dt = timeStep
         if dt == 0:
             dt=sim.getSimulationTimeStep()
@@ -1070,7 +1072,7 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
             targetPosVel = [distance,0]
             ruckigObject = sim.ruckigPos(1,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,[1],targetPosVel)
             result = 0
-            while result == 0:
+            while (result == 0) and (sim.getThreadExistRequest() == False):
                 dt = timeStep
                 if dt == 0:
                     dt = sim.getSimulationTimeStep()
@@ -1101,7 +1103,7 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
         targetPosVel = [dx[0],dx[1],dx[2],dx[3],0,0,0,0,0]
         ruckigObject = sim.ruckigPos(4,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,[1,1,1,1],targetPosVel)
         result = 0
-        while result == 0:
+        while (result == 0) and (sim.getThreadExistRequest() == False):
             dt = timeStep
             if dt == 0:
                 dt = sim.getSimulationTimeStep()
