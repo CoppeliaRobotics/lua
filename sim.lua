@@ -1186,6 +1186,12 @@ function sim.getObjectHandle(path,options)
     return sim._getObjectHandle(path,index,proxy,option)
 end
 
+function sim.generateTextShape(...)
+    local txt,color,height,centered,alphabetModel=checkargs({{type='string'},{type='table',item_type='float',size=3,default=NIL,nullable=true},{type='float',default=NIL,nullable=true},{type='bool',default=NIL,nullable=true},{type='string',default=NIL,nullable=true}},...)
+    local textUtils=require('textUtils')
+    return textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
+end
+
 function sim.getNamedBoolParam(name)
     local v=sim.getNamedStringParam(name)
     if v==nil then return nil end
@@ -1447,6 +1453,7 @@ function _S.sysCallEx_init()
     --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
     sim.registerScriptFunction('sim.getShapeBB@sim','table[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
+    sim.registerScriptFunction('sim.generateTextShape@sim','int modelHandle=sim.generateTextShape(string txt,table[3] color,\nfloat height,bool centered,string alphabetLocation)')
     sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
 
     -- Keep for backward compatibility:
