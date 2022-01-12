@@ -135,6 +135,11 @@ function loadExternalFile(file)
         f=io.open(file,'rb')
     else
         local b={sim.getStringParam(sim.stringparam_application_path),sim.getStringParam(sim.stringparam_application_path)..'/python',sim.getStringParam(sim.stringparam_scene_path),sim.getStringParam(sim.stringparam_additionalpythonpath)}
+        if additionalIncludePaths and #additionalIncludePaths>0 then
+            for i=1,#additionalIncludePaths,1 do
+                b[#b+1]=additionalIncludePaths[i]
+            end
+        end
         for i=1,#b,1 do
             if b[i]~='' then
                 f=io.open(b[i]..'/'..file,'rb')
@@ -202,7 +207,6 @@ function sysCall_init()
     steppingClients={}
     steppedClients={}
     endSignal=false
-
     local prog=pythonProg..otherProg
     prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
     prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
@@ -796,6 +800,14 @@ import math
 import uuid
 import cbor
 import zmq
+'''
+import builtins
+def sim_import(m):
+    setattr(m, 'sim', '@SIM@')
+    return m
+
+builtins.__import__ = (lambda orig, f: lambda *args, **kwargs: f(orig(*args, **kwargs)))(builtins.__import__, sim_import)
+'''
 
 XXXadditionalPathsXXX
 
