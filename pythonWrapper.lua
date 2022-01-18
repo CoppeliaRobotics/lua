@@ -77,12 +77,11 @@ function pythonWrapper.handleQueue()
     while true do
         local rc,revents=simZMQ.poll({rpcSocket},{simZMQ.POLLIN},0)
         if rc<=0 then break end
-
+        extCallIsIn=true
         local rc,req=simZMQ.recv(rpcSocket,0)
-
         local resp=pythonWrapper.handleRawMessage(req)
-
         simZMQ.send(rpcSocket,resp,0)
+        extCallIsIn=nil
     end
 end
 
@@ -429,15 +428,19 @@ function sysCall_afterSimulation()
 end
 
 function sysCall_ext(funcName,...)
-    if threaded then
-        extCall_funcName=funcName
-        extCall_args={...}
-        while extCall_funcName do
-            pythonWrapper.handleQueue()
-        end
-        return extCall_ret
+    if _G[funcName] then -- for now ignore functions in tables
+        return _G[funcName](...) 
     else
-        return handleRemote(funcName,{...})
+        if threaded then
+            extCall_funcName=funcName
+            extCall_args={...}
+            while extCall_funcName do
+                pythonWrapper.handleQueue()
+            end
+            return extCall_ret
+        else
+            return handleRemote(funcName,{...})
+        end
     end
 end
 
@@ -635,6 +638,9 @@ function handleErrors()
 end
 
 function handleRemote(callType,args,timeout)
+    if extCallIsIn then
+        error('Detected reentrance')
+    end
     local retVal
     local st=sim.getSystemTimeInMs(-1)
     if callType=='sysCall_init' or ( pythonFuncs and pythonFuncs[callType]) then

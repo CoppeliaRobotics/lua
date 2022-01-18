@@ -921,7 +921,7 @@ function _S.getConfigDistance(confA,confB,metric,types)
 end
 
 function sim.getPathLengths(...)
-    local path,dof,cb=checkargs({{type='table',item_type='float',size='2..*'},{type='int'},{type='func',default=NIL,nullable=true}},...)
+    local path,dof,cb=checkargs({{type='table',item_type='float',size='2..*'},{type='int'},{type='any',default=NIL,nullable=true}},...)
     local confCnt=math.floor(#path/dof)
     if dof<1 or (confCnt<2) then
         error("Bad table size.")
@@ -932,7 +932,11 @@ function sim.getPathLengths(...)
     for i=1,pM:rows()-1,1 do
         local d=ccc
         if cb then
-            d=cb(pM[i]:data(),pM[i+1]:data())
+            if type(cb)=='string' then
+                d=_G[cb](pM[i]:data(),pM[i+1]:data())
+            else
+                d=cb(pM[i]:data(),pM[i+1]:data())
+            end
         else
             d=sim.getConfigDistance(pM[i]:data(),pM[i+1]:data())
         end
@@ -1192,6 +1196,12 @@ function sim.generateTextShape(...)
     return textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
 end
 
+function sim.getThreadExistRequest()
+    local s=sim.getSimulationState()
+    return s==sim.simulation_stopped or s==sim.simulation_advancing_abouttostop or s==sim.simulation_advancing_lastbeforestop
+end
+
+
 function sim.getNamedBoolParam(name)
     local v=sim.getNamedStringParam(name)
     if v==nil then return nil end
@@ -1432,7 +1442,7 @@ function _S.sysCallEx_init()
 
     sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"table[] config=sim.getPathInterpolatedConfig(table[] path,table[] pathLengths,float t,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
     sim.registerScriptFunction('sim.resamplePath@sim',"table[] path=sim.resamplePath(table[] path,table[] pathLengths,int finalConfigCnt,table[] method={type='linear',strength=1.0,forceOpen=false},table[] types=nil)")
-    sim.registerScriptFunction('sim.getPathLengths@sim','table[] pathLengths,float totalLength=sim.getPathLengths(table[] path,int dof,function distCallback=nil)')
+    sim.registerScriptFunction('sim.getPathLengths@sim','table[] pathLengths,float totalLength=sim.getPathLengths(table[] path,int dof,function/string distCallback=nil)')
     sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(table[] configA,table[] configB,table[] metric={1,1,1,..},table[] types={0,0,0,..})')
     sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"table[] path,table[] times=sim.generateTimeOptimalTrajectory(table[] path,table[] pathLengths,\ntable minMaxVel,table[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,boolean simulationTime=true)')
@@ -1455,7 +1465,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,table[3] size)')
     sim.registerScriptFunction('sim.generateTextShape@sim','int modelHandle=sim.generateTextShape(string txt,table[3] color={1,1,1},\nfloat height=0.1,bool centered=false,string alphabetLocation=nil)')
     sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
-    sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest() (Python only)') -- actually only for syntax highlighting and call tip
+    sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest()') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.handleExtCalls@sim','sim.handleExtCalls() (Python only)') -- actually only for syntax highlighting and call tip
 
     -- Keep for backward compatibility:
