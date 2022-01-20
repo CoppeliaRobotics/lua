@@ -550,6 +550,7 @@ function sysCall_moduleEntry(inData)
     return retVal
 end
 
+--[[
 function sysCall_event(inData)
     local nm='sysCall_event'
     local retVal=handleRemote(nm,{inData})
@@ -558,6 +559,7 @@ function sysCall_event(inData)
     end
     return retVal
 end
+--]]
 
 function sysCall_beforeCopy(inData)
     local nm='sysCall_beforeCopy'
