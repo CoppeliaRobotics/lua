@@ -279,7 +279,6 @@ function initPython(p,method)
         end
         local errMsg
         if pyth and #pyth>0 then
-        print(sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py')
             local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',portStr},{useSearchPath=true,openNewConsole=false}) end)
             
             if res then
