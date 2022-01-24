@@ -263,7 +263,6 @@ function initPython(p,method)
     callMethod=method
     if method==0 then
         local portStr=getFreePortStr()
-        baseProg=baseProg:gsub("XXXconnectionAddress1XXX",portStr)
         local pyth=sim.getStringParam(sim.stringparam_defaultpython)
         local pyth2=sim.getNamedStringParam("pythonWrapper.python")
         if pyth2 then
@@ -280,16 +279,8 @@ function initPython(p,method)
         end
         local errMsg
         if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{'-c',baseProg},{useSearchPath=true,openNewConsole=false}) end)
-            --[[ using a temp file:
-            local td=sim.getStringParam(sim.stringparam_tempdir)
-            pythonFilename=td..'/'..sim.getStringParam(sim.stringparam_uniqueid)..'.py'
-            local pythonFile=io.open(pythonFilename,'w+')
-            pythonFile:write(baseProg)
-            pythonFile:close()
-            sim.launchExecutable(pyth,pythonFilename,0)
-            res=true
-            --]]
+        print(sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py')
+            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',portStr},{useSearchPath=true,openNewConsole=false}) end)
             
             if res then
                 subprocess=ret
@@ -762,42 +753,6 @@ function step(uuid)
     end
     steppedClients[uuid]=true
 end
-
-baseProg=[=[
-
-import cbor
-import zmq
-
-context = zmq.Context()
-socket = context.socket(zmq.REP)
-socket.bind(f'XXXconnectionAddress1XXX')
-module = {}
-while True:
-    req = cbor.loads(socket.recv())
-    rep = {'success': True}
-    
-    req['cmd']=req['cmd']#.decode("utf-8")
-
-    if req['cmd'] == 'loadCode':
-        try:
-            req['code']=req['code']#.decode("utf-8")
-            exec(req['code'],module)
-        except Exception as e:
-            import traceback
-            rep = {'success': False, 'error': traceback.format_exc()}
-    elif req['cmd'] == 'callFunc':
-        try:
-            req['func']=req['func']#.decode("utf-8")
-            func = module[req['func']]
-            rep['ret'] = func(*req['args'])
-        except Exception as e:
-            import traceback
-            rep = {'success': False, 'error': traceback.format_exc()}
-    else:
-        rep = {'success': False, 'error': f'unknown command: "{req["cmd"]}"'}
-
-    socket.send(cbor.dumps(rep))
-]=]
 
 otherProg=[=[
 
