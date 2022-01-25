@@ -359,9 +359,12 @@ function _S.graph.prepareCurves()
                         curveOptions.scatter_shape=simUI.curve_scatter_shape.plus
                     end
                     curveOptions.line_style=simUI.line_style.dashed
-                else
-
                 end
+                --if (curveType&8)==8 then
+                --    -- helper curves, for good framing
+                --    curveStyle=simUI.curve_style.scatter
+                --    curveOptions={scatter_size=0}
+                --end
                 if legendVisible then
                     legendVisibleCnt=legendVisibleCnt+1
                 else

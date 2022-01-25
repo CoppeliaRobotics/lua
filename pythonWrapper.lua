@@ -172,7 +172,7 @@ function sysCall_init()
     -- Following callbacks are not implemented in Python because either:
     -- They would be quite slow, since called very often
     -- They do not work in Python, since they can be called while already inside of a system callback
-    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true}--,sysCall_userConfig=true}
+    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true,sysCall_userConfig=true}
     -- But they can be enabled via additionalFuncs:
     if additionalFuncs and type(additionalFuncs)=='table' then
         for i=1,#additionalFuncs,1 do
@@ -393,6 +393,23 @@ function getErrorPython()
     return a,msg
 end
 
+function sysCall_ext(funcName,...)
+    if _G[funcName] then -- for now ignore functions in tables
+        return _G[funcName](...) 
+    else
+        if threaded then
+            extCall_funcName=funcName
+            extCall_args={...}
+            while extCall_funcName do
+                pythonWrapper.handleQueue()
+            end
+            return extCall_ret
+        else
+            return handleRemote(funcName,{...})
+        end
+    end
+end
+
 function sysCall_actuation()
     steppedClients={}
     local retVal=handleRemote('sysCall_actuation')
@@ -415,23 +432,6 @@ function sysCall_afterSimulation()
     steppingClients={} 
     steppedClients={}
     return handleRemote('sysCall_afterSimulation')
-end
-
-function sysCall_ext(funcName,...)
-    if _G[funcName] then -- for now ignore functions in tables
-        return _G[funcName](...) 
-    else
-        if threaded then
-            extCall_funcName=funcName
-            extCall_args={...}
-            while extCall_funcName do
-                pythonWrapper.handleQueue()
-            end
-            return extCall_ret
-        else
-            return handleRemote(funcName,{...})
-        end
-    end
 end
 
 function sysCall_sensing()

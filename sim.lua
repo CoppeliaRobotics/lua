@@ -1470,7 +1470,7 @@ function _S.sysCallEx_init()
 
     -- Keep for backward compatibility:
     -----------------------------------
-    if sim.ruckigPos then
+    if sim.rmlPos==nil then
         sim.rmlPos=sim.ruckigPos
         sim.rmlVel=sim.ruckigVel
         sim.rmlStep=sim.ruckigStep
