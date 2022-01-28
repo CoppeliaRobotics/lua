@@ -1012,7 +1012,8 @@ def _moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJe
                 outPos[i]=newPosVelAccel[i]
                 outVel[i]=newPosVelAccel[len(currentPos)+i]
                 outAccel[i]=newPosVelAccel[len(currentPos)*2+i]
-            callback(outPos,outVel,outAccel,auxData)
+            if callback(outPos,outVel,outAccel,auxData):
+                break
         else:
             raise RuntimeError("sim.ruckigStep returned error code "+result)
         if result == 0:
@@ -1055,13 +1056,14 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
                     if result == 0:
                         timeLeft = dt-syncTime
                     t = newPosVelAccel[0]/distance
-                    mi = sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                    outMatrix = sim.interpolateMatrices(currentMatrix,targetMatrix,t)
                     nv = [newPosVelAccel[1]]
                     na = [newPosVelAccel[2]]
                     if not usingMatrices:
-                        q = sim.getQuaternionFromMatrix(mi)
-                        mi = [mi[3],mi[7],mi[11],q[0],q[1],q[2],q[3]]
-                    callback(mi,nv,na,auxData)
+                        q = sim.getQuaternionFromMatrix(outMatrix)
+                        outMatrix = [outMatrix[3],outMatrix[7],outMatrix[11],q[0],q[1],q[2],q[3]]
+                    if callback(outMatrix,nv,na,auxData):
+                        break
                 else:
                     raise RuntimeError("sim.ruckigStep returned error code "+result)
                 if result == 0:
@@ -1088,25 +1090,22 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
                 t = 0
                 if abs(angle)>math.pi*0.00001:
                     t = newPosVelAccel[3]/angle
-                mi = sim.interpolateMatrices(currentMatrix,targetMatrix,t)
-                mi[3] = currentMatrix[3]+newPosVelAccel[0]
-                mi[7] = currentMatrix[7]+newPosVelAccel[1]
-                mi[11] = currentMatrix[11]+newPosVelAccel[2]
+                outMatrix = sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                outMatrix[3] = currentMatrix[3]+newPosVelAccel[0]
+                outMatrix[7] = currentMatrix[7]+newPosVelAccel[1]
+                outMatrix[11] = currentMatrix[11]+newPosVelAccel[2]
                 nv = [newPosVelAccel[4],newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7]]
                 na = [newPosVelAccel[8],newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11]]
                 if not usingMatrices:
-                    q = sim.getQuaternionFromMatrix(mi)
-                    mi = [mi[3],mi[7],mi[11],q[0],q[1],q[2],q[3]]
-                callback(mi,nv,na,auxData)
+                    q = sim.getQuaternionFromMatrix(outMatrix)
+                    outMatrix = [outMatrix[3],outMatrix[7],outMatrix[11],q[0],q[1],q[2],q[3]]
+                if callback(outMatrix,nv,na,auxData):
+                    break
             else:
                 raise RuntimeError("sim.ruckigStep returned error code "+result)
             if result == 0:
                 sim.switchThread()
         sim.ruckigRemove(ruckigObject)
-
-    if not usingMatrices:
-        q = sim.getQuaternionFromMatrix(outMatrix)
-        outMatrix = [outMatrix[3],outMatrix[7],outMatrix[11],q[0],q[1],q[2],q[3]]
 
     sim.setThreadAutomaticSwitch(lb)
     return outMatrix,timeLeft

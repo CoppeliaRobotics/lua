@@ -457,14 +457,16 @@ function sim.moveToPose(...)
                         timeLeft=dt-syncTime
                     end
                     local t=newPosVelAccel[1]/distance
-                    local mi=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                    outMatrix=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
                     local nv={newPosVelAccel[2]}
                     local na={newPosVelAccel[3]}
                     if not usingMatrices then
-                        local q=sim.getQuaternionFromMatrix(mi)
-                        mi={mi[4],mi[8],mi[12],q[1],q[2],q[3],q[4]}
+                        local q=sim.getQuaternionFromMatrix(outMatrix)
+                        outMatrix={outMatrix[4],outMatrix[8],outMatrix[12],q[1],q[2],q[3],q[4]}
                     end
-                    callback(mi,nv,na,auxData)
+                    if callback(outMatrix,nv,na,auxData) then
+                        break
+                    end
                 else
                     error('sim.ruckigStep returned error code '..result)
                 end
@@ -499,17 +501,19 @@ function sim.moveToPose(...)
                 if math.abs(angle)>math.pi*0.00001 then
                     t=newPosVelAccel[4]/angle
                 end
-                local mi=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
-                mi[4]=currentMatrix[4]+newPosVelAccel[1]
-                mi[8]=currentMatrix[8]+newPosVelAccel[2]
-                mi[12]=currentMatrix[12]+newPosVelAccel[3]
+                outMatrix=sim.interpolateMatrices(currentMatrix,targetMatrix,t)
+                outMatrix[4]=currentMatrix[4]+newPosVelAccel[1]
+                outMatrix[8]=currentMatrix[8]+newPosVelAccel[2]
+                outMatrix[12]=currentMatrix[12]+newPosVelAccel[3]
                 local nv={newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7],newPosVelAccel[8]}
                 local na={newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11],newPosVelAccel[12]}
                 if not usingMatrices then
-                    local q=sim.getQuaternionFromMatrix(mi)
-                    mi={mi[4],mi[8],mi[12],q[1],q[2],q[3],q[4]}
+                    local q=sim.getQuaternionFromMatrix(outMatrix)
+                    outMatrix={outMatrix[4],outMatrix[8],outMatrix[12],q[1],q[2],q[3],q[4]}
                 end
-                callback(mi,nv,na,auxData)
+                if callback(outMatrix,nv,na,auxData) then
+                    break
+                end
             else
                 error('sim.ruckigStep returned error code '..result)
             end
@@ -518,11 +522,6 @@ function sim.moveToPose(...)
             end
         end
         sim.ruckigRemove(ruckigObject)
-    end
-
-    if not usingMatrices then
-        local q=sim.getQuaternionFromMatrix(outMatrix)
-        outMatrix={outMatrix[4],outMatrix[8],outMatrix[12],q[1],q[2],q[3],q[4]}
     end
 
     sim.setThreadAutomaticSwitch(lb)
@@ -610,7 +609,9 @@ function sim.moveToConfig(...)
                 outVel[i]=newPosVelAccel[#currentPos+i]
                 outAccel[i]=newPosVelAccel[#currentPos*2+i]
             end
-            callback(outPos,outVel,outAccel,auxData)
+            if callback(outPos,outVel,outAccel,auxData) then
+                break
+            end
         else
             error('sim.ruckigStep returned error code '..result)
         end
