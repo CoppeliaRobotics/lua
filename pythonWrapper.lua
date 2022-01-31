@@ -304,11 +304,12 @@ function initPython(p,method)
                         msg=rep.error
                         if msg and #msg>0 then
                             local p1=string.find(msg,'File "<string>"')
-                            local p2=string.find(msg,'File "<string>"',p1+1)
-                            msg="\n"..string.sub(msg,p2)
-                            local obj=sim.getObject('.',{noError=true})
-                            if obj>=0 then
-                                msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
+                            if p1 then
+                                msg="\n"..string.sub(msg,p1)
+                                local obj=sim.getObject('.',{noError=true})
+                                if obj>=0 then
+                                    msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
+                                end
                             end
                         end
                         if simSubprocess.isRunning(subprocess) then
