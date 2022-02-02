@@ -410,7 +410,7 @@ function sim.getAlternateConfigs(...)
 end
 
 function sim.moveToPose(...)
-    local flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size='7..12'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size='7..12'},{type='func'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
+    local flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size='7..12'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size='7..12'},{type='any'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
 
     if #maxVel<1 or #maxVel~=#maxAccel or #maxVel~=#maxJerk then
         error("Bad table size.")
@@ -434,6 +434,9 @@ function sim.moveToPose(...)
     local outMatrix=sim.copyTable(currentMatrix)
     local axis,angle=sim.getRotationAxis(currentMatrix,targetMatrix)
     local timeLeft=0
+    if type(callback)=='string' then
+        callback=_G[callback]
+    end
     if metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
         -- the start and goal pose. This always results in straight line movement paths
@@ -529,7 +532,7 @@ function sim.moveToPose(...)
 end
 
 function sim.moveToConfig(...)
-    local flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep=checkargs({{type='int'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='table',item_type='float',nullable=true},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='func'},{type='any',default=NIL,nullable=true},{type='table',item_type='bool',default=NIL,nullable=true},{type='float',default=0}},...)
+    local flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep=checkargs({{type='int'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='table',item_type='float',nullable=true},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='any'},{type='any',default=NIL,nullable=true},{type='table',item_type='bool',default=NIL,nullable=true},{type='float',default=0}},...)
 
     if #currentPos<1 or #currentPos>#maxVel or #currentPos>#maxAccel or #currentPos>#maxJerk or #currentPos>#targetPos or (currentVel and #currentPos>#currentVel) or (currentAccel and #currentPos>#currentAccel) or (targetVel and #currentPos>#targetVel) or (cyclicJoints and #currentPos>#cyclicJoints) then
         error("Bad table size.")
@@ -593,6 +596,9 @@ function sim.moveToConfig(...)
     local ruckigObject=sim.ruckigPos(#currentPos,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
     local result=0
     local timeLeft=0
+    if type(callback)=='string' then
+        callback=_G[callback]
+    end
     while result==0 do
         local dt=timeStep
         if dt==0 then
@@ -1435,15 +1441,15 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','float[] configs=sim.getAlternateConfigs(int[] jointHandles,float[] inputConfig,int tipHandle=-1,float[] lowLimits=nil,float[] ranges=nil)')
     sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(int[] handles)')
 
-    sim.registerScriptFunction('sim.moveToPose@sim','float[7]/float[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,float[7]/float[12] currentPose/currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7]/float[12] targetPose/targetMatrix,function callback,auxData=nil,float[4] metric=nil,float timeStep=0)')
-    sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,function callback,auxData=nil,bool[] cyclicJoints=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToPose@sim','float[7]/float[12] endPose/endMatrix,float timeLeft=sim.moveToPose(int flags,float[7]/float[12] currentPose/currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7]/float[12] targetPose/targetMatrix,func/string callback,auxData=nil,float[4] metric=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,func/string callback,auxData=nil,bool[] cyclicJoints=nil,float timeStep=0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
     sim.registerScriptFunction('sim.copyTable@sim',"any[]/map copy=sim.copyTable(any[]/map original)")
 
     sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"float[] config=sim.getPathInterpolatedConfig(float[] path,float[] pathLengths,float t,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
     sim.registerScriptFunction('sim.resamplePath@sim',"float[] path=sim.resamplePath(float[] path,float[] pathLengths,int finalConfigCnt,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
-    sim.registerScriptFunction('sim.getPathLengths@sim','float[] pathLengths,float totalLength=sim.getPathLengths(float[] path,int dof,function/string distCallback=nil)')
+    sim.registerScriptFunction('sim.getPathLengths@sim','float[] pathLengths,float totalLength=sim.getPathLengths(float[] path,int dof,func/string distCallback=nil)')
     sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(float[] configA,float[] configB,float[] metric={1,1,1,..},int[] types={0,0,0,..})')
     sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"float[] path,float[] times=sim.generateTimeOptimalTrajectory(float[] path,float[] pathLengths,float[] minMaxVel,float[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,bool simulationTime=true)')
