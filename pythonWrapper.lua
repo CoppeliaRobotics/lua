@@ -302,16 +302,7 @@ function initPython(p,method)
                         simZMQ.send(socket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
                     else
                         msg=rep.error
-                        if msg and #msg>0 then
-                            local p1=string.find(msg,'File "<string>"')
-                            if p1 then
-                                msg="\n"..string.sub(msg,p1)
-                                local obj=sim.getObject('.',{noError=true})
-                                if obj>=0 then
-                                    msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
-                                end
-                            end
-                        end
+                        msg=getCleanErrorMsg(msg)
                         if simSubprocess.isRunning(subprocess) then
                             simSubprocess.kill(subprocess)
                         end
@@ -365,6 +356,35 @@ function cleanupPython()
     end
 end
 
+function getCleanErrorMsg(inMsg)
+    local msg=inMsg
+    if msg and #msg>0 and not nakedErrors then
+        local toRemove={"[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n","[^\n]*exec%(req%['code'%],module%)[^\n]*\n"}
+        for i=1,#toRemove,1 do
+            local p1,p2=string.find(msg,toRemove[i])
+            if p1 then
+                msg=string.sub(msg,1,p1-1)..string.sub(msg,p2+1)
+            end
+        end
+        msg=string.gsub(msg,'File "<string>"','script')
+        local p1=0,p2,p3
+        while true do
+            p2,p3=string.find(msg,'[^\n]*script, line %d+,[^\n]+\n',p1+1)
+            if p2 then
+                local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
+                if lineNb<=24 then
+                    p1=p2
+                else
+                    msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
+                end
+            else
+                break
+            end
+        end
+    end
+    return msg
+end
+
 function getErrorPython()
     local a,msg
     if callMethod==0 then
@@ -375,15 +395,7 @@ function getErrorPython()
                     local rep,o,t=cbor.decode(rep)
                     a=rep.success==false
                     msg=rep.error
-                    if msg and #msg>0 then
-                        local p1=string.find(msg,'__startClientScript__')
-                        local p2=string.find(msg,'\n',p1)
-                        msg=string.sub(msg,p2)
-                        local obj=sim.getObject('.',{noError=true})
-                        if obj>=0 then
-                            msg=msg:gsub('File "<string>"',"["..sim.getObjectAlias(obj,1).."]")
-                        end
-                    end
+                    msg=getCleanErrorMsg(msg)
                 end
             end
         end
