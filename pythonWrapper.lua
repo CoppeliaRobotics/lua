@@ -189,7 +189,7 @@ function sysCall_init()
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
     json=require 'dkjson'
-    -- cbor=require 'cbor' -- encodes strings as buffers too, always
+    -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
     cbor=require'org.conman.cbor'
     
     context=simZMQ.ctx_new()
@@ -359,6 +359,9 @@ end
 function getCleanErrorMsg(inMsg)
     local msg=inMsg
     if msg and #msg>0 and not nakedErrors then
+        local code=sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_text)
+        local _,totLines=string.gsub(code,'\n','')
+        totLines=totLines+1
         local toRemove={"[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n","[^\n]*exec%(req%['code'%],module%)[^\n]*\n"}
         for i=1,#toRemove,1 do
             local p1,p2=string.find(msg,toRemove[i])
@@ -372,7 +375,7 @@ function getCleanErrorMsg(inMsg)
             p2,p3=string.find(msg,'[^\n]*script, line %d+,[^\n]+\n',p1+1)
             if p2 then
                 local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
-                if lineNb<=24 then
+                if lineNb<=totLines then
                     p1=p2
                 else
                     msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
