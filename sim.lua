@@ -670,8 +670,16 @@ function sim.generateTimeOptimalTrajectory(...)
     end
     local msg=simZMQ.msg_new()
     simZMQ.msg_init(msg)
-    result=simZMQ.msg_recv(msg,socket,0)
---    local result,data=simZMQ.__recv(socket,0,16000000)
+    
+    local st=sim.getSystemTimeInMs(-1)
+    result=-1
+    while sim.getSystemTimeInMs(st)<2000 do
+        local rc,revents=simZMQ.poll({socket},{simZMQ.POLLIN},0)
+        if rc>0 then
+            result=simZMQ.msg_recv(msg,socket,0)
+            break
+        end
+    end
     if result==-1 then
         local err=simZMQ.errnum()
         error('recv failed: '..err..': '..simZMQ.strerror(err))
@@ -1441,8 +1449,8 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','float[] configs=sim.getAlternateConfigs(int[] jointHandles,float[] inputConfig,int tipHandle=-1,float[] lowLimits=nil,float[] ranges=nil)')
     sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(int[] handles)')
 
-    sim.registerScriptFunction('sim.moveToPose@sim','float[7] endPose,float timeLeft=sim.moveToPose(int flags,float[7] currentPose,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7] targetPose,func callback,auxData=nil,float[4] metric=nil,float timeStep=0)\nfloat[12] endMatrix,float timeLeft=sim.moveToPose(int flags,float[12] currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[12] targetMatrix,func callback,auxData=nil,float[4] metric=nil,float timeStep=0)')
-    sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,func callback,auxData=nil,bool[] cyclicJoints=nil,float timeStep=0)')
+    sim.registerScriptFunction('sim.moveToPose@sim','float[7] endPose,float timeLeft=sim.moveToPose(int flags,float[7] currentPose,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7] targetPose,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)\nfloat[12] endMatrix,float timeLeft=sim.moveToPose(int flags,float[12] currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[12] targetMatrix,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)')
+    sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,func callback,any auxData=nil,bool[] cyclicJoints=nil,float timeStep=0.0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
 
     sim.registerScriptFunction('sim.copyTable@sim',"any[] copy=sim.copyTable(any[] original)\nmap copy=sim.copyTable(map original)")
@@ -1450,7 +1458,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"float[] config=sim.getPathInterpolatedConfig(float[] path,float[] pathLengths,float t,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
     sim.registerScriptFunction('sim.resamplePath@sim',"float[] path=sim.resamplePath(float[] path,float[] pathLengths,int finalConfigCnt,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
     sim.registerScriptFunction('sim.getPathLengths@sim','float[] pathLengths,float totalLength=sim.getPathLengths(float[] path,int dof,func distCallback=nil)')
-    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(float[] configA,float[] configB,float[] metric={1,1,1,..},int[] types={0,0,0,..})')
+    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(float[] configA,float[] configB,float[] metric=nil,int[] types=nil)')
     sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"float[] path,float[] times=sim.generateTimeOptimalTrajectory(float[] path,float[] pathLengths,float[] minMaxVel,float[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
     sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,bool simulationTime=true)')
     sim.registerScriptFunction('sim.waitForSignal@sim','any sigVal=sim.waitForSignal(string sigName)')
