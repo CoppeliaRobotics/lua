@@ -1,6 +1,6 @@
 local textUtils={}
 
-function textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
+function textUtils.generateTextShape(txt,color,height,centered,alphabetModel,parentDummy)
     height=height or 0.1
     color=color or {1,1,1}
     alphabetModel=alphabetModel or "system/alphabet.ttm"
@@ -35,9 +35,9 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
             local h=sim.loadModel(allLetters[char])
             local size=sim.getShapeBB(h)
             local p=sim.getObjectPosition(h,-1)
-            off=off+size[1]*0.55
+            off=off+size[1]*0.5+height*0.03
             sim.setObjectPosition(h,-1,{off,p[2]-voff,0})
-            off=off+size[1]*0.55
+            off=off+size[1]*0.5+height*0.03
             shapes[#shapes+1]=h
             lines[#lines][#lines[#lines]+1]=h
             linesW[#linesW]=off
@@ -79,7 +79,7 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
         sim.setShapeColor(s,nil,sim.colorcomponent_ambient_diffuse,color)
     end
     if parentDummy==nil then
-        parentDummy=sim.createDummy(0.005)
+        retVal=sim.createDummy(0.005)
     else
         while true do
             local c=sim.getObjectChild(parentDummy,0)
@@ -88,8 +88,8 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
             end
             sim.removeObject(c)
         end
+        retVal=parentDummy
     end
-    local retVal=parentDummy
     if #shapes>0 then
         sim.setObjectParent(s,retVal,false)
     end
