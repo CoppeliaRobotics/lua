@@ -147,11 +147,12 @@ function ConfigUI:defaultConfig()
 end
 
 function ConfigUI:readConfig()
+    if self.schema==nil then error('readConfig() requires schema') end
     self.config=self:defaultConfig()
     local data=self:readBlock(self.dataBlockName.config)
     if data then
         for k,v in pairs(sim.unpackTable(data)) do
-            self.config[k]=v
+            if self.schema[k] then self.config[k]=v end
         end
     end
 end
