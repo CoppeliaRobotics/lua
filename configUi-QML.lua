@@ -495,6 +495,7 @@ function ConfigUI:sysCall_init()
     self:readSchema()
     self:validateSchema()
     self:readInfo()
+    self.info.modelType=self.modelType
     self:writeInfo()
     self:readConfig()
     self:writeConfig()
