@@ -1,6 +1,3 @@
--- XXX: required for hook into sysCall_init to work if not defined
-sysCall_init=sysCall_init or function() end
-
 ConfigUI={}
 
 local json=require'dkjson'
