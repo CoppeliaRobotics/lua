@@ -1218,41 +1218,27 @@ end
 
 
 function sim.getNamedBoolParam(name)
-    local v=sim.getNamedStringParam(name)
-    if v==nil then return nil end
-    if v=='true' then return true end
-    if v=='false' then return false end
-    if v=='on' then return true end
-    if v=='off' then return false end
-    if v=='1' then return true end
-    if v=='0' then return false end
-    error(string.format('expected a bool value for param "%s"',name))
+    return _S.parseBool(sim.getNamedStringParam(name))
 end
 
 function sim.getNamedFloatParam(name)
-    local v=sim.getNamedStringParam(name)
-    if v==nil then return nil end
-    return tonumber(v)
+    return _S.parseFloat(sim.getNamedStringParam(name))
 end
 
 function sim.getNamedInt32Param(name)
-    local v=sim.getNamedStringParam(name)
-    if v==nil then return nil end
-    v=tonumber(v)
-    if math.type(v)=='integer' then return v end
-    error(string.format('expected an integer value for param "%s"',name))
+    return _S.parseInt(sim.getNamedStringParam(name))
 end
 
 function sim.setNamedBoolParam(name,value)
-    return sim.setNamedStringParam(name,tostring(value))
+    return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
 function sim.setNamedFloatParam(name,value)
-    return sim.setNamedStringParam(name,tostring(value))
+    return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
 function sim.setNamedInt32Param(name,value)
-    return sim.setNamedStringParam(name,tostring(value))
+    return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
 sim.getStringNamedParam=sim.getNamedStringParam
@@ -1260,6 +1246,34 @@ sim.setStringNamedParam=sim.setNamedStringParam
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
+function _S.parseBool(v)
+    if v==nil then return nil end
+    if v=='true' then return true end
+    if v=='false' then return false end
+    if v=='on' then return true end
+    if v=='off' then return false end
+    if v=='1' then return true end
+    if v=='0' then return false end
+    error('bool value expected')
+end
+
+function _S.parseFloat(v)
+    if v==nil then return nil end
+    return tonumber(v)
+end
+
+function _S.parseInt(v)
+    if v==nil then return nil end
+    v=tonumber(v)
+    if math.type(v)=='integer' then return v end
+    error('integer value expected')
+end
+
+function _S.paramValueToString(v)
+    if v==nil then return '' end
+    return tostring(v)
+end
+
 function _S.linearInterpolate(conf1,conf2,t,types)
     local retVal={}
     local qcnt=0
