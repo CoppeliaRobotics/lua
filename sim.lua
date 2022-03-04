@@ -1244,8 +1244,70 @@ end
 sim.getStringNamedParam=sim.getNamedStringParam
 sim.setStringNamedParam=sim.setNamedStringParam
 
+function sim.getSettingString(key)
+    local r=sim.getNamedStringParam(key)
+    if r then return r end
+    _S.systemSettings=_S.systemSettings or _S.readSystemSettings()
+    _S.userSettings=_S.userSettings or _S.readUserSettings()
+    return _S.userSettings[key] or _S.systemSettings[key]
+end
+
+function sim.getSettingBool(key)
+    return _S.parseBool(sim.getSettingString(key))
+end
+
+function sim.getSettingFloat(key)
+    return _S.parseFloat(sim.getSettingString(key))
+end
+
+function sim.getSettingInt32(key)
+    return _S.parseInt(sim.getSettingString(key))
+end
+
 -- Hidden, internal functions:
 ----------------------------------------------------------
+
+function _S.readSettings(path)
+    local f=io.open(path, 'r')
+    if f==nil then return nil end
+    local cfg={}
+    for line in f:lines() do
+        line=line:gsub('//.*$','')
+        key,value=line:match('^(%S+)%s*=%s*(.*%S)%s*$')
+        if key then
+            cfg[key]=value
+        end
+    end
+    return cfg
+end
+
+function _S.readSystemSettings()
+    local appPath=sim.getStringParam(sim.stringparam_application_path)
+    local psep=package.config:sub(1,1)
+    local usrSet=appPath..psep..'system'..psep..'usrset.txt'
+    return _S.readSettings(usrSet)
+end
+
+function _S.readUserSettings()
+    local plat=sim.getInt32Param(sim.intparam_platform)
+    local psep=package.config:sub(1,1)
+    local usrSet='CoppeliaSim'..psep..'usrset.txt'
+    local home=os.getenv('HOME')
+    if plat==0 then --windows
+        local appdata=os.getenv('appdata')
+        return _S.readSettings(appdata..psep..usrSet)
+    elseif plat==1 then --macos
+        return _S.readSettings(home..psep..'.'..usrSet)
+            or _S.readSettings(home..psep..'Library'..psep..'Preferences'..psep..usrSet)
+    elseif plat==2 then --linux
+        local xdghome=os.getenv('XDG_CONFIG_HOME') or home
+        return _S.readSettings(xdghome..psep..usrSet)
+            or _S.readSettings(home..psep..usrSet)
+    else
+        error('unsupported platform: '..plat)
+    end
+end
+
 function _S.parseBool(v)
     if v==nil then return nil end
     if v=='true' then return true end
