@@ -1,3 +1,10 @@
+local backend=sim.getSettingString('configUi.backend') or 'UI'
+if backend=='QML' then
+    return require 'configUi-QML'
+elseif backend~='UI' then
+    error('invalid backend: '..backend)
+end
+
 ConfigUI={}
 
 function ConfigUI:validateElemSchema(elemName,elemSchema)
