@@ -1248,7 +1248,7 @@ function sim.getSettingString(key)
     local r=sim.getNamedStringParam(key)
     if r then return r end
     _S.systemSettings=_S.systemSettings or _S.readSystemSettings()
-    _S.userSettings=_S.userSettings or _S.readUserSettings()
+    _S.userSettings=_S.userSettings or _S.readUserSettings() or {}
     return _S.userSettings[key] or _S.systemSettings[key]
 end
 
