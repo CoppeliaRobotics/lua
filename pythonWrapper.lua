@@ -1011,6 +1011,13 @@ def _moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJe
             currentPosVelAccel.append(0)
             outAccel.append(0)
         maxVelAccelJerk.append(maxJerk[i])
+    
+    if len(maxVel) > len(currentPos):
+        for i in range(len(maxVel)-len(currentPos)):
+            currentPosVelAccel.append(maxVel[len(currentPos)+i])
+    if len(maxAccel) > len(currentPos):
+        for i in range(len(maxAccel)-len(currentPos)):
+            currentPosVelAccel.append(maxAccel[len(currentPos)+i])
 
     ruckigObject = sim.ruckigPos(len(currentPos),0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
     result = 0
@@ -1060,6 +1067,10 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
         if distance > 0.000001:
             currentPosVelAccel = [0,0,0]
             maxVelAccelJerk = [maxVel[0],maxAccel[0],maxJerk[0]]
+            if len(maxVel) > 1:
+                maxVelAccelJerk.append(maxVel[1])
+            if len(maxAccel) > 1:
+                maxVelAccelJerk.append(maxAccel[1])
             targetPosVel = [distance,0]
             ruckigObject = sim.ruckigPos(1,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,[1],targetPosVel)
             result = 0
@@ -1092,6 +1103,12 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
         dx = [targetMatrix[3]-currentMatrix[3],targetMatrix[7]-currentMatrix[7],targetMatrix[11]-currentMatrix[11],angle]
         currentPosVelAccel = [0,0,0,0,0,0,0,0,0,0,0,0]
         maxVelAccelJerk = [maxVel[0],maxVel[1],maxVel[2],maxVel[3],maxAccel[0],maxAccel[1],maxAccel[2],maxAccel[3],maxJerk[0],maxJerk[1],maxJerk[2],maxJerk[3]]
+        if len(maxVel) > 4:
+            for i in range(len(maxVel)-len(maxJerk)):
+                maxVelAccelJerk.append(maxVel[len(maxJerk)+i])
+        if len(maxAccel) > 4:
+            for i in range(len(maxAccel)-len(maxJerk)):
+                maxVelAccelJerk.append(maxAccel[len(maxJerk)+i])
         targetPosVel = [dx[0],dx[1],dx[2],dx[3],0,0,0,0,0]
         ruckigObject = sim.ruckigPos(4,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,[1,1,1,1],targetPosVel)
         result = 0
