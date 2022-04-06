@@ -412,11 +412,20 @@ end
 function sim.moveToPose(...)
     local flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMatrix,callback,auxData,metric,timeStep=checkargs({{type='int'},{type='table',size='7..12'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',size='7..12'},{type='any'},{type='any',default=NIL,nullable=true},{type='table',size=4,default=NIL,nullable=true},{type='float',default=0}},...)
 
-    if #maxVel<1 or #maxVel~=#maxAccel or #maxVel~=#maxJerk then
+    local maxMinVelCnt=#maxJerk
+    if flags>=0 and (flags&sim.ruckig_minvel)~=0 then
+        maxMinVelCnt=maxMinVelCnt+#maxJerk
+    end
+    local maxMinAccelCnt=#maxJerk
+    if flags>=0 and (flags&sim.ruckig_minaccel)~=0 then
+        maxMinAccelCnt=maxMinAccelCnt+#maxJerk
+    end
+
+    if #maxJerk<1 or #maxVel<maxMinVelCnt or #maxAccel<maxMinAccelCnt then
         error("Bad table size.")
     end
-    if not metric and #maxVel<4 then
-        error("Arguments #3, #4 and #5 should be of size 4. (in function 'sim.moveToPose')")
+    if not metric and #maxJerk<4 then
+        error("Argument #5 should be of size 4. (in function 'sim.moveToPose')")
     end
 
     local lb=sim.setThreadAutomaticSwitch(false)
@@ -445,6 +454,12 @@ function sim.moveToPose(...)
         if distance>0.000001 then
             local currentPosVelAccel={0,0,0}
             local maxVelAccelJerk={maxVel[1],maxAccel[1],maxJerk[1]}
+            if flags>=0 and (flags&sim.ruckig_minvel)~=0 then
+                maxVelAccelJerk[#maxVelAccelJerk+1]=maxVel[2]
+            end
+            if flags>=0 and (flags&sim.ruckig_minaccel)~=0 then
+                maxVelAccelJerk[#maxVelAccelJerk+1]=maxAccel[2]
+            end
             local targetPosVel={distance,0}
             local ruckigObject=sim.ruckigPos(1,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,{1},targetPosVel)
             local result=0
@@ -486,6 +501,16 @@ function sim.moveToPose(...)
         local dx={targetMatrix[4]-currentMatrix[4],targetMatrix[8]-currentMatrix[8],targetMatrix[12]-currentMatrix[12],angle}
         local currentPosVelAccel={0,0,0,0,0,0,0,0,0,0,0,0}
         local maxVelAccelJerk={maxVel[1],maxVel[2],maxVel[3],maxVel[4],maxAccel[1],maxAccel[2],maxAccel[3],maxAccel[4],maxJerk[1],maxJerk[2],maxJerk[3],maxJerk[4]}
+        if flags>=0 and (flags&sim.ruckig_minvel)~=0 then
+            for i=1,4,1 do
+                maxVelAccelJerk[#maxVelAccelJerk+1]=maxVel[4+i]
+            end
+        end
+        if flags>=0 and (flags&sim.ruckig_minaccel)~=0 then
+            for i=1,4,1 do
+                maxVelAccelJerk[#maxVelAccelJerk+1]=maxAccel[4+i]
+            end
+        end
         local targetPosVel={dx[1],dx[2],dx[3],dx[4],0,0,0,0,0}
         local ruckigObject=sim.ruckigPos(4,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,{1,1,1,1},targetPosVel)
         local result=0
@@ -533,8 +558,17 @@ end
 
 function sim.moveToConfig(...)
     local flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetVel,callback,auxData,cyclicJoints,timeStep=checkargs({{type='int'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='table',item_type='float',nullable=true},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float'},{type='table',item_type='float',nullable=true},{type='any'},{type='any',default=NIL,nullable=true},{type='table',item_type='bool',default=NIL,nullable=true},{type='float',default=0}},...)
+    
+    local maxMinVelCnt=#currentPos
+    if flags>=0 and (flags&sim.ruckig_minvel)~=0 then
+        maxMinVelCnt=maxMinVelCnt+#currentPos
+    end
+    local maxMinAccelCnt=#currentPos
+    if flags>=0 and (flags&sim.ruckig_minaccel)~=0 then
+        maxMinAccelCnt=maxMinAccelCnt+#currentPos
+    end
 
-    if #currentPos<1 or #currentPos>#maxVel or #currentPos>#maxAccel or #currentPos>#maxJerk or #currentPos>#targetPos or (currentVel and #currentPos>#currentVel) or (currentAccel and #currentPos>#currentAccel) or (targetVel and #currentPos>#targetVel) or (cyclicJoints and #currentPos>#cyclicJoints) then
+    if #currentPos<1 or maxMinVelCnt>#maxVel or maxMinAccelCnt>#maxAccel or #currentPos>#maxJerk or #currentPos>#targetPos or (currentVel and #currentPos>#currentVel) or (currentAccel and #currentPos>#currentAccel) or (targetVel and #currentPos>#targetVel) or (cyclicJoints and #currentPos>#cyclicJoints) then
         error("Bad table size.")
     end
 
@@ -591,6 +625,16 @@ function sim.moveToConfig(...)
             outAccel[i-#currentPos*2]=0
         end
         maxVelAccelJerk[i]=maxJerk[i-#currentPos*2]
+    end
+    if flags>=0 and (flags&sim.ruckig_minvel)~=0 then
+        for i=1,#currentPos,1 do
+            maxVelAccelJerk[#maxVelAccelJerk+1]=maxVel[#currentPos+i]
+        end
+    end
+    if flags>=0 and (flags&sim.ruckig_minaccel)~=0 then
+        for i=1,#currentPos,1 do
+            maxVelAccelJerk[#maxVelAccelJerk+1]=maxAccel[#currentPos+i]
+        end
     end
 
     local ruckigObject=sim.ruckigPos(#currentPos,0.0001,flags,currentPosVelAccel,maxVelAccelJerk,sel,targetPosVel)
