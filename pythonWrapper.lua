@@ -290,7 +290,7 @@ function initPython(p,method)
                 simZMQ.send(socket,cbor.encode({cmd='loadCode',code=p}),0)
                 local st=sim.getSystemTimeInMs(-1)
                 local r,rep
-                while sim.getSystemTimeInMs(st)<2000 do
+                while sim.getSystemTimeInMs(st)<5000 do
                     r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
                     if r>=0 then
                         break
