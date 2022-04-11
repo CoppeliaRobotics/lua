@@ -690,7 +690,6 @@ function _S.graph.init()
     _S.graph.updateTick=_S.graph.getUpdateTick(c['updateFreq'])
     _S.graph.updateCnt=0
     _S.graph.plotTabIndex=0
-    _S.graph.lastT=sim.getSystemTimeInMs(-1)
     _S.graph.createOrRemovePlotIfNeeded()
     _S.graph.updateCurves(true)
 end

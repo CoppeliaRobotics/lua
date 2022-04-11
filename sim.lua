@@ -715,9 +715,9 @@ function sim.generateTimeOptimalTrajectory(...)
     local msg=simZMQ.msg_new()
     simZMQ.msg_init(msg)
     
-    local st=sim.getSystemTimeInMs(-1)
+    local st=sim.getSystemTime()
     result=-1
-    while sim.getSystemTimeInMs(st)<2000 do
+    while sim.getSystemTime()-st<2 do
         local rc,revents=simZMQ.poll({socket},{simZMQ.POLLIN},0)
         if rc>0 then
             result=simZMQ.msg_recv(msg,socket,0)
@@ -1045,8 +1045,8 @@ function sim.wait(...)
         end
         retVal=sim.getSimulationTime()-st-dt
     else
-        local st=sim.getSystemTimeInMs(-1)
-        while sim.getSystemTimeInMs(st)<dt*1000 do
+        local st=sim.getSystemTime()
+        while sim.getSystemTime()-st<dt do
             sim.switchThread()
         end
     end
@@ -1071,7 +1071,7 @@ function sim.serialRead(...)
 
     local retVal
     if blocking then
-        local st=sim.getSystemTimeInMs(-1)
+        local st=sim.getSystemTime()
         while true do
             local data=_S.serialPortData[portHandle]
             _S.serialPortData[portHandle]=''
@@ -1100,7 +1100,7 @@ function sim.serialRead(...)
                     break
                 end
             end
-            if sim.getSystemTimeInMs(st)>=(timeout*1000) and timeout~=0 then
+            if sim.getSystemTime()-st>=timeout and timeout~=0 then
                 retVal=data
                 break
             end

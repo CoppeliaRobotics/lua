@@ -237,16 +237,16 @@ function sysCall_cleanup()
         simulationTimeStepCount=simulationTimeStepCount+1
         pythonWrapper.publishStepCount()
         
-        local st=sim.getSystemTimeInMs(-1)
+        local st=sim.getSystemTime()
         if threaded then
-            while sim.getSystemTimeInMs(st)<500 do
+            while sim.getSystemTime()-st<0.5 do
                 if threadEnded then
                     break
                 end
                 pythonWrapper.handleQueue()
             end
         else
-            while sim.getSystemTimeInMs(st)<300 do
+            while sim.getSystemTime()-st<0.3 do
                 handleRemote('sysCall_cleanup',nil,0.31)
             end
         end
@@ -288,9 +288,9 @@ function initPython(p,method)
                 simZMQ.setsockopt(socket,simZMQ.LINGER,sim.packUInt32Table{0})
                 simZMQ.connect(socket,portStr)
                 simZMQ.send(socket,cbor.encode({cmd='loadCode',code=p}),0)
-                local st=sim.getSystemTimeInMs(-1)
+                local st=sim.getSystemTime()
                 local r,rep
-                while sim.getSystemTimeInMs(st)<5000 do
+                while sim.getSystemTime()-st<5 do
                     r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
                     if r>=0 then
                         break
@@ -650,7 +650,7 @@ function handleRemote(callType,args,timeout)
         error('Detected reentrance')
     end
     local retVal
-    local st=sim.getSystemTimeInMs(-1)
+    local st=sim.getSystemTime()
     if callType=='sysCall_init' or ( pythonFuncs and pythonFuncs[callType]) then
         -- non-threaded, or first time, i.e. in init
         if timeout == nil then
@@ -662,7 +662,7 @@ function handleRemote(callType,args,timeout)
         while not callDone do
             handleErrors()
             pythonWrapper.handleQueue()
-            if threaded or sim.getSystemTimeInMs(st)>timeout*1000 then
+            if threaded or sim.getSystemTime()-st>timeout then
                 break
             end
         end
@@ -678,7 +678,7 @@ function handleRemote(callType,args,timeout)
                 pythonWrapper.handleQueue()
                 if sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_type)~=sim.scripttype_childscript or next(steppingClients)==nil then
                     -- Customization scripts in general (stepping handled elsewhere), or scripts in non-stepping mode
-                    if sim.getSystemTimeInMs(st)>timeout*1000 then
+                    if sim.getSystemTime()-st>timeout then
                         break
                     end
                 else
@@ -952,8 +952,8 @@ def _wait(dt,simTime=True):
             _switchThread()
         retVal=sim.getSimulationTime()-st-dt
     else:
-        st = sim.getSystemTimeInMs(-1)
-        while (sim.getSystemTimeInMs(st) < dt*1000) and (sim.getThreadExistRequest() == False):
+        st = sim.getSystemTime()
+        while (sim.getSystemTime()-st < dt) and (sim.getThreadExistRequest() == False):
             _switchThread()
     return retVal
 

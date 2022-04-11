@@ -108,8 +108,8 @@ function _S.path.init()
     _S.path.childTag='PATH_CHILD' -- old: childTag not used anymore
     _S.path.model=sim.getObject('.')
     _S.path.uniqueId=sim.getStringParam(sim.stringparam_uniqueid)
-    _S.path.refreshDelayInMs=200
-    _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
+    _S.path.refreshDelay=0.2
+    _S.path.lastRefreshTime=sim.getSystemTime()
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
     _S.path.createNewIfNeeded()
@@ -292,7 +292,7 @@ function _S.path.nonSimulation()
             _S.path.refresh=true
         end
     end
-    if _S.path.refresh and sim.getSystemTimeInMs(_S.path.lastRefreshTimeInMs)>_S.path.refreshDelayInMs then
+    if _S.path.refresh and sim.getSystemTime()-_S.path.lastRefreshTime>_S.path.refreshDelay then
         _S.path.setup()
     end
     local c=_S.path.readInfo()
@@ -464,7 +464,7 @@ function _S.path.setup()
         _S.path.displayLine(1)
         _S.path.displayLine(2)
         _S.path.refresh=false
-        _S.path.lastRefreshTimeInMs=sim.getSystemTimeInMs(-1)
+        _S.path.lastRefreshTime=sim.getSystemTime()
     else
         sysCall_afterDelete=nil
         sysCall_beforeCopy=nil
