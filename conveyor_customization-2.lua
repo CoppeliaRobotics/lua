@@ -107,11 +107,12 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
     if _S.conveyor.config.type==2 then
         local dx=_S.conveyor.config.length/(_S.conveyor.config.rollerCnt-1)
         for i=1,_S.conveyor.config.rollerCnt,1 do
-            local opt=16
+            local cyl=sim.createPrimitiveShape(sim.primitiveshape_cylinder,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95})
             if _S.conveyor.config.respondable then
-                opt=opt+8
+                sim.setObjectInt32Param(cyl,sim.shapeintparam_respondable,1)
             end
-            local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95},0.01)
+            sim.setShapeMass(cyl,0.01)
+            
             local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
             _S.conveyor.rolHandles[i]=jnt
             sim.setObjectParent(cyl,jnt,true)
@@ -130,11 +131,12 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
         local padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
         _S.conveyor.padOffset=(_S.conveyor.totalLength/padCnt)
         for i=1,padCnt,1 do
-            local opt=16
+            _S.conveyor.padHandles[i]=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness})
             if _S.conveyor.config.respondable then
-                opt=opt+8
+                sim.setObjectInt32Param(_S.conveyor.padHandles[i],sim.shapeintparam_respondable,1)
             end
-            _S.conveyor.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyor.config.beltElementWidth,_S.conveyor.config.width,_S.conveyor.config.beltElementThickness},0.01)
+            sim.setShapeMass(_S.conveyor.padHandles[i],0.01)
+            
             sim.setObjectAlias(_S.conveyor.padHandles[i],'pad')
             sim.setShapeColor(_S.conveyor.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.color)
             sim.setObjectParent(_S.conveyor.padHandles[i],_S.conveyor.model,true)

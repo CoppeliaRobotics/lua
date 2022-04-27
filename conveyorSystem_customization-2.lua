@@ -190,11 +190,12 @@ function path.refreshTrigger(ctrlPts,pathData,config)
     end
     if _S.conveyorSystem.config.type==2 then
         for i=1,rolCnt,1 do
-            local opt=16
+            local cyl=sim.createPrimitiveShape(sim.primitiveshape_cylinder,{_S.conveyorSystem.config.rollerRadius*2,_S.conveyorSystem.config.rollerRadius*2,_S.conveyorSystem.config.width*0.95})
             if _S.conveyorSystem.config.respondable then
-                opt=opt+8
+                sim.setObjectInt32Param(cyl,sim.shapeintparam_respondable,1)
             end
-            local cyl=sim.createPureShape(2,opt,{_S.conveyorSystem.config.rollerRadius*2,_S.conveyorSystem.config.rollerRadius*2,_S.conveyorSystem.config.width*0.95},0.01)
+            sim.setShapeMass(cyl,0.01)
+            
             sim.setObjectInt32Param(cyl,sim.objintparam_visibility_layer,1+256)
             local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
             _S.conveyorSystem.rolHandles[i]=jnt
@@ -217,11 +218,12 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         end
     else
         for i=1,padCnt,1 do
-            local opt=16
+            _S.conveyorSystem.padHandles[i]=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{_S.conveyorSystem.config.beltElementWidth,_S.conveyorSystem.config.width*0.95,_S.conveyorSystem.config.beltElementThickness})
             if _S.conveyorSystem.config.respondable then
-                opt=opt+8
+                sim.setObjectInt32Param(_S.conveyorSystem.padHandles[i],sim.shapeintparam_respondable,1)
             end
-            _S.conveyorSystem.padHandles[i]=sim.createPureShape(0,opt,{_S.conveyorSystem.config.beltElementWidth,_S.conveyorSystem.config.width*0.95,_S.conveyorSystem.config.beltElementThickness},0.01)
+            sim.setShapeMass(_S.conveyorSystem.padHandles[i],0.01)
+            
             sim.setObjectAlias(_S.conveyorSystem.padHandles[i],'pad')
             sim.setShapeColor(_S.conveyorSystem.padHandles[i],nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.color)
             sim.setObjectParent(_S.conveyorSystem.padHandles[i],_S.conveyorSystem.model,true)
@@ -237,7 +239,10 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         local p=0
         if _S.conveyorSystem.config.useRollers then
             for i=1,cnt,1 do
-                el[i]=sim.createPureShape(0,24,{--[[_S.conveyorSystem.config.respondableBaseElementLength--]]0.05,_S.conveyorSystem.config.width,_S.conveyorSystem.config.rollerRadius},0.01)
+                el[i]=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{0.05,_S.conveyorSystem.config.width,_S.conveyorSystem.config.rollerRadius})
+                sim.setObjectInt32Param(el[i],sim.shapeintparam_respondable,1)
+                sim.setShapeMass(el[i],0.01)
+                
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
                 pos[3]=pos[3]-3*_S.conveyorSystem.config.rollerRadius/2
                 local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
@@ -247,7 +252,10 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             end
         else
             for i=1,cnt,1 do
-                el[i]=sim.createPureShape(0,24,{--[[_S.conveyorSystem.config.respondableBaseElementLength--]]0.05,_S.conveyorSystem.config.width,0.02},0.01)
+                el[i]=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{0.05,_S.conveyorSystem.config.width,0.02})
+                sim.setObjectInt32Param(el[i],sim.shapeintparam_respondable,1)
+                sim.setShapeMass(el[i],0.01)
+                
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
                 pos[3]=pos[3]-0.01-_S.conveyorSystem.config.borderElementThickness
                 local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
@@ -274,9 +282,16 @@ function path.refreshTrigger(ctrlPts,pathData,config)
         end
         local w=_S.conveyorSystem.config.width
         for i=1,cnt2,1 do
-            local pa=sim.createPureShape(0,24,{_S.conveyorSystem.config.borderElementLength,_S.conveyorSystem.config.borderElementThickness,_S.conveyorSystem.config.borderElementHeight},0.01)
+            local pa=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{_S.conveyorSystem.config.borderElementLength,_S.conveyorSystem.config.borderElementThickness,_S.conveyorSystem.config.borderElementHeight})
+            sim.setObjectInt32Param(pa,sim.shapeintparam_respondable,1)
+            sim.setShapeMass(pa,0.01)
+            
             sim.setShapeColor(pa,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.frameColor)
-            local pb=sim.createPureShape(0,24,{_S.conveyorSystem.config.borderElementLength,_S.conveyorSystem.config.borderElementThickness,_S.conveyorSystem.config.borderElementHeight},0.01)
+            
+            local pb=sim.createPrimitiveShape(sim.primitiveshape_cuboid,{_S.conveyorSystem.config.borderElementLength,_S.conveyorSystem.config.borderElementThickness,_S.conveyorSystem.config.borderElementHeight})
+            sim.setObjectInt32Param(pb,sim.shapeintparam_respondable,1)
+            sim.setShapeMass(pb,0.01)
+            
             sim.setShapeColor(pb,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.frameColor)
             sim.setObjectPosition(pa,-1,{0,(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
             sim.setObjectPosition(pb,-1,{0,-(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
