@@ -905,6 +905,9 @@ function sim.createCollection(arg1,arg2)
     if type(arg1)=='string' then
         retVal=sim._createCollection(arg1,arg2) -- for backward compatibility
     else
+        if arg1==nil then
+            arg1=0
+        end
         retVal=sim.createCollectionEx(arg1)
     end
     return retVal
@@ -1590,7 +1593,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.changeEntityColor@sim','map[] originalColorData=sim.changeEntityColor(int entityHandle,float[3] newColor,int colorComponent=sim.colorcomponent_ambient_diffuse)')
     sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(map[] originalColorData)')
     sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(float[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,float[3] upVector={0,0,1})')
-    sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options)')
+    sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options=0)')
     sim.registerScriptFunction('sim.readCustomTableData@sim','any data=sim.readCustomTableData(int objectHandle,string tagName)')
     sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int objectHandle,string tagName,any[] data)\nsim.writeCustomTableData(int objectHandle,string tagName,map data)')
     sim.registerScriptFunction('sim.getObject@sim','int objectHandle=sim.getObject(string path,map options={})')
