@@ -197,7 +197,7 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             sim.setShapeMass(cyl,0.01)
             
             sim.setObjectInt32Param(cyl,sim.objintparam_visibility_layer,1+256)
-            local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
+            local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_kinematic,0)
             _S.conveyorSystem.rolHandles[i]=jnt
             sim.setObjectParent(cyl,jnt,true)
             sim.setObjectAlias(jnt,'jrol')

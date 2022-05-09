@@ -28,7 +28,7 @@ function sim.rmlMoveToJointPositions(...)
     function _S.tmpCb(conf,vel,accel,jhandles)
         for i=1,#conf,1 do
             local k=jhandles[i]
-            if sim.getJointMode(k)==sim.jointmode_force and sim.isDynamicallyEnabled(k) then
+            if sim.getJointMode(k)==sim.jointmode_dynamic and sim.isDynamicallyEnabled(k) then
                 sim.setJointTargetPosition(k,conf[i])
             else    
                 sim.setJointPosition(k,conf[i])

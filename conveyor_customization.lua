@@ -118,7 +118,7 @@ function _S.conveyor.init(config)
                     opt=opt+8
                 end
                 local cyl=sim.createPureShape(2,opt,{_S.conveyor.config.radius*2,_S.conveyor.config.radius*2,_S.conveyor.config.width*0.95},0.01)
-                local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_passive,0)
+                local jnt=sim.createJoint(sim.joint_revolute_subtype,sim.jointmode_kinematic,0)
                 _S.conveyor.rolHandles[i]=jnt
                 sim.setObjectParent(cyl,jnt,true)
                 sim.setObjectAlias(jnt,'jrol')
