@@ -15,6 +15,8 @@ function _S.mainScriptBackComp.handle(item)
 	end
 	if item==3 then
         sim.handleModule(sim.handle_all,false)
+        simHandleJoint(sim.handle_all_except_explicit,sim.getSimulationTimeStep())
+        simHandlePath(sim.handle_all_except_explicit,sim.getSimulationTimeStep())
 		sim.handleIkGroup(sim.handle_all_except_explicit)
 	end
 	if item==4 then
