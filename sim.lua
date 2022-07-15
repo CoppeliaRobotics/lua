@@ -1349,7 +1349,7 @@ function _S.readUserSettings()
     elseif plat==2 then --linux
         local xdghome=os.getenv('XDG_CONFIG_HOME') or home
         return _S.readSettings(xdghome..psep..usrSet)
-            or _S.readSettings(home..psep..usrSet)
+            or _S.readSettings(home..psep..'.'..usrSet)
     else
         error('unsupported platform: '..plat)
     end
