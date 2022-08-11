@@ -319,10 +319,12 @@ function initPython(p,method)
                     simZMQ.ctx_term(pyContext)
                 end
             else
-                errMsg="The Python interpreter could not be called. It is currently set at: '"..pyth.."'. You can specify it in system/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
+                local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
+                errMsg="The Python interpreter could not be called. It is currently set at: '"..pyth.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
             end
         else
-            errMsg="The Python interpreter was not set. Specify it in system/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
+            local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
+            errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
         end
         if errMsg then
             local r=sim.readCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown')
