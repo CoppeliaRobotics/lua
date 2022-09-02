@@ -3,7 +3,7 @@ local textUtils={}
 function textUtils.generateTextShape(txt,color,height,centered,alphabetModel,parentDummy)
     height=height or 0.1
     color=color or {1,1,1}
-    alphabetModel=alphabetModel or "system/alphabet.ttm"
+    alphabetModel=alphabetModel or sim.getStringParam(sim.stringparam_systemdir).."/alphabet.ttm"
     local h=sim.loadModel(alphabetModel)
     local allChars="0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     local allLetters={}
