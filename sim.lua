@@ -1294,7 +1294,7 @@ sim.setStringNamedParam=sim.setNamedStringParam
 function sim.getSettingString(key)
     local r=sim.getNamedStringParam(key)
     if r then return r end
-    _S.systemSettings=_S.systemSettings or _S.readSystemSettings()
+    _S.systemSettings=_S.systemSettings or _S.readSystemSettings() or {}
     _S.userSettings=_S.userSettings or _S.readUserSettings() or {}
     return _S.userSettings[key] or _S.systemSettings[key]
 end
@@ -1329,9 +1329,9 @@ function _S.readSettings(path)
 end
 
 function _S.readSystemSettings()
-    local appPath=sim.getStringParam(sim.stringparam_application_path)
+    local sysDir=sim.getStringParam(sim.stringparam_systemdir)
     local psep=package.config:sub(1,1)
-    local usrSet=appPath..psep..'system'..psep..'usrset.txt'
+    local usrSet=sysDir..psep..'usrset.txt'
     return _S.readSettings(usrSet)
 end
 
