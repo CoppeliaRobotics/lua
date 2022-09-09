@@ -1301,34 +1301,41 @@ function sim.getThreadExistRequest()
 end
 
 
-function sim.getNamedBoolParam(name)
+function sim.getNamedBoolParam(...)
+    local name=checkargs({{type='string'}},...)
     return _S.parseBool(sim.getNamedStringParam(name))
 end
 
-function sim.getNamedFloatParam(name)
+function sim.getNamedFloatParam(...)
+    local name=checkargs({{type='string'}},...)
     return _S.parseFloat(sim.getNamedStringParam(name))
 end
 
-function sim.getNamedInt32Param(name)
+function sim.getNamedInt32Param(...)
+    local name=checkargs({{type='string'}},...)
     return _S.parseInt(sim.getNamedStringParam(name))
 end
 
-function sim.setNamedBoolParam(name,value)
+function sim.setNamedBoolParam(...)
+    local name,value=checkargs({{type='string'},{type='bool'}},...)
     return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
-function sim.setNamedFloatParam(name,value)
+function sim.setNamedFloatParam(...)
+    local name,value=checkargs({{type='string'},{type='float'}},...)
     return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
-function sim.setNamedInt32Param(name,value)
+function sim.setNamedInt32Param(...)
+    local name,value=checkargs({{type='string'},{type='int'}},...)
     return sim.setNamedStringParam(name,_S.paramValueToString(value))
 end
 
 sim.getStringNamedParam=sim.getNamedStringParam
 sim.setStringNamedParam=sim.setNamedStringParam
 
-function sim.getSettingString(key)
+function sim.getSettingString(...)
+    local key=checkargs({{type='string'}},...)
     local r=sim.getNamedStringParam(key)
     if r then return r end
     _S.systemSettings=_S.systemSettings or _S.readSystemSettings() or {}
@@ -1336,15 +1343,18 @@ function sim.getSettingString(key)
     return _S.userSettings[key] or _S.systemSettings[key]
 end
 
-function sim.getSettingBool(key)
+function sim.getSettingBool(...)
+    local key=checkargs({{type='string'}},...)
     return _S.parseBool(sim.getSettingString(key))
 end
 
-function sim.getSettingFloat(key)
+function sim.getSettingFloat(...)
+    local key=checkargs({{type='string'}},...)
     return _S.parseFloat(sim.getSettingString(key))
 end
 
-function sim.getSettingInt32(key)
+function sim.getSettingInt32(...)
+    local key=checkargs({{type='string'}},...)
     return _S.parseInt(sim.getSettingString(key))
 end
 
