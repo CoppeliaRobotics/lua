@@ -84,13 +84,13 @@ end
 function jointKinematicMotion(joint,inData)
     local outData=nil
     local dt=sim.getSimulationTimeStep()
-    local p=inData.currentPos
+    local p=inData.pos
     if inData.targetPos then
-        if ((inData.revolute==true) and (math.abs(inData.errorValue)>0.01*math.pi/180)) or ((inData.revolute==false) and (math.abs(inData.errorValue)>0.0001)) or (joint.vel~=0) then
-            local rmlObject=sim.ruckigPos(1,0.0001,-1,{p,joint.vel,joint.accel},{inData.maxVel,inData.maxAccel,inData.maxJerk},{1},{p+inData.errorValue,0})
+        if ((inData.revolute==true) and (math.abs(inData.error)>0.01*math.pi/180)) or ((inData.revolute==false) and (math.abs(inData.error)>0.0001)) or (joint.vel~=0) then
+            local rmlObject=sim.ruckigPos(1,0.0001,-1,{p,joint.vel,joint.accel},{inData.maxVel,inData.maxAccel,inData.maxJerk},{1},{p+inData.error,0})
             local result,newPosVelAccel=sim.ruckigStep(rmlObject,dt)
             if result>=0 then
-                outData={position=newPosVelAccel[1],velocity=newPosVelAccel[2],acceleration=newPosVelAccel[3]}
+                outData={pos=newPosVelAccel[1],vel=newPosVelAccel[2],accel=newPosVelAccel[3]}
                 if result==0 then
                     joint.vel=newPosVelAccel[2]
                     joint.accel=newPosVelAccel[3]
@@ -109,18 +109,18 @@ function jointKinematicMotion(joint,inData)
     else
         if inData.targetVel~=0 or joint.vel~=0 or joint.accel~=0 then
             if inData.targetVel==joint.vel and joint.accel==0 then
-                outData={position=p+joint.vel*dt,velocity=joint.vel,acceleration=0.0}
+                outData={pos=p+joint.vel*dt,vel=joint.vel,accel=0.0}
             else
                 local rmlObject=sim.ruckigVel(1,0.0001,-1,{p,joint.vel,joint.accel},{inData.maxAccel,inData.maxJerk},{1},{inData.targetVel})
                 local result,newPosVelAccel,sync=sim.ruckigStep(rmlObject,dt)
                 if result>=0 then
                     if result==0 then
-                        outData={position=newPosVelAccel[1],velocity=newPosVelAccel[2],acceleration=newPosVelAccel[3]}
+                        outData={pos=newPosVelAccel[1],vel=newPosVelAccel[2],accel=newPosVelAccel[3]}
                         joint.vel=newPosVelAccel[2]
                         joint.accel=newPosVelAccel[3]
                     else
                         local ddt=-sync -- vel. reached, we have some residual time
-                        outData={position=newPosVelAccel[1]+joint.vel*ddt,velocity=inData.targetVel,acceleration=0.0}
+                        outData={pos=newPosVelAccel[1]+joint.vel*ddt,vel=inData.targetVel,accel=0.0}
                         joint.vel=inData.targetVel
                         joint.accel=0
                     end
