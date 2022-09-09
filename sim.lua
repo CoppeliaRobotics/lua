@@ -1223,6 +1223,7 @@ function sim.readCustomTableData(...)
         data={}
     else
         if dataType=='cbor' then
+            local cbor=require'org.conman.cbor'
             data=cbor.decode(data)
         else
             data=sim.unpackTable(data)
@@ -1237,6 +1238,7 @@ function sim.writeCustomTableData(...)
         sim.writeCustomDataBlockEx(handle,tagName,'',options)
     else
         if options.dataType=='cbor' then
+            local cbor=require'org.conman.cbor'
             theTable=cbor.encode(theTable)
         else
             options.dataType=options.dataType or 'table'
