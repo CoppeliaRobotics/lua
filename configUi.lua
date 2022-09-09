@@ -103,43 +103,23 @@ function ConfigUI:getObjectName()
     return sim.getObjectAlias(objectHandle,1)
 end
 
-function ConfigUI:readBlock(name)
-    if self.readBlockCallback then
-        return self:readBlockCallback(name)
-    end
-    local objectHandle=sim.getObject('.')
-    local data=sim.readCustomDataBlock(objectHandle,name)
-    return data
-end
-
-function ConfigUI:writeBlock(name,data)
-    if self.writeBlockCallback then
-        return self:writeBlockCallback(name,data)
-    end
-    local objectHandle=sim.getObject('.')
-    sim.writeCustomDataBlock(objectHandle,name,data)
-end
-
 function ConfigUI:readInfo()
     self.info={}
-    local data=self:readBlock(self.dataBlockName.info)
-    if data then
-        for k,v in pairs(sim.unpackTable(data)) do
-            self.info[k]=v
-        end
+    local info=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.info)
+    for k,v in pairs(info) do
+        self.info[k]=v
     end
 end
 
 function ConfigUI:writeInfo()
-    self:writeBlock(self.dataBlockName.info,sim.packTable(self.info))
+    sim.writeCustomTableData(sim.getObject'.',self.dataBlockName.info,self.info)
 end
 
 function ConfigUI:readSchema()
-    local data=self:readBlock(self.dataBlockName.schema)
-    if data then
-        data=sim.unpackTable(data)
+    local schema=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.schema)
+    if next(schema)~=nil then
         self.schema={}
-        for k,v in pairs(data) do
+        for k,v in pairs(schema) do
             self.schema[k]=v
         end
     elseif self.schema==nil then
@@ -156,16 +136,14 @@ end
 function ConfigUI:readConfig()
     if self.schema==nil then error('readConfig() requires schema') end
     self.config=self:defaultConfig()
-    local data=self:readBlock(self.dataBlockName.config)
-    if data then
-        for k,v in pairs(sim.unpackTable(data)) do
-            if self.schema[k] then self.config[k]=v end
-        end
+    local config=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.config)
+    for k,v in pairs(config) do
+        if self.schema[k] then self.config[k]=v end
     end
 end
 
 function ConfigUI:writeConfig()
-    self:writeBlock(self.dataBlockName.config,sim.packTable(self.config))
+    sim.writeCustomTableData(sim.getObject'.',self.dataBlockName.config,self.config)
 end
 
 function ConfigUI:showUi()
@@ -433,12 +411,10 @@ function ConfigUI:sysCall_init()
 
     -- read a saved uistate here if any (see ConfigUI:sysCall_cleanup):
     self.uistate=self.uistate or {}
-    local data=self:readBlock('@tmp/uistate')
-    self:writeBlock('@tmp/uistate',nil)
-    if data then
-        for k,v in pairs(sim.unpackTable(data)) do
-            self.uistate[k]=v
-        end
+    local uistate=sim.readCustomTableData(sim.getObject'.','@tmp/uistate')
+    sim.writeCustomTableData(sim.getObject'.','@tmp/uistate',{})
+    for k,v in pairs(uistate) do
+        self.uistate[k]=v
     end
     if self.uistate.open then self:showUi() end
 end
@@ -446,7 +422,7 @@ end
 function ConfigUI:sysCall_cleanup()
     self:closeUi(false)
     -- save uistate here so it can persist a script restart:
-    self:writeBlock('@tmp/uistate',sim.packTable(self.uistate))
+    sim.writeCustomTableData(sim.getObject'.','@tmp/uistate',self.uistate)
 end
 
 function ConfigUI:sysCall_userConfig()
@@ -463,8 +439,8 @@ function ConfigUI:sysCall_nonSimulation()
     end
 
     -- poll for external config change:
-    local data=self:readBlock(self.dataBlockName.config)
-    if data and data~=sim.packTable(self.config) then
+    local newConfig=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.config)
+    if sim.packTable(newConfig)~=sim.packTable(self.config) then
         self:readConfig()
         self:configChanged() -- updates ui
         self:writeConfig()
