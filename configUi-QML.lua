@@ -160,7 +160,7 @@ function ConfigUI:uiElementXML(elemName,elemSchema)
     local controlFuncs=ConfigUI.Controls[elemSchema.ui.control]
     if (controlFuncs.hasLabel or function() return true end)(self,elemSchema) then
         if not elemSchema.ui.idLabel then
-            elemSchema.ui.idLabel=configUi:uiElementNextID()
+            elemSchema.ui.idLabel=self:uiElementNextID()
         end
         xml=xml..string.format('Label { id: id%d; text: "%s:" }\n',elemSchema.ui.idLabel,elemSchema.name)
     end
