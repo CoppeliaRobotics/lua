@@ -1189,23 +1189,60 @@ function sim.getModelBB(handle)
     return s
 end
 
+function sim.readCustomDataBlockEx(handle,tag,options)
+    -- Undocumented function (for now)
+    options=options or {}
+    local data=sim.readCustomDataBlock(handle,tag)
+    if tag=='__info__' then
+        return data,'cbor'
+    else
+        local info=sim.readCustomTableData(handle,'__info__')
+        local tagInfo=info.blocks and info.blocks[tag] or {}
+        local dataType=tagInfo.type or options.dataType
+        return data,dataType
+    end
+end
+
+function sim.writeCustomDataBlockEx(handle,tag,data,options)
+    -- Undocumented function (for now)
+    options=options or {}
+    sim.writeCustomDataBlock(handle,tag,data)
+    if tag~='__info__' and options.dataType then
+        local info=sim.readCustomTableData(handle,'__info__')
+        info.blocks=info.blocks or {}
+        info.blocks[tag]=info.blocks[tag] or {}
+        info.blocks[tag].type=options.dataType
+        sim.writeCustomTableData(handle,'__info__',info,{dataType='cbor'})
+    end
+end
+
 function sim.readCustomTableData(...)
-    local handle,tagName=checkargs({{type='int'},{type='string'}},...)
-    local data=sim.readCustomDataBlock(handle,tagName)
+    local handle,tagName,options=checkargs({{type='int'},{type='string'},{type='table',default={}}},...)
+    local data,dataType=sim.readCustomDataBlockEx(handle,tagName)
     if data==nil then
         data={}
     else
-        data=sim.unpackTable(data)
+        if dataType=='cbor' then
+            data=cbor.decode(data)
+        else
+            data=sim.unpackTable(data)
+        end
     end
     return data
 end
 
 function sim.writeCustomTableData(...)
-    local handle,tagName,theTable=checkargs({{type='int'},{type='string'},{type='table'}},...)
+    local handle,tagName,theTable,options=checkargs({{type='int'},{type='string'},{type='table'},{type='table',default={}}},...)
     if next(theTable)==nil then
-        sim.writeCustomDataBlock(handle,tagName,'')
+        sim.writeCustomDataBlockEx(handle,tagName,'',options)
     else
-        sim.writeCustomDataBlock(handle,tagName,sim.packTable(theTable))
+        if options.dataType=='cbor' then
+            theTable=cbor.encode(theTable)
+        else
+            options.dataType=options.dataType or 'table'
+            theTable=sim.packTable(theTable)
+        end
+        sim.writeCustomDataBlockEx(handle,tagName,theTable,options)
     end
 end
 
