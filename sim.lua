@@ -1224,7 +1224,12 @@ function sim.readCustomTableData(...)
     else
         if dataType=='cbor' then
             local cbor=require'org.conman.cbor'
-            data=cbor.decode(data)
+            local data0=data
+            data=cbor.decode(data0)
+            if type(data)~='table' and tagName=='__info__' then
+                -- backward compat: old __info__ blocks were encoded with sim.packTable
+                data=sim.unpackTable(data0)
+            end
         else
             data=sim.unpackTable(data)
         end
