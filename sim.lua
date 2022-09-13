@@ -1808,6 +1808,27 @@ end
 _S.registerScriptFuncHookOrig=sim.registerScriptFuncHook
 sim.registerScriptFuncHook=_S.registerScriptFuncHook
 
+function _S.unpackTable(data,scheme)
+    if scheme==nil then
+        if #data>0 then
+            if string.byte(data,1)==0 then
+                scheme=0
+            else
+                scheme=1
+            end
+        end
+    end
+    if scheme==0 then
+        return _S.unpackTableOrig(data)
+    end
+    if scheme==1 then
+        local cbor=require'org.conman.cbor'
+        return cbor.decode(data)
+    end
+end
+_S.unpackTableOrig=sim.unpackTable
+sim.unpackTable=_S.unpackTable
+
 sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',true)
 sim.registerScriptFuncHook('sysCall_cleanup','_S.sysCallEx_cleanup',false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeInstanceSwitch',false)

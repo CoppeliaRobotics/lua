@@ -356,7 +356,8 @@ function _S.conveyorSystem.setPathPos(p)
         pp[2]=math.abs(pp[2]-pos[2])
         pp[3]=math.abs(pp[3]-pos[3])
         if pp[1]>_S.conveyorSystem.config.width or pp[2]>_S.conveyorSystem.config.width or pp[3]>_S.conveyorSystem.config.width then
-            sim.resetDynamicObject(h) -- otherwise the object would quickly 'fly back' to the start of the conveyor and possibly hit other objects on its way
+            sim.setObjectInt32Param(h,sim.shapeintparam_respondablesuspendcnt,2)
+--            sim.resetDynamicObject(h) -- otherwise the object would quickly 'fly back' to the start of the conveyor and possibly hit other objects on its way
         end
         p=p+_S.conveyorSystem.padOffset
     end
@@ -415,7 +416,7 @@ schema={
         type='float',
         name='Target velocity',
         default=0.1,
-        minimum=0.001,
+        minimum=0,
         maximum=0.5,
         ui={control='spinbox',order=4,col=1,tab='general'},
     },
@@ -423,7 +424,7 @@ schema={
         type='float',
         name='Acceleration',
         default=0.01,
-        minimum=0.001,
+        minimum=-100,--0.001,
         maximum=100,
         ui={control='spinbox',order=5,col=1,tab='general'},
     },
