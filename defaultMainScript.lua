@@ -10,9 +10,8 @@ end
 
 function sysCall_actuation()
     backCompatibility.handle(1)
-    sim.handleChildScripts(sim.syscb_actuation)
+    sim.handleEmbeddedScripts(sim.syscb_actuation)
     backCompatibility.handle(2)
-    sim.handleCustomizationScripts(sim.syscb_actuation)
     sim.handleAddOnScripts(sim.syscb_actuation)
     sim.handleSandboxScript(sim.syscb_actuation)
     sim.handleJointMotion()
@@ -26,9 +25,8 @@ function sysCall_sensing()
     sim.handleProximitySensor(sim.handle_all_except_explicit)
     sim.handleVisionSensor(sim.handle_all_except_explicit)
     backCompatibility.handle(5)
-    sim.handleChildScripts(sim.syscb_sensing)
+    sim.handleEmbeddedScripts(sim.syscb_sensing)
     backCompatibility.handle(6)
-    sim.handleCustomizationScripts(sim.syscb_sensing)
     sim.handleAddOnScripts(sim.syscb_sensing)
     sim.handleSandboxScript(sim.syscb_sensing)
     backCompatibility.handle(7)
@@ -43,27 +41,24 @@ function sysCall_cleanup()
 end
 
 function sysCall_suspend()
-    sim.handleChildScripts(sim.syscb_suspend)
-    sim.handleCustomizationScripts(sim.syscb_suspend)
+    sim.handleEmbeddedScripts(sim.syscb_suspend)
     sim.handleAddOnScripts(sim.syscb_suspend)
     sim.handleSandboxScript(sim.syscb_suspend)
 end
 
 function sysCall_suspended()
-    sim.handleChildScripts(sim.syscb_suspended)
-    sim.handleCustomizationScripts(sim.syscb_suspended)
+    sim.handleEmbeddedScripts(sim.syscb_suspended)
     sim.handleAddOnScripts(sim.syscb_suspended)
     sim.handleSandboxScript(sim.syscb_suspended)
 end
 
 function sysCall_resume()
-    sim.handleChildScripts(sim.syscb_resume)
-    sim.handleCustomizationScripts(sim.syscb_resume)
+    sim.handleEmbeddedScripts(sim.syscb_resume)
     sim.handleAddOnScripts(sim.syscb_resume)
     sim.handleSandboxScript(sim.syscb_resume)
 end
 
-function sysCall_jointCallback(inData)
+function sysCall_joint(inData)
     if inData.mode==sim.jointmode_kinematic then
         if _S.kinJointMotionData==nil then
             _S.kinJointMotionData={}
