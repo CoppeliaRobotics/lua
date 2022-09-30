@@ -315,6 +315,32 @@ function _S.path.nonSimulation()
     else
         _S.path.hideCtrlPtDlg()
     end
+    
+    -- Check if we need to display the insert ctrl pt dialog:
+    local s=sim.getObjectSelection()
+    local insert=#s>1
+    for i=1,#s,1 do
+        if sim.getObjectType(s[i])~=sim.object_dummy_type then
+            insert=false
+            break
+        end
+        if i==#s then
+            if _S.path.ctrlPtsMap[s[i]]==nil then
+                insert=false
+                break
+            end
+        else
+            if _S.path.ctrlPtsMap[s[i]]~=nil then
+                insert=false
+                break
+            end
+        end
+    end
+    if insert then
+        _S.path.showInsertCtrlPtDlg()
+    else
+        _S.path.hideInsertCtrlPtDlg()
+    end
 end
 
 function _S.path.afterSimulation()
@@ -334,6 +360,7 @@ end
 
 function _S.path.beforeSimulation()
     _S.path.hideCtrlPtDlg()
+    _S.path.hideInsertCtrlPtDlg()
     _S.path.removeLine(1)
     local c=_S.path.readInfo()
     if c.bitCoded&1~=0 then
@@ -1222,5 +1249,46 @@ function _S.path.ctrlPtChannel_callback(ui,id,v)
     _S.path.updateCtrlPtUi()
 end
 
+function _S.path.showInsertCtrlPtDlg()
+    if not _S.path.insertCtrlPtUi then
+        local pos='position="-50,-50"'
+        if _S.path.insertCtrlPtDlgPos then
+            pos='position="'.._S.path.insertCtrlPtDlgPos[1]..','.._S.path.insertCtrlPtDlgPos[2]..'"'
+        end
+        local xml ='<ui title="Insert control points" activate="false" closeable="false" placement="relative" '..pos..[[>
+            <button text="insert before" on-click="_S.path.insertExtDummy_callback" id="1"/>
+            <button text="insert after" on-click="_S.path.insertExtDummy_callback" id="2"/>
+        </ui>]]
+        _S.path.insertCtrlPtUi=simUI.create(xml)
+    end
+end
+
+function _S.path.hideInsertCtrlPtDlg()
+    if _S.path.insertCtrlPtUi then
+        _S.path.insertCtrlPtDlgPos={}
+        _S.path.insertCtrlPtDlgPos[1],_S.path.insertCtrlPtDlgPos[2]=simUI.getPosition(_S.path.insertCtrlPtUi)
+        simUI.destroy(_S.path.insertCtrlPtUi)
+        _S.path.insertCtrlPtUi=nil
+    end
+end
+
+function _S.path.insertExtDummy_callback(ui,id)
+    local s=sim.getObjectSelection()
+    local newCtrlPts={}
+    local dh=s[#s]
+    for i=1,#s-1,1 do
+        local nd=sim.copyPasteObjects({dh})[1]
+        newCtrlPts[#newCtrlPts+1]=nd
+        dh=nd
+    end
+    if id==1 then
+        table.insert(newCtrlPts,1,s[#s]) -- we want to insert dummies before
+    end
+    for i=1,#s-1,1 do
+        sim.setObjectPose(newCtrlPts[i],s[i],{0,0,0,0,0,0,1})
+    end
+    s[#s]=nil
+    sim.removeObjects(s)
+end
 
 return _S.path
