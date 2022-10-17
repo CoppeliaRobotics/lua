@@ -1271,6 +1271,32 @@ setmetatable(Matrix4x4,{__call=function(self,data)
     return Matrix(4,4,data)
 end})
 
+function svd(m,computeThinU,computeThinV,b)
+    if not simEigen then
+        error('function svd() requires the simEigen plugin')
+    end
+    if computeThinU==nil then
+        computeThinU=true
+    end
+    if computeThinV==nil then
+        computeThinV=true
+    end
+    if getmetatable(m)==Matrix then
+        m=m:totable{}
+    end
+    if b~=nil and getmetatable(b)==Matrix then
+        b=b:totable{}
+    end
+    local s,u,v,x=simEigen.svd(m,computeThinU,computeThinV,b)
+    s=Matrix:fromtable(s)
+    u=Matrix:fromtable(u)
+    v=Matrix:fromtable(v)
+    if x then
+        x=Matrix:fromtable(x)
+    end
+    return s,u,v,x
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
         3,4,

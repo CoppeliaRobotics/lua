@@ -852,3 +852,8 @@ Returns a 4-dimensional homogeneous coordinates vector from the given 4-dimensio
 
 Same as `Vector(7,data)`. See [`Vector(len,data)`](#vectorlendata).
 
+### Functions
+
+#### `svd(m,computeThinU,computeThinV,b)`
+
+Computes the singular-value decomposition of matrix `m`. See `simEigen.svd()` for reference.
