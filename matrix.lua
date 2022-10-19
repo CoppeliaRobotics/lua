@@ -1297,6 +1297,24 @@ function svd(m,computeThinU,computeThinV,b)
     return s,u,v,x
 end
 
+function pinv(m,b)
+    if not simEigen then
+        error('function pinv() requires the simEigen plugin')
+    end
+    if getmetatable(m)==Matrix then
+        m=m:totable{}
+    end
+    if b~=nil and getmetatable(b)==Matrix then
+        b=b:totable{}
+    end
+    local mi,x=simEigen.pinv(m,b)
+    mi=Matrix:fromtable(mi)
+    if x then
+        x=Matrix:fromtable(x)
+    end
+    return mi,x
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
         3,4,
