@@ -716,6 +716,10 @@ Returns a rotation matrix from euler angles.
 
 Returns a rotation matrix from quaternion.
 
+#### `Matrix3x3:isorthonormal(m,tol=1e-5)`
+
+Returns true if matrix `m` is orthonormal, false otherwise.
+
 #### `Matrix3x3:random()`
 
 Returns a random rotation matrix.

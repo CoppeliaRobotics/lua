@@ -1203,6 +1203,30 @@ function Matrix3x3:random()
     return Matrix3x3:fromaxisangle(Vector3:unitrandom(),math.random()*math.pi*2)
 end
 
+function Matrix3x3:isorthonormal(m,tol)
+    tol=tol or 1e-5
+    assert(getmetatable(m)==Matrix,'not a matrix')
+    assert(m:sameshape{3,3},'incorrect shape')
+    -- norm of columns must be 1:
+    for i=1,3 do
+        if math.abs(1-m:col(i):norm())>tol then
+            return false
+        end
+    end
+    -- columns must be orthogonal with each other:
+    for _,ab in ipairs{{1,2},{1,3},{2,3}} do
+        local a,b=ab[1],ab[2]
+        if math.abs(m:col(a):dot(m:col(b)))>tol then
+            return false
+        end
+    end
+    -- determinant must be 1 or -1
+    if math.abs(1-math.abs(m:det()))>tol then
+        return false
+    end
+    return true
+end
+
 setmetatable(Matrix3x3,{__call=function(self,data)
     return Matrix(3,3,data)
 end})
