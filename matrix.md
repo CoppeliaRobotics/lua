@@ -546,6 +546,10 @@ Returns the data offset for indices `i`, `j`. Returns `nil` if `i` or `j` are ou
 
 Returns a `rows`x`cols` matrix of ones.
 
+#### `Matrix:pinv(b=nil)`
+
+Computes the pseudo-inverse of the matrix. Don't do `m:pinv()*b`; instead use `m:pinv(b)` which is more efficient and numerically stable.
+
 #### `Matrix:pow(k)`
 
 Returns the matrix of element-wise `k`-th powers.
@@ -651,6 +655,10 @@ Returns the sum of all the values.
 #### `Matrix:sum(dim)`
 
 Returns the column-wise (`dim` = 1) or row-wise (`dim` = 2) sum.
+
+#### `Matrix:svd(computeThinU=true,computeThinV=true,b=nil)`
+
+Computes the singular-value decomposition of the matrix. If `b` is given, it returns also the solution `x` to `M*x==b` (least-squares).
 
 #### `Matrix:t()`
 
@@ -851,9 +859,3 @@ Returns a 4-dimensional homogeneous coordinates vector from the given 4-dimensio
 #### `Vector7(data)`
 
 Same as `Vector(7,data)`. See [`Vector(len,data)`](#vectorlendata).
-
-### Functions
-
-#### `svd(m,computeThinU,computeThinV,b)`
-
-Computes the singular-value decomposition of matrix `m`. See `simEigen.svd()` for reference.

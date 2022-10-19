@@ -912,6 +912,42 @@ function Matrix:print(elemwidth)
     end
 end
 
+function Matrix:svd(computeThinU,computeThinV,b)
+    if not simEigen then error('this method requires the simEigen plugin') end
+    if computeThinU==nil then
+        computeThinU=true
+    end
+    if computeThinV==nil then
+        computeThinV=true
+    end
+    local m=self:totable{}
+    if b~=nil and getmetatable(b)==Matrix then
+        b=b:totable{}
+    end
+    local s,u,v,x=simEigen.svd(m,computeThinU,computeThinV,b)
+    s=Matrix:fromtable(s)
+    u=Matrix:fromtable(u)
+    v=Matrix:fromtable(v)
+    if x then
+        x=Matrix:fromtable(x)
+    end
+    return s,u,v,x
+end
+
+function Matrix:pinv(b)
+    if not simEigen then error('this method requires the simEigen plugin') end
+    local m=self:totable{}
+    if b~=nil and getmetatable(b)==Matrix then
+        b=b:totable{}
+    end
+    local mi,x=simEigen.pinv(m,b)
+    mi=Matrix:fromtable(mi)
+    if x then
+        x=Matrix:fromtable(x)
+    end
+    return mi,x
+end
+
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     assert(math.type(rows)=='integer' and rows>=0,'rows must be a positive integer')
     assert(math.type(cols)=='integer' and cols>=0,'cols must be a positive integer')
@@ -1270,50 +1306,6 @@ setmetatable(Matrix4x4,{__call=function(self,data)
     end
     return Matrix(4,4,data)
 end})
-
-function svd(m,computeThinU,computeThinV,b)
-    if not simEigen then
-        error('function svd() requires the simEigen plugin')
-    end
-    if computeThinU==nil then
-        computeThinU=true
-    end
-    if computeThinV==nil then
-        computeThinV=true
-    end
-    if getmetatable(m)==Matrix then
-        m=m:totable{}
-    end
-    if b~=nil and getmetatable(b)==Matrix then
-        b=b:totable{}
-    end
-    local s,u,v,x=simEigen.svd(m,computeThinU,computeThinV,b)
-    s=Matrix:fromtable(s)
-    u=Matrix:fromtable(u)
-    v=Matrix:fromtable(v)
-    if x then
-        x=Matrix:fromtable(x)
-    end
-    return s,u,v,x
-end
-
-function pinv(m,b)
-    if not simEigen then
-        error('function pinv() requires the simEigen plugin')
-    end
-    if getmetatable(m)==Matrix then
-        m=m:totable{}
-    end
-    if b~=nil and getmetatable(b)==Matrix then
-        b=b:totable{}
-    end
-    local mi,x=simEigen.pinv(m,b)
-    mi=Matrix:fromtable(mi)
-    if x then
-        x=Matrix:fromtable(x)
-    end
-    return mi,x
-end
 
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
