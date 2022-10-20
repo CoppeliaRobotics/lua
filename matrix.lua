@@ -181,6 +181,12 @@ function Matrix:assign(startrow,startcol,m)
     return self
 end
 
+function Matrix:repmat(n,m)
+    m=m or 1
+    local function mod1(x,n) return (x-1)%n+1 end
+    return Matrix(self:rows()*n,self:cols()*m,function(i,j) return self:get(mod1(i,self:rows()),mod1(j,self:cols())) end)
+end
+
 function Matrix:applyfuncidx(f)
     return Matrix(self:rows(),self:cols(),function(i,j) return f(i,j,self:get(i,j)) end)
 end
@@ -1574,5 +1580,6 @@ if arg and #arg==1 and arg[1]=='test' then
         assert(approxEq(m*mi,Matrix:eye(4)))
         assert(approxEq(mi*m,Matrix:eye(4)))
     end
+    assert(Matrix(2,3,{1,2,3,10,20,30}):repmat(3,2)==Matrix(6,6,{1,2,3,1,2,3,10,20,30,10,20,30,1,2,3,1,2,3,10,20,30,10,20,30,1,2,3,1,2,3,10,20,30,10,20,30}))
     print('tests passed')
 end

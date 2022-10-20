@@ -586,6 +586,10 @@ Returns element-wise random numbers between 1 and `a`.
 
 Returns element-wise random numbers between `a` and `b`.
 
+#### `Matrix:repmat(n,m=1)`
+
+Returns the matrix repeated `n` times along rows, and `m` times along columns.
+
 #### `Matrix:row(i)`
 
 Returns the `i`-th row.
