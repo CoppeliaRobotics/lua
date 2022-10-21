@@ -991,16 +991,26 @@ function sim.getPathLengths(...)
     local distancesAlongPath={0}
     local totDist=0
     local pM=Matrix(confCnt,dof,path)
+    local metric={}
+    local tt={}
+    for i=1,dof,1 do
+        if i>3 then
+            metric[#metric+1]=0.0
+        else
+            metric[#metric+1]=1.0
+        end
+        tt[#tt+1]=0
+    end
     for i=1,pM:rows()-1,1 do
-        local d=ccc
+        local d
         if cb then
             if type(cb)=='string' then
-                d=_G[cb](pM[i]:data(),pM[i+1]:data())
+                d=_G[cb](pM[i]:data(),pM[i+1]:data(),dof)
             else
-                d=cb(pM[i]:data(),pM[i+1]:data())
+                d=cb(pM[i]:data(),pM[i+1]:data(),dof)
             end
         else
-            d=sim.getConfigDistance(pM[i]:data(),pM[i+1]:data())
+            d=sim.getConfigDistance(pM[i]:data(),pM[i+1]:data(),metric,tt)
         end
         totDist=totDist+d
         distancesAlongPath[i+1]=totDist

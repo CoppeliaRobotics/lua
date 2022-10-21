@@ -644,8 +644,34 @@ function _S.path.removeLine(index)
     end
 end
 
+function _S.path.fixCtrlPtOrder()
+--[[
+    breaks things
+    local handles,poses={},{}
+    local i=0
+    while true do
+        local h1=sim.getObject('./ctrlPt',{index=i,proxy=_S.path.model,noError=true})
+        if h1==-1 then break end
+        table.insert(handles,h1)
+        i=i+1
+        local d=sim.readCustomTableData(h1,'ABC_PATHCTRLPT')
+        if next(d) then
+            poses[d.index]=sim.getObjectPose(h1,_S.path.model)
+        end
+    end
+    for i,pose in ipairs(poses) do
+        local h1=handles[i]
+        sim.setObjectPose(h1,_S.path.model,pose)
+        local d=sim.readCustomTableData(h1,'ABC_PATHCTRLPT')
+        d.index=i
+        sim.writeCustomTableData(h1,'ABC_PATHCTRLPT',d)
+    end
+    --]]
+end
+
 function _S.path.getCtrlPts()
     local config=_S.path.readInfo()
+    _S.path.fixCtrlPtOrder()
     local d=sim.getObjectsInTree(_S.path.model,sim.object_dummy_type,1)
     local pts={}
     local map={}
