@@ -117,6 +117,17 @@ function Matrix:slice(fromrow,fromcol,torow,tocol)
     return m
 end
 
+function Matrix:flip(dim)
+    dim=dim or 1
+    if dim==1 then
+        return Matrix(self:rows(),self:cols(),function(i,j) return self:get(self:rows()-i+1,j) end)
+    elseif dim==2 then
+        return Matrix(self:rows(),self:cols(),function(i,j) return self:get(i,self:cols()-j+1) end)
+    else
+        error('invalid dimension')
+    end
+end
+
 function Matrix:droprow(i)
     local m,n=self:rows(),self:cols()
     assert(i>=1 and i<=m,'out of bounds')

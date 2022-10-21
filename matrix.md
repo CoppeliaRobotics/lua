@@ -410,6 +410,10 @@ Returns element-wise exponential.
 
 Returns a `n`x`n` identity matrix.
 
+#### `Matrix:flip(dim=1)`
+
+Returns matrix flipped along the specified dimension.
+
 #### `Matrix:floor()`
 
 Returns element-wise floor (largest integral value smaller than or equal to x).
