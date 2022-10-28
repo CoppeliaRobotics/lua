@@ -966,6 +966,7 @@ function Matrix:pinv(b)
 end
 
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
+    if type(rows)=='table' and cols==nil and data==nil and t==nil then return Matrix:fromtable(rows) end
     assert(math.type(rows)=='integer' and rows>=0,'rows must be a positive integer')
     assert(math.type(cols)=='integer' and cols>=0,'cols must be a positive integer')
     local copyonwrite=false
