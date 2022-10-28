@@ -10,6 +10,12 @@ Create a matrix with:
 > m=Matrix(2,3,{11,12,13,21,22,23})
 ```
 
+or equivalently, with:
+
+```
+> m=Matrix{{11,12,13},{21,22,23}}
+```
+
 (creates a 2 rows by 3 columns matrix filled with the specified data in row-major order)
 
 Use the [`:rows`](#matrixrows) and [`:cols`](#matrixcols) methods to know the dimensions of a matrix:
@@ -30,8 +36,8 @@ or can be printed with the [`:print`](#matrixprint) method:
 
 ```
 > m:print()
- 11 12 13
- 21 22 23
+Matrix{{11, 12, 13},
+       {21, 22, 23}}
 ```
 
 The `data` argument of the [`Matrix`](#matrixrowscolsdata) constructor can be omitted, in which case the matrix will be filled with zeros:
@@ -62,8 +68,8 @@ The `data` argument can be a function with parameters `i`, `j`:
 
 ```
 > Matrix(2,2,function(i,j) return 100*i+j end):print()
- 101 102
- 201 202
+Matrix{{101, 102},
+       {201, 202}}
 ```
 
 There are some convenience constructors for creating commonly used matrices:
@@ -113,14 +119,12 @@ Other supported operators are: scalar and matrix subtraction (`a-b`), scalar div
 Matrices can be transposed (rows and columns will be swapped) with the [`:t`](#matrixt) method:
 
 ```
-> v=Vector{1,2,3}
-> v:print()
- 1
- 2
- 3
+> v=Vector{100,200,300}
+> v:rows(),v:cols()
+3	1
 > v=v:t()
-> v:print()
- 1 2 3
+> v:rows(),v:cols()
+1	3
 ```
 
 ### Getting and setting data
@@ -133,8 +137,8 @@ Use [`:get`](#matrixgetij) and [`:set`](#matrixsetijvalue) to read and write ele
 21
 > m:set(2,1,4000)
 > m:print()
-   11   12   13
- 4000   22   23
+Matrix{{  11, 12, 13},
+       {4000, 22, 23}}
 ```
 
 Methods [`:row`](#matrixrowi) and [`:col`](#matrixcolj) can access rows and columns:
@@ -149,12 +153,12 @@ Methods [`:setrow`](#matrixsetrowim) and [`:setcol`](#matrixsetcoljm) can modify
 ```
 > m:setrow(2,Matrix:zeros(1,3))
 > m:print()
- 11 12 13
-  0  0  0
+Matrix{{11, 12, 13},
+       { 0,  0,  0}}
 > m:setcol(3,Matrix:ones(2,1))
 > m:print()
- 11 12  1
-  0  0  1
+Matrix{{11, 12, 1},
+       { 0,  0, 1}}
 ```
 
 It is possible to use square brackets to get and set elements:
@@ -164,8 +168,8 @@ It is possible to use square brackets to get and set elements:
 11
 > m[1][1]=99
 > m:print()
- 99 12  1
-  0  0  1
+Matrix{{99, 12, 1},
+       { 0,  0, 1}}
 ```
 
 ### Variables assignment and copy
@@ -201,21 +205,21 @@ It is possible to get a portion of a matrix with [`:slice`](#matrixslicefromrowf
 ```
 > m=Matrix:eye(3)
 > m:print()
- 1 0 0
- 0 1 0
- 0 0 1
+Matrix{{1, 0, 0},
+       {0, 1, 0},
+       {0, 0, 1}}
 > m:slice(1,2,2,3):print()
- 0 0
- 1 0
+Matrix{{0, 0},
+       {1, 0}}
 ```
 
 The [`:slice`](#matrixslicefromrowfromcoltorowtocol) method can also create a matrix which is bigger than the original:
 
 ```
 > m:slice(1,1,3,5):print()
- 1 0 0 0 0
- 0 1 0 0 0
- 0 0 1 0 0
+Matrix{{1, 0, 0, 0, 0},
+       {0, 1, 0, 0, 0},
+       {0, 0, 1, 0, 0}}
 ```
 
 It is possible to copy data from a matrix of different size with [`:assign`](#matrixassignstartrowstartcolm). Parameters are start row, start column, matrix.
@@ -223,9 +227,9 @@ It is possible to copy data from a matrix of different size with [`:assign`](#ma
 ```
 > m:assign(1,2,5*Matrix:ones(2,2))
 > m:print()
- 1 5 5
- 0 5 5
- 0 0 1
+Matrix{{1, 5, 5},
+       {0, 5, 5},
+       {0, 0, 1}}
 ```
 
 ### In-place operations
@@ -242,29 +246,40 @@ There are a few methods that are an exception to this rule:
 
 ### Converting to/from tables
 
-A 2-dimensional lua table can be converted to a matrix and vice-versa:
+A 2-dimensional lua table can be converted to a matrix with [`Matrix:fromtable`](#matrixfromtable):
 
 ```
-> tbl={
+> t={
 >> {1,2,3},
 >> {4,5,6},
 >> }
-> m=Matrix:fromtable(tbl)
-> m
-Matrix(2,3,{1,2,3,4,5,6})
-> m:print()
- 1 2 3
- 4 5 6
-> tbl1=m:totable()
-> #tbl1
+> m=Matrix:fromtable(t)
+```
+
+or via the convenience constructor:
+
+```
+> m=Matrix(t)
+```
+
+Similarly, a matrix can be converted to a 2-dimensional table with [`Matrix:totable`](#matrixtotable):
+
+
+```
+> t=m:totable()
+> #t
 2
-> #tbl1[2]
+> #t[2]
 3
-> tbl1[2][1], tbl1[2][2], tbl1[2][3]
+> t[2][1], t[2][2], t[2][3]
 4	5	6
 ```
 
 ## Functions reference
+
+#### `Matrix(t)`
+
+Returns a matrix initialized from the elements of the two-dimensional table `t` (identical to [`Matrix:fromtable(t)`](#matrixfromtable)).
 
 #### `Matrix(rows,cols,data)`
 
@@ -562,9 +577,9 @@ Returns the matrix of element-wise `k`-th powers.
 
 Returns the matrix `k`-th power (iterated matrix product).
 
-#### `Matrix:print(elemwidth)`
+#### `Matrix:print(name=nil,opts={})`
 
-Print the matrix.
+Print the matrix, optionally prefixed with name `name`.
 
 #### `Matrix:prod()`
 

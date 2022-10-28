@@ -905,26 +905,30 @@ function Matrix:zeros(rows,cols)
     return Matrix(rows,cols,function(i,j) return 0 end)
 end
 
-function Matrix:print(elemwidth)
+function Matrix:print(name,opts)
+    opts=opts or {}
+    local elemwidth=opts.elemwidth
+    if self:cols()==1 then return Vector.print(self,name) end
+    local prefix0=name and string.format('%s = ',name) or ''
     if not elemwidth then
         elemwidth={}
         for j=1,self:cols() do
             for i=1,self:rows() do
                 elemwidth[j]=math.max(elemwidth[j] or 0,#tostring(self:get(i,j)))
             end
-            elemwidth[j]=elemwidth[j]+2
         end
     elseif type(elemwidth)=='number' then
-        elemwidth={elemwidth+2}
         for j=1,self:cols() do
             elemwidth[j]=elemwidth[1]
         end
     end
     for i=1,self:rows() do
-        local row=''
+        local row=i==1 and (prefix0..'Matrix{{') or (string.rep(' ',#prefix0)..'       {')
         for j=1,self:cols() do
             row=row..string.format('%'..tostring(elemwidth[j])..'s',tostring(self:get(i,j)))
+            if j<self:cols() then row=row..', ' end
         end
+        row=row..(i==self:rows() and '}}' or '},')
         print(row)
     end
 end
@@ -1003,6 +1007,17 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
 end})
 
 Vector={}
+
+function Vector:print(name,opts)
+    opts=opts or {}
+    assert(self:cols()==1,'not a vector')
+    local s=(name and string.format('%s = ',name) or '')..'Vector{'
+    for i=1,self:rows() do
+        s=s..(i>1 and ', ' or '')..self:get(i,1)
+    end
+    s=s..'}'
+    print(s)
+end
 
 function Vector:range(start,stop,step)
     step=step or 1
