@@ -1848,3 +1848,4 @@ sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScrip
 require('checkargs')
 require('matrix')
 require('grid')
+require('functional')

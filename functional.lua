@@ -112,6 +112,16 @@ function all(f,tbl)
     return true
 end
 
+function iter(tbl)
+    local i=0
+    return function()
+        i=i+1
+        if i<=#tbl then
+            return table.unpack(tbl[i])
+        end
+    end
+end
+
 operator={
     add=function(a,b) return a+b end,
     sub=function(a,b) return a-b end,
