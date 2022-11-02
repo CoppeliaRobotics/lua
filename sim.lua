@@ -1274,7 +1274,7 @@ function sim.getObject(path,options)
     if options.index then
         index=options.index
     end
-    if options.noError and options.noError~=false then
+    if options.noError then
         option=1
     end
     return sim._getObject(path,index,proxy,option)
@@ -1283,7 +1283,7 @@ end
 function sim.getObjectFromUid(path,options)
     options=options or {}
     local option=0
-    if options.noError and options.noError~=false then
+    if options.noError then
         option=1
     end
     return sim._getObjectFromUid(path,option)
@@ -1300,7 +1300,7 @@ function sim.getObjectHandle(path,options)
     if options.index then
         index=options.index
     end
-    if options.noError and options.noError~=false then
+    if options.noError then
         option=1
     end
     return sim._getObjectHandle(path,index,proxy,option)
