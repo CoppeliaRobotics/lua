@@ -971,8 +971,11 @@ end
 
 setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
     if type(rows)=='table' and cols==nil and data==nil and t==nil then return Matrix:fromtable(rows) end
-    assert(math.type(rows)=='integer' and rows>=0,'rows must be a positive integer')
-    assert(math.type(cols)=='integer' and cols>=0,'cols must be a positive integer')
+    assert(math.type(rows)=='integer','rows must be an integer')
+    assert(math.type(cols)=='integer','cols must be an integer')
+    assert(rows==-1 or rows>0,'rows must be positive')
+    assert(cols==-1 or cols>0,'cols must be positive')
+    assert(not (rows==-1 and cols==-1),'rows and cols cannot be both -1')
     local copyonwrite=false
     local datagen,origdata=function() return 0 end,data
     if type(data)=='table' then
@@ -982,12 +985,18 @@ setmetatable(Matrix,{__call=function(self,rows,cols,data,t)
             data,datagen=data.ref,nil
         elseif #data==rows*cols then
             data,datagen=nil,function(i,j) return origdata[(i-1)*cols+j] end
+        elseif rows==-1 then
+            rows=#data//cols
+        elseif cols==-1 then
+            cols=#data//rows
         else
             error('invalid number of elements')
         end
     elseif type(data)=='function' then
         data,datagen=nil,data
     end
+    assert(rows>0,'rows must be positive')
+    assert(cols>0,'cols must be positive')
     if data==nil then
         data={}
         for i=1,rows do
@@ -1608,5 +1617,12 @@ if arg and #arg==1 and arg[1]=='test' then
         assert(approxEq(mi*m,Matrix:eye(4)))
     end
     assert(Matrix(2,3,{1,2,3,10,20,30}):repmat(3,2)==Matrix(6,6,{1,2,3,1,2,3,10,20,30,10,20,30,1,2,3,1,2,3,10,20,30,10,20,30,1,2,3,1,2,3,10,20,30,10,20,30}))
+    -- inference of row/col count (only 1 at a time):
+    assert(Matrix(3,-1,{1,2,3,4,5,6}):cols()==2)
+    assert(Matrix(-1,2,{1,2,3,4,5,6}):rows()==3)
+    function asserterror(f,...)
+        if pcall(f,...) then error() end
+    end
+    asserterror(function() Matrix(-1,3,{1,2,3,4,5,6,7}) end)
     print('tests passed')
 end

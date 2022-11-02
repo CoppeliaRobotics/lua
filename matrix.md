@@ -47,6 +47,8 @@ The `data` argument of the [`Matrix`](#matrixrowscolsdata) constructor can be om
 Matrix(2,2,{0,0,0,0})
 ```
 
+One of the first two arguments can be `-1`, in which case it will be inferred from the remaining arguments, if possible.
+
 There are additional constructors for special type of matrices:
 - [`Matrix3x3([data])`](#matrix3x3data) creates a 3x3 matrix
 - [`Matrix4x4([data])`](#matrix4x4data) creates a 4x4 matrix
