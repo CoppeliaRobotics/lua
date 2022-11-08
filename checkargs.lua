@@ -74,8 +74,13 @@ function checkarg.func(v,t)
 end
 
 function checkarg.handle(v,t)
-    -- mockup: a handle is valid if it is a multiple of 100
-    return type(v)=='number' and math.fmod(v,100)==0
+    if type(v)~='number' or math.type(v)~='integer' then return false end
+    -- this check requires coppeliaSim:
+    if type(sim)=='table' and type(sim.isHandle)=='function' then
+        return sim.isHandle(v)
+    else
+        return true
+    end
 end
 
 function checkarg.object(v,t)
@@ -158,6 +163,8 @@ end
 -- tests:
 
 if arg and #arg==1 and arg[1]=='test' then
+    sim=sim or {}
+
     function f(...)
         local i,s,ti=checkargs({{type='int'},{type='string'},{type='table',item_type='int',size=3}},...)
     end
@@ -225,8 +232,12 @@ if arg and #arg==1 and arg[1]=='test' then
     test(34, fail, function() h(nil) end)
     test(35, succeed, function() assert(h()==false) end)
     test(50, fail, function() z() end)
+
+    -- mock sim.isHandle:
+    function sim.isHandle(x) return x==200 or x==201 or x==202 end
     test(60, fail, function() y(22) end)
     test(61, succeed, function() y(200) end)
+
     test(70, succeed, function() x(1,{}) end)
     test(80, succeed, function() w(0,function() return 1 end) end)
     test(81, succeed, function() w(0,nil) end)
