@@ -53,6 +53,22 @@ function filter(f,tbl)
     return ret
 end
 
+function foreach(f,...)
+    assert(type(f)=='function')
+    local tbls={...}
+    local i=1
+    while true do
+        local args={}
+        for j,tbl in ipairs(tbls) do
+            assert(type(tbl)=='table')
+            if tbl[i]==nil then return end
+            table.insert(args,tbl[i])
+        end
+        f(table.unpack(args))
+        i=i+1
+    end
+end
+
 function identity(...)
     return ...
 end
