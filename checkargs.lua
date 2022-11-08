@@ -97,6 +97,22 @@ function checkarg.object(v,t)
     return true, nil
 end
 
+function checkarg.union(v,t)
+    local allowedTypes,explanation,sep='','',''
+    for i,ti in ipairs(t.union) do
+        allowedTypes=allowedTypes..sep..ti.type
+        local valid,err=checkarg[ti.type](v,ti)
+        if valid then
+            return true, nil
+        else
+            explanation=explanation..sep..'fails to validate as '..ti.type
+            if err then explanation=explanation..' because '..err end
+        end
+        sep=', '
+    end
+    return false, 'must be any of: '..allowedTypes..'; but '..explanation
+end
+
 function checkargsEx(opts,types,...)
     -- level offset at which we should output the error:
     opts.level=opts.level or 0
@@ -106,6 +122,7 @@ function checkargsEx(opts,types,...)
 
     function infertype(t)
         if t.class~=nil then return 'object' end
+        if t.union~=nil then return 'union' end
         error('type missing, and could not infer type',errorLevel+1)
     end
     local fn='?: '
@@ -278,6 +295,17 @@ if arg and #arg==1 and arg[1]=='test' then
     end
     test(103, fail, function() useobj2(o1) end)
     test(104, succeed, function() useobj2(o2) end)
+
+    function u(...)
+        x=checkargs({{union={{type='int'},{type='string'},{type='table',item_type='int',size='2..*'}},default=42}},...)
+        return x
+    end
+    test(110, succeed, function() u(10) end)
+    test(111, succeed, function() u('str') end)
+    test(112, fail, function() u(math.pi) end)
+    test(113, fail, function() u{'s','s'} end)
+    test(114, fail, function() u{1} end)
+    test(115, succeed, function() assert(u()==42) end)
     print('tests done')
 end
 
