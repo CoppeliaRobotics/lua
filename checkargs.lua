@@ -44,7 +44,7 @@ function checkarg.table(v,t)
     if type(t.size)=='string' and t.size~='' and t.size~='*' then
         i,j=t.size:find('%.%.')
         if i then
-            minsize,maxsize=t.size:sub(1,i),t.size:sub(j+1)
+            minsize,maxsize=t.size:sub(1,i-1),t.size:sub(j+1)
             minsize=tonumber(minsize)
             maxsize=maxsize=='*' and 1/0 or tonumber(maxsize)
         else
