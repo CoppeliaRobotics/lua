@@ -1845,6 +1845,8 @@ sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeIn
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScriptSuspend',false)
 ----------------------------------------------------------
 
+require('stringx')
+require('tablex')
 require('checkargs')
 require('matrix')
 require('grid')

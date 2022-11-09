@@ -160,33 +160,7 @@ operator={
 }
 
 if arg and #arg==1 and arg[1]=='test' then
-    function table.eq(a,b)
-        if #a~=#b then return false end
-        for i=1,#a do
-            if type(a)~=type(b) then return false end
-            if type(a[i])=='table' then
-                if not table.eq(a[i],b[i]) then return false end
-            else
-                if a[i]~=b[i] then return false end
-            end
-        end
-        return true
-    end
-    function table.tostring(t)
-        s=''
-        for i,x in ipairs(t) do
-            s=s..(s=='' and '' or ', ')
-            if type(x)=='table' then
-                s=s..table.tostring(x)
-            else
-                s=s..tostring(x)
-            end
-        end
-        return '{'..s..'}'
-    end
-    function table.print(t)
-        print(table.tostring(t))
-    end
+    require'tablex'
     assert(table.eq(range(3),{1,2,3}))
     assert(table.eq(map(operator.mul,{1,2,3},{0,1,2}),{0,2,6}))
     assert(reduce(operator.add,{1,2,3,4})==10)
