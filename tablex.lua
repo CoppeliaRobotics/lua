@@ -11,17 +11,29 @@ function table.eq(a,b)
     return true
 end
 
-function table.join(t,sep)
+function table.join(t,sep,opts,vt)
     sep=sep or ', '
+    opts=opts or {}
+    vt=vt or {}
     s=''
-    for i,x in ipairs(t) do
-        s=s..(s=='' and '' or sep)
-        if type(x)=='table' then
-            s=s..table.tostring(x)
+    vt[tostring(t)]=1
+    local visitedKeys={}
+    local function concat(prefix,key,val)
+        if visitedKeys[key] then return end
+        s=s..(s=='' and '' or sep)..prefix
+        if type(val)=='table' then
+            if vt[tostring(val)] then
+                s=s..'...'
+            else
+                s=s..table.tostring(val)
+            end
         else
-            s=s..tostring(x)
+            s=s..tostring(val)
         end
+        visitedKeys[key]=1
     end
+    for key,val in ipairs(t) do concat('',key,val) end
+    for key,val in pairs(t) do concat(key..'=',key,val) end
     return s
 end
 
@@ -33,8 +45,8 @@ function table.slice(t,first,last,step)
     return ret
 end
 
-function table.tostring(t,sep)
-    return '{'..table.join(t,sep)..'}'
+function table.tostring(t,sep,opts,vt)
+    return '{'..table.join(t,sep,opts,vt)..'}'
 end
 
 function table.print(t)
