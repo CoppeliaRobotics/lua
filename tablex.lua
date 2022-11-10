@@ -1,3 +1,9 @@
+function table.index(t)
+    return function(idx)
+        return t[idx]
+    end
+end
+
 function table.eq(a,b)
     if #a~=#b then return false end
     for i=1,#a do
