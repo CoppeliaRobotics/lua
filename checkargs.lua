@@ -306,6 +306,6 @@ if arg and #arg==1 and arg[1]=='test' then
     test(113, fail, function() u{'s','s'} end)
     test(114, fail, function() u{1} end)
     test(115, succeed, function() assert(u()==42) end)
-    print('tests done')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end
 

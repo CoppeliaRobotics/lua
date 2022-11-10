@@ -36,4 +36,7 @@ if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
     assert(table.eq(string.split('a','%',true),{'a'}))
+    assert(table.eq(string.split('a%','%',true),{'a',''}))
+    assert(table.eq(string.split('a%--b','%-',true),{'a','-b'}))
+    print(debug.getinfo(1,'S').source,'tests passed')
 end

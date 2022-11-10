@@ -72,5 +72,5 @@ if arg and #arg==1 and arg[1]=='test' then
     local l2='b'
     local L=getlocals(1)
     assert(L.l1=='a' and L.l2=='b')
-    print('tests passed')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end

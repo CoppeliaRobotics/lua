@@ -210,5 +210,5 @@ if arg and #arg==1 and arg[1]=='test' then
     end
     assert(table.tostring(g:totable())==table.tostring(n))
     assert(Grid:fromtable(n)==g)
-    print('tests passed')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end

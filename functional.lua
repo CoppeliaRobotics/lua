@@ -171,5 +171,5 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(any(gt0,{-1,-2,0,1,-5}))
     assert(not any(gt0,{-1,-2,0,-11,-5}))
     assert(table.eq(zip({1,2,3,4},{'a','b','c'}),{{1,'a'},{2,'b'},{3,'c'}}))
-    print('tests passed')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end

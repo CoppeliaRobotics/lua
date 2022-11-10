@@ -58,5 +58,5 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(not table.eq({1,2,3,4},{1,2,3}))
     assert(not table.eq({},{1,2,3}))
     assert(table.tostring{1,2,3}=='{1, 2, 3}')
-    print('tests passed')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end

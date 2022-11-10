@@ -1624,5 +1624,5 @@ if arg and #arg==1 and arg[1]=='test' then
         if pcall(f,...) then error() end
     end
     asserterror(function() Matrix(-1,3,{1,2,3,4,5,6,7}) end)
-    print('tests passed')
+    print(debug.getinfo(1,'S').source,'tests passed')
 end
