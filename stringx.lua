@@ -33,7 +33,11 @@ function string.split(text,pattern,plain)
 end
 
 function string.startswith(s,prefix)
-    return string.sub(s,1,string.len(prefix))==prefix
+    return s:sub(1,#prefix)==prefix
+end
+
+function string.endswith(s,suffix)
+    return ending=='' or s:sub(-#suffix)==suffix
 end
 
 if arg and #arg==1 and arg[1]=='test' then
@@ -45,5 +49,8 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(string.startswith('abcde','abc'))
     assert(string.startswith('abc','abc'))
     assert(not string.startswith('bcde','abc'))
+    assert(string.endswith('abcde','cde'))
+    assert(string.endswith('abc','abc'))
+    assert(not string.endswith('bcde','bcd'))
     print(debug.getinfo(1,'S').source,'tests passed')
 end
