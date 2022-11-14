@@ -59,10 +59,21 @@ function table.print(t)
     print(table.tostring(t))
 end
 
+function table.find(t,item,equalsFunc)
+    equalsFunc=equalsFunc or function(x) return item==x end
+    for i,x in ipairs(t) do
+        if equalsFunc(x) then
+            return i
+        end
+    end
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     assert(table.eq({1,2,3},{1,2,3}))
     assert(not table.eq({1,2,3,4},{1,2,3}))
     assert(not table.eq({},{1,2,3}))
     assert(table.tostring{1,2,3}=='{1, 2, 3}')
+    assert(table.find({10,20,30,40},30)==3)
+    assert(table.find({10,20,30,40},50)==nil)
     print(debug.getinfo(1,'S').source,'tests passed')
 end
