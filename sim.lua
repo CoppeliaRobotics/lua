@@ -1306,6 +1306,17 @@ function sim.getObjectHandle(path,options)
     return sim._getObjectHandle(path,index,proxy,option)
 end
 
+function sim.getObjectAliasRelative(handle,baseHandle,options)
+    options=options or -1
+    local alias=sim.getObjectAlias(handle,options)
+    local baseAlias=sim.getObjectAlias(baseHandle,options)
+    if alias:startswith(baseAlias) then
+        return '.'..alias:sub(#baseAlias+1)
+    else
+        return alias
+    end
+end
+
 function sim.generateTextShape(...)
     local txt,color,height,centered,alphabetModel=checkargs({{type='string'},{type='table',item_type='float',size=3,default=NIL,nullable=true},{type='float',default=NIL,nullable=true},{type='bool',default=NIL,nullable=true},{type='string',default=NIL,nullable=true}},...)
     local textUtils=require('textUtils')
@@ -1663,6 +1674,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getObject@sim','int objectHandle=sim.getObject(string path,map options={})')
     sim.registerScriptFunction('sim.getObjectFromUid@sim','sim.getObjectFromUid(int uid,map options={})')
     --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
+    sim.registerScriptFunction('sim.getObjectAliasRelative@sim','string alias=sim.getObjectAliasRelative(int handle,int baseHandle,int options=-1)')
     sim.registerScriptFunction('sim.getShapeBB@sim','float[3] size=sim.getShapeBB(int shapeHandle)')
     sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,float[3] size)')
     sim.registerScriptFunction('sim.readCustomDataBlockEx@sim','sim.readCustomDataBlockEx(int handle,string tagName,map options={})')
