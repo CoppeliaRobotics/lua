@@ -32,11 +32,18 @@ function string.split(text,pattern,plain)
     return ret
 end
 
+function string.startswith(s,prefix)
+    return string.sub(s,1,string.len(prefix))==prefix
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
     assert(table.eq(string.split('a','%',true),{'a'}))
     assert(table.eq(string.split('a%','%',true),{'a',''}))
     assert(table.eq(string.split('a%--b','%-',true),{'a','-b'}))
+    assert(string.startswith('abcde','abc'))
+    assert(string.startswith('abc','abc'))
+    assert(not string.startswith('bcde','abc'))
     print(debug.getinfo(1,'S').source,'tests passed')
 end
