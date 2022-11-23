@@ -1397,6 +1397,15 @@ function sim.getSettingInt32(...)
     return _S.parseInt(sim.getSettingString(key))
 end
 
+function sim.getScriptFunctions(scriptHandle)
+    assert(scriptHandle and scriptHandle~=-1,'invalid script handle')
+    return setmetatable({},{__index=function(self,k)
+        return function(...)
+            sim.callScriptFunction(k,scriptHandle,...)
+        end
+    end})
+end
+
 function apropos(what,showDeprecated)
     local modNames={'sim'}
     for i,n in ipairs(sim.getLoadedPlugins()) do
@@ -1737,6 +1746,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest()') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.handleExtCalls@sim','sim.handleExtCalls() (Python only)') -- actually only for syntax highlighting and call tip
+    sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(scriptHandle)')
 
     -- Keep for backward compatibility:
     -----------------------------------
