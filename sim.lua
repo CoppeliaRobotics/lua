@@ -182,24 +182,35 @@ function sim.fastIdleLoop(enable)
     sim.writeCustomDataBlock(sim.handle_app,'__IDLEFPSSTACKSIZE__',sim.packInt32Table({stage,defaultIdleFps}))
 end
 
+function sim.getLoadedPlugins()
+    local ret={}
+    local index=0
+    while true do
+        local moduleName=sim.getModuleName(index)
+        if moduleName then table.insert(ret,moduleName) else break end
+        index=index+1
+    end
+    return ret
+end
+
 function sim.isPluginLoaded(pluginName)
     local index=0
     local moduleName=''
     while moduleName do
         moduleName=sim.getModuleName(index)
-        if (moduleName==pluginName) then
+        if moduleName==pluginName then
             return(true)
         end
         index=index+1
     end
-    return(false)
+    return false
 end
 
 function isArray(t)
     local m=0
     local count=0
-    for k, v in pairs(t) do
-        if type(k) == "number" and math.floor(k)==k and k>0 then
+    for k,v in pairs(t) do
+        if type(k)=="number" and math.floor(k)==k and k>0 then
             if k>m then m=k end
             count=count+1
         else
@@ -1384,6 +1395,21 @@ end
 function sim.getSettingInt32(...)
     local key=checkargs({{type='string'}},...)
     return _S.parseInt(sim.getSettingString(key))
+end
+
+function apropos(what)
+    local modNames={'sim'}
+    for i,n in ipairs(sim.getLoadedPlugins()) do
+        n='sim'..n
+        if type(_G[n])=='table' then table.insert(modNames,n) end
+    end
+    for i,n in ipairs(modNames) do
+        for k,v in pairs(_G[n]) do
+            if k:lower():match(what) then
+                print(n..'.'..k)
+            end
+        end
+    end
 end
 
 -- Hidden, internal functions:
