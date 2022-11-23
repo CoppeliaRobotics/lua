@@ -1403,13 +1403,24 @@ function apropos(what)
         n='sim'..n
         if type(_G[n])=='table' then table.insert(modNames,n) end
     end
+    local results={}
     for i,n in ipairs(modNames) do
         for k,v in pairs(_G[n]) do
             if k:lower():match(what) then
-                print(n..'.'..k)
+                local s=n..'.'..k
+                local info=s
+                if type(v)=='function' then
+                    local i=sim.getApiInfo(-1,s)
+                    if i then info=(string.split(i,'\n'))[1] end
+                end
+                table.insert(results,{s,info})
             end
         end
     end
+    table.sort(results,function(a,b) return a[1]<b[1] end)
+    local s=''
+    for i,result in ipairs(results) do s=s..(s=='' and '' or '\n')..result[2] end
+    print(s)
 end
 
 -- Hidden, internal functions:
