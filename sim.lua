@@ -1397,7 +1397,7 @@ function sim.getSettingInt32(...)
     return _S.parseInt(sim.getSettingString(key))
 end
 
-function apropos(what)
+function apropos(what,showDeprecated)
     local modNames={'sim'}
     for i,n in ipairs(sim.getLoadedPlugins()) do
         n='sim'..n
@@ -1408,12 +1408,17 @@ function apropos(what)
         for k,v in pairs(_G[n]) do
             if k:lower():match(what) then
                 local s=n..'.'..k
-                local info=s
-                if type(v)=='function' then
-                    local i=sim.getApiInfo(-1,s)
-                    if i then info=(string.split(i,'\n'))[1] end
+                local r,deprecated=pcall(sim.isDeprecated,s)
+                if not r then deprecated=0 end
+                if showDeprecated or deprecated~=1 then
+                    local info=s
+                    if type(v)=='function' then
+                        info=s..'(...)'
+                        local i=sim.getApiInfo(-1,s)
+                        if i then info=(string.split(i,'\n'))[1] end
+                    end
+                    table.insert(results,{s,info})
                 end
-                table.insert(results,{s,info})
             end
         end
     end
