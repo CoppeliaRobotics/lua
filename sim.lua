@@ -1400,7 +1400,8 @@ end
 function sim.getScriptFunctions(scriptHandle)
     assert(scriptHandle and scriptHandle~=-1,'invalid script handle')
     return setmetatable({},{__index=function(self,k)
-        return function(...)
+        return function(self_,...)
+            assert(self_==self,'methods must be called with object:method(args...)')
             sim.callScriptFunction(k,scriptHandle,...)
         end
     end})
