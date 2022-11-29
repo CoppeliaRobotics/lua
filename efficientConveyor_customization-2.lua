@@ -53,7 +53,6 @@ function _S.conveyor.actuation()
     local dat=sim.readCustomTableData(_S.conveyor.model,'__ctrl__')
     if next(dat)~=nil then
         sim.writeCustomTableData(_S.conveyor.model,'__ctrl__',{})
-        dat=sim.unpackTable(dat)
         if dat.pos then
             _S.conveyor.targetPos=dat.pos
             _S.conveyor.targetVel=nil
