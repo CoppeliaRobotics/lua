@@ -1407,6 +1407,18 @@ function sim.getScriptFunctions(scriptHandle)
     end})
 end
 
+function sim.addReferencedHandle(objectHandle,referencedHandle)
+    local refHandles=sim.getReferencedHandles(objectHandle)
+    table.insert(refHandles,referencedHandle)
+    sim.setReferencedHandles(objectHandle,refHandles)
+end
+
+function sim.removeReferencedObjects(objectHandle)
+    local refHandles=sim.getReferencedHandles(objectHandle)
+    sim.removeObjects(refHandles)
+    sim.setReferencedHandles(objectHandle,{})
+end
+
 function apropos(what,showDeprecated)
     local modNames={'sim'}
     for i,n in ipairs(sim.getLoadedPlugins()) do
@@ -1748,6 +1760,8 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest()') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.handleExtCalls@sim','sim.handleExtCalls() (Python only)') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(scriptHandle)')
+    sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(objectHandle,referencedHandle)')
+    sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(objectHandle)')
 
     -- Keep for backward compatibility:
     -----------------------------------
