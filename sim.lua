@@ -1402,7 +1402,7 @@ function sim.getScriptFunctions(scriptHandle)
     return setmetatable({},{__index=function(self,k)
         return function(self_,...)
             assert(self_==self,'methods must be called with object:method(args...)')
-            sim.callScriptFunction(k,scriptHandle,...)
+            return sim.callScriptFunction(k,scriptHandle,...)
         end
     end})
 end
