@@ -1759,9 +1759,9 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest()') -- actually only for syntax highlighting and call tip
     sim.registerScriptFunction('sim.handleExtCalls@sim','sim.handleExtCalls() (Python only)') -- actually only for syntax highlighting and call tip
-    sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(scriptHandle)')
-    sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(objectHandle,referencedHandle)')
-    sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(objectHandle)')
+    sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(int scriptHandle)')
+    sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(int objectHandle,int referencedHandle)')
+    sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(int objectHandle)')
 
     -- Keep for backward compatibility:
     -----------------------------------
