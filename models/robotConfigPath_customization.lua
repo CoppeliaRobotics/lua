@@ -6,15 +6,19 @@ function sysCall_init()
 end
 
 function sysCall_userConfig()
-    if states and not corout then
+    if corout then
+        corout=nil
+    else
         corout=coroutine.create(function()
             local old=sim.setThreadAutomaticSwitch(false)
             sim.fastIdleLoop(true)
+            state:createModelClone()
             for i=1,#states,speed do
                 state:setConfig(states[i])
                 sim.switchThread()
                 sim.wait(0.001,false)
             end
+            state:removeModelClone()
             sim.fastIdleLoop(false)
             sim.setThreadAutomaticSwitch(old)
             corout=nil
