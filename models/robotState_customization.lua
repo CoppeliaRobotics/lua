@@ -98,6 +98,19 @@ function getConfig()
     end
 end
 
+function setConfig(cfg)
+    if clonedModel then
+        local i=1
+        visitTree(clonedModel,function(handle)
+            if sim.getObjectType(handle)==sim.object_joint_type then
+                sim.setJointPosition(handle,cfg[i])
+                i=i+1
+            end
+            return true
+        end)
+    end
+end
+
 function saveConfig()
     if clonedModel then
         local cfg={}
@@ -115,14 +128,7 @@ function restoreConfig()
     if clonedModel then
         local cfg=sim.readCustomTableData(self,'config')
         if #cfg==0 then return end
-        local i=1
-        visitTree(clonedModel,function(handle)
-            if sim.getObjectType(handle)==sim.object_joint_type then
-                sim.setJointPosition(handle,cfg[i])
-                i=i+1
-            end
-            return true
-        end)
+        setConfig(cfg)
     end
 end
 
