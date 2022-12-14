@@ -1,5 +1,6 @@
 function sysCall_init()
     self=sim.getObject'.'
+    states=sim.readCustomTableData(self,'path')
     state=ObjectProxy'./State'
     speed=speed or 1
 end
@@ -10,7 +11,7 @@ function sysCall_userConfig()
             local old=sim.setThreadAutomaticSwitch(false)
             sim.fastIdleLoop(true)
             for i=1,#states,speed do
-                state:setConfig(states[i]:data())
+                state:setConfig(states[i])
                 sim.switchThread()
                 sim.wait(0.001,false)
             end
