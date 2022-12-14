@@ -5,6 +5,9 @@ function sysCall_init()
     transparency=transparency or 0.5
     ik=ik==nil and true or ik
     removeModelClone()
+    if create then
+        createModelClone()
+    end
 end
 
 function sysCall_cleanup()
