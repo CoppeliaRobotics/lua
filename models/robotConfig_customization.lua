@@ -33,6 +33,10 @@ function visitTree(handle,visitor)
     end
 end
 
+function hasModelClone()
+    return not not clonedModel
+end
+
 function removeModelClone()
     saveConfig()
     saveIkTarget()
