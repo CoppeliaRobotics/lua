@@ -1763,16 +1763,6 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(int objectHandle,int referencedHandle)')
     sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(int objectHandle)')
 
-    -- Keep for backward compatibility:
-    -----------------------------------
-    if sim.rmlPos==nil then
-        sim.rmlPos=sim.ruckigPos
-        sim.rmlVel=sim.ruckigVel
-        sim.rmlStep=sim.ruckigStep
-        sim.rmlRemove=sim.ruckigRemove
-    end
-    -----------------------------------
-
     _S.initGlobals={}
     for key,val in pairs(_G) do
         _S.initGlobals[key]=true
