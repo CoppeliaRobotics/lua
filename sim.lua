@@ -1711,8 +1711,6 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','float alphaAngle,float betaAngle,float gammaAngle=sim.yawPitchRollToAlphaBetaGamma(float yawAngle,float pitchAngle,float rollAngle)')
     sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','float yawAngle,float pitchAngle,float rollAngle=sim.alphaBetaGammaToYawPitchRoll(float alphaAngle,float betaAngle,float gammaAngle)')
     sim.registerScriptFunction('sim.getAlternateConfigs@sim','float[] configs=sim.getAlternateConfigs(int[] jointHandles,float[] inputConfig,int tipHandle=-1,float[] lowLimits=nil,float[] ranges=nil)')
-    sim.registerScriptFunction('sim.setObjectSelection@sim','sim.setObjectSelection(int[] handles)')
-
     sim.registerScriptFunction('sim.moveToPose@sim','float[7] endPose,float timeLeft=sim.moveToPose(int flags,float[7] currentPose,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7] targetPose,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)\nfloat[12] endMatrix,float timeLeft=sim.moveToPose(int flags,float[12] currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[12] targetMatrix,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)')
     sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,func callback,any auxData=nil,bool[] cyclicJoints=nil,float timeStep=0.0)')
     sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
