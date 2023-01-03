@@ -8,10 +8,10 @@ end
 function sysCall_userConfig()
     if corout then
         corout=nil
+        fastIdleLoop(false)
     else
         corout=coroutine.create(function()
-            local old=sim.setThreadAutomaticSwitch(false)
-            sim.fastIdleLoop(true)
+            fastIdleLoop(true)
             state:createModelClone()
             for i=1,#states,speed do
                 state:setConfig(states[i])
@@ -19,8 +19,7 @@ function sysCall_userConfig()
                 sim.wait(0.001,false)
             end
             state:removeModelClone()
-            sim.fastIdleLoop(false)
-            sim.setThreadAutomaticSwitch(old)
+            fastIdleLoop(false)
             corout=nil
         end)
     end
@@ -39,4 +38,16 @@ end
 function ObjectProxy(p,t)
     t=t or sim.scripttype_customizationscript
     return sim.getScriptFunctions(sim.getScript(t,sim.getObject(p)))
+end
+
+function fastIdleLoop(enable)
+    if fast and not enable then
+        fast=false
+        sim.setThreadAutomaticSwitch(tas)
+        sim.fastIdleLoop(false)
+    elseif not fast and enable then
+        fast=true
+        tas=sim.setThreadAutomaticSwitch(false)
+        sim.fastIdleLoop(true)
+    end
 end
