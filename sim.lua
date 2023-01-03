@@ -1323,7 +1323,7 @@ function sim.getObjectAliasRelative(handle,baseHandle,options)
     local baseAlias=sim.getObjectAlias(baseHandle,options)
     if alias:startswith(baseAlias) then
         local ref='.'
-        if (sim.getModelProperty(handle)&sim.modelproperty_not_model)==0 then ref=':' end
+        if sim.getModelProperty(baseHandle)&sim.modelproperty_not_model==0 then ref=':' end
         return ref..alias:sub(#baseAlias+1)
     else
         return alias
