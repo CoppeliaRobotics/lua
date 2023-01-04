@@ -4,18 +4,27 @@ function sysCall_init()
     self=sim.getObject'.'
     states=sim.readCustomTableData(self,'path')
     state=ObjectProxy'./State'
-    speed=speed or 1
     configUi=ConfigUI('robotConfigPath',{
-        show={name='Show state',type='bool',ui={order=1,},},
-        state={name='State index',type='int',minimum=1,maximum=#states,ui={order=2,},},
+        showState={
+            name='Show state',
+            type='bool',
+            ui={order=10,col=1,},
+        },
+        stateIndex={
+            name='State index',
+            type='int',
+            minimum=1,
+            maximum=#states,
+            ui={order=12,col=2,},
+        },
     },function(config)
-        if config.show and not state:hasModelClone() then
+        if config.showState and not state:hasModelClone() then
             state:createModelClone()
-        elseif not config.show and state:hasModelClone() then
+        elseif not config.showState and state:hasModelClone() then
             state:removeModelClone()
         end
         if state:hasModelClone() then
-            state:setConfig(states[config.state])
+            state:setConfig(states[config.stateIndex])
         end
     end)
 end
