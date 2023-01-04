@@ -1,7 +1,6 @@
 function sysCall_init()
     self=sim.getObject'.'
     model=model or sim.getObject':'
-    targetPath=targetPath or './target'
     color=color or {1,0,0}
     transparency=transparency or 0.5
     ik=ik==nil and true or ik
@@ -63,13 +62,18 @@ function createModelClone()
     local clonedObjects=sim.copyPasteObjects(objects,4+8+16+32)
     clonedModel=clonedObjects[1]
     sim.setReferencedHandles(self,clonedObjects)
+    local scriptsToInit={}
     for _,handle in ipairs(clonedObjects) do
         local parent=sim.getObjectParent(handle)
         local alias=sim.getObjectAlias(handle)
         for _,scriptType in ipairs{sim.scripttype_childscript,sim.scripttype_customizationscript} do
             local scriptHandle=sim.getScript(scriptType,handle)
-            if not (parent==clonedModel and alias=='IK') and scriptHandle~=-1 then
-                sim.removeScript(scriptHandle)
+            if scriptHandle~=-1 then
+                if parent==clonedModel and alias=='IK' then
+                    table.insert(scriptsToInit,scriptHandle)
+                else
+                    sim.removeScript(scriptHandle)
+                end
             end
         end
         if sim.getObjectType(handle)==sim.object_shape_type then
@@ -84,11 +88,16 @@ function createModelClone()
     sim.setObjectParent(clonedModel,self,true)
     sim.setModelProperty(clonedModel,sim.getModelProperty(clonedModel)&~sim.modelproperty_not_model)
     sim.setObjectProperty(self,sim.objectproperty_collapsed)
+    for _,scriptHandle in ipairs(scriptsToInit) do
+        sim.initScript(scriptHandle)
+    end
     restoreConfig()
     restoreIkTarget()
-    local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
-    if target==-1 then return end
-    sim.setObjectSelection{target}
+    local ikObj=ObjectProxy('./IK',clonedModel)
+    if ikObj then
+        local target=ikObj:getTarget()
+        sim.setObjectSelection{target}
+    end
 end
 
 function getConfig()
@@ -142,24 +151,36 @@ end
 
 function saveIkTarget()
     if clonedModel then
-        local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
-        if target==-1 then return end
-        local pose=sim.getObjectPose(target,clonedModel)
-        sim.writeCustomTableData(self,'ikTargetPose',pose)
+        local ikObj=ObjectProxy('./IK',clonedModel)
+        if ikObj then
+            local target=ikObj:getTarget()
+            local pose=sim.getObjectPose(target,clonedModel)
+            sim.writeCustomTableData(self,'ikTargetPose',pose)
+        end
     end
 end
 
 function restoreIkTarget(pose)
     if clonedModel then
-        local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
-        if target==-1 then return end
-        local pose=sim.readCustomTableData(self,'ikTargetPose')
-        if #pose==0 then return end
-        sim.setObjectPose(target,clonedModel,pose)
+        local ikObj=ObjectProxy('./IK',clonedModel)
+        if ikObj then
+            local target=ikObj:getTarget()
+            local pose=sim.readCustomTableData(self,'ikTargetPose')
+            if #pose==0 then return end
+            sim.setObjectPose(target,clonedModel,pose)
+        end
     end
 end
 
 function reset()
     sim.writeCustomDataBlock(self,'config','')
     sim.writeCustomDataBlock(self,'ikTargetPose','')
+end
+
+function ObjectProxy(path,proxy,t)
+    t=t or sim.scripttype_customizationscript
+    local o=sim.getObject(path,{proxy=proxy,noError=true})
+    if o~=-1 then
+        return sim.getScriptFunctions(sim.getScript(t,o))
+    end
 end
