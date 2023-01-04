@@ -1,6 +1,7 @@
 function sysCall_init()
     self=sim.getObject'.'
     model=model or sim.getObject':'
+    targetPath=targetPath or './target'
     color=color or {1,0,0}
     transparency=transparency or 0.5
     ik=ik==nil and true or ik
@@ -85,7 +86,7 @@ function createModelClone()
     sim.setObjectProperty(self,sim.objectproperty_collapsed)
     restoreConfig()
     restoreIkTarget()
-    local target=sim.getObject('./target',{proxy=clonedModel,noError=true})
+    local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
     if target==-1 then return end
     sim.setObjectSelection{target}
 end
@@ -141,7 +142,7 @@ end
 
 function saveIkTarget()
     if clonedModel then
-        local target=sim.getObject('./target',{proxy=clonedModel,noError=true})
+        local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
         if target==-1 then return end
         local pose=sim.getObjectPose(target,clonedModel)
         sim.writeCustomTableData(self,'ikTargetPose',pose)
@@ -150,7 +151,7 @@ end
 
 function restoreIkTarget(pose)
     if clonedModel then
-        local target=sim.getObject('./target',{proxy=clonedModel,noError=true})
+        local target=sim.getObject(targetPath,{proxy=clonedModel,noError=true})
         if target==-1 then return end
         local pose=sim.readCustomTableData(self,'ikTargetPose')
         if #pose==0 then return end
