@@ -1,53 +1,30 @@
+require'configUi'
+
 function sysCall_init()
     self=sim.getObject'.'
     states=sim.readCustomTableData(self,'path')
     state=ObjectProxy'./State'
     speed=speed or 1
-end
-
-function sysCall_userConfig()
-    if corout then
-        corout=nil
-        fastIdleLoop(false)
-    else
-        corout=coroutine.create(function()
-            fastIdleLoop(true)
+    configUi=ConfigUI('robotConfigPath',{
+        show={name='Show state',type='bool',ui={order=1,},},
+        state={name='State index',type='int',minimum=1,maximum=#states,ui={order=2,},},
+    },function(config)
+        if config.show and not state:hasModelClone() then
             state:createModelClone()
-            for i=1,#states,speed do
-                state:setConfig(states[i])
-                sim.switchThread()
-                sim.wait(0.001,false)
-            end
+        elseif not config.show and state:hasModelClone() then
             state:removeModelClone()
-            fastIdleLoop(false)
-            corout=nil
-        end)
-    end
+        end
+        if state:hasModelClone() then
+            state:setConfig(states[config.state])
+        end
+    end)
 end
 
+-- for some reason, this is required to make configUi function normally:
 function sysCall_nonSimulation()
-    if not corout then return end
-    if coroutine.status(corout)~='dead' then
-        local ok,errorMsg=coroutine.resume(corout)
-        if errorMsg then
-            error(debug.traceback(corout,errorMsg),2)
-        end
-    end
 end
 
 function ObjectProxy(p,t)
     t=t or sim.scripttype_customizationscript
     return sim.getScriptFunctions(sim.getScript(t,sim.getObject(p)))
-end
-
-function fastIdleLoop(enable)
-    if fast and not enable then
-        fast=false
-        sim.setThreadAutomaticSwitch(tas)
-        sim.fastIdleLoop(false)
-    elseif not fast and enable then
-        fast=true
-        tas=sim.setThreadAutomaticSwitch(false)
-        sim.fastIdleLoop(true)
-    end
 end
