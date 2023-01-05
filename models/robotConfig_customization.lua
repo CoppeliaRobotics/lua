@@ -41,12 +41,11 @@ function createModelClone()
     sim.visitTree(model,function(handle)
         local parent=sim.getObjectParent(handle)
         local alias=sim.getObjectAlias(handle)
-        if parent==model and alias=='JointGroup' then return end
-        if parent==model and alias=='MotionPlanning' then return end
-        if parent==model and alias=='Path' then return end
-        if parent==model and not ik and alias=='IK' then return end
+        if parent==model and alias=='JointGroup' then return false end
+        if parent==model and alias=='MotionPlanning' then return false end
+        if parent==model and alias=='Path' then return false end
+        if parent==model and not ik and alias=='IK' then return false end
         table.insert(objects,handle)
-        return true
     end)
     local clonedObjects=sim.copyPasteObjects(objects,8+16+32)
     clonedModel=clonedObjects[1]
@@ -96,7 +95,6 @@ function getConfig()
             if sim.getObjectType(handle)==sim.object_joint_type then
                 table.insert(cfg,sim.getJointPosition(handle))
             end
-            return true
         end)
         return cfg
     else
@@ -112,7 +110,6 @@ function setConfig(cfg)
                 sim.setJointPosition(handle,cfg[i])
                 i=i+1
             end
-            return true
         end)
     end
 end
@@ -124,7 +121,6 @@ function saveConfig()
             if sim.getObjectType(handle)==sim.object_joint_type then
                 table.insert(cfg,sim.getJointPosition(handle))
             end
-            return true
         end)
         sim.writeCustomTableData(self,'config',cfg)
     end

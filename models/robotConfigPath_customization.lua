@@ -31,7 +31,7 @@ function sysCall_init()
         if state:hasModelClone() then
             state:setConfig(states[config.stateIndex])
         end
-        
+
         if config.showTipPath and not tipPathDwo then
             local del=not state:hasModelClone()
             tipPathDwo=sim.addDrawingObject(sim.drawing_linestrip,3,0,-1,999999,{0,1,1})
@@ -45,8 +45,7 @@ function sysCall_init()
             sim.visitTree(self,function(handle)
                 if sim.readCustomDataBlock(handle,'ikTip') then
                     tip=handle
-                else
-                    return true
+                    return false
                 end
             end)
             for i=1,#states do

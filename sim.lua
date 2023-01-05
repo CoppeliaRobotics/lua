@@ -1423,7 +1423,7 @@ end
 
 function sim.visitTree(...)
     local rootHandle,visitorFunc,options=checkargs({{type='int'},{type='func'},{type='table',default={}}},...)
-    if not visitorFunc(rootHandle) then return end
+    if visitorFunc(rootHandle)==false then return end
     local i=0
     while true do
         local childHandle=sim.getObjectChild(rootHandle,i)
