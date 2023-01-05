@@ -8,6 +8,7 @@ function robotConfigPath.create(pathMtx,parent)
     sim.setObjectInt32Param(pathDummy,sim.objintparam_visibility_layer,0)
     sim.setObjectInt32Param(pathDummy,sim.objintparam_manipulation_permissions,0)
     sim.setObjectProperty(pathDummy,sim.objectproperty_collapsed)
+    sim.setObjectPose(pathDummy,sim.handle_parent,{0,0,0,0,0,0,1})
     local s=sim.addScript(sim.scripttype_customizationscript)
     sim.setScriptStringParam(s,sim.scriptstringparam_text,
 [[require'models.robotConfigPath_customization']])
