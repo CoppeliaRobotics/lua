@@ -48,7 +48,7 @@ function createModelClone()
         table.insert(objects,handle)
         return true
     end)
-    local clonedObjects=sim.copyPasteObjects(objects,4+8+16+32)
+    local clonedObjects=sim.copyPasteObjects(objects,8+16+32)
     clonedModel=clonedObjects[1]
     sim.setReferencedHandles(self,clonedObjects)
     local scriptsToInit={}
