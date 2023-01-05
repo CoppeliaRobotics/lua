@@ -22,6 +22,31 @@ function sysCall_init()
             type='bool',
             ui={order=20,col=1,group=2,},
         },
+        createVolumeSweep={
+            name='Create volume sweep (octree)',
+            default='',
+            callback=function()
+                local del=not state:hasModelClone()
+                local octree=sim.createOctree(0.01,0,0)
+                if del then
+                    state:createModelClone()
+                else
+                    origCfg=state:getConfig()
+                end
+                for i=1,#states do
+                    state:setConfig(states[i])
+                    sim.visitTree(sim.getObject'./State',function(h)
+                        sim.insertObjectIntoOctree(octree,h,0)
+                    end)
+                end
+                if del then
+                    state:removeModelClone()
+                else
+                    state:setConfig(origCfg)
+                end
+            end,
+            ui={order=30,group=3,},
+        },
     },function(config)
         if config.showState and not state:hasModelClone() then
             state:createModelClone()
