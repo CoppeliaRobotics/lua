@@ -1421,6 +1421,18 @@ function sim.removeReferencedObjects(objectHandle)
     sim.setReferencedHandles(objectHandle,{})
 end
 
+function sim.visitTree(...)
+    local rootHandle,visitorFunc,options=checkargs({{type='int'},{type='func'},{type='table',default={}}},...)
+    if not visitorFunc(rootHandle) then return end
+    local i=0
+    while true do
+        local childHandle=sim.getObjectChild(rootHandle,i)
+        if childHandle==-1 then return end
+        sim.visitTree(childHandle,visitorFunc)
+        i=i+1
+    end
+end
+
 function apropos(what,showDeprecated)
     local modNames={'sim'}
     for i,n in ipairs(sim.getLoadedPlugins()) do
@@ -1760,6 +1772,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(int scriptHandle)')
     sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(int objectHandle,int referencedHandle)')
     sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(int objectHandle)')
+    sim.registerScriptFunction('sim.visitTree@sim','sim.visitTree(int rootHandle,func visitorFunc,map options={})')
 
     _S.initGlobals={}
     for key,val in pairs(_G) do

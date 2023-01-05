@@ -22,17 +22,6 @@ function sysCall_userConfig()
     end
 end
 
-function visitTree(handle,visitor)
-    if not visitor(handle) then return end
-    local i=0
-    while true do
-        local childHandle=sim.getObjectChild(handle,i)
-        if childHandle==-1 then return end
-        visitTree(childHandle,visitor)
-        i=i+1
-    end
-end
-
 function hasModelClone()
     return not not clonedModel
 end
@@ -49,7 +38,7 @@ function createModelClone()
         removeModelClone()
     end
     local objects={}
-    visitTree(model,function(handle)
+    sim.visitTree(model,function(handle)
         local parent=sim.getObjectParent(handle)
         local alias=sim.getObjectAlias(handle)
         if parent==model and alias=='JointGroup' then return end
@@ -103,7 +92,7 @@ end
 function getConfig()
     if clonedModel then
         local cfg={}
-        visitTree(clonedModel,function(handle)
+        sim.visitTree(clonedModel,function(handle)
             if sim.getObjectType(handle)==sim.object_joint_type then
                 table.insert(cfg,sim.getJointPosition(handle))
             end
@@ -118,7 +107,7 @@ end
 function setConfig(cfg)
     if clonedModel then
         local i=1
-        visitTree(clonedModel,function(handle)
+        sim.visitTree(clonedModel,function(handle)
             if sim.getObjectType(handle)==sim.object_joint_type then
                 sim.setJointPosition(handle,cfg[i])
                 i=i+1
@@ -131,7 +120,7 @@ end
 function saveConfig()
     if clonedModel then
         local cfg={}
-        visitTree(clonedModel,function(handle)
+        sim.visitTree(clonedModel,function(handle)
             if sim.getObjectType(handle)==sim.object_joint_type then
                 table.insert(cfg,sim.getJointPosition(handle))
             end
