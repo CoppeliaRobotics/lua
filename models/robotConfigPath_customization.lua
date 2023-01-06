@@ -22,12 +22,12 @@ function sysCall_init()
             type='bool',
             ui={order=20,col=1,group=2,},
         },
-        createVolumeSweep={
+        createVolumeSweepOctree={
             name='Create volume sweep (octree)',
             default='',
             callback=function()
                 local del=not state:hasModelClone()
-                local octree=sim.createOctree(0.01,0,0)
+                local octree=sim.createOctree(0.02,0,0)
                 if del then
                     state:createModelClone()
                 else
@@ -46,6 +46,48 @@ function sysCall_init()
                 end
             end,
             ui={order=30,group=3,},
+        },
+        createVolumeSweepIGL={
+            name='Create volume sweep (IGL)',
+            default='',
+            callback=function()
+                local del=not state:hasModelClone()
+                if del then
+                    state:createModelClone()
+                else
+                    origCfg=state:getConfig()
+                end
+                local shapes={}
+                for i=1,#states do
+                    state:setConfig(states[i])
+                    sim.visitTree(sim.getObject'./State',function(h)
+                        if sim.getObjectType(h)~=sim.object_shape_type then return end
+                        local v=sim.getObjectInt32Param(h,sim.objintparam_visibility_layer)
+                        if v&15==0 then return end
+                        shapes[h]=shapes[h] or {}
+                        shapes[h][i]=sim.getObjectMatrix(h,-1)
+                    end)
+                end
+                local sweptShapes={}
+                for shape,transforms in pairs(shapes) do
+                    local v,i,n=sim.getShapeMesh(shape)
+                    local mesh={vertices=v,indices=i}
+                    function transform(t)
+                        t=math.floor(1+t*(#states-1)+0.5)
+                        return transforms[t]
+                    end
+                    local sweptMesh=simIGL.sweptVolume(mesh,'transform',#states,40)
+                    local newShape=sim.createMeshShape(3,math.pi/4,sweptMesh.vertices,sweptMesh.indices)
+                    table.insert(sweptShapes,newShape)
+                end
+                sim.setObjectAlias(sim.groupShapes(sweptShapes),'VolumeSweep')
+                if del then
+                    state:removeModelClone()
+                else
+                    state:setConfig(origCfg)
+                end
+            end,
+            ui={order=40,group=3,},
         },
     },function(config)
         if config.showState and not state:hasModelClone() then
