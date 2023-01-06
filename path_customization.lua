@@ -113,6 +113,7 @@ function _S.path.init()
     _S.path.lineCont={-1,-1}
     _S.path.tickCont={-1,-1,-1}
     _S.path.createNewIfNeeded()
+    _S.path.forceFullRebuild=true
     return _S.path.setup()
 end
 
