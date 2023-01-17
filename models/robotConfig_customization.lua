@@ -90,13 +90,18 @@ end
 
 function getConfig()
     if clonedModel then
-        local cfg={}
-        sim.visitTree(clonedModel,function(handle)
-            if sim.getObjectType(handle)==sim.object_joint_type then
-                table.insert(cfg,sim.getJointPosition(handle))
-            end
-        end)
-        return cfg
+        local ikObj=ObjectProxy('./IK',clonedModel)
+        if ikObj then
+            return ikObj:getConfig()
+        else
+            local cfg={}
+            sim.visitTree(clonedModel,function(handle)
+                if sim.getObjectType(handle)==sim.object_joint_type then
+                    table.insert(cfg,sim.getJointPosition(handle))
+                end
+            end)
+            return cfg
+        end
     else
         return sim.readCustomTableData(self,'config')
     end
@@ -104,25 +109,24 @@ end
 
 function setConfig(cfg)
     if clonedModel then
-        local i=1
-        sim.visitTree(clonedModel,function(handle)
-            if sim.getObjectType(handle)==sim.object_joint_type then
-                sim.setJointPosition(handle,cfg[i])
-                i=i+1
-            end
-        end)
+        local ikObj=ObjectProxy('./IK',clonedModel)
+        if ikObj then
+            return ikObj:setConfig(cfg)
+        else
+            local i=1
+            sim.visitTree(clonedModel,function(handle)
+                if sim.getObjectType(handle)==sim.object_joint_type then
+                    sim.setJointPosition(handle,cfg[i])
+                    i=i+1
+                end
+            end)
+        end
     end
 end
 
 function saveConfig()
     if clonedModel then
-        local cfg={}
-        sim.visitTree(clonedModel,function(handle)
-            if sim.getObjectType(handle)==sim.object_joint_type then
-                table.insert(cfg,sim.getJointPosition(handle))
-            end
-        end)
-        sim.writeCustomTableData(self,'config',cfg)
+        sim.writeCustomTableData(self,'config',getConfig())
     end
 end
 
