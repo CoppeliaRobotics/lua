@@ -79,6 +79,22 @@ function createModelClone()
     for _,scriptHandle in ipairs(scriptsToInit) do
         sim.initScript(scriptHandle)
     end
+    local ikObjOrig=ObjectProxy('./IK',model)
+    if not ik or not ikObjOrig then
+        joints={}
+        if ikObjOrig then
+            for _,h in ipairs(ikObjOrig:getJoints()) do
+                local p=sim.getObjectAliasRelative(h,model,8)
+                table.insert(joints,sim.getObject(p,{proxy=clonedModel}))
+            end
+        else
+            sim.visitTree(clonedModel,function(handle)
+                if sim.getObjectType(handle)==sim.object_joint_type then
+                    table.insert(joints,handle)
+                end
+            end)
+        end
+    end
     restoreConfig()
     restoreIkTarget()
     local ikObj=ObjectProxy('./IK',clonedModel)
@@ -94,13 +110,7 @@ function getConfig()
         if ikObj then
             return ikObj:getConfig()
         else
-            local cfg={}
-            sim.visitTree(clonedModel,function(handle)
-                if sim.getObjectType(handle)==sim.object_joint_type then
-                    table.insert(cfg,sim.getJointPosition(handle))
-                end
-            end)
-            return cfg
+            return map(sim.getJointPosition,joints)
         end
     else
         return sim.readCustomTableData(self,'config')
@@ -113,13 +123,7 @@ function setConfig(cfg)
         if ikObj then
             return ikObj:setConfig(cfg)
         else
-            local i=1
-            sim.visitTree(clonedModel,function(handle)
-                if sim.getObjectType(handle)==sim.object_joint_type then
-                    sim.setJointPosition(handle,cfg[i])
-                    i=i+1
-                end
-            end)
+            foreach(sim.setJointPosition,joints,cfg)
         end
     end
 end
