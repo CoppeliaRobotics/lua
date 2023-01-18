@@ -1373,6 +1373,20 @@ setmetatable(Matrix4x4,{__call=function(self,data)
     return Matrix(4,4,data)
 end})
 
+if sim then
+    function Matrix__registerScriptVariables()
+        sim.registerScriptVariable('Matrix')
+        sim.registerScriptVariable('Matrix3x3')
+        sim.registerScriptVariable('Matrix4x4')
+        sim.registerScriptVariable('Vector')
+        sim.registerScriptVariable('Vector3')
+        sim.registerScriptVariable('Vector4')
+        sim.registerScriptVariable('Vector7')
+        Matrix__registerScriptVariables=nil
+    end
+    sim.registerScriptFuncHook('sysCall_init','Matrix__registerScriptVariables',true)
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(
         3,4,
