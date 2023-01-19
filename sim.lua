@@ -1773,6 +1773,7 @@ function _S.sysCallEx_init()
     sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(int objectHandle,int referencedHandle)')
     sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(int objectHandle)')
     sim.registerScriptFunction('sim.visitTree@sim','sim.visitTree(int rootHandle,func visitorFunc,map options={})')
+    sim.registerScriptVariable('ConfigUI')
 
     _S.initGlobals={}
     for key,val in pairs(_G) do
