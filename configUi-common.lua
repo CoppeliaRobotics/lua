@@ -43,6 +43,8 @@ function ConfigUI:validateElemSchema(elemName,elemSchema)
             elemSchema.default={0.85,0.85,1.0}
         elseif elemSchema.type=='bool' then
             elemSchema.default=false
+        elseif elemSchema.type=='callback' then
+            elemSchema.default=''
         end
     end
 
