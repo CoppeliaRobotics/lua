@@ -955,13 +955,14 @@ function Matrix:svd(computeThinU,computeThinV,b)
     return s,u,v,x
 end
 
-function Matrix:pinv(b)
+function Matrix:pinv(b,damping)
     if not simEigen then error('this method requires the simEigen plugin') end
     local m=self:totable{}
     if b~=nil and getmetatable(b)==Matrix then
         b=b:totable{}
     end
-    local mi,x=simEigen.pinv(m,b)
+    damping=damping or 0
+    local mi,x=simEigen.pinv(m,b,damping)
     mi=Matrix:fromtable(mi)
     if x then
         x=Matrix:fromtable(x)
