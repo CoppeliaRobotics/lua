@@ -265,12 +265,22 @@ function ConfigUI:sysCall_nonSimulation()
     end
 
     -- poll for external config change:
-    local newConfig=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.config)
-    if sim.packTable(newConfig)~=sim.packTable(self.config) then
-        self:readConfig()
+    local newConfigPack=sim.packTable(self.config)
+    if self.oldConfig and newConfigPack~=sim.packTable(self.oldConfig) then
+        self.oldConfig=sim.unpackTable(newConfigPack)
         self:configChanged() -- updates ui
         self:writeConfig()
         self:generate()
+    else
+        self.oldConfig=sim.unpackTable(newConfigPack)
+        local newConfig=sim.readCustomTableData(sim.getObject'.',self.dataBlockName.config)
+        if sim.packTable(newConfig)~=sim.packTable(self.config) then
+            self:readConfig()
+            self:configChanged() -- updates ui
+            self:writeConfig()
+            self:generate()
+            self.oldConfig=sim.packTable(self.config)
+        end
     end
 end
 
