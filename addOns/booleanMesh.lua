@@ -29,6 +29,7 @@ function sysCall_init()
         sim.removeObjects(toRemove)
     end
     sim.reorientShapeBoundingBox(result,sim.handle_world)
+    sim.announceSceneContentChange()
 
     return {cmd='cleanup'}
 end
