@@ -5,6 +5,9 @@ function table.index(t)
 end
 
 function table.eq(a,b)
+    if a==nil and b==nil then return true end
+    if a==nil or b==nil then return false end
+    if type(a)~='table' or type(b)~='table' then return false end
     if #a~=#b then return false end
     for i=1,#a do
         if type(a)~=type(b) then return false end
