@@ -159,6 +159,14 @@ operator={
     le=function(a,b) return a<=b end,
 }
 
+function sum(tbl)
+    return reduce(operator.add,tbl)
+end
+
+function prod(tbl)
+    return reduce(operator.mul,tbl)
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(range(3),{1,2,3}))
