@@ -279,7 +279,7 @@ function ConfigUI:sysCall_nonSimulation()
             self:configChanged() -- updates ui
             self:writeConfig()
             self:generate()
-            self.oldConfig=sim.packTable(self.config)
+            self.oldConfig={table.unpack(self.config)}
         end
     end
 end
