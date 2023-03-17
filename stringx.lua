@@ -54,6 +54,18 @@ function string.rtrim(s)
     return s:sub(1,n)
 end
 
+function string.chars(s)
+    local ret={}
+    for i=1,#s do table.insert(ret,s:sub(i,i)) end
+    return ret
+end
+
+function string.bytes(s)
+    local ret={}
+    for i=1,#s do table.insert(ret,string.byte(s:sub(i,i))) end
+    return ret
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
@@ -69,5 +81,7 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(string.trim(' abc ')=='abc')
     assert(string.ltrim(' abc ')=='abc ')
     assert(string.rtrim(' abc ')==' abc')
+    assert(table.eq(string.chars('abc'),{'a','b','c'}))
+    assert(table.eq(string.bytes('abc'),{0x61,0x62,0x63}))
     print(debug.getinfo(1,'S').source,'tests passed')
 end
