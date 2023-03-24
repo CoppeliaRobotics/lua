@@ -20,12 +20,16 @@ function sysCall_init()
     end
 
     local result=simIGL.meshBooleanShape(sel,op())
-    sim.setObjectSel({result})
-    if not simUI.getKeyboardModifiers().shift then
-        sim.removeObjects(sel)
-    end
 
-    sim.announceSceneContentChange()
+    if result then
+        sim.setObjectSel({result})
+        if not simUI.getKeyboardModifiers().shift then
+            sim.removeObjects(sel)
+        end
+        sim.announceSceneContentChange()
+    else
+        simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,'Mesh boolean add-on','The result is empty.')
+    end
 
     return {cmd='cleanup'}
 end
