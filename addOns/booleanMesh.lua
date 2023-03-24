@@ -20,7 +20,10 @@ function sysCall_init()
     end
 
     local result=simIGL.meshBooleanShape(sel,op())
+    sim.setObjectColor(result,0,sim.colorcomponent_ambient_diffuse,{0.85,0.96,1.0})
+    sim.setObjectInt32Param(result,sim.shapeintparam_culling,0)
     sim.announceSceneContentChange()
+    sim.setObjectSel({result})
 
     return {cmd='cleanup'}
 end
