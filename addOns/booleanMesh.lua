@@ -6,7 +6,7 @@ function sysCall_init()
 
     local maxSel=2
     if type(acceptsMoreThan2)=='function' and acceptsMoreThan2() then maxSel=1/0 end
-    local sel=sim.getObjectSelection()
+    local sel=sim.getObjectSel()
     if #sel<2 or #sel>maxSel then
         simUI.msgBox(simUI.msgbox_type.critical,simUI.msgbox_buttons.ok,'Mesh boolean add-on','This tool requires 2'..(maxSel==2 and '' or ' (or more)')..' shapes to be selected.')
         return {cmd='cleanup'}
