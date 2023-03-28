@@ -58,7 +58,7 @@ configUi=ConfigUI('arucoMarker',{
         default=0.1,
         minimum=0.001,
         maximum=1,
-        ui={control='spinbox',group=1,order=0,},
+        ui={control='spinbox',group=1,order=2,},
     },
     thickness={
         name='Thickness',
@@ -66,6 +66,6 @@ configUi=ConfigUI('arucoMarker',{
         default=0.005,
         minimum=0.001,
         maximum=1,
-        ui={control='spinbox',group=1,order=1,},
+        ui={control='spinbox',group=1,order=3,},
     },
 },generate)
