@@ -71,6 +71,23 @@ function table.find(t,item,equalsFunc)
     end
 end
 
+function table.compare(a,b,compareFunc)
+    compareFunc=compareFunc or function(a,b)
+        if a<b then return -1 end
+        if a>b then return 1 end
+        return 0
+    end
+    if #a==0 and #b==0 then return 0 end
+    if #a==0 then return -1 end
+    if #b==0 then return 1 end
+    local c=compareFunc(a[1],b[1])
+    if c==0 then
+        return table.compare(table.slice(a,2),table.slice(b,2),compareFunc)
+    else
+        return c
+    end
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     assert(table.eq({1,2,3},{1,2,3}))
     assert(not table.eq({1,2,3,4},{1,2,3}))
@@ -78,5 +95,10 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(table.tostring{1,2,3}=='{1, 2, 3}')
     assert(table.find({10,20,30,40},30)==3)
     assert(table.find({10,20,30,40},50)==nil)
+    assert(table.compare({10},{10})==0)
+    assert(table.compare({10},{10,0})<0)
+    assert(table.compare({10,0},{10})>0)
+    assert(table.compare({11,0},{10,1})>0)
+    assert(table.compare({9,0},{10,1})<0)
     print(debug.getinfo(1,'S').source,'tests passed')
 end
