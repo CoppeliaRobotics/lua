@@ -1367,6 +1367,7 @@ function sim.getObjectAliasRelative(handle,baseHandle,aliasOptions,options)
     elseif commonAncestor==baseHandle then
         -- simple case: handle is a (grand-)child of baseHandle
         local p=getPath(handle,baseHandle)
+        p=filter(function(h) return sim.getModelProperty(h)&sim.modelproperty_not_model==0 or h==p[#p] end,p)
         return (options.noDot and '' or './')..table.join(map(sim.getObjectAlias,p),'/')
     elseif commonAncestor==handle then
         -- reverse case: go upwards in the hierarchy
