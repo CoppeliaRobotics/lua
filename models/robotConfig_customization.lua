@@ -41,7 +41,6 @@ function createModelClone()
     sim.visitTree(model,function(handle)
         local parent=sim.getObjectParent(handle)
         local alias=sim.getObjectAlias(handle)
-        if parent==model and alias=='JointGroup' then return false end
         if parent==model and alias=='MotionPlanning' then return false end
         if parent==model and alias=='Path' then return false end
         if parent==model and not ik and alias=='IK' then return false end
