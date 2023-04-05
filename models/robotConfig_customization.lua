@@ -46,7 +46,7 @@ function createModelClone()
         if parent==model and not ik and alias=='IK' then return false end
         table.insert(objects,handle)
     end)
-    local clonedObjects=sim.copyPasteObjects(objects,8+16+32)
+    local clonedObjects=sim.copyPasteObjects(objects,16+32)
     clonedModel=clonedObjects[1]
     sim.setReferencedHandles(self,clonedObjects)
     local scriptsToInit={}
