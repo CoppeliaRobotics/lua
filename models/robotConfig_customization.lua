@@ -53,14 +53,14 @@ function createModelClone()
     for _,handle in ipairs(clonedObjects) do
         local parent=sim.getObjectParent(handle)
         local alias=sim.getObjectAlias(handle)
-        for _,scriptType in ipairs{sim.scripttype_childscript,sim.scripttype_customizationscript} do
-            local scriptHandle=sim.getScript(scriptType,handle)
-            if scriptHandle~=-1 then
-                if parent==clonedModel and alias=='IK' then
-                    table.insert(scriptsToInit,scriptHandle)
-                else
-                    sim.removeScript(scriptHandle)
-                end
+        local scriptHandle=sim.getScript(sim.scripttype_customizationscript,handle)
+        if scriptHandle~=-1 then
+            if parent==clonedModel and alias=='IK' then
+                table.insert(scriptsToInit,scriptHandle)
+            elseif parent==clonedModel and sim.readCustomDataBlock(handle,'__jointGroup__') then
+                table.insert(scriptsToInit,scriptHandle)
+            else
+                sim.removeScript(scriptHandle)
             end
         end
         if sim.getObjectType(handle)==sim.object_shape_type then
@@ -105,12 +105,8 @@ end
 
 function getConfig()
     if clonedModel then
-        local ikObj=ObjectProxy('./IK',clonedModel)
-        if ikObj then
-            return ikObj:getConfig()
-        else
-            return map(sim.getJointPosition,joints)
-        end
+        local jointGroup=ObjectProxy(jointGroupPath,clonedModel)
+        return jointGroup:getConfig()
     else
         return sim.readCustomTableData(self,'config')
     end
@@ -118,12 +114,8 @@ end
 
 function setConfig(cfg)
     if clonedModel then
-        local ikObj=ObjectProxy('./IK',clonedModel)
-        if ikObj then
-            return ikObj:setConfig(cfg)
-        else
-            foreach(sim.setJointPosition,joints,cfg)
-        end
+        local jointGroup=ObjectProxy(jointGroupPath,clonedModel)
+        return jointGroup:setConfig(cfg)
     end
 end
 
