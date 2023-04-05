@@ -1,6 +1,6 @@
 local robotConfigPath={}
 
-function robotConfigPath.create(pathMtx,parent)
+function robotConfigPath.create(pathMtx,parent,jointGroupPath)
     local pathDummy=sim.createDummy(0.05)
     sim.setObjectAlias(pathDummy,'Path')
     sim.setModelProperty(pathDummy,0)
@@ -27,6 +27,7 @@ function robotConfigPath.create(pathMtx,parent)
 model=sim.getObject'::'
 color={1,1,0}
 ik=false
+jointGroupPath=']]..jointGroupPath..[['
 ]])
     sim.associateScriptWithObject(s,stateDummy)
 end
