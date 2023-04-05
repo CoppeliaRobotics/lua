@@ -1371,7 +1371,7 @@ function sim.getObjectAliasRelative(handle,baseHandle,aliasOptions,options)
         return (options.noDot and '' or './')..table.join(map(sim.getObjectAlias,p),'/')
     elseif commonAncestor==handle then
         -- reverse case: go upwards in the hierarchy
-        for col=0,1 do
+        for col=1,0,-1 do
             for up=0,30 do
                 for colcol=0,30 do
                     local p={}
