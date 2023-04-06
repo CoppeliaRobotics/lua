@@ -88,6 +88,17 @@ function table.compare(a,b,compareFunc)
     end
 end
 
+function table.reversed(t)
+    local ret={}
+    for k,v in pairs(t) do
+        ret[k]=v
+    end
+    for i=1,#t do
+        ret[#t-i+1]=t[i]
+    end
+    return ret
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     assert(table.eq({1,2,3},{1,2,3}))
     assert(not table.eq({1,2,3,4},{1,2,3}))
@@ -100,5 +111,6 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(table.compare({10,0},{10})>0)
     assert(table.compare({11,0},{10,1})>0)
     assert(table.compare({9,0},{10,1})<0)
+    assert(table.eq(table.reversed{10,20,30},{30,20,10}))
     print(debug.getinfo(1,'S').source,'tests passed')
 end
