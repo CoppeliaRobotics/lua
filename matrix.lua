@@ -542,6 +542,10 @@ function Matrix:any(f)
     return false
 end
 
+function Matrix:isnan()
+    return self:any(function(x) return x~=x end)
+end
+
 function Matrix:nonzero()
     local r={}
     for i=1,self:rows() do

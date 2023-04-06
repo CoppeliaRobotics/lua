@@ -479,6 +479,10 @@ Returns the result of dividing the elements of this matrix by scalar value `m` o
 
 Returns the matrix inverted using the Gauss-Jordan elimination algorithm.
 
+#### `Matrix:isnan()`
+
+Returns true if some element is NaN.
+
 #### `Matrix:kron(m)`
 
 Returns the matrix obtained by Kronecker product with `m`.
