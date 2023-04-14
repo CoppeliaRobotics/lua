@@ -686,6 +686,7 @@ function sim.moveToConfig(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
+    assert(simZMQ,'This function requires the ZMQ plugin')
     local path,pathLengths,minMaxVel,minMaxAccel,trajPtSamples,boundaryCondition,timeout=checkargs({{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='table',item_type='float',size='2..*'},{type='int',default=1000},{type='string',default='not-a-knot'},{type='float',default=5}},...)
 
     local confCnt=#pathLengths
@@ -725,7 +726,7 @@ function sim.generateTimeOptimalTrajectory(...)
     end
     local msg=simZMQ.msg_new()
     simZMQ.msg_init(msg)
-    
+
     local st=sim.getSystemTime()
     result=-1
     while sim.getSystemTime()-st<2 do
