@@ -206,6 +206,22 @@ function sim.isPluginLoaded(pluginName)
     return false
 end
 
+function sim.loadPlugin(name)
+    local path=sim.getStringParam(sim.stringparam_application_path)
+    local plat=sim.getInt32Param(sim.intparam_platform)
+    local windows,mac,linux=0,1,2
+    if plat==windows then
+        path=path..'\\simExt'..name..'.dll'
+    elseif plat==mac then
+        path=path..'/libsimExt'..name..'.dylib'
+    elseif plat==linux then
+        path=path..'/libsimExt'..name..'.so'
+    else
+        error('unknown platform: '..plat)
+    end
+    return sim.loadModule(path,name)
+end
+
 function isArray(t)
     local m=0
     local count=0
