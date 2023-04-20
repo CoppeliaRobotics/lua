@@ -1430,17 +1430,26 @@ end
 
 function sim.getNamedBoolParam(...)
     local name=checkargs({{type='string'}},...)
-    return _S.parseBool(sim.getNamedStringParam(name))
+    local r,v=pcall(_S.parseBool,sim.getNamedStringParam(name))
+    if r then
+        return v
+    end
 end
 
 function sim.getNamedFloatParam(...)
     local name=checkargs({{type='string'}},...)
-    return _S.parseFloat(sim.getNamedStringParam(name))
+    local r,v=pcall(_S.parseFloat,sim.getNamedStringParam(name))
+    if r then
+        return v
+    end
 end
 
 function sim.getNamedInt32Param(...)
     local name=checkargs({{type='string'}},...)
-    return _S.parseInt(sim.getNamedStringParam(name))
+    local r,v=pcall(_S.parseInt,sim.getNamedStringParam(name))
+    if r then
+        return v
+    end
 end
 
 function sim.setNamedBoolParam(...)
