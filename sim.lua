@@ -4,7 +4,7 @@ math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
 math.log10 = math.log10 or function(a) return math.log(a,10) end
 math.ldexp = math.ldexp or function(x,exp) return x*2.0^exp end
-math.frexp = math.frexp or function(x) return sim.auxFunc('frexp',x) end
+math.frexp = math.frexp or function(x) return _auxFunc('frexp',x) end
 math.mod = math.mod or math.fmod
 table.getn = table.getn or function(a) return #a end
 if _VERSION~='Lua 5.1' then
@@ -207,24 +207,20 @@ function sim.isPluginLoaded(pluginName)
 end
 
 function sim.loadPlugin(name)
-    if string.find(name,"simExt")~=1 then
-        return sim._loadPlugin(name) -- new plugins
+    -- legacy plugins
+    local path=sim.getStringParam(sim.stringparam_application_path)
+    local plat=sim.getInt32Param(sim.intparam_platform)
+    local windows,mac,linux=0,1,2
+    if plat==windows then
+        path=path..'\\simExt'..name..'.dll'
+    elseif plat==mac then
+        path=path..'/libsimExt'..name..'.dylib'
+    elseif plat==linux then
+        path=path..'/libsimExt'..name..'.so'
     else
-        -- legacy plugins
-        local path=sim.getStringParam(sim.stringparam_application_path)
-        local plat=sim.getInt32Param(sim.intparam_platform)
-        local windows,mac,linux=0,1,2
-        if plat==windows then
-            path=path..'\\simExt'..name..'.dll'
-        elseif plat==mac then
-            path=path..'/libsimExt'..name..'.dylib'
-        elseif plat==linux then
-            path=path..'/libsimExt'..name..'.so'
-        else
-            error('unknown platform: '..plat)
-        end
-        return sim.loadModule(path,name)
+        error('unknown platform: '..plat)
     end
+    return sim.loadModule(path,name)
 end
 
 function isArray(t)
