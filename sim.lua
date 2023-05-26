@@ -4,7 +4,7 @@ math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
 math.log10 = math.log10 or function(a) return math.log(a,10) end
 math.ldexp = math.ldexp or function(x,exp) return x*2.0^exp end
-math.frexp = math.frexp or function(x) return _auxFunc('frexp',x) end
+math.frexp = math.frexp or function(x) return auxFunc('frexp',x) end
 math.mod = math.mod or math.fmod
 table.getn = table.getn or function(a) return #a end
 if _VERSION~='Lua 5.1' then
@@ -28,6 +28,7 @@ function require(...)
     if fl then
         sim.setThreadSwitchAllowed(fl)
     end
+    auxFunc('usedmodule',...)
     return table.unpack(retVals)
 end
 
@@ -73,6 +74,17 @@ function printBytes(x)
         s=s..string.format('%s%02x',i>1 and ' ' or '',string.byte(x:sub(i,i)))
     end
     print(s)
+end
+
+function pluginLazyLoader(name)
+    local proxy={}
+    local mt={
+        __index=function(_,key) _G[name]=require(name) return _G[name][key] end,
+        __newindex=function(_,key,value) _G[name]=require(name) _G[name][key]=value end
+    }
+    setmetatable(proxy,mt)
+    _G[name]=proxy
+    return proxy
 end
 
 function sim.switchThread()
