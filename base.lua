@@ -87,9 +87,6 @@ function pluginLazyLoader(name)
     return proxy
 end
 
-simIK=pluginLazyLoader('simIK')
---simUI=pluginLazyLoader('simUI')
-
 function sim.switchThread()
     if sim.getThreadSwitchAllowed() then
         if sim.isScriptRunningInThread()==1 then
