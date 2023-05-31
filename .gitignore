@@ -4,6 +4,7 @@ cbor.lua
 configUi-2.lua
 sim*.lua
 !sim.lua
+!sim-ce.lua
 !sim_old.lua
 getCallContexts.lua
 simBB.lua
