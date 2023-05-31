@@ -29,6 +29,10 @@ function sim.quitSimulator(...)
     return quitSimulator(...)
 end
 
+function sim.registerScriptFuncHook(funcNm,func,before)
+    return registerScriptFuncHook(funcNm,func,before)
+end
+
 function math.random2(lower,upper)
     -- same as math.random, but each script has its own generator
     local r=sim.getRandom()
@@ -1738,10 +1742,6 @@ end
 function _S.sysCallEx_cleanup()
     -- Hook function, registered further down
     _S.dlg.switch() -- remove all
-end
-
-function sim.registerScriptFuncHook(funcNm,func,before)
-    return registerScriptFuncHook(funcNm,func,before)
 end
 
 function _S.unpackTable(data,scheme)
