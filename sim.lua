@@ -1,94 +1,56 @@
-_S={}
+-- The is the first versioned sim-namespace
+-- The very first API without namespace (e.g. simGetObjectHandle) is only
+-- included if 'getSupportOldApiNotation' is true in 'usrset.txt'
 
-math.atan2 = math.atan2 or math.atan
-math.pow = math.pow or function(a,b) return a^b end
-math.log10 = math.log10 or function(a) return math.log(a,10) end
-math.ldexp = math.ldexp or function(x,exp) return x*2.0^exp end
-math.frexp = math.frexp or function(x) return auxFunc('frexp',x) end
-math.mod = math.mod or math.fmod
-table.getn = table.getn or function(a) return #a end
-if _VERSION~='Lua 5.1' then
-    loadstring = load
-end
-if unpack then
-    -- Lua5.1
-    table.pack = function(...) return { n = select("#", ...), ... } end
-    table.unpack = unpack
-else
-    unpack = table.unpack
+local sim=_S.sim
+_S.sim=nil
+
+function sim.setThreadSwitchAllowed(...)
+    return setThreadSwitchAllowed(...)
 end
 
-_S.require=require
-function require(...)
-    local fl
-    if sim.setThreadSwitchAllowed then
-        fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
-    end
-    local retVals={_S.require(...)}
-    if fl then
-        sim.setThreadSwitchAllowed(fl)
-    end
-    auxFunc('usedmodule',...)
-    return table.unpack(retVals)
+function sim.getThreadSwitchAllowed(...)
+    return getThreadSwitchAllowed(...)
 end
 
-_S.pcall=pcall
-function pcall(...)
-    local fl
-    if sim.setThreadSwitchAllowed then
-        fl=sim.setThreadSwitchAllowed(false) -- important when called from coroutine
-    end
-    local retVals={_S.pcall(...)}
-    if fl then
-        sim.setThreadSwitchAllowed(fl)
-    end
-    return table.unpack(retVals)
+function sim.setThreadAutomaticSwitch(...)
+    return setThreadAutomaticSwitch(...)
 end
 
-printToConsole=print
-function print(...)
-    if sim.addLog then
-        local lb=sim.setThreadAutomaticSwitch(false)
-        sim.addLog(sim.verbosity_scriptinfos+sim.verbosity_undecorated,getAsString(...))
-        sim.setThreadAutomaticSwitch(lb)
-    else
-        printToConsole(...)
-    end
+function sim.getThreadAutomaticSwitch(...)
+    return getThreadAutomaticSwitch(...)
 end
 
-function printf(fmt,...)
-    local a=table.pack(...)
-    for i=1,a.n do
-        if type(a[i])=='table' then
-            a[i]=_S.anyToString(a[i],{},99)
-        elseif type(a[i])=='nil' then
-            a[i]='nil'
+function sim.addLog(...)
+    return addLog(...)
+end
+
+function sim.quitSimulator(...)
+    return quitSimulator(...)
+end
+
+function math.random2(lower,upper)
+    -- same as math.random, but each script has its own generator
+    local r=sim.getRandom()
+    if lower then
+        local b=1
+        local d
+        if upper then
+            b=lower
+            d=upper-b
+        else
+            d=lower-b
         end
+        local e=d/(d+1)
+        r=b+math.floor(r*d/e)
     end
-    print(string.format(fmt,table.unpack(a,1,a.n)))
+    return r
 end
 
-function printBytes(x)
-    s=''
-    for i=1,#x do
-        s=s..string.format('%s%02x',i>1 and ' ' or '',string.byte(x:sub(i,i)))
-    end
-    print(s)
+function math.randomseed2(seed)
+    -- same as math.randomseed, but each script has its own generator
+    sim.getRandom(seed)
 end
-
-function pluginLazyLoader(name)
-    local proxy={}
-    local mt={
-        __index=function(_,key) _G[name]=require(name) return _G[name][key] end,
-        __newindex=function(_,key,value) _G[name]=require(name) _G[name][key]=value end
-    }
-    setmetatable(proxy,mt)
-    _G[name]=proxy
-    return proxy
-end
-
-simIK=pluginLazyLoader('simIK')
---simUI=pluginLazyLoader('simUI')
 
 function sim.switchThread()
     if sim.getThreadSwitchAllowed() then
@@ -238,20 +200,6 @@ function sim.loadPlugin(name)
     return sim.loadModule(path,name)
 end
 
-function isArray(t)
-    local m=0
-    local count=0
-    for k,v in pairs(t) do
-        if type(k)=="number" and math.floor(k)==k and k>0 then
-            if k>m then m=k end
-            count=count+1
-        else
-            return false
-        end
-    end
-    return m<=count
-end
-
 function sim.getUserVariables()
     local ng={}
     if _S.initGlobals then
@@ -283,55 +231,6 @@ function sim.getMatchingPersistentDataTags(...)
         end
     end
     return result
-end
-
-function getAsString(...)
-    local lb=sim.setThreadAutomaticSwitch(false)
-    local a={...}
-    local t=''
-    if #a==1 and type(a[1])=='string' then
---        t=string.format('"%s"', a[1])
-        t=string.format('%s', a[1])
-    else
-        for i=1,#a,1 do
-            if i~=1 then
-                t=t..','
-            end
-            if type(a[i])=='table' then
-                t=t.._S.tableToString(a[i],{},99)
-            else
-                t=t.._S.anyToString(a[i],{},99)
-            end
-        end
-    end
-    if #a==0 then
-        t='nil'
-    end
-    sim.setThreadAutomaticSwitch(lb)
-    return(t)
-end
-
-function math.random2(lower,upper)
-    -- same as math.random, but each script has its own generator
-    local r=sim.getRandom()
-    if lower then
-        local b=1
-        local d
-        if upper then
-            b=lower
-            d=upper-b
-        else
-            d=lower-b
-        end
-        local e=d/(d+1)
-        r=b+math.floor(r*d/e)
-    end
-    return r
-end
-
-function math.randomseed2(seed)
-    -- same as math.randomseed, but each script has its own generator
-    sim.getRandom(seed)
 end
 
 function sim.throttle(t,f)
@@ -1730,170 +1629,8 @@ function _S.comparableTables(t1,t2)
     return ( isArray(t1)==isArray(t2) ) or ( isArray(t1) and #t1==0 ) or ( isArray(t2) and #t2==0 )
 end
 
-function _S.tableToString(tt,visitedTables,maxLevel,indent)
-    indent = indent or 0
-    maxLevel=maxLevel-1
-    if type(tt) == 'table' then
-        if maxLevel<=0 then
-            return tostring(tt)
-        else
-            if  visitedTables[tt] then
-                return tostring(tt)..' (already visited)'
-            else
-                visitedTables[tt]=true
-                local sb = {}
-                if isArray(tt) then
-                    table.insert(sb, '{')
-                    for i = 1, #tt do
-                        table.insert(sb, _S.anyToString(tt[i], visitedTables,maxLevel, indent))
-                        if i < #tt then table.insert(sb, ', ') end
-                    end
-                    table.insert(sb, '}')
-                else
-                    table.insert(sb, '{\n')
-                    -- Print the map content ordered according to type, then key:
-                    local tp={{'boolean',false},{'number',true},{'string',true},{'function',false},{'userdata',false},{'thread',true},{'table',false},{'any',false}}
-                    local ts={}
-                    local usedKeys={}
-                    for j=1,#tp,1 do
-                        local a={}
-                        ts[#ts+1]=a
-                        for key,val in pairs(tt) do
-                            if type(key)==tp[j][1] or (tp[j][1]=='any' and usedKeys[key]==nil) then
-                                a[#a+1]=key
-                                usedKeys[key]=true
-                            end
-                        end
-                        if tp[j][2] then
-                            table.sort(a)
-                        end
-                        for k=1,#a,1 do
-                            local key=a[k]
-                            local val=tt[key]
-                            table.insert(sb, string.rep(' ', indent+4))
-                            if type(key)=='string' then
-                                table.insert(sb, _S.getShortString(key,true))
-                            else
-                                table.insert(sb, tostring(key))
-                            end
-                            table.insert(sb, '=')
-                            table.insert(sb, _S.anyToString(val, visitedTables,maxLevel, indent+4))
-                            table.insert(sb, ',\n')
-                        end
-                    end
-                    table.insert(sb, string.rep(' ', indent))
-                    table.insert(sb, '}')
-                end
-                visitedTables[tt]=false -- siblings pointing onto a same table should still be explored!
-                return table.concat(sb)
-            end
-        end
-    else
-        return _S.anyToString(tt, visitedTables,maxLevel, indent)
-    end
-end
-
-function _S.anyToString(x, visitedTables,maxLevel,tblindent)
-    local tblindent = tblindent or 0
-    if 'nil' == type(x) then
-        return tostring(nil)
-    elseif 'table' == type(x) then
-        return _S.tableToString(x, visitedTables,maxLevel, tblindent)
-    elseif 'string' == type(x) then
-        return _S.getShortString(x)
-    else
-        return tostring(x)
-    end
-end
-
-function _S.getShortString(x,omitQuotes)
-    if type(x)=='string' then
-        if string.find(x,"\0") then
-            return "[buffer string]"
-        else
-            local a,b=string.gsub(x,"[%a%d%p%s]", "@")
-            if b~=#x then
-                return "[string containing special chars]"
-            else
-                if #x>160 then
-                    return "[long string]"
-                else
-                    if omitQuotes then
-                        return string.format('%s', x)
-                    else
-                        return string.format('"%s"', x)
-                    end
-                end
-            end
-        end
-    end
-    return "[not a string]"
-end
-
 function _S.sysCallEx_init()
     -- Hook function, registered further down
-    quit=sim.quitSimulator
-    exit=sim.quitSimulator
-    sim.registerScriptFunction('quit@sim','quit()')
-    sim.registerScriptFunction('exit@sim','exit()')
-    sim.registerScriptFunction('sim.getUserVariables@sim','string[] variables=sim.getUserVariables()')
-    sim.registerScriptFunction('sim.getMatchingPersistentDataTags@sim','string[] tags=sim.getMatchingPersistentDataTags(string pattern)')
-
-    sim.registerScriptFunction('sim.yawPitchRollToAlphaBetaGamma@sim','float alphaAngle,float betaAngle,float gammaAngle=sim.yawPitchRollToAlphaBetaGamma(float yawAngle,float pitchAngle,float rollAngle)')
-    sim.registerScriptFunction('sim.alphaBetaGammaToYawPitchRoll@sim','float yawAngle,float pitchAngle,float rollAngle=sim.alphaBetaGammaToYawPitchRoll(float alphaAngle,float betaAngle,float gammaAngle)')
-    sim.registerScriptFunction('sim.getAlternateConfigs@sim','float[] configs=sim.getAlternateConfigs(int[] jointHandles,float[] inputConfig,int tipHandle=-1,float[] lowLimits=nil,float[] ranges=nil)')
-    sim.registerScriptFunction('sim.moveToPose@sim','float[7] endPose,float timeLeft=sim.moveToPose(int flags,float[7] currentPose,float[] maxVel,float[] maxAccel,float[] maxJerk,float[7] targetPose,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)\nfloat[12] endMatrix,float timeLeft=sim.moveToPose(int flags,float[12] currentMatrix,float[] maxVel,float[] maxAccel,float[] maxJerk,float[12] targetMatrix,func callback,any auxData=nil,float[4] metric=nil,float timeStep=0.0)')
-    sim.registerScriptFunction('sim.moveToConfig@sim','float[] endPos,float[] endVel,float[] endAccel,float timeLeft=sim.moveToConfig(int flags,float[] currentPos,float[] currentVel,float[] currentAccel,float[] maxVel,float[] maxAccel,float[] maxJerk,float[] targetPos,float[] targetVel,func callback,any auxData=nil,bool[] cyclicJoints=nil,float timeStep=0.0)')
-    sim.registerScriptFunction('sim.switchThread@sim','sim.switchThread()')
-
-    sim.registerScriptFunction('sim.copyTable@sim',"any[] copy=sim.copyTable(any[] original)\nmap copy=sim.copyTable(map original)")
-
-    sim.registerScriptFunction('sim.getPathInterpolatedConfig@sim',"float[] config=sim.getPathInterpolatedConfig(float[] path,float[] pathLengths,float t,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
-    sim.registerScriptFunction('sim.resamplePath@sim',"float[] path=sim.resamplePath(float[] path,float[] pathLengths,int finalConfigCnt,map method={type='linear',strength=1.0,forceOpen=false},int[] types=nil)")
-    sim.registerScriptFunction('sim.getPathLengths@sim','float[] pathLengths,float totalLength=sim.getPathLengths(float[] path,int dof,func distCallback=nil)')
-    sim.registerScriptFunction('sim.getConfigDistance@sim','float distance=sim.getConfigDistance(float[] configA,float[] configB,float[] metric=nil,int[] types=nil)')
-    sim.registerScriptFunction('sim.generateTimeOptimalTrajectory@sim',"float[] path,float[] times=sim.generateTimeOptimalTrajectory(float[] path,float[] pathLengths,float[] minMaxVel,float[] minMaxAccel,int trajPtSamples=1000,string boundaryCondition='not-a-knot',float timeout=5)")
-    sim.registerScriptFunction('sim.wait@sim','float timeLeft=sim.wait(float dt,bool simulationTime=true)')
-    sim.registerScriptFunction('sim.waitForSignal@sim','any sigVal=sim.waitForSignal(string sigName)')
-
-    sim.registerScriptFunction('sim.serialOpen@sim','int portHandle=sim.serialOpen(string portString,int baudrate)')
-    sim.registerScriptFunction('sim.serialClose@sim','sim.serialClose(int portHandle)')
-    sim.registerScriptFunction('sim.serialRead@sim',"buffer data=sim.serialRead(int portHandle,int dataLengthToRead,bool blockingOperation,buffer closingString='',float timeout=0)")
-
-    sim.registerScriptFunction('sim.changeEntityColor@sim','map[] originalColorData=sim.changeEntityColor(int entityHandle,float[3] newColor,int colorComponent=sim.colorcomponent_ambient_diffuse)')
-    sim.registerScriptFunction('sim.restoreEntityColor@sim','sim.restoreEntityColor(map[] originalColorData)')
-    sim.registerScriptFunction('sim.createPath@sim','int pathHandle=sim.createPath(float[] ctrlPts,int options=0,int subdiv=100,float smoothness=1.0,int orientationMode=0,float[3] upVector={0,0,1})')
-    sim.registerScriptFunction('sim.createCollection@sim','int collectionHandle=sim.createCollection(int options=0)')
-    sim.registerScriptFunction('sim.getObject@sim','int objectHandle=sim.getObject(string path,map options={})')
-    sim.registerScriptFunction('sim.getObjectFromUid@sim','sim.getObjectFromUid(int uid,map options={})')
-    --sim.registerScriptFunction('sim.getObjectHandle@sim','deprecated. Use sim.getObject instead')
-    sim.registerScriptFunction('sim.getObjectAliasRelative@sim','string alias=sim.getObjectAliasRelative(int handle,int baseHandle,int options=-1)')
-    sim.registerScriptFunction('sim.getShapeBB@sim','float[3] size=sim.getShapeBB(int shapeHandle)')
-    sim.registerScriptFunction('sim.setShapeBB@sim','sim.setShapeBB(int shapeHandle,float[3] size)')
-    sim.registerScriptFunction('sim.readCustomDataBlockEx@sim','sim.readCustomDataBlockEx(int handle,string tagName,map options={})')
-    sim.registerScriptFunction('sim.writeCustomDataBlockEx@sim','sim.writeCustomDataBlockEx(int handle,string tagName,string data,map options={})\n\nPass options {dataType="..."} to annotate the data block content type.')
-    sim.registerScriptFunction('sim.readCustomTableData@sim','sim.readCustomTableData(int handle,string tagName,map options={})')
-    sim.registerScriptFunction('sim.writeCustomTableData@sim','sim.writeCustomTableData(int handle,string tagName,map theTable,map options={})\n\nPass options {dataType="cbor"} to encode using CBOR.')
-    sim.registerScriptFunction('sim.generateTextShape@sim','int modelHandle=sim.generateTextShape(string txt,float[3] color={1,1,1},float height=0.1,bool centered=false,string alphabetLocation=nil)')
-    sim.registerScriptFunction('sim.getNamedBoolParam@sim','bool value=sim.getNamedBoolParam(string name)')
-    sim.registerScriptFunction('sim.getNamedFloatParam@sim','float value=sim.getNamedFloatParam(string name)')
-    sim.registerScriptFunction('sim.getNamedInt32Param@sim','int value=sim.getNamedInt32Param(string name)')
-    sim.registerScriptFunction('sim.setNamedBoolParam@sim','sim.setNamedBoolParam(string name,bool value)')
-    sim.registerScriptFunction('sim.setNamedFloatParam@sim','sim.setNamedFloatParam(string name,float value)')
-    sim.registerScriptFunction('sim.setNamedInt32Param@sim','sim.setNamedInt32Param(string name,int value)')
-    sim.registerScriptFunction('sim.getSettingString@sim','string value=sim.getSettingString(string key)')
-    sim.registerScriptFunction('sim.getSettingBool@sim','bool value=sim.getSettingBool(string key)')
-    sim.registerScriptFunction('sim.getSettingFloat@sim','float value=sim.getSettingFloat(string key)')
-    sim.registerScriptFunction('sim.getSettingInt32@sim','int value=sim.getSettingInt32(string key)')
-    sim.registerScriptFunction('sysCall_thread@sim','entry point for threaded Python scripts') -- actually only for syntax highlighting and call tip
-    sim.registerScriptFunction('sim.getThreadExistRequest@sim','bool exit=sim.getThreadExistRequest()') -- actually only for syntax highlighting and call tip
-    sim.registerScriptFunction('sim.handleExtCalls@sim','sim.handleExtCalls() (Python only)') -- actually only for syntax highlighting and call tip
-    sim.registerScriptFunction('sim.getScriptFunctions@sim','map wrapper=sim.getScriptFunctions(int scriptHandle)')
-    sim.registerScriptFunction('sim.addReferencedHandle@sim','sim.addReferencedHandle(int objectHandle,int referencedHandle)')
-    sim.registerScriptFunction('sim.removeReferencedObjects@sim','sim.removeReferencedObjects(int objectHandle)')
-    sim.registerScriptFunction('sim.visitTree@sim','sim.visitTree(int rootHandle,func visitorFunc,map options={})')
-    sim.registerScriptVariable('ConfigUI')
-
     _S.initGlobals={}
     for key,val in pairs(_G) do
         _S.initGlobals[key]=true
@@ -2003,20 +1740,9 @@ function _S.sysCallEx_cleanup()
     _S.dlg.switch() -- remove all
 end
 
--- Make sim.registerScriptFuncHook work also with a function as arg 2:
-function _S.registerScriptFuncHook(funcNm,func,before)
-    local retVal
-    if type(func)=='string' then
-        retVal=_S.registerScriptFuncHookOrig(funcNm,func,before)
-    else
-        local str=tostring(func)
-        retVal=_S.registerScriptFuncHookOrig(funcNm,'_S.'..str,before)
-        _S[str]=func
-    end
-    return retVal
+function sim.registerScriptFuncHook(funcNm,func,before)
+    return registerScriptFuncHook(funcNm,func,before)
 end
-_S.registerScriptFuncHookOrig=sim.registerScriptFuncHook
-sim.registerScriptFuncHook=_S.registerScriptFuncHook
 
 function _S.unpackTable(data,scheme)
     if scheme==nil then
@@ -2045,10 +1771,4 @@ sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeIn
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScriptSuspend',false)
 ----------------------------------------------------------
 
-require('stringx')
-require('tablex')
-require('checkargs')
-require('matrix')
-require('grid')
-require('functional')
-require('var')
+return sim
