@@ -5,33 +5,13 @@
 local sim=_S.sim
 _S.sim=nil
 
-function sim.setThreadSwitchAllowed(...)
-    return setThreadSwitchAllowed(...)
-end
-
-function sim.getThreadSwitchAllowed(...)
-    return getThreadSwitchAllowed(...)
-end
-
-function sim.setThreadAutomaticSwitch(...)
-    return setThreadAutomaticSwitch(...)
-end
-
-function sim.getThreadAutomaticSwitch(...)
-    return getThreadAutomaticSwitch(...)
-end
-
-function sim.addLog(...)
-    return addLog(...)
-end
-
-function sim.quitSimulator(...)
-    return quitSimulator(...)
-end
-
-function sim.registerScriptFuncHook(funcNm,func,before)
-    return registerScriptFuncHook(funcNm,func,before)
-end
+sim.setThreadSwitchAllowed=setThreadSwitchAllowed
+sim.getThreadSwitchAllowed=getThreadSwitchAllowed
+sim.setThreadAutomaticSwitch=setThreadAutomaticSwitch
+sim.getThreadAutomaticSwitch=getThreadAutomaticSwitch
+sim.addLog=addLog
+sim.quitSimulator=quitSimulator
+sim.registerScriptFuncHook=registerScriptFuncHook
 
 function math.random2(lower,upper)
     -- same as math.random, but each script has its own generator
