@@ -1,3 +1,5 @@
+__lazyLoadModules={'sim','simIK','simUI','simGeom','simMujoco','simAssimp'}
+
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
 math.log10 = math.log10 or function(a) return math.log(a,10) end
@@ -18,6 +20,14 @@ end
 
 _S.require=require
 function require(...)
+    local nm=table.unpack{...}
+    for i=1,#__lazyLoadModules,1 do
+        if __lazyLoadModules[i]==nm then
+            if not __inLazyLoader or __inLazyLoader==0 then
+                __didExplicitLoading=true
+            end
+        end
+    end
     local fl=setThreadSwitchAllowed(false) -- important when called from coroutine
     local retVals={_S.require(...)}
     setThreadSwitchAllowed(fl)
@@ -225,9 +235,18 @@ function moduleLazyLoader(name)
             if key=='registerScriptFuncHook' then
                 return registerScriptFuncHook
             else
-                _G[name]=require(name)
-                addLog(430,"module '"..name.."' was implicitly included.")
-                return _G[name][key]
+                if __didExplicitLoading then
+                    error("implicit loading of modules has been disabled because at least one known module was loaded explicitly.")
+                else
+                    if not __inLazyLoader then
+                        __inLazyLoader=0
+                    end
+                    __inLazyLoader=__inLazyLoader+1
+                    _G[name]=require(name)
+                    __inLazyLoader=__inLazyLoader-1
+                    addLog(430,"module '"..name.."' was implicitly loaded.")
+                    return _G[name][key]
+                end
             end
         end,
     }
@@ -236,9 +255,9 @@ function moduleLazyLoader(name)
     return proxy
 end
 
-sim=moduleLazyLoader('sim')
-simIK=moduleLazyLoader('simIK')
-simUI=moduleLazyLoader('simUI')
+for i=1,#__lazyLoadModules,1 do
+    _G[__lazyLoadModules[i]]=moduleLazyLoader(__lazyLoadModules[i])
+end
 
 require('stringx')
 require('tablex')
