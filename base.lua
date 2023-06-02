@@ -1,4 +1,4 @@
-__lazyLoadModules={'sim','simIK','simUI','simGeom','simMujoco','simAssimp'}
+__lazyLoadModules={'sim','simIK','simUI','simGeom','simMujoco','simAssimp','simBubble','simCHAI3D'}
 
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
@@ -31,7 +31,7 @@ function require(...)
     local fl=setThreadSwitchAllowed(false) -- important when called from coroutine
     local retVals={_S.require(...)}
     setThreadSwitchAllowed(fl)
-    auxFunc('usedmodule',...)
+    auxFunc('usedmodule',nm)
     return table.unpack(retVals)
 end
 

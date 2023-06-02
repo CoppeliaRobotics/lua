@@ -1,3 +1,4 @@
+sim=require('sim')
 backCompatibility=require('defaultMainScriptBackCompatibility')
 -- This is the main script. The main script is not supposed to be modified,
 -- unless there is a very good reason to do it.
