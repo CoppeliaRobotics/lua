@@ -236,7 +236,7 @@ function moduleLazyLoader(name)
                 return registerScriptFuncHook
             else
                 if __didExplicitLoading then
-                    error("implicit loading of modules has been disabled because at least one known module was loaded explicitly.")
+                    error(name..": implicit loading of modules has been disabled because at least one known module was loaded explicitly.")
                 else
                     if not __inLazyLoader then
                         __inLazyLoader=0
