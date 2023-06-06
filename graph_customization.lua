@@ -1,3 +1,6 @@
+sim=require('sim')
+simUI=require('simUI')
+
 -- e.g. to record data constantly, i.e. also when simulation is not running:
 
 --[[

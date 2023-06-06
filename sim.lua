@@ -1745,7 +1745,7 @@ end
 _S.unpackTableOrig=sim.unpackTable
 sim.unpackTable=_S.unpackTable
 
-sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',true)
+sim.registerScriptFuncHook('sysCall_init','_S.sysCallEx_init',false) -- hook on *before* init is incompatible with implicit module load...
 sim.registerScriptFuncHook('sysCall_cleanup','_S.sysCallEx_cleanup',false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch','_S.sysCallEx_beforeInstanceSwitch',false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend','_S.sysCallEx_addOnScriptSuspend',false)

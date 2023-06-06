@@ -1,3 +1,8 @@
+sim=require('sim')
+simZMQ=require('simZMQ')
+simSubprocess=require('simSubprocess')
+simUI=require('simUI')
+
 pythonWrapper={}
 
 function pythonWrapper.info(obj)
@@ -94,7 +99,10 @@ function getFreePortStr()
     local socket=simZMQ.socket(context,simZMQ.REP)
     local p=23259
     while true do
-        if simZMQ.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
+--        local a,b=pcall(simZMQ.bind,socket,string.format('tcp://127.0.0.1:%d',p))
+--        if a and b==0 then
+        if simZMQ.__noError.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
+--        if simZMQ.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
             break
         end
         p=p+1
@@ -291,7 +299,7 @@ function initPython(p,method)
                 local st=sim.getSystemTime()
                 local r,rep
                 while sim.getSystemTime()-st<5 do
-                    r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
+                    r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
                     if r>=0 then
                         break
                     end
@@ -395,7 +403,7 @@ function getErrorPython()
     if callMethod==0 then
         if subprocess then
             if simSubprocess.isRunning(subprocess) then
-                local r,rep=simZMQ.recv(socket,simZMQ.DONTWAIT)
+                local r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
                 if r>=0 then
                     local rep,o,t=cbor.decode(rep)
                     a=rep.success==false
