@@ -2,14 +2,6 @@
 -- The very first API without namespace (e.g. simGetObjectHandle) is only
 -- included if 'getSupportOldApiNotation' is true in 'usrset.txt'
 
-require('stringx')
-require('tablex')
-require('checkargs')
-require('matrix')
-require('grid')
-require('functional')
-require('var')
-
 local sim=_S.sim
 _S.sim=nil
 
@@ -19,8 +11,29 @@ sim.setThreadAutomaticSwitch=setThreadAutomaticSwitch
 sim.getThreadAutomaticSwitch=getThreadAutomaticSwitch
 sim.addLog=addLog
 sim.quitSimulator=quitSimulator
-sim.registerScriptFuncHook=registerScriptFuncHook
-sim.isHandle=isHandle
+
+require('stringx')
+require('tablex')
+require('checkargs')
+require('matrix')
+require('grid')
+require('functional')
+require('var')
+
+-- Make sim.registerScriptFuncHook work also with a function as arg 2:
+function _S.registerScriptFuncHook(funcNm,func,before)
+    local retVal
+    if type(func)=='string' then
+        retVal=_S.registerScriptFuncHookOrig(funcNm,func,before)
+    else
+        local str=tostring(func)
+        retVal=_S.registerScriptFuncHookOrig(funcNm,'_S.'..str,before)
+        _S[str]=func
+    end
+    return retVal
+end
+_S.registerScriptFuncHookOrig=sim.registerScriptFuncHook
+sim.registerScriptFuncHook=_S.registerScriptFuncHook
 
 function math.random2(lower,upper)
     -- same as math.random, but each script has its own generator

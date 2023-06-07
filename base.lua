@@ -213,21 +213,6 @@ function getAsString(...)
     return(t)
 end
 
--- Make registerScriptFuncHook work also with a function as arg 2:
-function _S.registerScriptFuncHook(funcNm,func,before)
-    local retVal
-    if type(func)=='string' then
-        retVal=_S.registerScriptFuncHookOrig(funcNm,func,before)
-    else
-        local str=tostring(func)
-        retVal=_S.registerScriptFuncHookOrig(funcNm,'_S.'..str,before)
-        _S[str]=func
-    end
-    return retVal
-end
-_S.registerScriptFuncHookOrig=registerScriptFuncHook
-registerScriptFuncHook=_S.registerScriptFuncHook
-
 function moduleLazyLoader(name)
     local proxy={}
     local mt={
