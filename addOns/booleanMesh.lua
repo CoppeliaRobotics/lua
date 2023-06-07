@@ -1,8 +1,8 @@
+sim=require'sim'
+
 function sysCall_init()
-    if not sim.isPluginLoaded('IGL') then
-        simUI.msgBox(simUI.msgbox_type.critical,simUI.msgbox_buttons.ok,'Mesh boolean add-on','This tool requires the IGL plugin.')
-        return {cmd='cleanup'}
-    end
+    simIGL=require'simIGL'
+    simUI=require'simUI'
 
     local maxSel=2
     if type(acceptsMoreThan2)=='function' and acceptsMoreThan2() then maxSel=1/0 end

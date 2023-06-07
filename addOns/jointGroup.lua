@@ -1,3 +1,5 @@
+sim=require'sim'
+
 function getJointGroups(modelHandle)
     local ret={}
     sim.visitTree(modelHandle,function(h)
