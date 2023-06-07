@@ -75,9 +75,8 @@ end
 
 function checkarg.handle(v,t)
     if type(v)~='number' or math.type(v)~='integer' then return false end
-    -- this check requires coppeliaSim:
-    if type(sim)=='table' and type(sim.isHandle)=='function' then
-        return sim.isHandle(v)
+    if type(isHandle)=='function' then
+        return isHandle(v)
     else
         return true
     end
@@ -250,8 +249,8 @@ if arg and #arg==1 and arg[1]=='test' then
     test(35, succeed, function() assert(h()==false) end)
     test(50, fail, function() z() end)
 
-    -- mock sim.isHandle:
-    function sim.isHandle(x) return x==200 or x==201 or x==202 end
+    -- mock isHandle:
+    function isHandle(x) return x==200 or x==201 or x==202 end
     test(60, fail, function() y(22) end)
     test(61, succeed, function() y(200) end)
 

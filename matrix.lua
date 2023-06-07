@@ -938,7 +938,7 @@ function Matrix:print(name,opts)
 end
 
 function Matrix:svd(computeThinU,computeThinV,b)
-    if not simEigen then error('this method requires the simEigen plugin') end
+    simEigen=require('simEigen')
     if computeThinU==nil then
         computeThinU=true
     end
@@ -960,7 +960,7 @@ function Matrix:svd(computeThinU,computeThinV,b)
 end
 
 function Matrix:pinv(b,damping)
-    if not simEigen then error('this method requires the simEigen plugin') end
+    simEigen=require('simEigen')
     local m=self:totable{}
     if b~=nil and getmetatable(b)==Matrix then
         b=b:totable{}
@@ -1377,20 +1377,6 @@ setmetatable(Matrix4x4,{__call=function(self,data)
     end
     return Matrix(4,4,data)
 end})
-
-if sim then
-    function Matrix__registerScriptVariables()
-        sim.registerScriptVariable('Matrix')
-        sim.registerScriptVariable('Matrix3x3')
-        sim.registerScriptVariable('Matrix4x4')
-        sim.registerScriptVariable('Vector')
-        sim.registerScriptVariable('Vector3')
-        sim.registerScriptVariable('Vector4')
-        sim.registerScriptVariable('Vector7')
-        Matrix__registerScriptVariables=nil
-    end
-    sim.registerScriptFuncHook('sysCall_init','Matrix__registerScriptVariables',true)
-end
 
 if arg and #arg==1 and arg[1]=='test' then
     local m=Matrix(

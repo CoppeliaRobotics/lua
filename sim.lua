@@ -2,6 +2,14 @@
 -- The very first API without namespace (e.g. simGetObjectHandle) is only
 -- included if 'getSupportOldApiNotation' is true in 'usrset.txt'
 
+require('stringx')
+require('tablex')
+require('checkargs')
+require('matrix')
+require('grid')
+require('functional')
+require('var')
+
 local sim=_S.sim
 _S.sim=nil
 
@@ -12,6 +20,7 @@ sim.getThreadAutomaticSwitch=getThreadAutomaticSwitch
 sim.addLog=addLog
 sim.quitSimulator=quitSimulator
 sim.registerScriptFuncHook=registerScriptFuncHook
+sim.isHandle=isHandle
 
 function math.random2(lower,upper)
     -- same as math.random, but each script has its own generator

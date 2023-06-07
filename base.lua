@@ -258,12 +258,3 @@ end
 for i=1,#__lazyLoadModules,1 do
     _G[__lazyLoadModules[i]]=moduleLazyLoader(__lazyLoadModules[i])
 end
-
-require('stringx')
-require('tablex')
-require('checkargs')
-require('matrix')
-require('grid')
-require('functional')
-require('var')
-
