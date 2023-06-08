@@ -11,6 +11,14 @@ sim.setThreadAutomaticSwitch=setThreadAutomaticSwitch
 sim.getThreadAutomaticSwitch=getThreadAutomaticSwitch
 sim.addLog=addLog
 sim.quitSimulator=quitSimulator
+sim.getModuleName=sim.getPluginName
+sim.getModuleInfo=sim.getPluginInfo
+sim.SetModuleInfo=sim.setPluginInfo
+sim.moduleinfo_extversionstr=sim.plugininfo_extversionstr
+sim.moduleinfo_builddatestr=sim.plugininfo_builddatestr
+sim.moduleinfo_extversionint=sim.plugininfo_extversionint
+sim.moduleinfo_verbosity=sim.plugininfo_verbosity
+sim.moduleinfo_statusbarverbosity=sim.plugininfo_statusbarverbosity
 
 require('stringx')
 require('tablex')

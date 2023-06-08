@@ -117,9 +117,6 @@ int linkDummyHandle=sim.getLinkDummy(int dummyHandle)
 string[] tags=sim.getMatchingPersistentDataTags(string pattern)
 float[12] matrix=sim.getMatrixInverse(float[12] matrix)
 int property=sim.getModelProperty(int objectHandle)
-string info=sim.getModuleInfo(string moduleName,int infoType)
-number info=sim.getModuleInfo(string moduleName,int infoType)
-string moduleName,int version=sim.getModuleName(int index)
 bool value=sim.getNamedBoolParam(string name)
 float value=sim.getNamedFloatParam(string name)
 int value=sim.getNamedInt32Param(string name)
@@ -231,7 +228,6 @@ buffer image,int[2] resolution=sim.loadImage(int options,string filename)
 buffer image,int[2] resolution=sim.loadImage(int options,buffer serializedImage)
 int objectHandle=sim.loadModel(string filename)
 int objectHandle=sim.loadModel(buffer serializedModel)
-int pluginHandle=sim.loadModule(string filenameAndPath,string pluginName)
 sim.loadScene(string filename)
 sim.loadScene(buffer serializedScene)
 float[7] pose=sim.matrixToPose(float[12] matrix)
@@ -321,8 +317,11 @@ sim.setJointTargetVelocity(int objectHandle,float targetVelocity,float[] motionP
 sim.setLightParameters(int lightHandle,int state,float[3] reserved,float[3] diffusePart,float[3] specularPart)
 sim.setLinkDummy(int dummyHandle,int linkDummyHandle)
 sim.setModelProperty(int objectHandle,int property)
-sim.setModuleInfo(string moduleName,int infoType,string info)
-sim.setModuleInfo(string moduleName,int infoType,number info)
+string pluginName=sim.getPluginName(int index)
+string info=sim.getPluginInfo(string pluginName,int infoType)
+number info=sim.getPluginInfo(string pluginName,int infoType)
+sim.setPluginInfo(string pluginName,int infoType,string info)
+sim.setPluginInfo(string pluginName,int infoType,number info)
 sim.setNamedBoolParam(string name,bool value)
 sim.setNamedFloatParam(string name,float value)
 sim.setNamedInt32Param(string name,int value)
@@ -371,7 +370,6 @@ sim.textEditorShow(int handle,bool showState)
 buffer outBuffer=sim.transformBuffer(buffer inBuffer,int inFormat,float multiplier,float offset,int outFormat)
 sim.transformImage(buffer image,int[2] resolution,int options)
 int[] simpleShapeHandles=sim.ungroupShape(int shapeHandle)
-int result=sim.unloadModule(int pluginHandle)
 float[] doubleNumbers=sim.unpackDoubleTable(buffer data,int startDoubleIndex=0,int doubleCount=0,int additionalByteOffset=0)
 float[] floatNumbers=sim.unpackFloatTable(buffer data,int startFloatIndex=0,int floatCount=0,int additionalByteOffset=0)
 int[] int32Numbers=sim.unpackInt32Table(buffer data,int startInt32Index=0,int int32Count=0,int additionalByteOffset=0)
@@ -778,11 +776,11 @@ sim.modelproperty_not_respondable
 sim.modelproperty_not_showasinsidemodel
 sim.modelproperty_not_visible
 sim.modelproperty_scripts_inactive
-sim.moduleinfo_builddatestr
-sim.moduleinfo_extversionint
-sim.moduleinfo_extversionstr
-sim.moduleinfo_statusbarverbosity
-sim.moduleinfo_verbosity
+sim.plugininfo_builddatestr
+sim.plugininfo_extversionint
+sim.plugininfo_extversionstr
+sim.plugininfo_statusbarverbosity
+sim.plugininfo_verbosity
 sim.mujoco_body_condim
 sim.mujoco_body_friction1
 sim.mujoco_body_friction2
