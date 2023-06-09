@@ -20,18 +20,18 @@ end
 
 _S.require=require
 function require(...)
-    local nm=table.unpack{...}
-    for i=1,#__lazyLoadModules,1 do
-        if __lazyLoadModules[i]==nm then
+    local requiredName=table.unpack{...}
+    for i,lazyModName in ipairs(__lazyLoadModules) do
+        if lazyModName==requiredName then
             if not __inLazyLoader or __inLazyLoader==0 then
-                __didExplicitLoading=true
+                removeLazyLoaders()
             end
         end
     end
     local fl=setThreadSwitchAllowed(false) -- important when called from coroutine
     local retVals={_S.require(...)}
     setThreadSwitchAllowed(fl)
-    auxFunc('usedmodule',nm)
+    auxFunc('usedmodule',requiredName)
     return table.unpack(retVals)
 end
 
@@ -216,22 +216,19 @@ end
 function moduleLazyLoader(name)
     local proxy={}
     local mt={
+        __moduleLazyLoader={},
         __index=function(_,key)
             if key=='registerScriptFuncHook' then
                 return registerScriptFuncHook
             else
-                if __didExplicitLoading then
-                    error(name..": implicit loading of modules has been disabled because at least one known module was loaded explicitly.")
-                else
-                    if not __inLazyLoader then
-                        __inLazyLoader=0
-                    end
-                    __inLazyLoader=__inLazyLoader+1
-                    _G[name]=require(name)
-                    __inLazyLoader=__inLazyLoader-1
-                    addLog(430,"module '"..name.."' was implicitly loaded.")
-                    return _G[name][key]
+                if not __inLazyLoader then
+                    __inLazyLoader=0
                 end
+                __inLazyLoader=__inLazyLoader+1
+                _G[name]=require(name)
+                __inLazyLoader=__inLazyLoader-1
+                addLog(430,"module '"..name.."' was implicitly loaded.")
+                return _G[name][key]
             end
         end,
     }
@@ -240,6 +237,23 @@ function moduleLazyLoader(name)
     return proxy
 end
 
-for i=1,#__lazyLoadModules,1 do
-    _G[__lazyLoadModules[i]]=moduleLazyLoader(__lazyLoadModules[i])
+function setupLazyLoaders()
+    for i,name in ipairs(__lazyLoadModules) do
+        if not _G[name] then
+            _G[name]=moduleLazyLoader(name)
+        end
+    end
 end
+
+function removeLazyLoaders()
+    for i,name in ipairs(__lazyLoadModules) do
+        if _G[name] then
+            local mt=getmetatable(_G[name])
+            if mt and mt.__moduleLazyLoader then
+                _G[name]=nil
+            end
+        end
+    end
+end
+
+setupLazyLoaders()
