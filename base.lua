@@ -24,6 +24,9 @@ function require(...)
     for i,lazyModName in ipairs(__lazyLoadModules) do
         if lazyModName==requiredName then
             if not __inLazyLoader or __inLazyLoader==0 then
+                if __usedLazyLoaders then
+                    addLog(430,"implicit loading of modules has been disabled because one known module ("..requiredName..") was loaded explicitly.")
+                end
                 removeLazyLoaders()
             end
         end
@@ -228,6 +231,7 @@ function moduleLazyLoader(name)
                 _G[name]=require(name)
                 __inLazyLoader=__inLazyLoader-1
                 addLog(430,"module '"..name.."' was implicitly loaded.")
+                __usedLazyLoaders=true
                 return _G[name][key]
             end
         end,
@@ -238,6 +242,7 @@ function moduleLazyLoader(name)
 end
 
 function setupLazyLoaders()
+    __usedLazyLoaders=false
     for i,name in ipairs(__lazyLoadModules) do
         if not _G[name] then
             _G[name]=moduleLazyLoader(name)
@@ -254,6 +259,7 @@ function removeLazyLoaders()
             end
         end
     end
+    __usedLazyLoaders=nil
 end
 
 setupLazyLoaders()
