@@ -46,6 +46,16 @@ function pcall(...)
     return table.unpack(retVals)
 end
 
+_S.unloadPlugin=unloadPlugin
+function unloadPlugin(name,options)
+    options=options or {}
+    local op=0
+    if options.force then
+        op=op|1
+    end
+    _S.unloadPlugin(name,op)
+end
+
 quit=quitSimulator
 exit=quitSimulator
 
