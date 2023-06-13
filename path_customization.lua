@@ -1,3 +1,5 @@
+sim=require'sim'
+
 function sysCall_init()
     _S.path.init()
 end
