@@ -2,6 +2,9 @@ sim=require('sim')
 simZMQ=require('simZMQ')
 simSubprocess=require('simSubprocess')
 simUI=require('simUI')
+json=require 'dkjson'
+-- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
+cbor=require'org.conman.cbor'
 
 pythonWrapper={}
 
@@ -196,9 +199,6 @@ function sysCall_init()
         return {cmd='cleanup'}
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
-    json=require 'dkjson'
-    -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
-    cbor=require'org.conman.cbor'
     
     context=simZMQ.ctx_new()
     rpcSocket=simZMQ.socket(context,simZMQ.REP)
@@ -708,6 +708,10 @@ function handleRemote(callType,args,timeout)
         end
     end
     return retVal
+end
+
+function include(arg)
+    _G[arg]=require(arg)
 end
 
 function serviceCall(cmd,data)

@@ -1,3 +1,5 @@
+sim=require'sim'
+simIM=require'simIM'
 require'configUi'
 
 function sysCall_init()

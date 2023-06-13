@@ -1,3 +1,6 @@
+sim=require'sim'
+simUI=require'simUI'
+
 ConfigUI={}
 
 function ConfigUI:validateElemSchema(elemName,elemSchema)

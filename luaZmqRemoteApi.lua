@@ -1,3 +1,6 @@
+sim=require'sim'
+simZMQ=require'simZMQ'
+
 local RemoteApiClient={}
 
 function RemoteApiClient.init(host,port,cntport)
