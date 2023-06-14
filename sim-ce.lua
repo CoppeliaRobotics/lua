@@ -132,13 +132,13 @@ float[] params=sim.getObjectFloatArrayParam(int objectHandle,int parameterID)
 float parameter=sim.getObjectFloatParam(int objectHandle,int parameterID)
 sim.getObjectFromUid(int uid,map options={})
 int parameter=sim.getObjectInt32Param(int objectHandle,int parameterID)
-float[12] matrix=sim.getObjectMatrix(int objectHandle,int relativeToObjectHandle)
-float[3] eulerAngles=sim.getObjectOrientation(int objectHandle,int relativeToObjectHandle)
+float[12] matrix=sim.getObjectMatrix(int objectHandle,int relativeToObjectHandle=sim.handle_world)
+float[3] eulerAngles=sim.getObjectOrientation(int objectHandle,int relativeToObjectHandle=sim.handle_world)
 int parentObjectHandle=sim.getObjectParent(int objectHandle)
-float[7] pose=sim.getObjectPose(int objectHandle,int relativeToObjectHandle)
-float[3] position=sim.getObjectPosition(int objectHandle,int relativeToObjectHandle)
+float[7] pose=sim.getObjectPose(int objectHandle,int relativeToObjectHandle=sim.handle_world)
+float[3] position=sim.getObjectPosition(int objectHandle,int relativeToObjectHandle=sim.handle_world)
 int property=sim.getObjectProperty(int objectHandle)
-float[4] quaternion=sim.getObjectQuaternion(int objectHandle,int relativeToObjectHandle)
+float[4] quaternion=sim.getObjectQuaternion(int objectHandle,int relativeToObjectHandle=sim.handle_world)
 int[] objectHandles=sim.getObjectSel()
 float sizeFactor=sim.getObjectSizeFactor(int ObjectHandle)
 int property=sim.getObjectSpecialProperty(int objectHandle)
@@ -333,13 +333,13 @@ bool result=sim.setObjectColor(int objectHandle,int index,int colorComponent,flo
 sim.setObjectFloatArrayParam(int objectHandle,int parameterID,float[] params)
 sim.setObjectFloatParam(int objectHandle,int parameterID,float parameter)
 sim.setObjectInt32Param(int objectHandle,int parameterID,int parameter)
-sim.setObjectMatrix(int objectHandle,int relativeToObjectHandle,float[12] matrix)
-sim.setObjectOrientation(int objectHandle,int relativeToObjectHandle,float[3] eulerAngles)
+sim.setObjectMatrix(int objectHandle,float[12] matrix,int relativeToObjectHandle=sim.handle_world)
+sim.setObjectOrientation(int objectHandle,float[3] eulerAngles,int relativeToObjectHandle=sim.handle_world)
 sim.setObjectParent(int objectHandle,int parentObjectHandle,bool keepInPlace=true)
-sim.setObjectPose(int objectHandle,int relativeToObjectHandle,float[7] pose)
-sim.setObjectPosition(int objectHandle,int relativeToObjectHandle,float[3] position)
+sim.setObjectPose(int objectHandle,float[7] pose,int relativeToObjectHandle=sim.handle_world)
+sim.setObjectPosition(int objectHandle,float[3] position,int relativeToObjectHandle=sim.handle_world)
 sim.setObjectProperty(int objectHandle,int property)
-sim.setObjectQuaternion(int objectHandle,int relativeToObjectHandle,float[4] quaternion)
+sim.setObjectQuaternion(int objectHandle,float[4] quaternion,int relativeToObjectHandle=sim.handle_world)
 sim.setObjectSel(int[] objectHandles)
 sim.setObjectSpecialProperty(int objectHandle,int property)
 sim.setObjectStringParam(int objectHandle,int parameterID,buffer parameter)
@@ -651,7 +651,6 @@ sim.handleflag_reljointbaseframe
 sim.handleflag_resetforce
 sim.handleflag_resetforcetorque
 sim.handleflag_resettorque
-sim.handleflag_setmultiple
 sim.handleflag_silenterror
 sim.handleflag_togglevisibility
 sim.handleflag_wxyzquat
