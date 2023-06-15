@@ -92,8 +92,8 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
     end
     for i=1,9,1 do
         local a=math.pi/2-(i-1)*math.pi/8
-        sim.setObjectPosition(ctrlPts[i],_S.conveyor.model,{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)-vo})
-        sim.setObjectPosition(ctrlPts[9+i],_S.conveyor.model,{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)-vo})
+        sim.setObjectPosition(ctrlPts[i],{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)-vo},_S.conveyor.model)
+        sim.setObjectPosition(ctrlPts[9+i],{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)-vo},_S.conveyor.model)
     end
     path.setup()
 
@@ -126,8 +126,8 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
             sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
             sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
             local m=Matrix3x3:rotx(-math.pi/2)
-            sim.setObjectPosition(jnt,_S.conveyor.model,{-_S.conveyor.config.length/2+dx*(i-1),0,-_S.conveyor.config.radius})
-            sim.setObjectQuaternion(jnt,_S.conveyor.model,Matrix3x3:toquaternion(m))
+            sim.setObjectPosition(jnt,{-_S.conveyor.config.length/2+dx*(i-1),0,-_S.conveyor.config.radius},_S.conveyor.model)
+            sim.setObjectQuaternion(jnt,Matrix3x3:toquaternion(m),_S.conveyor.model)
         end
     else
         local padCnt=_S.conveyor.totalLength//(_S.conveyor.config.beltElementWidth+_S.conveyor.config.beltElementSpacing)
@@ -237,8 +237,8 @@ function _S.conveyor.setPathPos(p)
         local h=_S.conveyor.padHandles[i]
         local pos=sim.getPathInterpolatedConfig(_S.conveyor.pathPositions,_S.conveyor.pathLengths,p)
         local quat=sim.getPathInterpolatedConfig(_S.conveyor.pathQuaternions,_S.conveyor.pathLengths,p,nil,{2,2,2,2})
-        sim.setObjectPosition(h,_S.conveyor.model,pos)
-        sim.setObjectQuaternion(h,_S.conveyor.model,quat)
+        sim.setObjectPosition(h,pos,_S.conveyor.model)
+        sim.setObjectQuaternion(h,quat,_S.conveyor.model)
         p=p+_S.conveyor.padOffset
     end
 end

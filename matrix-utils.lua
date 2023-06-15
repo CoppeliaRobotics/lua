@@ -296,6 +296,13 @@ _S.wrapFunc('getLightParameters',function(origFunc)
     end
 end)
 
+-- table_7 pose=sim.getObjectPose(number objectHandle,number relativeToObjectHandle)
+_S.wrapFunc('getObjectPose',function(origFunc)
+    return function(objectHandle,relativeToObjectHandle)
+        return Vector(origFunc(objectHandle,relativeToObjectHandle))
+    end
+end)
+
 -- table_12 matrix=sim.getObjectMatrix(number objectHandle,number relativeToObjectHandle)
 _S.wrapFunc('getObjectMatrix',function(origFunc)
     return function(objectHandle,relativeToObjectHandle)
@@ -476,43 +483,83 @@ _S.wrapFunc('setLightParameters',function(origFunc)
     end
 end)
 
--- sim.setObjectMatrix(number objectHandle,number relativeToObjectHandle,table_12 matrix)
+-- sim.setObjectPose(number objectHandle,table_7 pose,number relativeToObjectHandle)
+_S.wrapFunc('setObjectPose',function(origFunc)
+    return function(objectHandle,pose,relativeToObjectHandle)
+        if type(pose)=='number' then
+            -- old arg ordering (objectH,relObj,pose)
+            local tmp=pose
+            pose=relativeToObjectHandle
+            relativeToObjectHandle=tmp
+        end
+        if getmetatable(pose)==Matrix then
+            pose=pose:data()
+        end
+        return origFunc(objectHandle,pose,relativeToObjectHandle)
+    end
+end)
+
+-- sim.setObjectMatrix(number objectHandle,table_12 matrix,number relativeToObjectHandle)
 _S.wrapFunc('setObjectMatrix',function(origFunc)
-    return function(objectHandle,relativeToObjectHandle,matrix)
+    return function(objectHandle,matrix,relativeToObjectHandle)
+        if type(matrix)=='number' then
+            -- old arg ordering (objectH,relObj,matrix)
+            local tmp=matrix
+            matrix=relativeToObjectHandle
+            relativeToObjectHandle=tmp
+        end
         if getmetatable(matrix)==Matrix then
             matrix=matrix:data()
         end
-        return origFunc(objectHandle,relativeToObjectHandle,matrix)
+        return origFunc(objectHandle,matrix,relativeToObjectHandle)
     end
 end)
 
--- sim.setObjectOrientation(number objectHandle,number relativeToObjectHandle,table_3 eulerAngles)
+-- sim.setObjectOrientation(number objectHandle,table_3 eulerAngles,number relativeToObjectHandle)
 _S.wrapFunc('setObjectOrientation',function(origFunc)
-    return function(objectHandle,relativeToObjectHandle,eulerAngles)
+    return function(objectHandle,eulerAngles,relativeToObjectHandle)
+        if type(eulerAngles)=='number' then
+            -- old arg ordering (objectH,relObj,eulerAngles)
+            local tmp=eulerAngles
+            eulerAngles=relativeToObjectHandle
+            relativeToObjectHandle=tmp
+        end
         if getmetatable(eulerAngles)==Matrix then
             eulerAngles=eulerAngles:data()
         end
-        return origFunc(objectHandle,relativeToObjectHandle,eulerAngles)
+        return origFunc(objectHandle,eulerAngles,relativeToObjectHandle)
     end
 end)
 
--- sim.setObjectPosition(number objectHandle,number relativeToObjectHandle,table_3 position)
+-- sim.setObjectPosition(number objectHandle,table_3 position,number relativeToObjectHandle)
 _S.wrapFunc('setObjectPosition',function(origFunc)
-    return function(objectHandle,relativeToObjectHandle,position)
+    return function(objectHandle,position,relativeToObjectHandle)
+        if type(position)=='number' then
+            -- old arg ordering (objectH,relObj,position)
+            local tmp=position
+            position=relativeToObjectHandle
+            relativeToObjectHandle=tmp
+        end
         if getmetatable(position)==Matrix then
             position=position:data()
         end
-        return origFunc(objectHandle,relativeToObjectHandle,position)
+        return origFunc(objectHandle,position,relativeToObjectHandle)
     end
 end)
 
--- sim.setObjectQuaternion(number objectHandle,number relativeToObjectHandle,table_4 quaternion)
+-- sim.setObjectQuaternion(number objectHandle,table_4 quaternion,number relativeToObjectHandle)
 _S.wrapFunc('setObjectQuaternion',function(origFunc)
-    return function(objectHandle,relativeToObjectHandle,quaternion)
+    return function(objectHandle,quaternion,relativeToObjectHandle)
+        if type(quaternion)=='number' then
+            -- old arg ordering (objectH,relObj,quaternion)
+            local tmp=quaternion
+            quaternion=relativeToObjectHandle
+            relativeToObjectHandle=tmp
+        end
         if getmetatable(quaternion)==Matrix then
             quaternion=quaternion:data()
         end
-        return origFunc(objectHandle,relativeToObjectHandle,quaternion)
+        return origFunc(objectHandle,quaternion,relativeToObjectHandle)
     end
 end)
 

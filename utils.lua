@@ -125,23 +125,23 @@ function createOpenBox(size,baseThickness,wallThickness,density,inertiaCorrectio
     local parts={}
     local dim={size[1],size[2],baseThickness}
     parts[1]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
-    sim.setObjectPosition(parts[1],-1,{0,0,baseThickness*0.5})
+    sim.setObjectPosition(parts[1],{0,0,baseThickness*0.5})
     dim={wallThickness,size[2],size[3]-baseThickness}
     parts[2]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
-    sim.setObjectPosition(parts[2],-1,{(size[1]-wallThickness)*0.5,0,baseThickness+dim[3]*0.5})
+    sim.setObjectPosition(parts[2],{(size[1]-wallThickness)*0.5,0,baseThickness+dim[3]*0.5})
     parts[3]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
-    sim.setObjectPosition(parts[3],-1,{(-size[1]+wallThickness)*0.5,0,baseThickness+dim[3]*0.5})
+    sim.setObjectPosition(parts[3],{(-size[1]+wallThickness)*0.5,0,baseThickness+dim[3]*0.5})
     dim={size[1]-2*wallThickness,wallThickness,size[3]-baseThickness}
     parts[4]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
-    sim.setObjectPosition(parts[4],-1,{0,(size[2]-wallThickness)*0.5,baseThickness+dim[3]*0.5})
+    sim.setObjectPosition(parts[4],{0,(size[2]-wallThickness)*0.5,baseThickness+dim[3]*0.5})
     parts[5]=sim.createPureShape(0,16,dim,density*dim[1]*dim[2]*dim[3])
-    sim.setObjectPosition(parts[5],-1,{0,(-size[2]+wallThickness)*0.5,baseThickness+dim[3]*0.5})
+    sim.setObjectPosition(parts[5],{0,(-size[2]+wallThickness)*0.5,baseThickness+dim[3]*0.5})
     for i=1,#parts,1 do
         sim.setShapeColor(parts[i],'',sim.colorcomponent_ambient_diffuse,color)
     end
     local shape=sim.groupShapes(parts)
     if math.abs(1-inertiaCorrectionFact)>0.001 then
-        local transf=sim.getObjectMatrix(shape,-1)
+        local transf=sim.getObjectMatrix(shape)
         local m0,i0,com0=sim.getShapeMassAndInertia(shape,transf)
         for i=1,#i0,1 do
             i0[i]=i0[1]*inertiaCorrectionFact
@@ -528,7 +528,7 @@ function scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleAxisZ
             p[2]=p[2]*scaleAxisY
             p[3]=p[3]*scaleAxisZ
             p=sim.multiplyVector(mi,p)
-            sim.setObjectPosition(h,parentObjH,p)
+            sim.setObjectPosition(h,p,parentObjH)
         end
     end
 end

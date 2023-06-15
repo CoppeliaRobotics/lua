@@ -258,12 +258,12 @@ function _S.path.createNew(ctrlPts,onlyPosData,options,pointCount,smoothing,auto
     for i=1,#ctrlPts//dof,1 do
         ctrlPt=sim.createDummy(0.01,{0,0.96,0.66,0,0,0,0,0,0,0,0,0})
         sim.setObjectParent(ctrlPt,_S.path.model,true)
-        sim.setObjectPosition(ctrlPt,_S.path.model,fp(ctrlPts,i))
+        sim.setObjectPosition(ctrlPt,fp(ctrlPts,i),_S.path.model)
         sim.setObjectAlias(ctrlPt,'ctrlPt')
         if onlyPosData then
-            sim.setObjectQuaternion(ctrlPt,_S.path.model,{0,0,0,1})
+            sim.setObjectQuaternion(ctrlPt,{0,0,0,1},_S.path.model)
         else
-            sim.setObjectQuaternion(ctrlPt,_S.path.model,fq(ctrlPts,i))
+            sim.setObjectQuaternion(ctrlPt,fq(ctrlPts,i),_S.path.model)
         end
         sim.writeCustomDataBlock(ctrlPt,_S.path.ctrlPtsTag,sim.packTable({index=i}))
     end
@@ -590,7 +590,7 @@ function _S.path.displayLine(index)
     local c=_S.path.readInfo()
     local p=sim.getModelProperty(_S.path.model)
     if (p&sim.modelproperty_not_visible)==0 and (c.bitCoded&32)==0 then
-        local m=sim.getObjectMatrix(_S.path.model,-1)
+        local m=sim.getObjectMatrix(_S.path.model)
         local path=_S.path.paths[index]
         local dr,col,s
         if index==1 then
@@ -614,8 +614,8 @@ function _S.path.displayLine(index)
             _S.path.tickCont[1]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{1,0,0})
             _S.path.tickCont[2]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{0,1,0})
             _S.path.tickCont[3]=sim.addDrawingObject(sim.drawing_lines,1,0,_S.path.model,9999,{0,0,1})
-            local p=sim.getObjectPosition(_S.path.model,-1)
-            local q=sim.getObjectQuaternion(_S.path.model,-1)
+            local p=sim.getObjectPosition(_S.path.model)
+            local q=sim.getObjectQuaternion(_S.path.model)
             local m=Matrix4x4:frompose({p[1],p[2],p[3],q[1],q[2],q[3],q[4]})
             for i=0,(#path/7)-1,1 do
                 local m0=Matrix4x4:frompose({path[i*7+1],path[i*7+2],path[i*7+3],path[i*7+4],path[i*7+5],path[i*7+6],path[i*7+7]})
@@ -664,7 +664,7 @@ function _S.path.fixCtrlPtOrder()
     end
     for i,pose in ipairs(poses) do
         local h1=handles[i]
-        sim.setObjectPose(h1,_S.path.model,pose)
+        sim.setObjectPose(h1,pose,_S.path.model)
         local d=sim.readCustomTableData(h1,'ABC_PATHCTRLPT')
         d.index=i
         sim.writeCustomTableData(h1,'ABC_PATHCTRLPT',d)
@@ -959,7 +959,7 @@ function _S.path.output_callback(ui,id,newVal)
         ctrlPts=ctrlPts:droprow(ctrlPts:rows())
         pts=pts:droprow(pts:rows())
     end
-    local pathM=Matrix4x4:frompose(sim.getObjectPose(_S.path.model,-1))
+    local pathM=Matrix4x4:frompose(sim.getObjectPose(_S.path.model))
     local relPts='relCtrlPts={'
     local absPts='absCtrlPts={'
     local pos=ctrlPts:slice(1,1,ctrlPts:rows(),3):data()
@@ -1314,7 +1314,7 @@ function _S.path.insertExtDummy_callback(ui,id)
         table.insert(newCtrlPts,1,s[#s]) -- we want to insert dummies before
     end
     for i=1,#s-1,1 do
-        sim.setObjectPose(newCtrlPts[i],s[i],{0,0,0,0,0,0,1})
+        sim.setObjectPose(newCtrlPts[i],{0,0,0,0,0,0,1},s[i])
     end
     s[#s]=nil
     sim.removeObjects(s)

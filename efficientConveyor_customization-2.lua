@@ -33,9 +33,9 @@ function _S.conveyor.init(config)
         sim.setShapeBB(visible1,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
         sim.setShapeBB(visible2,{_S.conveyor.config.length+0.005,_S.conveyor.config.width+0.005,_S.conveyor.config.height})
         sim.setShapeBB(_S.conveyor.forwarder,{_S.conveyor.config.length,_S.conveyor.config.width,_S.conveyor.config.height})
-        sim.setObjectPosition(visible1,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
-        sim.setObjectPosition(visible2,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2-0.0025})
-        sim.setObjectPosition(_S.conveyor.forwarder,_S.conveyor.model,{0,0,-_S.conveyor.config.height/2})
+        sim.setObjectPosition(visible1,{0,0,-_S.conveyor.config.height/2},_S.conveyor.model)
+        sim.setObjectPosition(visible2,{0,0,-_S.conveyor.config.height/2-0.0025},_S.conveyor.model)
+        sim.setObjectPosition(_S.conveyor.forwarder,{0,0,-_S.conveyor.config.height/2},_S.conveyor.model)
     end
 end
 
@@ -102,7 +102,7 @@ function _S.conveyor.setPos(p)
     -- Reset the dynamic rectangle from the simulation (it will be removed and added again)
     sim.resetDynamicObject(_S.conveyor.forwarder)
     -- Compute the absolute velocity vector:
-    local m=sim.getObjectMatrix(_S.conveyor.forwarder,-1)
+    local m=sim.getObjectMatrix(_S.conveyor.forwarder)
     m[4]=0 -- Make sure the translation component is discarded
     m[8]=0 -- Make sure the translation component is discarded
     m[12]=0 -- Make sure the translation component is discarded

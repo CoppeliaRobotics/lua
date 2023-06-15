@@ -20,7 +20,7 @@ end
 
 function appendMeasurementPts()
     -- append measurement points, e.g. the x-position of an object:
-    local p=sim.getObjectPosition(objectHandle,-1)
+    local p=sim.getObjectPosition(objectHandle)
     sim.setGraphStreamValue(graphHandle,stream1,p[1])
     
     graph.handle(sim.getSystemTime()-startTime)

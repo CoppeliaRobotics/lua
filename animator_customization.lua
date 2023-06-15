@@ -89,10 +89,10 @@ function _S.animator.applyPos()
                 if not _S.animator.config.immobile then
                     local m=sim.buildMatrixQ(p,{p[4],p[5],p[6],p[7]})
                     local m=sim.multiplyMatrices(_S.animator.corrM,m)
-                    sim.setObjectMatrix(_S.animator.handles[i],sim.handle_parent,m)
+                    sim.setObjectMatrix(_S.animator.handles[i],m,sim.handle_parent)
                 end
             else
-                sim.setObjectPose(_S.animator.handles[i],sim.handle_parent,p)
+                sim.setObjectPose(_S.animator.handles[i],p,sim.handle_parent)
             end
         end
     end

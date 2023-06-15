@@ -93,7 +93,7 @@ function sim.rmlMoveToPosition(...)
     end
     local mGoal=sim.buildMatrixQ(targetPos,targetQuat)
     function _S.tmpCb(m,v,a,data)
-        sim.setObjectMatrix(data.handle,data.rel,m)
+        sim.setObjectMatrix(data.handle,m,data.rel)
     end
     local data={}
     data.handle=handle
@@ -602,7 +602,7 @@ function sim.scaleModelNonIsometrically(modelHandle,scaleAxisX,scaleAxisY,scaleA
             p[2]=p[2]*scaleAxisY
             p[3]=p[3]*scaleAxisZ
             p=sim.multiplyVector(mi,p)
-            sim.setObjectPosition(h,parentObjH,p)
+            sim.setObjectPosition(h,p,parentObjH)
         end
     end
 end

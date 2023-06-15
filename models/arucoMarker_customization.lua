@@ -26,7 +26,7 @@ function generate(config)
             local c=simIM.get(img,{i,j})
             sim.setShapeColor(h,'',sim.colorcomponent_ambient_diffuse,(Vector(c)/255):data())
             sim.setObjectParent(h,self,false)
-            sim.setObjectPosition(h,sim.handle_parent,{size[1]*(i-(pxSize-1)/2),size[2]*(j-(pxSize-1)/2),size[3]/2})
+            sim.setObjectPosition(h,{size[1]*(i-(pxSize-1)/2),size[2]*(j-(pxSize-1)/2),size[3]/2},sim.handle_parent)
         end
     end
     simIM.destroy(img)

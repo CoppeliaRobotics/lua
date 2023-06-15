@@ -65,7 +65,7 @@ function sysCall_init()
                         local v=sim.getObjectInt32Param(h,sim.objintparam_visibility_layer)
                         if v&15==0 then return end
                         shapes[h]=shapes[h] or {}
-                        shapes[h][i]=sim.getObjectMatrix(h,-1)
+                        shapes[h][i]=sim.getObjectMatrix(h)
                     end)
                 end
                 local sweptShapes={}
@@ -117,7 +117,7 @@ function sysCall_init()
             end)
             for i=1,#states do
                 state:setConfig(states[i])
-                sim.addDrawingObjectItem(tipPathDwo,sim.getObjectPosition(tip,-1))
+                sim.addDrawingObjectItem(tipPathDwo,sim.getObjectPosition(tip))
             end
             if del then
                 state:removeModelClone()

@@ -34,9 +34,9 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel,par
         if allLetters[char] then
             local h=sim.loadModel(allLetters[char])
             local size=sim.getShapeBB(h)
-            local p=sim.getObjectPosition(h,-1)
+            local p=sim.getObjectPosition(h)
             off=off+size[1]*0.5+height*0.03
-            sim.setObjectPosition(h,-1,{off,p[2]-voff,0})
+            sim.setObjectPosition(h,{off,p[2]-voff,0})
             off=off+size[1]*0.5+height*0.03
             shapes[#shapes+1]=h
             lines[#lines][#lines[#lines]+1]=h
@@ -57,8 +57,8 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel,par
         for i=1,#linesW,1 do
             for j=1,#lines[i],1 do
                 local s=lines[i][j]
-                local p=sim.getObjectPosition(s,-1)
-                sim.setObjectPosition(s,-1,{p[1]-linesW[i]/2,p[2],p[3]})
+                local p=sim.getObjectPosition(s)
+                sim.setObjectPosition(s,{p[1]-linesW[i]/2,p[2],p[3]})
             end
         end
     end
@@ -69,8 +69,8 @@ function textUtils.generateTextShape(txt,color,height,centered,alphabetModel,par
         else
             s=shapes[1]
         end
-        local p=sim.getObjectPosition(s,-1)
-        sim.setObjectPosition(s,-1,{p[1],p[2]+voff,p[3]})
+        local p=sim.getObjectPosition(s)
+        sim.setObjectPosition(s,{p[1],p[2]+voff,p[3]})
         sim.setModelProperty(s,sim.modelproperty_not_model)
         sim.reorientShapeBoundingBox(s,-1)
         sim.setObjectProperty(s,sim.objectproperty_selectable|sim.objectproperty_selectmodelbaseinstead)

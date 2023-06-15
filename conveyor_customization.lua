@@ -53,8 +53,8 @@ function _S.conveyor.init(config)
     end
     for i=1,9,1 do
         local a=math.pi/2-(i-1)*math.pi/8
-        sim.setObjectPosition(ctrlPts[i],_S.conveyor.model,{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)})
-        sim.setObjectPosition(ctrlPts[9+i],_S.conveyor.model,{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)})
+        sim.setObjectPosition(ctrlPts[i],{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)},_S.conveyor.model)
+        sim.setObjectPosition(ctrlPts[9+i],{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)},_S.conveyor.model)
     end
     local padCnt
     local ctrlPts,pathData=path.setup()    
@@ -129,8 +129,8 @@ function _S.conveyor.init(config)
                 sim.setObjectProperty(cyl,sim.objectproperty_selectmodelbaseinstead)
                 sim.setObjectInt32Param(jnt,sim.objintparam_visibility_layer,512)
                 local m=Matrix3x3:rotx(-math.pi/2)
-                sim.setObjectPosition(jnt,_S.conveyor.model,{-_S.conveyor.config.length/2+dx*(i-1),0,0})
-                sim.setObjectQuaternion(jnt,_S.conveyor.model,Matrix3x3:toquaternion(m))
+                sim.setObjectPosition(jnt,{-_S.conveyor.config.length/2+dx*(i-1),0,0},_S.conveyor.model)
+                sim.setObjectQuaternion(jnt,Matrix3x3:toquaternion(m),_S.conveyor.model)
             end
         else
             for i=1,padCnt,1 do
@@ -207,7 +207,7 @@ function path.shaping(path,pathIsClosed,upVector)
     local shape=sim.generateShapeFromPath(path,section,options,upVector)
     local vert,ind=sim.getShapeMesh(shape)
     vert,ind=simQHull.compute(vert,true)
-    vert=sim.multiplyVector(sim.getObjectMatrix(shape,-1),vert)
+    vert=sim.multiplyVector(sim.getObjectMatrix(shape),vert)
     sim.removeObject(shape)
     shape=sim.createMeshShape(0,0,vert,ind)
     sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,_S.conveyor.config.frameColor)
@@ -223,8 +223,8 @@ function _S.conveyor.setPathPos(p)
         local h=_S.conveyor.padHandles[i]
         local pos=sim.getPathInterpolatedConfig(_S.conveyor.pathPositions,_S.conveyor.pathLengths,p)
         local quat=sim.getPathInterpolatedConfig(_S.conveyor.pathQuaternions,_S.conveyor.pathLengths,p,nil,{2,2,2,2})
-        sim.setObjectPosition(h,_S.conveyor.model,pos)
-        sim.setObjectQuaternion(h,_S.conveyor.model,quat)
+        sim.setObjectPosition(h,pos,_S.conveyor.model)
+        sim.setObjectQuaternion(h,quat,_S.conveyor.model)
         p=p+_S.conveyor.padOffset
     end
 end

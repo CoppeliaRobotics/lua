@@ -349,7 +349,7 @@ function sim.getAlternateConfigs(...)
         end
         local desiredPose=0
         if tipHandle~=-1 then
-            desiredPose=sim.getObjectMatrix(tipHandle,-1)
+            desiredPose=sim.getObjectMatrix(tipHandle)
         end
         configs=_S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,1,tipHandle)
     end
@@ -1614,7 +1614,7 @@ function _S.loopThroughAltConfigSolutions(jointHandles,desiredPose,confS,x,index
             for i=1,#jointHandles,1 do
                 sim.setJointPosition(jointHandles[i],confS[i])
             end
-            local p=sim.getObjectMatrix(tipHandle,-1)
+            local p=sim.getObjectMatrix(tipHandle)
             local axis,angle=sim.getRotationAxis(desiredPose,p)
             if math.abs(angle)<0.1*180/math.pi then -- checking is needed in case some joints are dependent on others
                 return {sim.copyTable(confS)}

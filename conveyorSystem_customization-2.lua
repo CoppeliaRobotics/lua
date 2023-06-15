@@ -213,8 +213,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,o,nil,{2,2,2,2})
             local m=Matrix3x3:fromquaternion(quat)
             m=m*Matrix3x3:rotx(-math.pi/2)
-            sim.setObjectPosition(jnt,_S.conveyorSystem.model,pos)
-            sim.setObjectQuaternion(jnt,_S.conveyorSystem.model,Matrix3x3:toquaternion(m))
+            sim.setObjectPosition(jnt,pos,_S.conveyorSystem.model)
+            sim.setObjectQuaternion(jnt,Matrix3x3:toquaternion(m),_S.conveyorSystem.model)
         end
     else
         for i=1,padCnt,1 do
@@ -246,8 +246,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
                 pos[3]=pos[3]-3*_S.conveyorSystem.config.rollerRadius/2
                 local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
-                sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
-                sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+                sim.setObjectPosition(el[i],pos,_S.conveyorSystem.model)
+                sim.setObjectQuaternion(el[i],quat,_S.conveyorSystem.model)
                 p=p+off
             end
         else
@@ -259,8 +259,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
                 pos[3]=pos[3]-0.01-_S.conveyorSystem.config.borderElementThickness
                 local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
-                sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
-                sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+                sim.setObjectPosition(el[i],pos,_S.conveyorSystem.model)
+                sim.setObjectQuaternion(el[i],quat,_S.conveyorSystem.model)
                 p=p+off
             end
         end
@@ -293,8 +293,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
             sim.setShapeMass(pb,0.01)
             
             sim.setShapeColor(pb,nil,sim.colorcomponent_ambient_diffuse,_S.conveyorSystem.config.frameColor)
-            sim.setObjectPosition(pa,-1,{0,(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
-            sim.setObjectPosition(pb,-1,{0,-(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
+            sim.setObjectPosition(pa,{0,(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
+            sim.setObjectPosition(pb,{0,-(w-_S.conveyorSystem.config.borderElementThickness)/2,0})
             el[i]=sim.groupShapes({pa,pb})
             sim.reorientShapeBoundingBox(el[i],-1)
             local pos=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions,_S.conveyorSystem.pathLengths,p)
@@ -304,8 +304,8 @@ function path.refreshTrigger(ctrlPts,pathData,config)
                 pos[3]=pos[3]-_S.conveyorSystem.config.beltElementThickness+_S.conveyorSystem.config.borderElementHeight/2
             end
             local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,p,nil,{2,2,2,2})
-            sim.setObjectPosition(el[i],_S.conveyorSystem.model,pos)
-            sim.setObjectQuaternion(el[i],_S.conveyorSystem.model,quat)
+            sim.setObjectPosition(el[i],pos,_S.conveyorSystem.model)
+            sim.setObjectQuaternion(el[i],quat,_S.conveyorSystem.model)
             p=p+off
         end
         local resp=sim.groupShapes(el)
@@ -350,8 +350,8 @@ function _S.conveyorSystem.setPathPos(p)
         pos[3]=pos[3]-_S.conveyorSystem.config.beltElementThickness/2
         local quat=sim.getPathInterpolatedConfig(_S.conveyorSystem.pathQuaternions,_S.conveyorSystem.pathLengths,o,nil,{2,2,2,2})
         local pp=sim.getObjectPosition(h,_S.conveyorSystem.model)
-        sim.setObjectPosition(h,_S.conveyorSystem.model,pos)
-        sim.setObjectQuaternion(h,_S.conveyorSystem.model,quat)
+        sim.setObjectPosition(h,pos,_S.conveyorSystem.model)
+        sim.setObjectQuaternion(h,quat,_S.conveyorSystem.model)
         pp[1]=math.abs(pp[1]-pos[1])
         pp[2]=math.abs(pp[2]-pos[2])
         pp[3]=math.abs(pp[3]-pos[3])

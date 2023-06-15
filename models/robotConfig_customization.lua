@@ -135,7 +135,7 @@ function restoreIkTarget(pose)
             local target=ikObj:getTarget()
             local pose=sim.readCustomTableData(self,'ikTargetPose')
             if #pose==0 then return end
-            sim.setObjectPose(target,clonedModel,pose)
+            sim.setObjectPose(target,pose,clonedModel)
         end
     end
 end
