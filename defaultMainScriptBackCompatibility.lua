@@ -1,3 +1,5 @@
+sim=require'sim'
+
 _S.mainScriptBackComp={}
 
 function _S.mainScriptBackComp.handle(item)

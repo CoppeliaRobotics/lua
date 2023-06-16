@@ -1,3 +1,6 @@
+sim=require'sim'
+simUI=require'simUI'
+
 -----------------------------------------
 -- Required for backward compatibility --
 -----------------------------------------

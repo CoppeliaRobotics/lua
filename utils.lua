@@ -1,3 +1,6 @@
+sim=require'sim'
+simUI=require'simUI'
+
 -- DEPRECATED. Do not use anymore if possible
 
 local utils={}

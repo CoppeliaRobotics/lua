@@ -1,4 +1,5 @@
 sim=require'sim'
+simUI=require'simUI'
 
 function sysCall_init()
     _S.path.init()

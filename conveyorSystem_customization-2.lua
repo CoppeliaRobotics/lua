@@ -1,3 +1,5 @@
+sim=require'sim'
+
 path=require('path_customization')
 
 _S.conveyorSystem={}

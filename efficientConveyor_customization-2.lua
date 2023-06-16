@@ -1,3 +1,5 @@
+sim=require'sim'
+
 _S.conveyor={}
 
 function sysCall_actuation()

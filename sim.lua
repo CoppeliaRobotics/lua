@@ -1757,10 +1757,10 @@ end
 function _S.unpackTable(data,scheme)
     if scheme==nil then
         if #data>0 then
-            if string.byte(data,1)==0 then
-                scheme=0
-            else
+            if string.byte(data,1)==1 then
                 scheme=1
+            else
+                scheme=0
             end
         end
     end

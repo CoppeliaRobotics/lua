@@ -1,3 +1,5 @@
+sim=require'sim'
+
 _S.animator={}
 
 function sysCall_actuation()
