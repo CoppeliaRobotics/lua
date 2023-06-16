@@ -1,5 +1,7 @@
 __lazyLoadModules={'sim','simIK','simUI','simGeom','simMujoco','simAssimp','simBubble','simCHAI3D','simMTB','simOMPL','simOpenMesh','simQHull','simRRS1','simSDF','simSubprocess','simSurfRec','simURDF','simVision','simWS','simZMQ','simIM','simEigen','simIGL','simICP','simROS','simROS2'}
 
+__oldModeConsts={syscb_init=true,syscb_cleanup=true,syscb_regular=true,syscb_actuation=true,syscb_sensing=true,syscb_nonsimulation=true,syscb_beforesimulation=true,syscb_aftersimulation=true,syscb_suspended=true,syscb_suspend=true,syscb_resume=true,syscb_beforeinstanceswitch=true,syscb_afterinstanceswitch=true,syscb_beforecopy=true,syscb_aftercopy=true,getScriptExecutionCount=true,mainscriptcall_initialization=true,mainscriptcall_cleanup=true,mainscriptcall_regular=true,childscriptcall_initialization=true,childscriptcall_cleanup=true,childscriptcall_actuation=true,childscriptcall_sensing=true,customizationscriptcall_initialization=true,customizationscriptcall_cleanup=true,customizationscriptcall_nonsimulation=true,customizationscriptcall_lastbeforesimulation=true,customizationscriptcall_firstaftersimulation=true,customizationscriptcall_simulationactuation=true,customizationscriptcall_simulationsensing=true,customizationscriptcall_simulationpause=true,customizationscriptcall_simulationpausefirst=true,customizationscriptcall_simulationpauselast=true,customizationscriptcall_lastbeforeinstanceswitch=true,customizationscriptcall_firstafterinstanceswitch=true,customizationscriptcall_beforecopy=true,customizationscriptcall_aftercopy=true}
+
 math.atan2 = math.atan2 or math.atan
 math.pow = math.pow or function(a,b) return a^b end
 math.log10 = math.log10 or function(a) return math.log(a,10) end
@@ -231,6 +233,9 @@ function moduleLazyLoader(name)
     local mt={
         __moduleLazyLoader={},
         __index=function(_,key)
+            if __oldModeConsts[key] then
+                auxFunc('deprecatedScriptMode')
+            end
             if key=='registerScriptFuncHook' then
                 return registerScriptFuncHook
             else
