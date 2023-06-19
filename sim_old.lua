@@ -1,6 +1,4 @@
-sim=require'sim'
-simUI=require'simUI'
-
+-- Keep lazy loading
 -----------------------------------------
 -- Required for backward compatibility --
 -----------------------------------------
