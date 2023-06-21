@@ -1,4 +1,4 @@
-sim=require'sim'
+-- keep lazy loading
 
 _S.mainScriptBackComp={}
 
