@@ -419,7 +419,7 @@ schema={
         name='Target velocity',
         default=0.1,
         minimum=0,
-        maximum=0.5,
+        maximum=5,
         ui={control='spinbox',order=4,col=1,tab='general'},
     },
     accel={

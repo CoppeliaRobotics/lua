@@ -60,7 +60,15 @@ function _S.conveyor.init2(config)
  end
 
 function _S.conveyor.getPathData()
-    local pathData=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model,'PATH'))
+    -- Build the shape from the control points path, since the other path is interpolated and does only work well with enough interpol. points:
+    -- Instead of:
+    -- local pathData=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model,'PATH'))
+    -- We do:
+    local pathData=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model,'PATHCTRLPTS'))
+    for i=1,7,1 do
+        pathData[#pathData+1]=pathData[i]
+    end
+    
     local m=Matrix(math.floor(#pathData/7),7,pathData)
     _S.conveyor.pathPositions=m:slice(1,1,m:rows(),3):data()
     _S.conveyor.pathQuaternions=m:slice(1,4,m:rows(),7):data()
@@ -93,7 +101,9 @@ function _S.conveyor.rebuildConveyor(oldPads,oldJoints)
     for i=1,9,1 do
         local a=math.pi/2-(i-1)*math.pi/8
         sim.setObjectPosition(ctrlPts[i],{r*math.cos(a)+_S.conveyor.config.length/2,0,r*math.sin(a)-vo},_S.conveyor.model)
+        sim.setObjectOrientation(ctrlPts[i],{0,-a+math.pi/2,0},_S.conveyor.model)
         sim.setObjectPosition(ctrlPts[9+i],{-r*math.cos(a)-_S.conveyor.config.length/2,0,r*math.sin(-a)-vo},_S.conveyor.model)
+        sim.setObjectOrientation(ctrlPts[9+i],{0,-math.pi/2-a,0},_S.conveyor.model)
     end
     path.setup()
 
@@ -218,6 +228,8 @@ function path.shaping(path,pathIsClosed,upVector)
     if pathIsClosed then
         options=options|4
     end
+    -- Build the shape from the control points path, since the other path is interpolated and does only work well with enough interpol. points:
+    local path=sim.unpackDoubleTable(sim.readCustomDataBlock(sim.getObject'.','PATHCTRLPTS'))
     local shape=sim.generateShapeFromPath(path,section,options,upVector)
     local vert,ind=sim.getShapeMesh(shape)
     vert,ind=simQHull.compute(vert,true)
@@ -280,7 +292,7 @@ schema={
         name='Conveyor length',
         default=1,
         minimum=0.1,
-        maximum=5,
+        maximum=100,
         ui={control='spinbox',order=1,col=1,tab='general'},
     },
     width={
@@ -288,7 +300,7 @@ schema={
         name='Conveyor width',
         default=0.2,
         minimum=0.01,
-        maximum=5,
+        maximum=10,
         ui={control='spinbox',order=2,col=1,tab='general'},
     },
     radius={
@@ -303,8 +315,8 @@ schema={
         type='float',
         name='Target velocity',
         default=0.1,
-        minimum=-0.5,
-        maximum=0.5,
+        minimum=-5,
+        maximum=5,
         ui={control='spinbox',order=4,col=1,tab='general'},
     },
     accel={
@@ -368,7 +380,7 @@ schema={
         name='Roller count',
         default=8,
         minimum=2,
-        maximum=100,
+        maximum=500,
         ui={control='spinbox',order=20,col=1,tab="roller-type"},
     },
 }

@@ -139,7 +139,7 @@ schema={
         name='Length',
         default=1,
         minimum=0.1,
-        maximum=5,
+        maximum=100,
         ui={control='spinbox',order=1},
     },
     width={
@@ -147,7 +147,7 @@ schema={
         name='Width',
         default=0.2,
         minimum=0.01,
-        maximum=5,
+        maximum=10,
         ui={control='spinbox',order=2},
     },
     height={
@@ -162,8 +162,8 @@ schema={
         type='float',
         name='Target velocity',
         default=0.1,
-        minimum=0.001,
-        maximum=0.5,
+        minimum=-5,
+        maximum=5,
         ui={control='spinbox',order=4},
     },
     accel={
