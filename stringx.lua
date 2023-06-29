@@ -66,6 +66,21 @@ function string.bytes(s)
     return ret
 end
 
+function string.escpat(x)
+    return (x:gsub('%%', '%%%%')
+             :gsub('^%^', '%%^')
+             :gsub('%$$', '%%$')
+             :gsub('%(', '%%(')
+             :gsub('%)', '%%)')
+             :gsub('%.', '%%.')
+             :gsub('%[', '%%[')
+             :gsub('%]', '%%]')
+             :gsub('%*', '%%*')
+             :gsub('%+', '%%+')
+             :gsub('%-', '%%-')
+             :gsub('%?', '%%?'))
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
@@ -83,5 +98,6 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(string.rtrim(' abc ')==' abc')
     assert(table.eq(string.chars('abc'),{'a','b','c'}))
     assert(table.eq(string.bytes('abc'),{0x61,0x62,0x63}))
+    assert(string.escpat('[[--x')=='%[%[%-%-x')
     print(debug.getinfo(1,'S').source,'tests passed')
 end
