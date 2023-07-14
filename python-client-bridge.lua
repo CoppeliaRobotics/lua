@@ -1,5 +1,9 @@
 pythonClientBridge={}
 
+function pythonClientBridge.require(n)
+    _G[n]=require(n)
+end
+
 function pythonClientBridge.call(b)
     cbor=require'org.conman.cbor'
     i=cbor.decode(b)
