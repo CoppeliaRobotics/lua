@@ -1,10 +1,10 @@
-pythonClientBridge={}
+scriptClientBridge={}
 
-function pythonClientBridge.require(n)
+function scriptClientBridge.require(n)
     _G[n]=require(n)
 end
 
-function pythonClientBridge.call(b)
+function scriptClientBridge.call(b)
     cbor=require'org.conman.cbor'
     i=cbor.decode(b)
     require'var'
@@ -14,13 +14,13 @@ function pythonClientBridge.call(b)
     return cbor.encode(r)
 end
 
-function pythonClientBridge.info(obj)
-    if type(obj)=='string' then obj=pythonClientBridge.getField(obj) end
+function scriptClientBridge.info(obj)
+    if type(obj)=='string' then obj=scriptClientBridge.getField(obj) end
     if type(obj)~='table' then return obj end
     local ret={}
     for k,v in pairs(obj) do
         if type(v)=='table' then
-            ret[k]=pythonClientBridge.info(v)
+            ret[k]=scriptClientBridge.info(v)
         elseif type(v)=='function' then
             ret[k]={func={}}
         elseif type(v)~='function' then
@@ -30,7 +30,7 @@ function pythonClientBridge.info(obj)
     return ret
 end
 
-function pythonClientBridge.getField(f)
+function scriptClientBridge.getField(f)
     local v=_G
     for w in string.gmatch(f,'[%w_]+') do
         v=v[w]
