@@ -62,10 +62,18 @@ quit=quitSimulator
 exit=quitSimulator
 
 printToConsole=print
-function print(...)
-    local lb=setThreadAutomaticSwitch(false)
-    addLog(450+0x0f000,getAsString(...))
-    setThreadAutomaticSwitch(lb)
+if auxFunc('headless') then
+    function print(...)
+        local lb=setThreadAutomaticSwitch(false)
+        printToConsole(getAsString(...))
+        setThreadAutomaticSwitch(lb)
+    end
+else
+    function print(...)
+        local lb=setThreadAutomaticSwitch(false)
+        addLog(450+0x0f000,getAsString(...))
+        setThreadAutomaticSwitch(lb)
+    end
 end
 
 function printf(fmt,...)
