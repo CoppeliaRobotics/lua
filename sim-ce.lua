@@ -1,4 +1,5 @@
 local codeEditorInfos=[[
+string info=sim.getLastInfo()
 int autoSwitchForbidLevel=sim.setThreadAutomaticSwitch(bool automaticSwitch)
 int autoSwitchForbidLevel=sim.setThreadAutomaticSwitch(int forbidLevel)
 bool result=sim.getThreadAutomaticSwitch()
