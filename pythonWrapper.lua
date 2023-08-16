@@ -1,3 +1,4 @@
+startTimeout=5
 sim=require('sim')
 simZMQ=require('simZMQ')
 simSubprocess=require('simSubprocess')
@@ -298,7 +299,7 @@ function initPython(p,method)
                 simZMQ.send(socket,cbor.encode({cmd='loadCode',code=p}),0)
                 local st=sim.getSystemTime()
                 local r,rep
-                while sim.getSystemTime()-st<5 do
+                while sim.getSystemTime()-st<startTimeout do
                     r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
                     if r>=0 then
                         break
@@ -319,7 +320,7 @@ function initPython(p,method)
                         error(msg)
                     end
                 else
-                    errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor"
+                    errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapper.lua, at the top of the file"
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
                     end
