@@ -1757,19 +1757,13 @@ end
 function _S.unpackTable(data,scheme)
     if scheme==nil then
         if #data>0 then
-            if string.byte(data,1)==1 then
-                scheme=1
+            if string.byte(data,1)==0 or string.byte(data,1)==5 then
+                return _S.unpackTableOrig(data)
             else
-                scheme=0
+                local cbor=require'org.conman.cbor'
+                return cbor.decode(data)
             end
         end
-    end
-    if scheme==0 then
-        return _S.unpackTableOrig(data)
-    end
-    if scheme==1 then
-        local cbor=require'org.conman.cbor'
-        return cbor.decode(data)
     end
 end
 _S.unpackTableOrig=sim.unpackTable
