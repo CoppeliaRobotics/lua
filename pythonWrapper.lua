@@ -5,7 +5,7 @@ simSubprocess=require('simSubprocess')
 simUI=require('simUI')
 json=require 'dkjson'
 -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
-cbor=require'org.conman.cbor'
+cborDecode=require'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
 
 pythonWrapper={}
 
@@ -72,10 +72,10 @@ function pythonWrapper.handleRawMessage(rawReq)
     end
 
     -- if we are here, it should be a CBOR payload
-    local status,req=pcall(cbor.decode,rawReq)
+    local status,req=pcall(cborDecode.decode,rawReq)
     if status then
         local resp=pythonWrapper.handleRequest(req)
-        return cbor.encode(resp)
+        return sim.packCbor(resp)
     end
 
     sim.addLog(sim.verbosity_errors,'cannot decode message: no suitable decoder')
@@ -296,7 +296,7 @@ function initPython(p,method)
                 socket=simZMQ.socket(pyContext,simZMQ.REQ)
                 simZMQ.setsockopt(socket,simZMQ.LINGER,sim.packUInt32Table{0})
                 simZMQ.connect(socket,portStr)
-                simZMQ.send(socket,cbor.encode({cmd='loadCode',code=p}),0)
+                simZMQ.send(socket,sim.packCbor({cmd='loadCode',code=p}),0)
                 local st=sim.getSystemTime()
                 local r,rep
                 while sim.getSystemTime()-st<startTimeout do
@@ -306,9 +306,9 @@ function initPython(p,method)
                     end
                 end
                 if r>=0 then
-                    local rep,o,t=cbor.decode(rep)
+                    local rep,o,t=cborDecode.decode(rep)
                     if rep.success then
-                        simZMQ.send(socket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
+                        simZMQ.send(socket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
                     else
                         msg=rep.error
                         msg=getCleanErrorMsg(msg)
@@ -406,7 +406,7 @@ function getErrorPython()
             if simSubprocess.isRunning(subprocess) then
                 local r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
                 if r>=0 then
-                    local rep,o,t=cbor.decode(rep)
+                    local rep,o,t=cborDecode.decode(rep)
                     a=rep.success==false
                     msg=rep.error
                     msg=getCleanErrorMsg(msg)

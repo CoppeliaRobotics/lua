@@ -1,6 +1,6 @@
 -- The is the first versioned sim-namespace
 -- The very first API without namespace (e.g. simGetObjectHandle) is only
--- included if 'getSupportOldApiNotation' is true in 'usrset.txt'
+-- included if 'supportOldApiNotation' is true in 'usrset.txt'
 
 local sim=_S.sim
 _S.sim=nil
