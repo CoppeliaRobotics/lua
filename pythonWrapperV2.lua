@@ -55,200 +55,209 @@ function sysCall_init(...)
     corout=coroutine.create(coroutineMain)
     threadInitLockLevel=setThreadAutomaticSwitch(false)
     threadSwitchTiming=0.002 -- time given to service Python scripts in non-stepping mode (i.e. free mode). Not used in stepping mode
-    stepping=true
+    threadLastSwitchTime=0
+    threadBusyCnt=0
+    stepping=true -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping
+    protectedCallErrorDepth=0
+    protectedCallDepth=0
+    pythonMustHaveRaisedError=false
     
     -- blocking functions calling back need special treatment:
     callbackFunctions={} 
     callbackFunctions[sim.moveToConfig]=true
     
-    local ret=pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_init",{...})
-    
+    pythonWrapper.handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
+
     -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup and ext are special):
     local optionalSysCallbacks={sysCall_beforeMainScript,sysCall_suspended,sysCall_beforeSimulation,sysCall_afterSimulation,sysCall_sensing,sysCall_suspend,sysCall_resume,sysCall_realTimeIdle,sysCall_beforeInstanceSwitch,sysCall_afterInstanceSwitch,sysCall_beforeSave,sysCall_afterSave,sysCall_beforeCopy,sysCall_afterCopy,sysCall_afterCreate,sysCall_beforeDelete,sysCall_afterDelete,sysCall_addOnScriptSuspend,sysCall_addOnScriptResume,sysCall_dyn,sysCall_joint,sysCall_contact,sysCall_vision,sysCall_trigger,sysCall_userConfig,sysCall_moduleEntry,sysCall_msg,sysCall_event}
-    
+
     for i=1,#optionalSysCallbacks,1 do
         local nm=optionalSysCallbacks[i]
         if pythonFuncs[nm]==nil then
             _G[nm]=nil
         end
     end
-    
-    return ret
+
+    return pythonWrapper.callRemoteFunction("sysCall_init",{...})
 end
 
 function sysCall_cleanup(...)
-    inCleanup=true
-    pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_cleanup",{...})
-    pythonWrapper.callRemoteFunctionAndHandleQueue("_*leave*_",{...})
+    if subprocess~=nil then
+        if pythonFuncs['sysCall_thread']==nil then
+            inCleanup=true
+            pythonWrapper.callRemoteFunction("sysCall_cleanup",{...})
+        end
+    end
+
     pythonWrapper.cleanupPython()
     simZMQ.close(replySocket)
     simZMQ.ctx_term(context)
 end
 
 function coroutineMain()
-    pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_thread",{})
+    pythonWrapper.callRemoteFunction("sysCall_thread",{})
 end
 
 function sysCall_ext(funcName,...)
     if _G[funcName] then -- for now ignore functions in tables
         return _G[funcName](...) 
     else
-        return pythonWrapper.callRemoteFunctionAndHandleQueue(funcName,{...})
+        return pythonWrapper.callRemoteFunction(funcName,{...})
+    end
+end
+
+function pythonWrapper.resumeCoroutine()
+    if coroutine.status(corout)~='dead' then
+        protectedCallDepth=protectedCallDepth+1
+        local ok,errorMsg=coroutine.resume(corout)
+        protectedCallDepth=protectedCallDepth-1
+        if errorMsg then
+            error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
+        end
+        pythonWrapper.checkPythonError()
+    else
+        return {cmd='cleanup'}
     end
 end
 
 function sysCall_nonSimulation(...)
     if pythonFuncs['sysCall_thread'] then
-        if coroutine.status(corout)~='dead' then
-            local ok,errorMsg=coroutine.resume(corout)
-            if errorMsg then
-                error(debug.traceback(corout,errorMsg),2)
-            end
-        else
-            return {cmd='cleanup'}
-        end
+        return pythonWrapper.resumeCoroutine()
     else
-        return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_nonSimulation",{...})
+        return pythonWrapper.callRemoteFunction("sysCall_nonSimulation",{...})
     end
 end
 
 function sysCall_actuation(...)
     if pythonFuncs['sysCall_thread'] then
-        if coroutine.status(corout)~='dead' then
-            local ok,errorMsg=coroutine.resume(corout)
-            if errorMsg then
-                error(debug.traceback(corout,errorMsg),2)
-            end
-        else
-            return {cmd='cleanup'}
-        end
+        return pythonWrapper.resumeCoroutine()
     else
-        return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_actuation",{...})
+        return pythonWrapper.callRemoteFunction("sysCall_actuation",{...})
     end
 end
 
 function sysCall_suspended(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_suspended",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_suspended",{...})
 end
 
 function sysCall_beforeMainScript(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeMainScript",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeMainScript",{...})
 end
 
 function sysCall_sensing(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_sensing",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_sensing",{...})
 end
 
 function sysCall_beforeSimulation(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeSimulation",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeSimulation",{...})
 end
 
 function sysCall_afterSimulation(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterSimulation",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterSimulation",{...})
 end
 
 function sysCall_suspend(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_suspend",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_suspend",{...})
 end
 
 function sysCall_resume(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_resume",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_resume",{...})
 end
 
 function sysCall_realTimeIdle(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_realTimeIdle",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_realTimeIdle",{...})
 end
 
 function sysCall_beforeInstanceSwitch(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeInstanceSwitch",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeInstanceSwitch",{...})
 end
 
 function sysCall_afterInstanceSwitch(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterInstanceSwitch",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterInstanceSwitch",{...})
 end
 
 function sysCall_beforeSave(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeSave",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeSave",{...})
 end
 
 function sysCall_afterSave(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterSave",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterSave",{...})
 end
 
 function sysCall_beforeCopy(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeCopy",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeCopy",{...})
 end
 
 function sysCall_afterCopy(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterCopy",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterCopy",{...})
 end
 
 function sysCall_afterCreate(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterCreate",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterCreate",{...})
 end
 
 function sysCall_beforeDelete(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_beforeDelete",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_beforeDelete",{...})
 end
 
 function sysCall_afterDelete(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_afterDelete",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_afterDelete",{...})
 end
 
 function sysCall_addOnScriptSuspend(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_addOnScriptSuspend",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_addOnScriptSuspend",{...})
 end
 
 function sysCall_addOnScriptResume(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_addOnScriptResume",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_addOnScriptResume",{...})
 end
 
 function sysCall_dyn(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_dyn",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_dyn",{...})
 end
 
 function sysCall_joint(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_joint",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_joint",{...})
 end
 
 function sysCall_contact(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_contact",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_contact",{...})
 end
 
 function sysCall_vision(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_vision",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_vision",{...})
 end
 
 function sysCall_trigger(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_trigger",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_trigger",{...})
 end
 
 function sysCall_userConfig(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_userConfig",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_userConfig",{...})
 end
 
 function sysCall_moduleEntry(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_moduleEntry",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_moduleEntry",{...})
 end
 
 function sysCall_msg(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_msg",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_msg",{...})
 end
 
 function sysCall_event(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue("sysCall_event",{...})
+    return pythonWrapper.callRemoteFunction("sysCall_event",{...})
 end
 
 function pythonCallback1(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue(pythonCallbackStrs[1],{...})
+    return pythonWrapper.callRemoteFunction(pythonCallbackStrs[1],{...})
 end
 
 function pythonCallback2(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue(pythonCallbackStrs[2],{...})
+    return pythonWrapper.callRemoteFunction(pythonCallbackStrs[2],{...})
 end
 
 function pythonCallback3(...)
-    return pythonWrapper.callRemoteFunctionAndHandleQueue(pythonCallbackStrs[3],{...})
+    return pythonWrapper.callRemoteFunction(pythonCallbackStrs[3],{...})
 end
 
 function sim.testCB(a,cb,b)
@@ -324,8 +333,17 @@ function pythonWrapper.handleRequest(req)
         local func=pythonWrapper.getField(req['func'])
         local args=req['args'] or {}
         if not func then
-            resp['error']='No such function: '..req['func']
+            pythonMustHaveRaisedError = true -- actually not just yet, we still need to send a reply tp Python
+            resp['err']='No such function: '..req['func']
         else
+            if func==sim.setThreadAutomaticSwitch then
+                -- For backward compatibility with pythonWrapperV1
+                func=sim.setStepping
+                if #args>0 then
+                    args[1]=not args[1]
+                end
+            end
+            
             -- Handle function arguments:
             local prefix="<function "
             local cbi=1
@@ -347,9 +365,9 @@ function pythonWrapper.handleRequest(req)
             
             local function errHandler(err)
                 local trace = debug.traceback(err)
-                local p=string.find(trace,"%[C%]: in function 'xpcall'")
+                local p=string.find(trace,"\nstack traceback:")
                 if p then
-                    trace=trace:sub(1,p-3) -- strip traceback from xpcall on
+                    trace=trace:sub(1,p-1) -- strip traceback from xpcall
                 end
                 -- Make sure the string survives the passage to Python unmodified:
                 trace=string.gsub(trace,"\n","_=NL=_")
@@ -362,6 +380,7 @@ function pythonWrapper.handleRequest(req)
                 stepping=true
             end
             
+            protectedCallDepth=protectedCallDepth+1
             local status,retvals=xpcall(function()
                 local ret={func(unpack(args))}
                 -- Try to assign correct types to text and buffers:
@@ -378,12 +397,16 @@ function pythonWrapper.handleRequest(req)
                 end
                 return ret
             end,errHandler)
+            protectedCallDepth=protectedCallDepth-1
             
             if callbackFunctions[func] then
                 stepping=savedStepping
             end
-           
-            resp[status and 'ret' or 'error']=retvals
+
+            if status==false then
+                pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+            end
+            resp[status and 'ret' or 'err']=retvals
         end
     elseif req['eval']~=nil and req['eval']~='' then
         local status,retvals=pcall(function()
@@ -392,9 +415,11 @@ function pythonWrapper.handleRequest(req)
             local ret={loadstring(req['eval'])()}
             return ret
         end)
-        resp[status and 'ret' or 'error']=retvals
+        if status==false then
+            pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+        end
+        resp[status and 'ret' or 'err']=retvals
     end
-    resp['success']=resp['error']==nil
     return resp
 end
 
@@ -423,134 +448,179 @@ function pythonWrapper.getField(f)
     return v
 end
 
-function pythonWrapper.switchThreadIfNeeded()
-    local r,l=getThreadAutomaticSwitch()
-    if l-1==threadInitLockLevel then
-        if not stepping then -- in stepping mode, switching is always explicit
-            if threadSwitchTiming>0 then
-                if not lastSwitchTime then
-                    lastSwitchTime=sim.getSystemTime()
-                end
-                if sim.getSystemTime()-lastSwitchTime>=threadSwitchTiming then
-                    sim.switchThread()
-                    lastSwitchTime=sim.getSystemTime()
+function pythonWrapper.receive()
+    -- blocking
+    while simZMQ.poll({replySocket},{simZMQ.POLLIN},100)<=0 do
+        if pythonWrapper.checkPythonError() then
+            return -- unwind xpcalls
+        end
+    end
+    local rc,dat=simZMQ.recv(replySocket,0)
+    local status,req=pcall(cborDecode.decode,dat)
+    if not status then
+        error('CBOR decode error: '..sim.transformBuffer(dat,sim.buffer_uint8,1,0,sim.buffer_base64))
+    end
+    return req
+end
+
+function pythonWrapper.send(reply)
+    local dat=reply
+    status,reply=pcall(sim.packCbor,reply)
+    if not status then
+        error('CBOR encode error: '..getAsString(dat))
+    end
+    simZMQ.send(replySocket,reply,0)
+end
+
+function pythonWrapper.handleRequestsUntilExecutedReceived()
+    -- Handle requests from Python, until we get a _*executed*_ message. Func is reentrant
+    while true do
+        local req=pythonWrapper.receive()
+        if req==nil then
+            return -- unwind xpcalls
+        end
+
+        -- Handle buffered callbacks:
+        if bufferedCallbacks and #bufferedCallbacks>0 then
+            local steppingSaved=stepping
+            stepping=true
+            local tmp=bufferedCallbacks
+            bufferedCallbacks={}
+            for i=1,#tmp,1 do
+                pythonWrapper.callRemoteFunction(tmp[i].func,tmp[i].args)
+                if pythonWrapper.checkPythonError() then
+                    stepping=steppingSaved
+                    return -- unwind xpcalls
                 end
             end
+            stepping=steppingSaved
+        end
+
+        if req['func']=='_*executed*_' then
+            return req.args
+        end
+
+        --print(req)
+        local resp=pythonWrapper.handleRequest(req)
+
+        if pythonMustHaveRaisedError then
+            if protectedCallErrorDepth==0 then
+                pythonWrapper.send(resp)
+            end
+            protectedCallErrorDepth=protectedCallErrorDepth-1
+        else
+            if pythonWrapper.checkPythonError() then
+                return -- unwind xpcalls
+            end
+            pythonWrapper.send(resp)
+        end
+
+        if pythonWrapper.checkPythonError() then
+            return -- unwind xpcalls
+        end
+
+        if not stepping then -- in stepping mode, switching is always explicit
+            while simZMQ.poll({replySocket},{simZMQ.POLLIN},0)<=0 do
+                local r,l=getThreadAutomaticSwitch()
+                if l-1==threadInitLockLevel then
+                    if threadSwitchTiming>0 then
+                        if sim.getSystemTime()-threadLastSwitchTime>=threadSwitchTiming or threadBusyCnt==0 then
+                            sim.switchThread()
+                            threadLastSwitchTime=sim.getSystemTime()
+                            threadBusyCnt=0 -- after a switch, if the socket is idle, we switch immediately again. Otherwise we wait max. threadSwitchTiming
+                        end
+                    end
+                end
+            end
+            threadBusyCnt=threadBusyCnt+1
         end
     end
 end
 
-function pythonWrapper.callRemoteFunctionAndHandleQueue(callbackFunc,callbackArgs)
+function pythonWrapper.callRemoteFunction(callbackFunc,callbackArgs)
     -- Func is reentrant
-    
-    if pythonFuncs==nil or pythonFuncs[callbackFunc] or callbackFunc=="_*leave*_" then
-        function handleRequestsUntilFuncExecuted()
-            -- Handle requests from Python, until we get a _*executed*_ message
-            while true do
-                pythonWrapper.checkPythonError()
-                local rc=simZMQ.poll({replySocket},{simZMQ.POLLIN},1000)
-                if rc>0 then
-                    local rc,req=simZMQ.recv(replySocket,0)
-                    
-                    -- Handle buffered callbacks:
-                    if bufferedCallbacks and #bufferedCallbacks>0 then
-                        local steppingSaved=stepping
-                        stepping=true
-                        local tmp=bufferedCallbacks
-                        bufferedCallbacks={}
-                        for i=1,#tmp,1 do
-                            pythonWrapper.callRemoteFunctionAndHandleQueue(tmp[i].func,tmp[i].args)
-                        end
-                        stepping=steppingSaved
-                    end
-                    
-                    local status,req=pcall(cborDecode.decode,req)
-                    if not status then
-                        error('CBOR decode error')
-                    end
-                    if req['func']=='_*executed*_' then
-                        return req.args
-                    end
+    local retVal
+    if pythonWrapper.checkPythonError() then
+        return -- unwind xpcalls
+    end
 
-                    -- in stepping mode switching is always explicit
-                    --if stepping then
-                    --    pythonWrapper.switchThreadIfNeeded()
-                    --end
-                    
-                    local resp=pythonWrapper.handleRequest(req)
-                    status,resp=pcall(sim.packCbor,resp)
-                    if not status then
-                        error('CBOR encode error')
-                    end
-                    simZMQ.send(replySocket,resp,0)
+    if pythonFuncs[callbackFunc] then
+        if stepping then -- stepping includes non-threaded operation toRemove
 
-                    if not stepping then
-                        while simZMQ.poll({replySocket},{simZMQ.POLLIN},0)<=0 do
-                            pythonWrapper.switchThreadIfNeeded()
-                        end
+            -- First handle buffered, async callbacks:
+            if bufferedCallbacks and #bufferedCallbacks>0 then
+                local tmp=bufferedCallbacks
+                bufferedCallbacks={}
+                for i=1,#tmp,1 do
+                    pythonWrapper.callRemoteFunction(tmp[i].func,tmp[i].args)
+                    if pythonWrapper.checkPythonError() then
+                        return -- unwind xpcalls
                     end
                 end
             end
-        end
 
-        if not callRemoteFunctionAndHandleQueue_wasAlreadyCalled then
-            callRemoteFunctionAndHandleQueue_wasAlreadyCalled=true
-            handleRequestsUntilFuncExecuted()
-        end
-        
-        pythonWrapper.checkPythonError()
-        
-        if pythonFuncs[callbackFunc] then -- when sysCall_init not present
-            if stepping then
-                -- First handle buffered callbacks:
-                if bufferedCallbacks and #bufferedCallbacks>0 then
-                    local tmp=bufferedCallbacks
-                    bufferedCallbacks={}
-                    for i=1,#tmp,1 do
-                        pythonWrapper.callRemoteFunctionAndHandleQueue(tmp[i].func,tmp[i].args)
-                    end
-                end
-            
-                -- Tell Python to run a function:
-                local status,resp=pcall(sim.packCbor,{func=callbackFunc,args=callbackArgs})
-                if not status then
-                    error('CBOR encode error')
-                end
-                simZMQ.send(replySocket,resp,0)
-                
-                if callbackFunc~='_*leave*_' then
-                    ret=handleRequestsUntilFuncExecuted()
-                    return ret
-                end
-            else
-                if bufferedCallbacks==nil then
-                    bufferedCallbacks={}
-                end
-                bufferedCallbacks[#bufferedCallbacks+1]={func=callbackFunc,args=callbackArgs}
-                -- sim.addLog(sim.verbosity_scriptwarnings,"system callbacks to Python are suppressed while in free thread mode: "..callbackFunc)
+            -- Tell Python to run a function:
+--                protectedCallDepth=protectedCallDepth+1
+            pythonWrapper.send({func=callbackFunc,args=callbackArgs})
+
+            -- Wait for the reply from Python
+            retVal=pythonWrapper.handleRequestsUntilExecutedReceived()
+--                protectedCallDepth=protectedCallDepth-1
+        else
+            if bufferedCallbacks==nil then
+                bufferedCallbacks={}
             end
+            bufferedCallbacks[#bufferedCallbacks+1]={func=callbackFunc,args=callbackArgs}
         end
     end
+    return retVal
 end
 
 function pythonWrapper.checkPythonError()
     if subprocess then
         if simSubprocess.isRunning(subprocess) then
-            local r,rep=simZMQ.__noError.recv(pySocket,simZMQ.DONTWAIT)
-            if r>=0 then
-                local rep,o,t=cborDecode.decode(rep)
-                if rep.error then
-                    local msg=pythonWrapper.getCleanErrorMsg(rep.error)
-                    msg=msg..'__truncateStackFromHere__'
-                    if not inCleanup then
-                        callRemoteFunctionAndHandleQueue_wasAlreadyCalled=nil
-                        simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__restartClientScript__',args={}}),0)
+            while pythonErrorMsg==nil do
+                local r,rep=simZMQ.__noError.recv(pySocket,simZMQ.DONTWAIT)
+                if r>=0 then
+                    local rep,o,t=cborDecode.decode(rep)
+                    if rep.err then
+                        --print(getAsString(rep.err))
+                        local msg=pythonWrapper.getCleanErrorMsg(rep.err)
+                        msg='__[[__'..msg..'__]]__'
+                        --print(getAsString(msg))
+                        pythonErrorMsg=msg
                     end
-                    error(msg)
+                else
+                    if not pythonMustHaveRaisedError then -- pythonMustHaveRaisedError: the error happened here and was transmitted to Python to raise an error there
+                        break
+                    end
+                end
+            end
+
+            if pythonErrorMsg then
+                if protectedCallDepth==0 then
+                    local errMsg=pythonErrorMsg
+                    if not inCleanup then
+                        if pythonFuncs['sysCall_thread']==nil then
+                            simZMQ.close(replySocket)
+                            replySocket=simZMQ.socket(context,simZMQ.REP)
+                            simZMQ.bind(replySocket,replyPortStr)
+                            pythonErrorMsg=nil
+                            protectedCallDepth=0
+                            protectedCallErrorDepth=0
+                            pythonMustHaveRaisedError=false
+
+                            simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__restartClientScript__',args={}}),0)
+
+                            pythonWrapper.handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
+                        end
+                    end
+                    error(errMsg)
                 end
             end
         end
     end
+    return pythonErrorMsg
 end
 
 function pythonWrapper.getFreePortStr()
@@ -584,6 +654,7 @@ function pythonWrapper.initPython(prog)
         end
     end
     local errMsg
+    local showDlg=true
     if pyth and #pyth>0 then
         subprocess,controlPort=pythonWrapper.startPythonClientSubprocess(pyth)
         if controlPort then
@@ -602,15 +673,18 @@ function pythonWrapper.initPython(prog)
             end
             if r>=0 then
                 local rep,o,t=cborDecode.decode(rep)
-                if rep.success then
-                    simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
-                else
-                    errMsg=rep.error
+                if rep.err then
+                    showDlg=false
+                print(rep.err)
+                    errMsg=rep.err
                     errMsg=pythonWrapper.getCleanErrorMsg(errMsg)
+                print(errMsg)
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
                         subprocess=nil
                     end
+                else
+                    simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
                 errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapper.lua, at the top of the file"
@@ -627,12 +701,15 @@ function pythonWrapper.initPython(prog)
         errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
     end
     if errMsg then
-        local r=sim.readCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown')
-        if r==nil then
-            -- show this only once
-            sim.writeCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown',"yes")
-            simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,"Python interpreter",errMsg)
+        if showDlg then
+            local r=sim.readCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown')
+            if r==nil then
+                -- show this only once
+                sim.writeCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown',"yes")
+                simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,"Python interpreter",errMsg)
+            end
         end
+        errMsg='__[[__'..errMsg..'__]]__'
         error(errMsg)
     end
 end
@@ -687,11 +764,16 @@ end
 function pythonWrapper.getCleanErrorMsg(inMsg)
     local msg=inMsg
     if msg and #msg>0 and not nakedErrors then
-        msg=string.gsub(msg,"Exception: ","  Exception: ")
+        --msg=string.gsub(msg,"Exception: ","  Exception: ")
         msg=string.gsub(msg,"_=NL=_","\n")
         msg=string.gsub(msg,"_=TB=_","\t")
-        local code=sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_text)
-        local _,totLines=string.gsub(code,'\n','')
+        local tg="#__EXCEPTION__\n"
+        local p=string.find(msg,tg)
+        if p then
+            msg=msg:sub(p+#tg)
+            msg="Traceback (most recent call last):\n"..msg
+        end
+        local _,totLines=string.gsub(pythonProg,'\n','')
         totLines=totLines+1
         local toRemove={"[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n","[^\n]*exec%(req%['code'%],module%)[^\n]*\n"}
         for i=1,#toRemove,1 do
@@ -700,10 +782,9 @@ function pythonWrapper.getCleanErrorMsg(inMsg)
                 msg=string.sub(msg,1,p1-1)..string.sub(msg,p2+1)
             end
         end
-        msg=string.gsub(msg,'File "<string>"','script')
         local p1=0,p2,p3
         while true do
-            p2,p3=string.find(msg,'[^\n]*script, line %d+,[^\n]+\n',p1+1)
+            p2,p3=string.find(msg,'[^\n]*File "<string>", line %d+,[^\n]+\n',p1+1)
             if p2 then
                 local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
                 if lineNb<=totLines then
@@ -715,11 +796,18 @@ function pythonWrapper.getCleanErrorMsg(inMsg)
                 break
             end
         end
+        if externalFile then
+            msg=string.gsub(msg,'File "<string>"','File "'..externalFile..'"')
+        else
+            msg=string.gsub(msg,'File "<string>"','script')
+        end
+        msg=string.gsub(msg, "Exception: %d+:", "Exception")
     end
     return msg
 end
 
 function loadExternalFile(file)
+    externalFile=file
     local f
     local absPath
     if sim.getInt32Param(sim.intparam_platform)==0 then
@@ -773,20 +861,8 @@ import sys
 import os
 import cbor
 import zmq
-'''
-import builtins
-def sim_import(m):
-    setattr(m, 'sim', '@SIM@')
-    return m
-
-builtins.__import__ = (lambda orig, f: lambda *args, **kwargs: f(orig(*args, **kwargs)))(builtins.__import__, sim_import)
-'''
 
 XXXadditionalPathsXXX
-
-def b64(b):
-    import base64
-    return base64.b64encode(b).decode('ascii')
 
 class LazyProxyObj:
     def __init__(self, client, name):
@@ -797,15 +873,13 @@ class LazyProxyObj:
         return getattr(self.obj, k)
 
 class RemoteAPIClient:
-    """Client to connect to CoppeliaSim's ZMQ Remote API."""
-
     def __init__(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f'XXXconnectionAddress1XXX')
 
     def __del__(self):
-        """Disconnect and destroy client."""
+        # Disconnect and destroy client
         self.socket.close()
         self.context.term()
 
@@ -826,8 +900,6 @@ class RemoteAPIClient:
         return resp
 
     def _process_response(self, resp):
-        if not resp.get('success', False):
-            raise Exception(resp.get('error'))
         ret = resp['ret']
         if len(ret) == 1:
             return ret[0]
@@ -835,14 +907,16 @@ class RemoteAPIClient:
             return tuple(ret)
 
     def call(self, func, args):
-        """Call function with specified arguments. Is reentrant."""
+        # Call function with specified arguments. Is reentrant
         if func=='_*executed*_':
             args=[]
             while True:
                 self._send({'func': '_*executed*_', 'args': args})
                 reply = self._recv()
-                if reply['func']=='_*leave*_':
-                    return
+                if 'err' in reply:
+                    raise Exception(reply.get('err')) #__EXCEPTION__
+                #if reply['func']=='_*leave*_':
+                #    return
                 funcToRun=_getFuncIfExists(reply['func'])
                 args=funcToRun(*reply['args'])
         else:
@@ -854,10 +928,12 @@ class RemoteAPIClient:
                 args=funcToRun(*reply['args'])
                 self._send({'func': '_*executed*_', 'args': args})
                 reply = self._recv()
+            if 'err' in reply:
+                raise Exception(reply.get('err')) #__EXCEPTION__
             return self._process_response(reply)
 
     def getObject(self, name, _info=None):
-        """Retrieve remote object from server."""
+        # Retrieve remote object from server
         ret = type(name, (), {})
         if not _info:
             _info = self.call('pythonWrapper.info', [name])
@@ -884,7 +960,6 @@ def _getFuncIfExists(name):
     method=None
     try:
         method=globals()[name]
-        #method=getattr(sys.modules[__name__],name)
     except BaseException as err:
         pass
     return method
