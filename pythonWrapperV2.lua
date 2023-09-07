@@ -68,14 +68,18 @@ function sysCall_init(...)
     
     pythonWrapper.handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
 
-    -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup and ext are special):
-    local optionalSysCallbacks={sysCall_beforeMainScript,sysCall_suspended,sysCall_beforeSimulation,sysCall_afterSimulation,sysCall_sensing,sysCall_suspend,sysCall_resume,sysCall_realTimeIdle,sysCall_beforeInstanceSwitch,sysCall_afterInstanceSwitch,sysCall_beforeSave,sysCall_afterSave,sysCall_beforeCopy,sysCall_afterCopy,sysCall_afterCreate,sysCall_beforeDelete,sysCall_afterDelete,sysCall_addOnScriptSuspend,sysCall_addOnScriptResume,sysCall_dyn,sysCall_joint,sysCall_contact,sysCall_vision,sysCall_trigger,sysCall_userConfig,sysCall_moduleEntry,sysCall_msg,sysCall_event}
+    -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup, ext and userConfig are special):
+    local optionalSysCallbacks={sysCall_beforeMainScript,sysCall_suspended,sysCall_beforeSimulation,sysCall_afterSimulation,sysCall_sensing,sysCall_suspend,sysCall_resume,sysCall_realTimeIdle,sysCall_beforeInstanceSwitch,sysCall_afterInstanceSwitch,sysCall_beforeSave,sysCall_afterSave,sysCall_beforeCopy,sysCall_afterCopy,sysCall_afterCreate,sysCall_beforeDelete,sysCall_afterDelete,sysCall_addOnScriptSuspend,sysCall_addOnScriptResume,sysCall_dyn,sysCall_joint,sysCall_contact,sysCall_vision,sysCall_trigger,sysCall_moduleEntry,sysCall_msg,sysCall_event}
 
     for i=1,#optionalSysCallbacks,1 do
         local nm=optionalSysCallbacks[i]
         if pythonFuncs[nm]==nil then
             _G[nm]=nil
         end
+    end
+
+    if pythonFuncs['sysCall_userConfig'] then
+        sysCall_userConfig=_sysCall_userConfig -- special
     end
 
     return pythonWrapper.callRemoteFunction("sysCall_init",{...})
@@ -99,10 +103,15 @@ function coroutineMain()
 end
 
 function sysCall_ext(funcName,...)
-    if _G[funcName] then -- for now ignore functions in tables
-        return _G[funcName](...) 
+    local args={...}
+    if pythonFuncs['sysCall_ext'] then
+        return pythonWrapper.callRemoteFunction('sysCall_ext',{funcName,args})
     else
-        return pythonWrapper.callRemoteFunction(funcName,{...})
+        if _G[funcName] then -- for now ignore functions in tables
+            return _G[funcName](args)
+        else
+            return pythonWrapper.callRemoteFunction(funcName,args)
+        end
     end
 end
 
@@ -232,7 +241,7 @@ function sysCall_trigger(...)
     return pythonWrapper.callRemoteFunction("sysCall_trigger",{...})
 end
 
-function sysCall_userConfig(...)
+function _sysCall_userConfig(...) -- special
     return pythonWrapper.callRemoteFunction("sysCall_userConfig",{...})
 end
 
@@ -476,6 +485,7 @@ function pythonWrapper.handleRequestsUntilExecutedReceived()
     -- Handle requests from Python, until we get a _*executed*_ message. Func is reentrant
     while true do
         local req=pythonWrapper.receive()
+
         if req==nil then
             return -- unwind xpcalls
         end
@@ -675,10 +685,8 @@ function pythonWrapper.initPython(prog)
                 local rep,o,t=cborDecode.decode(rep)
                 if rep.err then
                     showDlg=false
-                print(rep.err)
                     errMsg=rep.err
                     errMsg=pythonWrapper.getCleanErrorMsg(errMsg)
-                print(errMsg)
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
                         subprocess=nil
@@ -885,11 +893,12 @@ class RemoteAPIClient:
 
     def _send(self, req):
         # convert a possible function to string:
-        if 'args' in req and req['args']!=None:
+        if 'args' in req and req['args']!=None and (isinstance(req['args'],tuple) or isinstance(req['args'],list)):
             req['args']=list(req['args'])
             for i in range(len(req['args'])):
                 if callable(req['args'][i]):
                     req['args'][i]=str(req['args'][i])
+
         # pack and send:            
         rawReq = cbor.dumps(req)
         self.socket.send(rawReq)
