@@ -349,7 +349,7 @@ function pythonWrapper.handleRequest(req)
                 -- For backward compatibility with pythonWrapperV1
                 func=sim.setStepping
                 if #args>0 then
-                    args[1]=not args[1]
+                    args[1]= (args[1]==0) or (args[1]==false)
                 end
             end
             
