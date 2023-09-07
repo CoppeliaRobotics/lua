@@ -78,7 +78,7 @@ function pythonWrapper.handleRawMessage(rawReq)
         return sim.packCbor(resp)
     end
 
-    sim.addLog(sim.verbosity_errors,'cannot decode message: no suitable decoder')
+    sim.addLog(sim.verbosity_scripterrors,'cannot decode message: no suitable decoder')
     return ''
 end
 
@@ -181,6 +181,7 @@ function loadExternalFile(file)
 end
 
 function sysCall_init()
+    sim.addLog(sim.verbosity_scriptwarnings,"using the compatibility python wrapper ('pythonWrapper.lua')")
     -- Following callbacks are not implemented in Python because either:
     -- They would be quite slow, since called very often
     -- They do not work in Python, since they can be called while already inside of a system callback
@@ -196,7 +197,7 @@ function sysCall_init()
     end
 
     if not simZMQ then
-        sim.addLog(sim.verbosity_errors,'pythonWrapper: the ZMQ plugin is not available')
+        sim.addLog(sim.verbosity_scripterrors,'pythonWrapper: the ZMQ plugin is not available')
         return {cmd='cleanup'}
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call

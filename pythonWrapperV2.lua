@@ -57,7 +57,7 @@ function sysCall_init(...)
     threadSwitchTiming=0.002 -- time given to service Python scripts in non-stepping mode (i.e. free mode). Not used in stepping mode
     threadLastSwitchTime=0
     threadBusyCnt=0
-    stepping=true -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping
+    stepping=false -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping
     protectedCallErrorDepth=0
     protectedCallDepth=0
     pythonMustHaveRaisedError=false
@@ -82,15 +82,21 @@ function sysCall_init(...)
         sysCall_userConfig=_sysCall_userConfig -- special
     end
 
+    stepping=(pythonFuncs['sysCall_thread']==nil) -- in non-threaded mode, we behave as if we were stepping
+
+    if pythonFuncs["sysCall_init"]==nil and pythonFuncs["sysCall_thread"]==nil then
+        error("can't find sysCall_init nor sysCall_thread functions")
+    end
+
     return pythonWrapper.callRemoteFunction("sysCall_init",{...})
 end
 
 function sysCall_cleanup(...)
     if subprocess~=nil then
-        if pythonFuncs['sysCall_thread']==nil then
+        --if pythonFuncs['sysCall_thread']==nil then
             inCleanup=true
             pythonWrapper.callRemoteFunction("sysCall_cleanup",{...})
-        end
+        --end
     end
 
     pythonWrapper.cleanupPython()
@@ -124,25 +130,29 @@ function pythonWrapper.resumeCoroutine()
             error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
         end
         pythonWrapper.checkPythonError()
-    else
-        return {cmd='cleanup'}
+--    else
+--        return {cmd='cleanup'}
     end
 end
 
 function sysCall_nonSimulation(...)
     if pythonFuncs['sysCall_thread'] then
-        return pythonWrapper.resumeCoroutine()
-    else
-        return pythonWrapper.callRemoteFunction("sysCall_nonSimulation",{...})
+--        return pythonWrapper.resumeCoroutine()
+        pythonWrapper.resumeCoroutine()
     end
+--    else
+        return pythonWrapper.callRemoteFunction("sysCall_nonSimulation",{...})
+--    end
 end
 
 function sysCall_actuation(...)
     if pythonFuncs['sysCall_thread'] then
-        return pythonWrapper.resumeCoroutine()
-    else
-        return pythonWrapper.callRemoteFunction("sysCall_actuation",{...})
+--        return pythonWrapper.resumeCoroutine()
+        pythonWrapper.resumeCoroutine()
     end
+--    else
+        return pythonWrapper.callRemoteFunction("sysCall_actuation",{...})
+--    end
 end
 
 function sysCall_suspended(...)
@@ -555,7 +565,7 @@ function pythonWrapper.callRemoteFunction(callbackFunc,callbackArgs)
     end
 
     if pythonFuncs[callbackFunc] then
-        if stepping then -- stepping includes non-threaded operation toRemove
+        if stepping or callbackFunc=='sysCall_thread' or callbackFunc=='sysCall_init' then -- stepping includes non-threaded operation
 
             -- First handle buffered, async callbacks:
             if bufferedCallbacks and #bufferedCallbacks>0 then
@@ -611,7 +621,7 @@ function pythonWrapper.checkPythonError()
                 if protectedCallDepth==0 then
                     local errMsg=pythonErrorMsg
                     if not inCleanup then
-                        if pythonFuncs['sysCall_thread']==nil then
+          --              if pythonFuncs['sysCall_thread']==nil then
                             simZMQ.close(replySocket)
                             replySocket=simZMQ.socket(context,simZMQ.REP)
                             simZMQ.bind(replySocket,replyPortStr)
@@ -623,7 +633,7 @@ function pythonWrapper.checkPythonError()
                             simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__restartClientScript__',args={}}),0)
 
                             pythonWrapper.handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
-                        end
+            --            end
                     end
                     error(errMsg)
                 end
@@ -975,7 +985,7 @@ def _getFuncIfExists(name):
 
 def require(a):
     return client.require(a)
-    
+
 def print(a):
     client.call('pythonWrapper.print', [str(a)])
     
