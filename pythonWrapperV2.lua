@@ -143,10 +143,19 @@ end
 -- Special handling of sim.switchThread:
 _simSwitchThread=sim.switchThread
 function sim.switchThread()
-    if stepping then
-        runNextStep=true
+    if sim.getSimulationState()==sim.simulation_stopped then
+        _simSwitchThread()
+    else
+        local st=sim.getSimulationTime()
+        while sim.getSimulationTime()==st do
+            -- stays inside here until we are ready with next simulation step. This is important since
+            -- other clients/scripts could too be hindering the main script to run in sysCall_beforeMainScript
+            if stepping then
+                runNextStep=true
+            end
+            _simSwitchThread()
+        end
     end
-    _simSwitchThread()
 end
 
 function sysCall_beforeMainScript(...)
