@@ -1,4 +1,4 @@
-startTimeout=5
+startTimeout=2
 sim=require('sim')
 simZMQ=require('simZMQ')
 simSubprocess=require('simSubprocess')
@@ -46,7 +46,6 @@ function sysCall_init(...)
         end
     end
     prog=prog:gsub("XXXadditionalPathsXXX",tmp)
-    
     initPython(prog)
     pythonCallbacks={pythonCallback1,pythonCallback2,pythonCallback3}
     pythonCallbackStrs={'','',''}
@@ -302,7 +301,7 @@ function __require__(name)
     parseFuncsReturnTypes(name)
 end
 
-function pythonFuncs(data)
+function setPythonFuncs(data)
     pythonFuncs=data
 end
 
@@ -581,7 +580,7 @@ function callRemoteFunction(callbackFunc,callbackArgs)
         return -- unwind xpcalls
     end
 
-    if pythonFuncs[callbackFunc] then
+    if pythonFuncs and pythonFuncs[callbackFunc] then
         if callingPythonInBlockingMode then
             -- First handle buffered, async callbacks:
             if bufferedCallbacks and #bufferedCallbacks>0 then
@@ -701,7 +700,8 @@ function initPython(prog)
             simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog}),0)
             local st=sim.getSystemTime()
             local r,rep
-            while sim.getSystemTime()-st<startTimeout do
+            while sim.getSystemTime()-st<startTimeout or simSubprocess.isRunning(subprocess) do
+                simSubprocess.wait(subprocess,0.1)
                 r,rep=simZMQ.__noError.recv(pySocket,simZMQ.DONTWAIT)
                 if r>=0 then
                     break
@@ -713,6 +713,7 @@ function initPython(prog)
                     showDlg=false
                     errMsg=rep.err
                     errMsg=getCleanErrorMsg(errMsg)
+                    simSubprocess.wait(subprocess,0.1)
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
                         subprocess=nil
@@ -721,7 +722,8 @@ function initPython(prog)
                     simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
-                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor. Additionally, you can try adjusting the value of startTimeout in lua/lua, at the top of the file"
+                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets).\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
+                simSubprocess.wait(subprocess,0.1)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)
                 end
@@ -785,6 +787,7 @@ end
 
 function cleanupPython()
     if subprocess then
+        simSubprocess.wait(subprocess,0.1)
         if simSubprocess.isRunning(subprocess) then
             simSubprocess.kill(subprocess)
         end
@@ -1019,7 +1022,7 @@ def __startClientScript__():
     for i in glob:
         if callable(glob[i]):
             allFuncs[i]=True
-    client.call('pythonFuncs', [allFuncs])
+    client.call('setPythonFuncs', [allFuncs])
     #sys.settrace(trace_function)
     client.call('_*executed*_', [])
     
