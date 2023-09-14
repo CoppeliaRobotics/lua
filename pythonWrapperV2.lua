@@ -6,18 +6,17 @@ simUI=require('simUI')
 cborDecode=require'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
 removeLazyLoaders()
 
-pythonWrapper={}
-
 function sim.setThreadSwitchTiming(switchTiming)
     -- Shadow the original func
     -- 0=disabled, otherwise switchTiming
     threadSwitchTiming=switchTiming
 end
 
-function sim.setStepping(_stepping)
+-- Shadow original function:
+function sim.setStepping(enabled)
     -- When stepping is true, CoppeliaSim ALWAYS blocks while Python runs some code
     -- When stepping is false, CoppeliaSim run concurently to Python, i.e. Python is "free" (until a request from Python comes)
-    stepping=_stepping
+    stepping=enabled
 end
 
 function sim.handleExtCalls() -- can be called by Python when in free thread mode, to trigger callbacks such a UI button presses, etc.
@@ -155,6 +154,11 @@ function sim.switchThread()
             _simSwitchThread()
         end
     end
+end
+
+function sim.step(wait)
+    -- Shadow original function:
+    sim.switchThread()
 end
 
 function sysCall_beforeMainScript(...)

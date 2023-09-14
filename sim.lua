@@ -79,6 +79,21 @@ function sim.switchThread()
     end
 end
 
+function sim.step(wait)
+    -- Convenience function, so that we have the same, more intuitive name also with external clients
+    -- Needs to be shadowed by Python wrapper and remote API server code
+    sim.switchThread()
+end
+
+function sim.setStepping(enable)
+    -- Convenience function, so that we have the same, more intuitive name also with external clients
+    -- Needs to be shadowed by Python wrapper and remote API server code
+    if type(enable)~='number' then
+        enable=not enable
+    end
+    return sim.setThreadAutomaticSwitch(enable)
+end
+
 function sim.yawPitchRollToAlphaBetaGamma(...)
     local yawAngle,pitchAngle,rollAngle=checkargs({{type='float'},{type='float'},{type='float'}},...)
 

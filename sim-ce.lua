@@ -1,5 +1,7 @@
 local codeEditorInfos=[[
 string info=sim.getLastInfo()
+int previousLockLevel=sim.setStepping(bool enabled)
+sim.step(bool wait=true)
 int previousLockLevel=sim.setThreadAutomaticSwitch(bool automaticSwitch)
 int previousLockLevel=sim.setThreadAutomaticSwitch(int forbidLevel)
 bool result,int lockLevel=sim.getThreadAutomaticSwitch()
