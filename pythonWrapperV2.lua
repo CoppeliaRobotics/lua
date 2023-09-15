@@ -22,6 +22,22 @@ end
 function sim.handleExtCalls() -- can be called by Python when in free thread mode, to trigger callbacks such a UI button presses, etc.
 end
 
+function sim.holdCall(hold,onlyNext)
+    hold = hold == nil and true or hold
+    onlyNext = onlyNext == nil and true or onlyNext
+    triggerOneCallHold=false
+    if hold then
+        if onlyNext then
+            triggerOneCallHold=true
+            holdCallCnt=0
+        else
+            holdCallCnt=-1
+        end
+    else
+        holdCallCnt=0
+    end
+end
+
 function sysCall_init(...)
     returnTypes={}
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
@@ -61,6 +77,7 @@ function sysCall_init(...)
     pythonMustHaveRaisedError=false
     callingPythonInBlockingMode=true
     receiveIsNext=true
+    holdCallCnt=0
     
     -- blocking functions calling back need special treatment:
     callbackFunctions={} 
@@ -120,14 +137,18 @@ function sysCall_ext(funcName,...)
 end
 
 function resumeCoroutine()
-    if coroutine.status(corout)~='dead' then
-        protectedCallDepth=protectedCallDepth+1
-        local ok,errorMsg=coroutine.resume(corout)
-        protectedCallDepth=protectedCallDepth-1
-        if errorMsg then
-            error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
+    local doIt=true
+    while doIt do
+        if coroutine.status(corout)~='dead' then
+            protectedCallDepth=protectedCallDepth+1
+            local ok,errorMsg=coroutine.resume(corout)
+            protectedCallDepth=protectedCallDepth-1
+            if errorMsg then
+                error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
+            end
+            checkPythonError()
         end
-        checkPythonError()
+        doIt = holdCallCnt~=0
     end
 end
 
@@ -297,6 +318,9 @@ function pythonCallback3(...)
 end
 
 function sim.testCB(a,cb,b)
+    for i=1,99,1 do
+        cb(a,b)
+    end
     return cb(a,b)
 end
 
@@ -412,6 +436,12 @@ function handleRequest(req)
             end
             
             protectedCallDepth=protectedCallDepth+1
+
+            if triggerOneCallHold then
+                holdCallCnt=1
+                triggerOneCallHold=false
+            end
+
             local status,retvals=xpcall(function()
                 local ret={func(unpack(args))}
                 -- Try to assign correct types to text and buffers:
@@ -428,6 +458,9 @@ function handleRequest(req)
                 end
                 return ret
             end,errHandler)
+            if holdCallCnt>0 then
+                holdCallCnt=holdCallCnt-1
+            end
             protectedCallDepth=protectedCallDepth-1
             
             if status==false then
@@ -587,13 +620,15 @@ function callRemoteFunction(callbackFunc,callbackArgs)
     if pythonFuncs and pythonFuncs[callbackFunc] then
         if callingPythonInBlockingMode then
             -- First handle buffered, async callbacks:
-            if bufferedCallbacks and #bufferedCallbacks>0 then
-                local tmp=bufferedCallbacks
-                bufferedCallbacks={}
-                for i=1,#tmp,1 do
-                    callRemoteFunction(tmp[i].func,tmp[i].args)
-                    if checkPythonError() then
-                        return -- unwind xpcalls
+            if holdCallCnt==0 then
+                if bufferedCallbacks and #bufferedCallbacks>0 then
+                    local tmp=bufferedCallbacks
+                    bufferedCallbacks={}
+                    for i=1,#tmp,1 do
+                        callRemoteFunction(tmp[i].func,tmp[i].args)
+                        if checkPythonError() then
+                            return -- unwind xpcalls
+                        end
                     end
                 end
             end
@@ -1009,8 +1044,8 @@ def _getFuncIfExists(name):
 def require(a):
     return client.require(a)
 
-def print(a):
-    client.call('__print__', [str(a)])
+def print(*a):
+    client.call('__print__', [' '.join(map(str, a))])
     
 '''def trace_function(frame, event, arg):
     if event == "line":
