@@ -139,10 +139,10 @@ function sysCall_nonSimulation(...)
 end
 
 -- Special handling of sim.switchThread:
-_simSwitchThread=sim.switchThread
+originalSwitchThread=sim.switchThread
 function sim.switchThread()
     if sim.getSimulationState()==sim.simulation_stopped then
-        _simSwitchThread()
+        originalSwitchThread()
     else
         local st=sim.getSimulationTime()
         while sim.getSimulationTime()==st do
@@ -151,7 +151,7 @@ function sim.switchThread()
             if stepping then
                 runNextStep=true
             end
-            _simSwitchThread()
+            originalSwitchThread()
         end
     end
 end
@@ -493,7 +493,7 @@ function receive()
                             if checkPythonError() then
                                 return -- unwind xpcalls
                             end
-                            _simSwitchThread() --sim.switchThread()
+                            originalSwitchThread()
                             threadLastSwitchTime=sim.getSystemTime()
                             threadBusyCnt=0 -- after a switch, if the socket is idle, we switch immediately again. Otherwise we wait max. threadSwitchTiming
                         end
