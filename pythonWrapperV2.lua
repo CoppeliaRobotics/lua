@@ -22,20 +22,8 @@ end
 function sim.handleExtCalls() -- can be called by Python when in free thread mode, to trigger callbacks such a UI button presses, etc.
 end
 
-function sim.holdCall(hold,onlyNext)
-    hold = hold == nil and true or hold
-    onlyNext = onlyNext == nil and true or onlyNext
-    triggerOneCallHold=false
-    if hold then
-        if onlyNext then
-            triggerOneCallHold=true
-            holdCallCnt=0
-        else
-            holdCallCnt=-1
-        end
-    else
-        holdCallCnt=0
-    end
+function sim.holdCalls(enabled)
+    holdCalls=enabled
 end
 
 function sysCall_init(...)
@@ -66,22 +54,18 @@ function sysCall_init(...)
     pythonCallbackStrs={'','',''}
 
     corout=coroutine.create(coroutineMain)
-    threadInitLockLevel=setThreadAutomaticSwitch(false)
+    setThreadAutomaticSwitch(false)
     threadSwitchTiming=0.002 -- time given to service Python scripts
     threadLastSwitchTime=0
     threadBusyCnt=0
-    stepping=false -- in stepped mode switching is always explicit. Non-threaded scripts are also in stepped mode
+    stepping=false -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping mode
     runNextStep=false -- in stepping mode, runNextStep triggers the next step
     protectedCallErrorDepth=0
     protectedCallDepth=0
     pythonMustHaveRaisedError=false
-    callingPythonInBlockingMode=true
     receiveIsNext=true
-    holdCallCnt=0
-    
-    -- blocking functions calling back need special treatment:
-    callbackFunctions={} 
-    callbackFunctions[sim.moveToConfig]=true
+    holdCalls=false
+    doNotInterruptCommLevel=0
     
     handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
 
@@ -137,18 +121,14 @@ function sysCall_ext(funcName,...)
 end
 
 function resumeCoroutine()
-    local doIt=true
-    while doIt do
-        if coroutine.status(corout)~='dead' then
-            protectedCallDepth=protectedCallDepth+1
-            local ok,errorMsg=coroutine.resume(corout)
-            protectedCallDepth=protectedCallDepth-1
-            if errorMsg then
-                error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
-            end
-            checkPythonError()
+    if coroutine.status(corout)~='dead' then
+        protectedCallDepth=protectedCallDepth+1
+        local ok,errorMsg=coroutine.resume(corout)
+        protectedCallDepth=protectedCallDepth-1
+        if errorMsg then
+            error(debug.traceback(corout,errorMsg),2) -- this error is very certainly linked to the Python wrapper itself
         end
-        doIt = holdCallCnt~=0
+        checkPythonError()
     end
 end
 
@@ -180,6 +160,15 @@ end
 function sim.step(wait)
     -- Shadow original function:
     sim.switchThread()
+end
+
+function yieldIfAllowed()
+    local retVal=false
+    if not holdCalls and doNotInterruptCommLevel==0 then
+        originalSwitchThread()
+        retVal=true
+    end
+    return retVal
 end
 
 function sysCall_beforeMainScript(...)
@@ -405,20 +394,14 @@ function handleRequest(req)
             end
             
             -- Handle function arguments:
-            local prefix="<function "
             local cbi=1
             for i=1,#args,1 do
                 if type(args[i])=='string' then
-                    local p=string.find(args[i],prefix)
-                    if p==1 then
-                        local nm=string.sub(args[i],#prefix+1)
-                        p=string.find(nm," ")
-                        if p then
-                            nm=string.sub(nm,1,p-1)
-                            args[i]=pythonCallbacks[cbi]
-                            pythonCallbackStrs[cbi]=nm
-                            cbi=cbi+1
-                        end
+                    if args[i]:sub(-5)=="@func" then
+                        local nm=args[i]:sub(1,-6)
+                        args[i]=pythonCallbacks[cbi]
+                        pythonCallbackStrs[cbi]=nm
+                        cbi=cbi+1
                     end
                 end
             end
@@ -436,12 +419,7 @@ function handleRequest(req)
             end
             
             protectedCallDepth=protectedCallDepth+1
-
-            if triggerOneCallHold then
-                holdCallCnt=1
-                triggerOneCallHold=false
-            end
-
+            doNotInterruptCommLevel=doNotInterruptCommLevel+1
             local status,retvals=xpcall(function()
                 local ret={func(unpack(args))}
                 -- Try to assign correct types to text and buffers:
@@ -458,11 +436,9 @@ function handleRequest(req)
                 end
                 return ret
             end,errHandler)
-            if holdCallCnt>0 then
-                holdCallCnt=holdCallCnt-1
-            end
+            doNotInterruptCommLevel=doNotInterruptCommLevel-1
             protectedCallDepth=protectedCallDepth-1
-            
+
             if status==false then
                 pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
             end
@@ -511,30 +487,20 @@ end
 function receive()
     -- blocking, but can switch thread
     if receiveIsNext then
-        if callingPythonInBlockingMode then
-            while simZMQ.poll({replySocket},{simZMQ.POLLIN},100)<=0 do
-                if checkPythonError() then
-                    return -- unwind xpcalls
-                end
-            end
-        else
-            while simZMQ.poll({replySocket},{simZMQ.POLLIN},0)<=0 do
-                local r,l=getThreadAutomaticSwitch()
-                if l-1==threadInitLockLevel then
-                    if threadSwitchTiming>0 then
-                        if sim.getSystemTime()-threadLastSwitchTime>=threadSwitchTiming or threadBusyCnt==0 then
-                            if checkPythonError() then
-                                return -- unwind xpcalls
-                            end
-                            originalSwitchThread()
-                            threadLastSwitchTime=sim.getSystemTime()
-                            threadBusyCnt=0 -- after a switch, if the socket is idle, we switch immediately again. Otherwise we wait max. threadSwitchTiming
-                        end
+        while simZMQ.poll({replySocket},{simZMQ.POLLIN},0)<=0 do
+            if threadSwitchTiming>0 then
+                if sim.getSystemTime()-threadLastSwitchTime>=threadSwitchTiming or threadBusyCnt==0 then
+                    if checkPythonError() then
+                        return -- unwind xpcalls
                     end
+                    yieldIfAllowed()
+                    -- We still want to set following if not yielded:
+                    threadLastSwitchTime=sim.getSystemTime()
+                    threadBusyCnt=0 -- after a switch, if the socket is idle, we switch immediately again. Otherwise we wait max. threadSwitchTiming
                 end
             end
-            threadBusyCnt=threadBusyCnt+1
         end
+        threadBusyCnt=threadBusyCnt+1
 
         local rc,dat=simZMQ.recv(replySocket,0)
         receiveIsNext=false
@@ -571,10 +537,6 @@ function handleRequestsUntilExecutedReceived()
             return -- unwind xpcalls
         end
 
-        local callingPythonInBlockingModeSaved=callingPythonInBlockingMode
-        callingPythonInBlockingMode=true
-
-
         -- Handle buffered callbacks:
         if bufferedCallbacks and #bufferedCallbacks>0 then
             local tmp=bufferedCallbacks
@@ -605,8 +567,6 @@ function handleRequestsUntilExecutedReceived()
             end
             send(resp)
         end
-
-        callingPythonInBlockingMode=callingPythonInBlockingModeSaved
     end
 end
 
@@ -618,29 +578,30 @@ function callRemoteFunction(callbackFunc,callbackArgs)
     end
 
     if pythonFuncs and pythonFuncs[callbackFunc] then
-        if callingPythonInBlockingMode then
+        if not receiveIsNext then
             -- First handle buffered, async callbacks:
-            if holdCallCnt==0 then
-                if bufferedCallbacks and #bufferedCallbacks>0 then
-                    local tmp=bufferedCallbacks
-                    bufferedCallbacks={}
-                    for i=1,#tmp,1 do
-                        callRemoteFunction(tmp[i].func,tmp[i].args)
-                        if checkPythonError() then
-                            return -- unwind xpcalls
-                        end
+            if bufferedCallbacks and #bufferedCallbacks>0 then
+                local tmp=bufferedCallbacks
+                bufferedCallbacks={}
+                for i=1,#tmp,1 do
+                    callRemoteFunction(tmp[i].func,tmp[i].args)
+                    if checkPythonError() then
+                        return -- unwind xpcalls
                     end
                 end
             end
 
             -- Tell Python to run a function:
-            callingPythonInBlockingModeSaved=callingPythonInBlockingMode
-            callingPythonInBlockingMode=(callbackFunc~='sysCall_thread')
+            if callbackFunc~='sysCall_thread' then
+                doNotInterruptCommLevel=doNotInterruptCommLevel+1
+            end
             send({func=callbackFunc,args=callbackArgs})
 
             -- Wait for the reply from Python
             retVal=handleRequestsUntilExecutedReceived()
-            callingPythonInBlockingMode=callingPythonInBlockingModeSaved
+            if callbackFunc~='sysCall_thread' then
+                doNotInterruptCommLevel=doNotInterruptCommLevel-1
+            end
         else
             if bufferedCallbacks==nil then
                 bufferedCallbacks={}
@@ -684,7 +645,8 @@ function checkPythonError()
                         protectedCallErrorDepth=0
                         pythonMustHaveRaisedError=false
                         stepping=false
-                        callingPythonInBlockingMode=true
+                        holdCalls=false
+                        doNotInterruptCommLevel=0
                         receiveIsNext=true
                         simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__restartClientScript__',args={}}),0)
                         handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
@@ -937,6 +899,7 @@ import sys
 import os
 import cbor
 import zmq
+import re
 
 XXXadditionalPathsXXX
 
@@ -953,6 +916,7 @@ class RemoteAPIClient:
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f'XXXconnectionAddress1XXX')
+        self.callbackFuncs = {}
 
     def __del__(self):
         # Disconnect and destroy client
@@ -965,7 +929,12 @@ class RemoteAPIClient:
             req['args']=list(req['args'])
             for i in range(len(req['args'])):
                 if callable(req['args'][i]):
-                    req['args'][i]=str(req['args'][i])
+                    funcStr = str(req['args'][i])
+                    m = re.search(r"<function (\w+) at", funcStr)
+                    if m:
+                        funcStr = m.group(1)
+                        self.callbackFuncs[funcStr] = req['args'][i]
+                        req['args'][i] = funcStr + "@func"
 
         # pack and send:            
         rawReq = cbor.dumps(req)
@@ -1001,8 +970,11 @@ class RemoteAPIClient:
             reply = self._recv()
             while isinstance(reply,dict) and 'func' in reply:
                 # We have a callback
-                funcToRun=_getFuncIfExists(reply['func'])
-                args=funcToRun(*reply['args'])
+                if reply['func'] in self.callbackFuncs:
+                    args=self.callbackFuncs[reply['func']](*reply['args'])
+                else:
+                    funcToRun=_getFuncIfExists(reply['func'])
+                    args=funcToRun(*reply['args'])
                 self._send({'func': '_*executed*_', 'args': args})
                 reply = self._recv()
             if 'err' in reply:
