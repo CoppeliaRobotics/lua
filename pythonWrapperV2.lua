@@ -59,7 +59,6 @@ function sysCall_init(...)
     threadLastSwitchTime=0
     threadBusyCnt=0
     stepping=false -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping mode
-    runNextStep=false -- in stepping mode, runNextStep triggers the next step
     protectedCallErrorDepth=0
     protectedCallDepth=0
     pythonMustHaveRaisedError=false
@@ -69,8 +68,8 @@ function sysCall_init(...)
     
     handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
 
-    -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, beforeMainScript, cleanup, ext and userConfig are special):
-    local optionalSysCallbacks={sysCall_actuation,sysCall_suspended,sysCall_beforeSimulation,sysCall_afterSimulation,sysCall_sensing,sysCall_suspend,sysCall_resume,sysCall_realTimeIdle,sysCall_beforeInstanceSwitch,sysCall_afterInstanceSwitch,sysCall_beforeSave,sysCall_afterSave,sysCall_beforeCopy,sysCall_afterCopy,sysCall_afterCreate,sysCall_beforeDelete,sysCall_afterDelete,sysCall_addOnScriptSuspend,sysCall_addOnScriptResume,sysCall_dyn,sysCall_joint,sysCall_contact,sysCall_vision,sysCall_trigger,sysCall_moduleEntry,sysCall_msg,sysCall_event}
+    -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup, ext and userConfig are special):
+    local optionalSysCallbacks={sysCall_beforeMainScript,sysCall_suspended, sysCall_beforeSimulation, sysCall_afterSimulation, sysCall_sensing, sysCall_suspend, sysCall_resume, sysCall_realTimeIdle, sysCall_beforeInstanceSwitch, sysCall_afterInstanceSwitch, sysCall_beforeSave,sysCall_afterSave, sysCall_beforeCopy,sysCall_afterCopy, sysCall_afterCreate, sysCall_beforeDelete, sysCall_afterDelete, sysCall_addOnScriptSuspend, sysCall_addOnScriptResume, sysCall_dyn, sysCall_joint, sysCall_contact, sysCall_vision, sysCall_trigger, sysCall_moduleEntry, sysCall_msg, sysCall_event}
 
     for i=1,#optionalSysCallbacks,1 do
         local nm=optionalSysCallbacks[i]
@@ -139,6 +138,13 @@ function sysCall_nonSimulation(...)
     return callRemoteFunction("sysCall_nonSimulation",{...})
 end
 
+function sysCall_actuation(...)
+    if pythonFuncs['sysCall_thread'] then
+        resumeCoroutine()
+    end
+    return callRemoteFunction("sysCall_actuation",{...})
+end
+
 -- Special handling of sim.switchThread:
 originalSwitchThread=sim.switchThread
 function sim.switchThread()
@@ -149,9 +155,6 @@ function sim.switchThread()
         while sim.getSimulationTime()==st do
             -- stays inside here until we are ready with next simulation step. This is important since
             -- other clients/scripts could too be hindering the main script to run in sysCall_beforeMainScript
-            if stepping then
-                runNextStep=true
-            end
             originalSwitchThread()
         end
     end
@@ -164,7 +167,7 @@ end
 
 function yieldIfAllowed()
     local retVal=false
-    if not holdCalls and doNotInterruptCommLevel==0 then
+    if not holdCalls and doNotInterruptCommLevel==0 and not stepping then
         originalSwitchThread()
         retVal=true
     end
@@ -172,18 +175,7 @@ function yieldIfAllowed()
 end
 
 function sysCall_beforeMainScript(...)
-    if pythonFuncs['sysCall_thread'] then
-        resumeCoroutine()
-        if stepping and not runNextStep then
-            return {doNotRunMainScript=true}
-        end
-        runNextStep=false
-    end
     return callRemoteFunction("sysCall_beforeMainScript",{...})
-end
-
-function sysCall_actuation(...)
-    return callRemoteFunction("sysCall_actuation",{...})
 end
 
 function sysCall_suspended(...)
