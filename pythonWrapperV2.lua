@@ -114,7 +114,7 @@ function sysCall_ext(funcName,...)
         if _G[funcName] then -- for now ignore functions in tables
             return _G[funcName](args)
         else
-            return callRemoteFunction(funcName,args)
+            return callRemoteFunction(funcName,args,true,false)
         end
     end
 end
@@ -287,15 +287,15 @@ function sysCall_event(...)
 end
 
 function pythonCallback1(...)
-    return callRemoteFunction(pythonCallbackStrs[1],{...},true)
+    return callRemoteFunction(pythonCallbackStrs[1],{...},false,true)
 end
 
 function pythonCallback2(...)
-    return callRemoteFunction(pythonCallbackStrs[2],{...},true)
+    return callRemoteFunction(pythonCallbackStrs[2],{...},false,true)
 end
 
 function pythonCallback3(...)
-    return callRemoteFunction(pythonCallbackStrs[3],{...},true)
+    return callRemoteFunction(pythonCallbackStrs[3],{...},false,true)
 end
 
 function sim.testCB(a,cb,b)
@@ -562,7 +562,7 @@ function handleRequestsUntilExecutedReceived()
     end
 end
 
-function callRemoteFunction(callbackFunc,callbackArgs,possiblyLocalFunction)
+function callRemoteFunction(callbackFunc,callbackArgs,canCallAsync,possiblyLocalFunction)
     -- Func is reentrant
     local retVal
     if checkPythonError() then
@@ -595,10 +595,12 @@ function callRemoteFunction(callbackFunc,callbackArgs,possiblyLocalFunction)
                 doNotInterruptCommLevel=doNotInterruptCommLevel-1
             end
         else
-            if bufferedCallbacks==nil then
-                bufferedCallbacks={}
+            if canCallAsync then
+                if bufferedCallbacks==nil then
+                    bufferedCallbacks={}
+                end
+                bufferedCallbacks[#bufferedCallbacks+1]={func=callbackFunc,args=callbackArgs}
             end
-            bufferedCallbacks[#bufferedCallbacks+1]={func=callbackFunc,args=callbackArgs}
         end
     end
     return retVal
@@ -690,7 +692,15 @@ function initPython(prog)
             pySocket=simZMQ.socket(pyContext,simZMQ.REQ)
             simZMQ.setsockopt(pySocket,simZMQ.LINGER,sim.packUInt32Table{0})
             simZMQ.connect(pySocket,controlPort)
-            simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog}),0)
+            local tmpStr = sim.getStringParam(sim.stringparam_scene_path_and_name)
+            if tmpStr == '' then
+                tmpStr = 'CoppeliaSim_newScene'
+            else
+                tmpStr = 'CoppeliaSim_' .. tmpStr
+            end
+            tmpStr = tmpStr .. '_' .. tostring(sim.getInt32Param(sim.intparam_scene_unique_id))
+            tmpStr = tmpStr .. sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_nameext)
+            simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog,info=tmpStr}),0)
             local st=sim.getSystemTime()
             local r,rep
             while sim.getSystemTime()-st<startTimeout or simSubprocess.isRunning(subprocess) do
@@ -712,6 +722,7 @@ function initPython(prog)
                         subprocess=nil
                     end
                 else
+                    virtualPythonFilename = rep.ret
                     simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
@@ -765,7 +776,7 @@ function startPythonClientSubprocess(pythonExec)
     else
         controlPort=getFreePortStr()
         local res,ret=pcall(function()
-            return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=false}) 
+            return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=false})
             end)
         if res then
             subprocess=ret
@@ -794,7 +805,6 @@ end
 function getCleanErrorMsg(inMsg)
     local msg=inMsg
     if msg and #msg>0 and not nakedErrors then
-        --msg=string.gsub(msg,"Exception: ","  Exception: ")
         msg=string.gsub(msg,"_=NL=_","\n")
         msg=string.gsub(msg,"_=TB=_","\t")
         local tg="#__EXCEPTION__\n"
@@ -805,16 +815,12 @@ function getCleanErrorMsg(inMsg)
         end
         local _,totLines=string.gsub(pythonProg,'\n','')
         totLines=totLines+1
-        local toRemove={"[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n","[^\n]*exec%(req%['code'%],module%)[^\n]*\n"}
-        for i=1,#toRemove,1 do
-            local p1,p2=string.find(msg,toRemove[i])
-            if p1 then
-                msg=string.sub(msg,1,p1-1)..string.sub(msg,p2+1)
-            end
-        end
         local p1=0,p2,p3
+        local tstr = '@_script_@'
+        local sstr = 'File "'..virtualPythonFilename..'"'
+        msg=string.gsub(msg,sstr,tstr)
         while true do
-            p2,p3=string.find(msg,'[^\n]*File "<string>", line %d+,[^\n]+\n',p1+1)
+            p2,p3=string.find(msg,'[^\n]*@_script_@, line %d+,[^\n]+\n',p1+1)
             if p2 then
                 local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
                 if lineNb<=totLines then
@@ -827,9 +833,9 @@ function getCleanErrorMsg(inMsg)
             end
         end
         if externalFile then
-            msg=string.gsub(msg,'File "<string>"','File "'..externalFile..'"')
+            msg=string.gsub(msg,tstr,'File "'..externalFile..'"')
         else
-            msg=string.gsub(msg,'File "<string>"','script')
+            msg=string.gsub(msg,tstr,'script')
         end
         msg=string.gsub(msg, "Exception: %d+:", "Exception")
     end
