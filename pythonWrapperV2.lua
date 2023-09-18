@@ -295,15 +295,15 @@ function sysCall_event(...)
 end
 
 function pythonCallback1(...)
-    return callRemoteFunction(pythonCallbackStrs[1],{...})
+    return callRemoteFunction(pythonCallbackStrs[1],{...},true)
 end
 
 function pythonCallback2(...)
-    return callRemoteFunction(pythonCallbackStrs[2],{...})
+    return callRemoteFunction(pythonCallbackStrs[2],{...},true)
 end
 
 function pythonCallback3(...)
-    return callRemoteFunction(pythonCallbackStrs[3],{...})
+    return callRemoteFunction(pythonCallbackStrs[3],{...},true)
 end
 
 function sim.testCB(a,cb,b)
@@ -570,14 +570,14 @@ function handleRequestsUntilExecutedReceived()
     end
 end
 
-function callRemoteFunction(callbackFunc,callbackArgs)
+function callRemoteFunction(callbackFunc,callbackArgs,possiblyLocalFunction)
     -- Func is reentrant
     local retVal
     if checkPythonError() then
         return -- unwind xpcalls
     end
 
-    if pythonFuncs and pythonFuncs[callbackFunc] then
+    if pythonFuncs and pythonFuncs[callbackFunc] or possiblyLocalFunction then
         if not receiveIsNext then
             -- First handle buffered, async callbacks:
             if bufferedCallbacks and #bufferedCallbacks>0 then
@@ -930,7 +930,7 @@ class RemoteAPIClient:
             for i in range(len(req['args'])):
                 if callable(req['args'][i]):
                     funcStr = str(req['args'][i])
-                    m = re.search(r"<function (\w+) at", funcStr)
+                    m = re.search(r"<function (.+) at ", funcStr)
                     if m:
                         funcStr = m.group(1)
                         self.callbackFuncs[funcStr] = req['args'][i]
