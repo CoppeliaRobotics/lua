@@ -12,8 +12,12 @@ function sim.setThreadSwitchTiming(switchTiming)
     threadSwitchTiming=switchTiming
 end
 
--- Shadow original function:
+function sim.setThreadAutomaticSwitch()
+    -- Shadow the original function
+end
+
 function sim.setStepping(enabled)
+    -- Shadow original function:
     -- When stepping is true, CoppeliaSim ALWAYS blocks while Python runs some code
     -- When stepping is false, CoppeliaSim run concurently to Python, i.e. Python is "free" (until a request from Python comes)
     stepping=enabled
@@ -384,16 +388,16 @@ function handleRequest(req)
                     args[1]= (args[1]==0) or (args[1]==false)
                 end
             end
-            
+
             -- Handle function arguments:
-            local cbi=1
-            for i=1,#args,1 do
-                if type(args[i])=='string' then
-                    if args[i]:sub(-5)=="@func" then
-                        local nm=args[i]:sub(1,-6)
-                        args[i]=pythonCallbacks[cbi]
-                        pythonCallbackStrs[cbi]=nm
-                        cbi=cbi+1
+            local cbi = 1
+            for i = 1, #args, 1 do
+                if type(args[i]) == 'string' then
+                    if args[i]:sub(-5) == "@func" then
+                        local nm = args[i]:sub(1, -6)
+                        args[i] = pythonCallbacks[cbi]
+                        pythonCallbackStrs[cbi] = nm
+                        cbi = cbi + 1
                     end
                 end
             end
@@ -692,15 +696,21 @@ function initPython(prog)
             pySocket=simZMQ.socket(pyContext,simZMQ.REQ)
             simZMQ.setsockopt(pySocket,simZMQ.LINGER,sim.packUInt32Table{0})
             simZMQ.connect(pySocket,controlPort)
-            local tmpStr = sim.getStringParam(sim.stringparam_scene_path_and_name)
-            if tmpStr == '' then
-                tmpStr = 'CoppeliaSim_newScene'
+            virtualPythonFilename = sim.getStringParam(sim.stringparam_scene_path_and_name)
+            if virtualPythonFilename == '' then
+                virtualPythonFilename = 'CoppeliaSim_newScene'
             else
-                tmpStr = 'CoppeliaSim_' .. tmpStr
+                virtualPythonFilename = 'CoppeliaSim_' .. virtualPythonFilename
             end
-            tmpStr = tmpStr .. '_' .. tostring(sim.getInt32Param(sim.intparam_scene_unique_id))
-            tmpStr = tmpStr .. sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_nameext)
-            simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog,info=tmpStr}),0)
+            virtualPythonFilename = virtualPythonFilename .. '_' .. tostring(sim.getInt32Param(sim.intparam_scene_unique_id))
+            virtualPythonFilename = virtualPythonFilename .. sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_nameext)
+            if sim.getInt32Param(sim.intparam_platform) == 0 then
+                virtualPythonFilename = "z:\\" .. virtualPythonFilename
+            else
+                virtualPythonFilename = "//" .. virtualPythonFilename
+            end
+            virtualPythonFilename = virtualPythonFilename .. tostring(simSubprocess.getpid(subprocess)) .. ".py"
+            simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog,info=virtualPythonFilename}),0)
             local st=sim.getSystemTime()
             local r,rep
             while sim.getSystemTime()-st<startTimeout or simSubprocess.isRunning(subprocess) do
@@ -722,7 +732,6 @@ function initPython(prog)
                         subprocess=nil
                     end
                 else
-                    virtualPythonFilename = rep.ret
                     simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
@@ -818,7 +827,10 @@ function getCleanErrorMsg(inMsg)
         local p1=0,p2,p3
         local tstr = '@_script_@'
         local sstr = 'File "'..virtualPythonFilename..'"'
-        msg=string.gsub(msg,sstr,tstr)
+        function escapePattern(str)
+            return string.gsub(str, "([%^%$%(%)%%%.%[%]%*%+%-%?%:])", "%%%1")
+        end
+        msg=string.gsub(msg,escapePattern(sstr),tstr)
         while true do
             p2,p3=string.find(msg,'[^\n]*@_script_@, line %d+,[^\n]+\n',p1+1)
             if p2 then
