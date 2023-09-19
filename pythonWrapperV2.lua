@@ -774,26 +774,17 @@ function sim.readCustomDataBlock(obj,tag)
 end
 
 function startPythonClientSubprocess(pythonExec)
-    local subprocess,controlPort
-    local data=sim.readCustomTableData(sim.handle_app,'pythonClients_idleSubprocesses')
-    if #data>0 then
-        -- Use an existing idle process
-        subprocess=data[#data].subprocess
-        controlPort=data[#data].controlPort
-        table.remove(data)
-        sim.writeCustomTableData(sim.handle_app,'pythonClients_idleSubprocesses',data)
+    local subprocess
+    local controlPort=getFreePortStr()
+    local res,ret=pcall(function()
+        return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=true})
+        end)
+    if res then
+        subprocess=ret
     else
-        controlPort=getFreePortStr()
-        local res,ret=pcall(function()
-            return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=false})
-            end)
-        if res then
-            subprocess=ret
-        else
-            local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
-            subprocess="The Python interpreter could not be called. It is currently set at: '"..pythonExec.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
-            controlPort=nil
-        end
+        local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir)
+        subprocess="The Python interpreter could not be called. It is currently set at: '"..pythonExec.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
+        controlPort=nil
     end
     return subprocess,controlPort
 end
