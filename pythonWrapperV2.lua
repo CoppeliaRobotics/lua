@@ -777,7 +777,7 @@ function startPythonClientSubprocess(pythonExec)
     local subprocess
     local controlPort=getFreePortStr()
     local res,ret=pcall(function()
-        return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=true})
+        return simSubprocess.execAsync(pythonExec,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',controlPort},{useSearchPath=true,openNewConsole=false})
         end)
     if res then
         subprocess=ret
