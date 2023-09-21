@@ -3,7 +3,7 @@ sim=require('sim')
 simZMQ=require('simZMQ')
 simSubprocess=require('simSubprocess')
 simUI=require('simUI')
-cborDecode=require'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
+cbor=require'org.conman.cbor'
 removeLazyLoaders()
 
 function sim.setThreadSwitchTiming(switchTiming)
@@ -63,6 +63,18 @@ function yieldIfAllowed()
         retVal=true
     end
     return retVal
+end
+
+function tobin(data)
+    local d={data=data}
+    setmetatable(d,{__tocbor=function(self) return cbor.TYPE.BIN(self.data) end})
+    return d
+end
+
+function totxt(data)
+    local d={data=data}
+    setmetatable(d,{__tocbor=function(self) return cbor.TYPE.TEXT(self.data) end})
+    return d
 end
 
 function sysCall_init(...)
@@ -419,7 +431,7 @@ function handleRequest(req)
                 trace=string.gsub(trace,"\t","_=TB=_")
                 return trace
             end
-            
+
             protectedCallDepth=protectedCallDepth+1
             doNotInterruptCommLevel=doNotInterruptCommLevel+1
             local status,retvals=xpcall(function()
@@ -430,9 +442,9 @@ function handleRequest(req)
                     local cnt=math.min(#ret,#args)
                     for i=1,cnt,1 do
                         if args[i]==1 then
-                            ret[i]=ret[i]..'@:txt:'
+                            ret[i]=totxt(ret[i])
                         elseif args[i]==2 then
-                            ret[i]=ret[i]..'@:dat:'
+                            ret[i]=tobin(ret[i])
                         end
                     end
                 end
@@ -506,7 +518,7 @@ function receive()
 
         local rc,dat=simZMQ.recv(replySocket,0)
         receiveIsNext=false
-        local status,req=pcall(cborDecode.decode,dat)
+        local status,req=pcall(cbor.decode,dat)
         if not status then
             error('CBOR decode error: '..sim.transformBuffer(dat,sim.buffer_uint8,1,0,sim.buffer_base64))
         end
@@ -519,7 +531,7 @@ end
 function send(reply)
     if not receiveIsNext then
         local dat=reply
-        status,reply=pcall(sim.packCbor,reply)
+        status,reply=pcall(cbor.encode,reply)
         if not status then
             error('CBOR encode error: '..getAsString(dat))
         end
@@ -622,7 +634,7 @@ function checkPythonError()
             while pythonErrorMsg==nil do
                 local r,rep=simZMQ.__noError.recv(pySocket,simZMQ.DONTWAIT)
                 if r>=0 then
-                    local rep,o,t=cborDecode.decode(rep)
+                    local rep,o,t=cbor.decode(rep)
                     if rep.err then
                         --print(getAsString(rep.err))
                         local msg=getCleanErrorMsg(rep.err)
@@ -652,7 +664,7 @@ function checkPythonError()
                         holdCalls=false
                         doNotInterruptCommLevel=0
                         receiveIsNext=true
-                        simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__restartClientScript__',args={}}),0)
+                        simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__restartClientScript__',args={}}),0)
                         handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
                     end
                     error(errMsg)
@@ -719,7 +731,7 @@ function initPython(prog)
                 virtualPythonFilename = "//" .. virtualPythonFilename
             end
             virtualPythonFilename = virtualPythonFilename .. tostring(simSubprocess.getpid(subprocess)) .. ".py"
-            simZMQ.send(pySocket,sim.packCbor({cmd='loadCode',code=prog,info=virtualPythonFilename}),0)
+            simZMQ.send(pySocket,cbor.encode({cmd='loadCode',code=prog,info=virtualPythonFilename}),0)
             local st=sim.getSystemTime()
             local r,rep
             while sim.getSystemTime()-st<startTimeout or simSubprocess.isRunning(subprocess) do
@@ -730,7 +742,7 @@ function initPython(prog)
                 end
             end
             if r>=0 then
-                local rep,o,t=cborDecode.decode(rep)
+                local rep,o,t=cbor.decode(rep)
                 if rep.err then
                     showDlg=false
                     errMsg=rep.err
@@ -741,7 +753,7 @@ function initPython(prog)
                         subprocess=nil
                     end
                 else
-                    simZMQ.send(pySocket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
+                    simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
                 errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets).\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
