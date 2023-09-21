@@ -33,18 +33,18 @@ function require(...)
             end
         end
     end
-    local fl=setThreadSwitchAllowed(false) -- important when called from coroutine
+    local fl=setYieldAllowed(false) -- important when called from coroutine
     local retVals={_S.require(...)}
-    setThreadSwitchAllowed(fl)
+    setYieldAllowed(fl)
     auxFunc('usedmodule',requiredName)
     return table.unpack(retVals)
 end
 
 _S.pcall=pcall
 function pcall(...)
-    local fl=setThreadSwitchAllowed(false) -- important when called from coroutine
+    local fl=setYieldAllowed(false) -- important when called from coroutine
     local retVals={_S.pcall(...)}
-    setThreadSwitchAllowed(fl)
+    setYieldAllowed(fl)
     return table.unpack(retVals)
 end
 
@@ -64,15 +64,15 @@ exit=quitSimulator
 printToConsole=print
 if auxFunc('headless') then
     function print(...)
-        local lb=setThreadAutomaticSwitch(false)
+        local lb=setAutoYield(false)
         printToConsole(getAsString(...))
-        setThreadAutomaticSwitch(lb)
+        setAutoYield(lb)
     end
 else
     function print(...)
-        local lb=setThreadAutomaticSwitch(false)
+        local lb=setAutoYield(false)
         addLog(450+0x0f000,getAsString(...))
-        setThreadAutomaticSwitch(lb)
+        setAutoYield(lb)
     end
 end
 
@@ -211,7 +211,7 @@ function _S.getShortString(x,omitQuotes)
 end
 
 function getAsString(...)
-    local lb=setThreadAutomaticSwitch(false)
+    local lb=setAutoYield(false)
     local a={...}
     local t=''
     if #a==1 and type(a[1])=='string' then
@@ -232,7 +232,7 @@ function getAsString(...)
     if #a==0 then
         t='nil'
     end
-    setThreadAutomaticSwitch(lb)
+    setAutoYield(lb)
     return(t)
 end
 

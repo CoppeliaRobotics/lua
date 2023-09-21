@@ -31,35 +31,35 @@ function sim.holdCalls(enabled)
     holdCalls=enabled
 end
 
--- Special handling of sim.switchThread:
-originalSwitchThread=sim.switchThread
-function sim.switchThread()
+-- Special handling of sim.yield:
+originalYield=sim.yield
+function sim.yield()
     if sim.getSimulationState()==sim.simulation_stopped then
-        originalSwitchThread()
+        originalYield()
     else
         local st=sim.getSimulationTime()
         while sim.getSimulationTime()==st do
             -- stays inside here until we are ready with next simulation step. This is important since
             -- other clients/scripts could too be hindering the main script to run in sysCall_beforeMainScript
-            originalSwitchThread()
+            originalYield()
         end
     end
 end
 
 function sim.step(wait)
     -- Shadow original function:
-    sim.switchThread()
+    sim.yield()
 end
 
-function sim.yield()
+function sim.switchThread()
     -- Shadow original function:
-    sim.switchThread()
+    sim.yield()
 end
 
 function yieldIfAllowed()
     local retVal=false
     if not holdCalls and doNotInterruptCommLevel==0 and not stepping then
-        originalSwitchThread()
+        originalYield()
         retVal=true
     end
     return retVal
@@ -93,7 +93,7 @@ function sysCall_init(...)
     pythonCallbackStrs={'','',''}
 
     corout=coroutine.create(coroutineMain)
-    setThreadAutomaticSwitch(false)
+    setAutoYield(false)
     threadSwitchTiming=0.002 -- time given to service Python scripts
     threadLastSwitchTime=0
     threadBusyCnt=0
