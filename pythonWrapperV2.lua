@@ -16,6 +16,10 @@ function sim.setThreadAutomaticSwitch()
     -- Shadow the original function
 end
 
+function sim.setAutoYield()
+    -- Shadow the original function
+end
+
 function sim.setStepping(enabled)
     -- Shadow original function:
     -- When stepping is true, CoppeliaSim ALWAYS blocks while Python runs some code
@@ -23,11 +27,42 @@ function sim.setStepping(enabled)
     stepping=enabled
 end
 
-function sim.handleExtCalls() -- can be called by Python when in free thread mode, to trigger callbacks such a UI button presses, etc.
-end
-
 function sim.holdCalls(enabled)
     holdCalls=enabled
+end
+
+-- Special handling of sim.switchThread:
+originalSwitchThread=sim.switchThread
+function sim.switchThread()
+    if sim.getSimulationState()==sim.simulation_stopped then
+        originalSwitchThread()
+    else
+        local st=sim.getSimulationTime()
+        while sim.getSimulationTime()==st do
+            -- stays inside here until we are ready with next simulation step. This is important since
+            -- other clients/scripts could too be hindering the main script to run in sysCall_beforeMainScript
+            originalSwitchThread()
+        end
+    end
+end
+
+function sim.step(wait)
+    -- Shadow original function:
+    sim.switchThread()
+end
+
+function sim.yield()
+    -- Shadow original function:
+    sim.switchThread()
+end
+
+function yieldIfAllowed()
+    local retVal=false
+    if not holdCalls and doNotInterruptCommLevel==0 and not stepping then
+        originalSwitchThread()
+        retVal=true
+    end
+    return retVal
 end
 
 function sysCall_init(...)
@@ -147,35 +182,6 @@ function sysCall_actuation(...)
         resumeCoroutine()
     end
     return callRemoteFunction("sysCall_actuation",{...})
-end
-
--- Special handling of sim.switchThread:
-originalSwitchThread=sim.switchThread
-function sim.switchThread()
-    if sim.getSimulationState()==sim.simulation_stopped then
-        originalSwitchThread()
-    else
-        local st=sim.getSimulationTime()
-        while sim.getSimulationTime()==st do
-            -- stays inside here until we are ready with next simulation step. This is important since
-            -- other clients/scripts could too be hindering the main script to run in sysCall_beforeMainScript
-            originalSwitchThread()
-        end
-    end
-end
-
-function sim.step(wait)
-    -- Shadow original function:
-    sim.switchThread()
-end
-
-function yieldIfAllowed()
-    local retVal=false
-    if not holdCalls and doNotInterruptCommLevel==0 and not stepping then
-        originalSwitchThread()
-        retVal=true
-    end
-    return retVal
 end
 
 function sysCall_beforeMainScript(...)
@@ -680,6 +686,9 @@ function initPython(prog)
     end
     if pyth==nil or #pyth==0 then
         local p=sim.getInt32Param(sim.intparam_platform)
+        if p==0 then
+            pyth='py'
+        end
         if p==1 then
             pyth='/usr/local/bin/python3' -- via Homebrew
         end
