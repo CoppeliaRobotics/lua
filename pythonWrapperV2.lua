@@ -16,19 +16,47 @@ function sim.setThreadAutomaticSwitch()
     -- Shadow the original function
 end
 
-function sim.setAutoYield()
-    -- Shadow the original function
-end
-
+originalSetStepping=sim.setStepping
 function sim.setStepping(enabled)
     -- Shadow original function:
     -- When stepping is true, CoppeliaSim ALWAYS blocks while Python runs some code
     -- When stepping is false, CoppeliaSim run concurently to Python, i.e. Python is "free" (until a request from Python comes)
-    stepping=enabled
+    local retVal = 0
+    if currentFunction == sim.setStepping then
+        if pythonFuncs['sysCall_thread'] then
+            retVal = steppingLevel
+            if enabled then
+                steppingLevel = steppingLevel + 1
+            else
+                if steppingLevel > 0 then
+                    steppingLevel = steppingLevel - 1
+                end
+            end
+        end
+    else
+        retVal = originalSetStepping(enabled)
+    end
+    return retVal
 end
 
-function sim.holdCalls(enabled)
-    holdCalls=enabled
+originalAcquireLock = sim.acquireLock
+function sim.acquireLock()
+    if currentFunction == sim.acquireLock then
+        holdCalls = holdCalls + 1
+    else
+        originalAcquireLock()
+    end
+end
+
+originalReleaseLock = sim.releaseLock
+function sim.releaseLock()
+    if currentFunction == sim.releaseLock then
+        if holdCalls > 0 then
+            holdCalls = holdCalls - 1
+        end
+    else
+        originalReleaseLock()
+    end
 end
 
 -- Special handling of sim.yield:
@@ -46,7 +74,7 @@ function sim.yield()
     end
 end
 
-function sim.step(wait)
+function sim.step()
     -- Shadow original function:
     sim.yield()
 end
@@ -58,7 +86,7 @@ end
 
 function yieldIfAllowed()
     local retVal=false
-    if not holdCalls and doNotInterruptCommLevel==0 and not stepping then
+    if holdCalls==0 and doNotInterruptCommLevel==0 and steppingLevel==0 then
         originalYield()
         retVal=true
     end
@@ -109,12 +137,12 @@ function sysCall_init(...)
     threadSwitchTiming=0.002 -- time given to service Python scripts
     threadLastSwitchTime=0
     threadBusyCnt=0
-    stepping=false -- in stepping mode switching is always explicit. Non-threaded scripts are also in stepping mode
+    steppingLevel = 0 -- in stepping mode switching is always explicit
     protectedCallErrorDepth=0
     protectedCallDepth=0
     pythonMustHaveRaisedError=false
     receiveIsNext=true
-    holdCalls=false
+    holdCalls = 0
     doNotInterruptCommLevel=0
     
     handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
@@ -132,8 +160,6 @@ function sysCall_init(...)
     if pythonFuncs['sysCall_userConfig'] then
         sysCall_userConfig=_sysCall_userConfig -- special
     end
-
-    stepping=(pythonFuncs['sysCall_thread']==nil) -- in non-threaded mode, we behave as if we were stepping
 
     if pythonFuncs["sysCall_init"]==nil and pythonFuncs["sysCall_thread"]==nil then
         error("can't find sysCall_init nor sysCall_thread functions")
@@ -401,11 +427,15 @@ function handleRequest(req)
         else
             if func==sim.setThreadAutomaticSwitch then
                 -- For backward compatibility with pythonWrapperV1
-                func=sim.setStepping
+                func = sim.setStepping
                 if #args>0 then
-                    args[1]= (args[1]==0) or (args[1]==false)
+                    if not isnumber(args[1]) then
+                        args[1] = not args[1]
+                    end
                 end
             end
+
+            currentFunction = func
 
             -- Handle function arguments:
             local cbi = 1
@@ -458,6 +488,7 @@ function handleRequest(req)
             end
             resp[status and 'ret' or 'err']=retvals
         end
+        currentFunction = nil
     elseif req['eval']~=nil and req['eval']~='' then
         local status,retvals=pcall(function()
             -- cannot prefix 'return ' here, otherwise non-trivial code breaks
@@ -660,8 +691,8 @@ function checkPythonError()
                         protectedCallDepth=0
                         protectedCallErrorDepth=0
                         pythonMustHaveRaisedError=false
-                        stepping=false
-                        holdCalls=false
+                        steppingLevel = 0
+                        holdCalls = 0
                         doNotInterruptCommLevel=0
                         receiveIsNext=true
                         simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__restartClientScript__',args={}}),0)
@@ -925,14 +956,6 @@ import re
 
 XXXadditionalPathsXXX
 
-class LazyProxyObj:
-    def __init__(self, client, name):
-        self.client, self.name, self.obj = client, name, None
-    def __getattr__(self, k):
-        if not self.obj:
-            self.obj = self.client.getObject(self.name)
-        return getattr(self.obj, k)
-
 class RemoteAPIClient:
     def __init__(self):
         self.context = zmq.Context()
@@ -1017,15 +1040,27 @@ class RemoteAPIClient:
                 setattr(ret, k, v['const'])
             else:
                 setattr(ret, k, self.getObject(f'{name}.{k}', _info=v))
+
+        if name == 'sim':
+            ret.getScriptFunctions = self.getScriptFunctions
+
         return ret
          
     def require(self, name):
         self.call('__require__', [name])
         ret = self.getObject(name)
-        allApiFuncs = client.call('__getApi__', [name])
+        allApiFuncs = self.call('__getApi__', [name])
         for a in allApiFuncs:
-            globals()[a] = LazyProxyObj(client,a)
-        return ret         
+            globals()[a] = self.getObject(name)
+        return ret
+
+    def getScriptFunctions(self, scriptHandle):
+        return type('', (object,), {
+            '__getattr__':
+                lambda self, func:
+                    lambda *args:
+                        sim.callScriptFunction(func, scriptHandle, *args)
+        })()
 
 def _getFuncIfExists(name):
     method=None

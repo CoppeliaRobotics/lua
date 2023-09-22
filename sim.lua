@@ -5,12 +5,50 @@
 local sim=_S.sim
 _S.sim=nil
 
-sim.setYieldAllowed=setYieldAllowed
-sim.getYieldAllowed=getYieldAllowed
-sim.setAutoYield=setAutoYield
-sim.getAutoYield=getAutoYield
 sim.addLog=addLog
 sim.quitSimulator=quitSimulator
+
+function sim.setStepping(enable)
+    -- Convenience function, so that we have the same, more intuitive name also with external clients
+    -- Needs to be overridden by Python wrapper and remote API server code
+    if type(enable)~='number' then
+        enable=not enable
+    end
+    return setAutoYield(enable)
+end
+
+function sim.acquireLock()
+    -- needs to be overridden by remote API components
+    setYieldAllowed(false)
+end
+
+function sim.releaseLock()
+    -- needs to be overridden by remote API components
+    setYieldAllowed(true)
+end
+
+function sim.yield()
+    if getYieldAllowed() then
+        if sim.isScriptRunningInThread()==1 then
+            sim._switchThread() -- old, deprecated threads
+        else
+            local thread,yieldForbidden=coroutine.running()
+            if not yieldForbidden then
+                coroutine.yield()
+            end
+        end
+    end
+end
+
+function sim.step(wait)
+    -- Convenience function, for a more intuitive name, depending on the context
+    -- Needs to be overridden by Python wrapper and remote API server code
+    sim.yield()
+end
+
+-- Backw. compat.:
+---------------------------------
+sim.switchThread=sim.yield
 sim.getModuleName=sim.getPluginName
 sim.getModuleInfo=sim.getPluginInfo
 sim.SetModuleInfo=sim.setPluginInfo
@@ -19,7 +57,6 @@ sim.moduleinfo_builddatestr=sim.plugininfo_builddatestr
 sim.moduleinfo_extversionint=sim.plugininfo_extversionint
 sim.moduleinfo_verbosity=sim.plugininfo_verbosity
 sim.moduleinfo_statusbarverbosity=sim.plugininfo_statusbarverbosity
-
 sim.setThreadSwitchAllowed=setYieldAllowed
 sim.getThreadSwitchAllowed=getYieldAllowed
 sim.setThreadAutomaticSwitch=setAutoYield
@@ -27,10 +64,10 @@ sim.getThreadAutomaticSwitch=getAutoYield
 function sim.setThreadSwitchTiming(dtInMs)
     sim.setAutoYieldDelay(dtInMs/1000.0)
 end
-
 function sim.getThreadSwitchTiming()
     return sim.getAutoYieldDelay()*1000.0
 end
+---------------------------------
 
 require('stringx')
 require('tablex')
@@ -78,44 +115,10 @@ function math.randomseed2(seed)
     sim.getRandom(seed)
 end
 
-function sim.yield()
-    if sim.getYieldAllowed() then
-        if sim.isScriptRunningInThread()==1 then
-            sim._switchThread() -- old, deprecated threads
-        else
-            local thread,yieldForbidden=coroutine.running()
-            if not yieldForbidden then
-                coroutine.yield()
-            end
-        end
-    end
-end
-
-sim.switchThread=sim.yield
-
-function sim.step(wait)
-    -- Convenience function, for a more intuitive name, depending on the context
-    -- Needs to be shadowed by Python wrapper and remote API server code
-    sim.yield()
-end
-
-function sim.setStepping(enable)
-    -- Convenience function, so that we have the same, more intuitive name also with external clients
-    -- Needs to be shadowed by Python wrapper and remote API server code
-    if type(enable)~='number' then
-        enable=not enable
-    end
-    return setAutoYield(enable)
-end
-
-function sim.holdCalls(v)
-    -- Convenience function, has no effect for a Lua script
-end
-
 function sim.yawPitchRollToAlphaBetaGamma(...)
     local yawAngle,pitchAngle,rollAngle=checkargs({{type='float'},{type='float'},{type='float'}},...)
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
     local Rx=sim.buildMatrix({0,0,0},{rollAngle,0,0})
     local Ry=sim.buildMatrix({0,0,0},{0,pitchAngle,0})
     local Rz=sim.buildMatrix({0,0,0},{0,0,yawAngle})
@@ -125,14 +128,14 @@ function sim.yawPitchRollToAlphaBetaGamma(...)
     local alpha=alphaBetaGamma[1]
     local beta=alphaBetaGamma[2]
     local gamma=alphaBetaGamma[3]
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return alpha,beta,gamma
 end
 
 function sim.alphaBetaGammaToYawPitchRoll(...)
     local alpha,beta,gamma=checkargs({{type='float'},{type='float'},{type='float'}},...)
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
     local m=sim.buildMatrix({0,0,0},{alpha,beta,gamma})
     local v=m[9]
     if v>1 then v=1 end
@@ -147,7 +150,7 @@ function sim.alphaBetaGammaToYawPitchRoll(...)
         rollAngle=math.atan2(-m[7],m[6])
         yawAngle=0
     end
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return yawAngle,pitchAngle,rollAngle
 end
 
@@ -297,7 +300,7 @@ function sim.getAlternateConfigs(...)
         error("Bad table size.")
     end
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
     local initConfig={}
     local x={}
     local confS={}
@@ -394,7 +397,7 @@ function sim.getAlternateConfigs(...)
         configs=Matrix:fromtable(configs)
         configs=configs:data()
     end
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return configs
 end
 
@@ -417,7 +420,7 @@ function sim.moveToPose(...)
         error("Argument #5 should be of size 4. (in function 'sim.moveToPose')")
     end
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
 
     local usingMatrices=(#currentPoseOrMatrix>=12)
     local currentMatrix,targetMatrix
@@ -478,7 +481,7 @@ function sim.moveToPose(...)
                     error('sim.ruckigStep returned error code '..result)
                 end
                 if result==0 then
-                    sim.yield()
+                    sim.step()
                 end
             end
             sim.ruckigRemove(ruckigObject)
@@ -535,13 +538,13 @@ function sim.moveToPose(...)
                 error('sim.ruckigStep returned error code '..result)
             end
             if result==0 then
-                sim.yield()
+                sim.step()
             end
         end
         sim.ruckigRemove(ruckigObject)
     end
 
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return outMatrix,timeLeft
 end
 
@@ -561,7 +564,7 @@ function sim.moveToConfig(...)
         error("Bad table size.")
     end
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
 
     local currentPosVelAccel={}
     local maxVelAccelJerk={}
@@ -655,11 +658,11 @@ function sim.moveToConfig(...)
             error('sim.ruckigStep returned error code '..result)
         end
         if result==0 then
-            sim.yield()
+            sim.step()
         end
     end
     sim.ruckigRemove(ruckigObject)
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return outPos,outVel,outAccel,timeLeft
 end
 
@@ -673,7 +676,7 @@ function sim.generateTimeOptimalTrajectory(...)
     if (dof*confCnt~=#path) or dof<1 or confCnt<2 or dof~=#minMaxVel/2 or dof~=#minMaxAccel/2 then
         error("Bad table size.")
     end
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
 
     local pM=Matrix(confCnt,dof,path)
     local mmvM=Matrix(2,dof,minMaxVel)
@@ -726,7 +729,7 @@ function sim.generateTimeOptimalTrajectory(...)
     simZMQ.close(socket)
     simZMQ.ctx_term(context)
 
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return Matrix:fromtable(r.qs[1]):data(),r.ts
 end
 
@@ -859,7 +862,7 @@ function sim.createPath(...)
         retVal=sim._createPath(attrib,intParams,floatParams,col) -- for backward compatibility
     else
         local ctrlPts,options,subdiv,smoothness,orientationMode,upVector=checkargs({{type='table',item_type='float',size='14..*'},{type='int',default=0},{type='int',default=100},{type='float',default=1.0},{type='int',default=0},{type='table',item_type='float',size='3',default={0,0,1}}},...)
-        local fl=sim.setYieldAllowed(false)
+        local fl=setYieldAllowed(false)
         retVal=sim.createDummy(0.04,{0,0.68,0.47,0,0,0,0,0,0,0,0,0})
         sim.setObjectAlias(retVal,"Path")
         local scriptHandle=sim.addScript(sim.scripttype_customizationscript)
@@ -885,7 +888,7 @@ end]]
         local data=sim.packTable({ctrlPts,options,subdiv,smoothness,orientationMode,upVector})
         sim.writeCustomDataBlock(retVal,"ABC_PATH_CREATION",data)
         sim.initScript(scriptHandle)
-        sim.setYieldAllowed(fl)
+        setYieldAllowed(fl)
     end
     return retVal
 end
@@ -1044,13 +1047,13 @@ function sim.wait(...)
     if simTime then
         local st=sim.getSimulationTime()
         while sim.getSimulationTime()-st<dt do
-            sim.yield()
+            sim.step()
         end
         retVal=sim.getSimulationTime()-st-dt
     else
         local st=sim.getSystemTime()
         while sim.getSystemTime()-st<dt do
-            sim.yield()
+            sim.step()
         end
     end
     return retVal
@@ -1064,7 +1067,7 @@ function sim.waitForSignal(...)
         if retVal then
             break
         end
-        sim.yield()
+        sim.step()
     end
     return retVal
 end
@@ -1107,7 +1110,7 @@ function sim.serialRead(...)
                 retVal=data
                 break
             end
-            sim.yield()
+            sim.step()
             _S.serialPortData[portHandle]=data
         end
     else

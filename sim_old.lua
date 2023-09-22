@@ -18,7 +18,7 @@ function sim.rmlMoveToJointPositions(...)
         error("Bad table size.")
     end
 
-    local lb=sim.setThreadAutomaticSwitch(false)
+    local lb=sim.setStepping(true)
     
     if direction==nil then
         direction={}
@@ -70,7 +70,7 @@ function sim.rmlMoveToJointPositions(...)
     if endPos then res=1 end
     
     _S.tmpCb=nil
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return res,endPos,endVel,endAccel,timeLeft
 end
 
@@ -83,7 +83,7 @@ function sim.rmlMoveToPosition(...)
     -- Deprecated function, for backward compatibility (02.10.2020)
     local handle,rel,flags,currentVel,currentAccel,maxVel,maxAccel,maxJerk,targetPos,targetQuat,targetVel=checkargs({{type='int'},{type='int'},{type='int'},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float',nullable=true},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=4,item_type='float'},{type='table',size=3,item_type='float',nullable=true},{type='table',size=4,item_type='float',default=NIL,nullable=true},{type='table',item_type='float',size=4,default=NIL,nullable=true}},...)
 
-    local lb=sim.setAutoYield(false)
+    local lb=sim.setStepping(true)
     
     local mStart=sim.getObjectMatrix(handle,rel)
     if targetPos==nil then
@@ -108,7 +108,7 @@ function sim.rmlMoveToPosition(...)
         res=1 
     end
     _S.tmpCb=nil
-    sim.setAutoYield(lb)
+    sim.setStepping(lb)
     return res,nPos,nQuat,{0,0,0,0},{0,0,0,0},timeLeft
 end
 
@@ -210,14 +210,14 @@ function sim.moveToPosition(objH,relH,p,o,v,a,m)
     local dt=0
     local r=sim._moveToPos_1(objH,relH,p,o,v,a,m)
     if r>=0 then
-        local lb=sim.setAutoYield(false)
+        local lb=sim.setStepping(true)
         local res=0
         while res==0 do
             res,dt=sim._moveToPos_2(r)
-            sim.yield()
+            sim.step()
         end
         sim._del(r)
-        sim.setAutoYield(lb)
+        sim.setStepping(lb)
     end
     return dt
 end
@@ -227,14 +227,14 @@ function sim.moveToJointPositions(t1,t2,v,a,al)
     local dt=0
     local r=sim._moveToJointPos_1(t1,t2,v,a,al)
     if r>=0 then
-        local lb=sim.setAutoYield(false)
+        local lb=sim.setStepping(true)
         local res=0
         while res==0 do
             res,dt=sim._moveToJointPos_2(r)
-            sim.yield()
+            sim.step()
         end
         sim._del(r)
-        sim.setAutoYield(lb)
+        sim.setStepping(lb)
     end
     return dt
 end
@@ -244,14 +244,14 @@ function sim.moveToObject(objH,obj2H,op,rd,v,a)
     local dt=0
     local r=sim._moveToObj_1(objH,obj2H,op,rd,v,a)
     if r>=0 then
-        local lb=sim.setAutoYield(false)
+        local lb=sim.setStepping(true)
         local res=0
         while res==0 do
             res,dt=sim._moveToObj_2(r)
-            sim.yield()
+            sim.step()
         end
         sim._del(r)
-        sim.setAutoYield(lb)
+        sim.setStepping(lb)
     end
     return dt
 end
@@ -261,14 +261,14 @@ function sim.followPath(objH,pathH,op,p,v,a)
     local dt=0
     local r=sim._followPath_1(objH,pathH,op,p,v,a)
     if r>=0 then
-        local lb=sim.setAutoYield(false)
+        local lb=sim.setStepping(true)
         local res=0
         while res==0 do
             res,dt=sim._followPath_2(r)
-            sim.yield()
+            sim.step()
         end
         sim._del(r)
-        sim.setAutoYield(lb)
+        sim.setStepping(lb)
     end
     return dt
 end
@@ -718,7 +718,7 @@ function sim.displayDialog(...)
     
     if modal then
         while _S.dlg.allDlgResults[retVal]==sim.dlgret_still_open do
-            sim.yield()
+            sim.step()
         end
     end
     return retVal
