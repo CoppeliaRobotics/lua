@@ -1096,4 +1096,7 @@ def __startClientScript__():
     
 def __restartClientScript__():
     client.call('_*executed*_', [])
+
+# convenience global var to emulate OOP in scripts:
+self = type('', (object,), {})()
 ]=]
