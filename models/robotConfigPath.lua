@@ -1,3 +1,5 @@
+sim=require'sim'
+
 local robotConfigPath={}
 
 function robotConfigPath.create(pathMtx,parent,jointGroupPath)

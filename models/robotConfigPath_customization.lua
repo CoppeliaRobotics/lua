@@ -1,3 +1,4 @@
+sim=require'sim'
 require'configUi'
 
 function sysCall_init()
@@ -51,6 +52,7 @@ function sysCall_init()
             name='Create volume sweep (IGL)',
             default='',
             callback=function()
+                simIGL=require'simIGL'
                 local del=not state:hasModelClone()
                 if del then
                     state:createModelClone()

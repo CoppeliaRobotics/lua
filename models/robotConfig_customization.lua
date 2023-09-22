@@ -1,3 +1,5 @@
+sim=require'sim'
+
 function sysCall_init()
     self=sim.getObject'.'
     model=model or sim.getObject':'
