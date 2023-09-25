@@ -1463,8 +1463,21 @@ function sim.getSettingInt32(...)
     return _S.parseInt(sim.getSettingString(key))
 end
 
-function sim.getScriptFunctions(scriptHandle)
-    assert(scriptHandle and scriptHandle~=-1,'invalid script handle')
+function sim.getScriptFunctions(...)
+    local args={...}
+    if type(args[1])=='string' then
+        assert(#args<=2,'too many args')
+        args[1]=sim.getObject(args[1])
+    end
+    if pcall(sim.getObjectType,args[1]) then
+        assert(#args<=2,'too many args')
+        args[1]=sim.getScript(args[2] or sim.scripttype_customizationscript,args[1])
+        args[2]=nil
+    end
+    local scriptHandle=args[1]
+    assert(#args>=1,'not enough args')
+    assert(#args<=1,'too many args')
+    assert(scriptHandle and pcall(sim.getScriptName,scriptHandle),'invalid script handle')
     return setmetatable({},{__index=function(self,k)
         return function(self_,...)
             assert(self_==self,'methods must be called with object:method(args...)')
