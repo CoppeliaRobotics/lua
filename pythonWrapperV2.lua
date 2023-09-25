@@ -787,7 +787,8 @@ function initPython(prog)
                     simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
-                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets).\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
+                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets).\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ "
+                errMsg=errMsg..pyth.." -m pip install pyzmq cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
                 simSubprocess.wait(subprocess,0.1)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)

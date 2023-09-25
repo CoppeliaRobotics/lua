@@ -1,5 +1,6 @@
 local codeEditorInfos=[[
 sysCall_info()
+sysCall_thread()
 sysCall_init()
 sysCall_cleanup()
 sysCall_nonSimulation()
