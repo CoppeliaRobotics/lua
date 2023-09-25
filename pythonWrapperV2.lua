@@ -114,7 +114,7 @@ function sysCall_init(...)
     replyPortStr=getFreePortStr()
     simZMQ.bind(replySocket,replyPortStr)
     
-    local prog=pythonProg..otherProg
+    local prog=pythonBoilerplate..pythonUserCode
     prog=prog:gsub("XXXconnectionAddress1XXX",replyPortStr)
     local tmp=''
     if _additionalPaths then 
@@ -866,8 +866,9 @@ function getCleanErrorMsg(inMsg)
             msg=msg:sub(p+#tg)
             msg="Traceback (most recent call last):\n"..msg
         end
-        local _,totLines=string.gsub(pythonProg,'\n','')
-        totLines=totLines+1
+        local _,boilerplateLines=string.gsub(pythonBoilerplate,'\n','')
+        local _,userCodeLines=string.gsub(pythonUserCode,'\n','')
+        userCodeLines=userCodeLines+1
         local p1=0,p2,p3
         local tstr = '@_script_@'
         local sstr = 'File "'..virtualPythonFilename..'"'
@@ -878,9 +879,11 @@ function getCleanErrorMsg(inMsg)
         while true do
             p2,p3=string.find(msg,'[^\n]*@_script_@, line %d+,[^\n]+\n',p1+1)
             if p2 then
-                local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
-                if lineNb<=totLines then
-                    p1=p2
+                local sn,en=string.find(msg,'%d+',p2)
+                local lineNb=tonumber(string.sub(msg,sn,en))
+                if lineNb>boilerplateLines and lineNb<=boilerplateLines+userCodeLines then
+                    msg=msg:sub(1,sn-1)..tostring(lineNb-boilerplateLines)..msg:sub(en+1)
+                    p1=sn
                 else
                     msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
                 end
@@ -929,10 +932,10 @@ function loadExternalFile(file)
     if f==nil then
         error("include file '"..file.."' not found")
     end
-    if not pythonProg then
-        pythonProg=''
+    if not pythonUserCode then
+        pythonUserCode=''
     end
-    pythonProg=f:read('*all')..pythonProg
+    pythonUserCode=f:read('*all')..pythonUserCode
     f:close()
     while #file>0 do
         local c=file:sub(#file,#file)
@@ -946,7 +949,7 @@ function loadExternalFile(file)
 end
 
 
-otherProg=[=[
+pythonBoilerplate=[=[
 
 import time
 import sys
