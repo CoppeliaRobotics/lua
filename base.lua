@@ -285,4 +285,58 @@ function removeLazyLoaders()
     __usedLazyLoaders=nil
 end
 
+function _S.sysCallBase_init()
+    -- Hook function, registered further down
+    if sysCall_thread then
+        __coroutine__=coroutine.create(sysCall_thread)
+    end
+
+    _S.initGlobals={}
+    for key,val in pairs(_G) do
+        _S.initGlobals[key]=true
+    end
+    _S.initGlobals._S=nil
+end
+
+function _S.sysCallBase_nonSimulation()
+    -- Hook function, registered further down
+    if __coroutine__ then
+        if coroutine.status(__coroutine__)~='dead' then
+            local _,ays=getAutoYield() -- save (autoYield should be on a thread-basis)
+            if _S.coroutineAutoYields[__coroutine__] then
+                setAutoYield(_S.coroutineAutoYields[__coroutine__])
+            end
+            local ok,errorMsg=coroutine.resume(__coroutine__)
+            _,_S.coroutineAutoYields[__coroutine__]=getAutoYield()
+            setAutoYield(ays) -- restore
+            if errorMsg then
+                error(debug.traceback(__coroutine__,errorMsg),2)
+            end
+        end
+    end
+end
+
+function _S.sysCallBase_actuation()
+    -- Hook function, registered further down
+    if __coroutine__ then
+        if coroutine.status(__coroutine__)~='dead' then
+            local _,ays=getAutoYield() -- save (autoYield should be on a thread-basis)
+            if _S.coroutineAutoYields[__coroutine__] then
+                setAutoYield(_S.coroutineAutoYields[__coroutine__])
+            end
+            local ok,errorMsg=coroutine.resume(__coroutine__)
+            _,_S.coroutineAutoYields[__coroutine__]=getAutoYield()
+            setAutoYield(ays) -- restore
+            if errorMsg then
+                error(debug.traceback(__coroutine__,errorMsg),2)
+            end
+        end
+    end
+end
+
+_S.coroutineAutoYields={}
+registerScriptFuncHook('sysCall_init','_S.sysCallBase_init',false) -- hook on *before* init is incompatible with implicit module load...
+registerScriptFuncHook('sysCall_nonSimulation','_S.sysCallBase_nonSimulation',true)
+registerScriptFuncHook('sysCall_actuation','_S.sysCallBase_actuation',true)
+
 setupLazyLoaders()

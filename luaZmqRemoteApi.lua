@@ -3,28 +3,42 @@ simZMQ=require'simZMQ'
 
 local RemoteApiClient={}
 
-function RemoteApiClient.init(host,port,cntport)
-    host=host or '127.0.0.1'
-    port=port or 23002
-    cntport=cntport or port+1
-    RemoteApiClient.cbor=require'org.conman.cbor'
-    RemoteApiClient.context=simZMQ.ctx_new()
-    RemoteApiClient.socket=simZMQ.socket(RemoteApiClient.context,simZMQ.REQ)
-    RemoteApiClient.cntsocket=simZMQ.socket(RemoteApiClient.context,simZMQ.SUB)
-    simZMQ.connect(RemoteApiClient.socket,'tcp://'..host..':'..port)
-    simZMQ.setsockopt(RemoteApiClient.cntsocket,simZMQ.SUBSCRIBE,'')
-    simZMQ.setsockopt(RemoteApiClient.cntsocket,simZMQ.CONFLATE,sim.packUInt32Table{1})
-    simZMQ.connect(RemoteApiClient.cntsocket,'tcp://'..host..':'..cntport)
-    RemoteApiClient.uuid=sim.getStringParam(sim.stringparam_uniqueid)
+function RemoteApiClient.init(host, port)
+    host = host or '127.0.0.1'
+    port = port or 23000
+    RemoteApiClient.cbor = require'org.conman.cbor'
+    RemoteApiClient.context = simZMQ.ctx_new()
+    RemoteApiClient.socket = simZMQ.socket(RemoteApiClient.context, simZMQ.REQ)
+    simZMQ.connect(RemoteApiClient.socket, 'tcp://'..host..':'..port)
+    RemoteApiClient.uuid = sim.getStringParam(sim.stringparam_uniqueid)
+    RemoteApiClient.callbackFuncs = {}
+    RemoteApiClient.VERSION = 2
 end
 
 function RemoteApiClient.cleanup()
     simZMQ.close(RemoteApiClient.socket)
-    simZMQ.close(RemoteApiClient.cntsocket)
     simZMQ.ctx_term(RemoteApiClient.context)
 end
 
 function RemoteApiClient._send(req)
+    -- convert a possible function to string, and nil to "_*NIL*_":
+    if req.args then
+        local a = {}
+        for i = 1, #req.args, 1 do
+            if req.args[i] == nil then
+                a[i] = '_*NIL*_'
+            elseif type(req.args[i]) == 'function' then
+                local funcStr = "f"..sim.getStringParam(sim.stringparam_uniqueid)
+                RemoteApiClient.callbackFuncs[funcStr] = req.args[i]
+                a[i] = funcStr.."@func"
+            else
+                a[i] = req.args[i]
+            end
+        end
+        req.args = a
+    end
+    req.uuid = RemoteApiClient.uuid
+    req.ver = RemoteApiClient.VERSION
     local rawReq=RemoteApiClient.cbor.encode(req)
     simZMQ.send(RemoteApiClient.socket,rawReq,0)
 end
@@ -36,9 +50,6 @@ function RemoteApiClient._recv()
 end
 
 function RemoteApiClient._process_response(resp)
-    if resp.success==nil or resp.success==false then
-        error(resp.error)
-    end
     local ret=resp.ret
     if #ret==1 then
         return ret[1]
@@ -49,8 +60,34 @@ function RemoteApiClient._process_response(resp)
 end
 
 function RemoteApiClient.call(func, args)
-    RemoteApiClient._send({func=func,args=args})
-    return RemoteApiClient._process_response(RemoteApiClient._recv())
+    -- Call function with specified arguments. Is reentrant
+    RemoteApiClient._send({func = func, args = args})
+    local reply = RemoteApiClient._recv()
+
+    while reply.func do
+        -- We have a callback or a wait:
+        if reply.func == '_*wait*_' then
+            RemoteApiClient._send({func = '_*executed*_', args= {}})
+        else
+            local args = {}
+            if RemoteApiClient.callbackFuncs[reply.func] then
+                args = RemoteApiClient.callbackFuncs[reply.func](reply.args)
+            else
+                funcToRun = _G[reply.func]
+                if funcToRun then -- we cannot raise an error: e.g. a custom UI async callback cannot be assigned to a specific client
+                    args = funcToRun(reply.args)
+                end
+            end
+            RemoteApiClient._send({func = '_*executed*_', args = args})
+        end
+        reply = RemoteApiClient._recv()
+    end
+
+    if reply.err then
+        error(reply.err)
+    end
+
+    return RemoteApiClient._process_response(reply)
 end
 
 function RemoteApiClient.getObject(name,_info)
@@ -81,25 +118,19 @@ function RemoteApiClient.getObject(name,_info)
     return ret
 end
 
-function RemoteApiClient.setStepping(enable)
+function RemoteApiClient.require(name)
+    RemoteApiClient.call('zmqRemoteApi.require', {name})
+    return RemoteApiClient.getObject(name)
+end
+
+function RemoteApiClient.setStepping(enable) -- for backw. comp., now via sim.setStepping
     enable=enable or true
-    return RemoteApiClient.call('setStepping', {enable,RemoteApiClient.uuid})
+    return RemoteApiClient.call('sim.setStepping', {enable})
 end
 
-function RemoteApiClient.step(wait)
+function RemoteApiClient.step(wait) -- for backw. comp., now via sim.step
     wait=wait or true
-    RemoteApiClient.getStepCount(false)
-    RemoteApiClient.call('step', {RemoteApiClient.uuid})
-    RemoteApiClient.getStepCount(wait)
-end
-
-function RemoteApiClient.getStepCount(wait)
-    if wait then
-        wait=0
-    else
-        wait=simZMQ.NOBLOCK
-    end
-    simZMQ.recv(RemoteApiClient.cntsocket,wait)
+    RemoteApiClient.call('sim.step', {wait})
 end
 
 return RemoteApiClient

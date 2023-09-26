@@ -958,6 +958,7 @@ sim.objintparam_manipulation_permissions
 sim.objintparam_parent_role
 sim.objintparam_unique_id
 sim.objintparam_visibility_layer
+sim.objintparam_hierarchycolor
 sim.objintparam_visible
 sim.objstringparam_dna
 sim.objstringparam_unique_id
