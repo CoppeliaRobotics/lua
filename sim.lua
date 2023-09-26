@@ -1392,11 +1392,12 @@ function sim.generateTextShape(...)
     return textUtils.generateTextShape(txt,color,height,centered,alphabetModel)
 end
 
-function sim.getThreadExistRequest()
+function sim.getSimulationStopping()
     local s=sim.getSimulationState()
     return s==sim.simulation_stopped or s==sim.simulation_advancing_abouttostop or s==sim.simulation_advancing_lastbeforestop
 end
 
+sim.getThreadExistRequest = sim.getSimulationStopping
 
 function sim.getNamedBoolParam(...)
     local name=checkargs({{type='string'}},...)
