@@ -16,4 +16,18 @@ function lfs.rmdir_r(dir)
     return lfs.rmdir(dir)
 end
 
+function lfs.basename(str)
+    local name=string.gsub(str,'(.*/)(.*)','%2')
+    return name
+end
+
+function lfs.dirname(str)
+    if str:match('.-/.-') then
+        local name=string.gsub(str,'(.*/)(.*)','%1')
+        return name
+    else
+        return ''
+    end
+end
+
 return lfs
