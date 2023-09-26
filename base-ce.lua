@@ -32,6 +32,7 @@ sysCall_realTimeIdle()
 sysCall_beforeSave()
 sysCall_afterSave()
 sysCall_msg()
+sysCall_selChange()
 quit()
 exit()
 
