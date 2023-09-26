@@ -1706,7 +1706,7 @@ function _S.sysCallEx_init()
     _S.initGlobals._S=nil
 
     if sysCall_selChange then
-        sysCall_selChange(sim.getObjectSel())
+        sysCall_selChange({sel = sim.getObjectSel()})
     end
 end
 
