@@ -49,10 +49,16 @@ function getlocals(level)
     local i=0
     while true do
         i=i+1
-        local name,value=debug.getlocal(level+1,i)
-        if not name then return ret end
-        ret[name]=value
+        if level then
+            local name,value=debug.getlocal(level+1,i)
+            if not name then return ret end
+            ret[name]=value
+        else
+            if not pcall(function() ret[i]=getlocals(i) end) then break end
+            if not next(ret[i]) then break end
+        end
     end
+    return ret
 end
 
 if arg and #arg==1 and arg[1]=='test' then
