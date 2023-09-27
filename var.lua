@@ -61,6 +61,40 @@ function getlocals(level)
     return ret
 end
 
+function f(str)
+    str=str:gsub('{(.-)}',function(name0)
+        local value,opts,name=nil,{pctopt='s'},name0
+        if name:sub(-1,-1)=='=' then
+            opts.equal=true
+            name=name:sub(1,-2)
+        end
+        if name:find(':') then
+            local p=string.split(name,':')
+            assert(#p==2,'incorrect syntax')
+            name=p[1]
+            opts.pctopt=p[2]
+        end
+        for i=1,1e100 do
+            local n,v=debug.getlocal(4,i)
+            if not n then break end
+            if name==n then value=v; break end
+        end
+        if value==nil and _G[name] then
+            value=_G[name]
+        end
+        if value~=nil then
+            value=string.format('%'..opts.pctopt,value)
+            if opts.equal then
+                value=name..'='..value
+            end
+            return value
+        else
+            return string.format('{%s}',name0)
+        end
+    end)
+    return str
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     a='x1'
     assert(getvar'a'=='x1')
