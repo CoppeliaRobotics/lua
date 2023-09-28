@@ -148,7 +148,7 @@ function sysCall_init(...)
     handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
 
     -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup, ext and userConfig are special):
-    local optionalSysCallbacks={sysCall_beforeMainScript,sysCall_suspended, sysCall_beforeSimulation, sysCall_afterSimulation, sysCall_sensing, sysCall_suspend, sysCall_resume, sysCall_realTimeIdle, sysCall_beforeInstanceSwitch, sysCall_afterInstanceSwitch, sysCall_beforeSave,sysCall_afterSave, sysCall_beforeCopy,sysCall_afterCopy, sysCall_afterCreate, sysCall_beforeDelete, sysCall_afterDelete, sysCall_addOnScriptSuspend, sysCall_addOnScriptResume, sysCall_dyn, sysCall_joint, sysCall_contact, sysCall_vision, sysCall_trigger, sysCall_moduleEntry, sysCall_msg, sysCall_event}
+    local optionalSysCallbacks={'sysCall_beforeMainScript', 'sysCall_suspended', 'sysCall_beforeSimulation', 'sysCall_afterSimulation', 'sysCall_sensing', 'sysCall_suspend', 'sysCall_resume', 'sysCall_realTimeIdle', 'sysCall_beforeInstanceSwitch', 'sysCall_afterInstanceSwitch', 'sysCall_beforeSave','sysCall_afterSave', 'sysCall_beforeCopy','sysCall_afterCopy', 'sysCall_afterCreate', 'sysCall_beforeDelete', 'sysCall_afterDelete', 'sysCall_addOnScriptSuspend', 'sysCall_addOnScriptResume', 'sysCall_dyn', 'sysCall_joint', 'sysCall_contact', 'sysCall_vision', 'sysCall_trigger', 'sysCall_moduleEntry', 'sysCall_msg', 'sysCall_event'}
 
     for i=1,#optionalSysCallbacks,1 do
         local nm=optionalSysCallbacks[i]
@@ -966,6 +966,7 @@ class RemoteAPIClient:
         self.socket = self.context.socket(zmq.REQ)
         self.socket.connect(f'XXXconnectionAddress1XXX')
         self.callbackFuncs = {}
+        self.requiredItems = {}
 
     def __del__(self):
         # Disconnect and destroy client
@@ -986,7 +987,10 @@ class RemoteAPIClient:
                         req['args'][i] = funcStr + "@func"
 
         # pack and send:            
-        rawReq = cbor.dumps(req)
+        try:
+            rawReq = cbor.dumps(req)
+        except Exception as err:
+            raise Exception("illegal argument " + str(err)) #__EXCEPTION__
         self.socket.send(rawReq)
 
     def _recv(self):
@@ -1051,11 +1055,15 @@ class RemoteAPIClient:
         return ret
          
     def require(self, name):
-        self.call('__require__', [name])
-        ret = self.getObject(name)
-        allApiFuncs = self.call('__getApi__', [name])
-        for a in allApiFuncs:
-            globals()[a] = self.getObject(name)
+        if name in self.requiredItems:
+            ret = self.requiredItems[name]
+        else:
+            self.call('__require__', [name])
+            ret = self.getObject(name)
+            allApiFuncs = self.call('__getApi__', [name])
+            for a in allApiFuncs:
+                globals()[a] = self.getObject(name)
+            self.requiredItems[name] = ret
         return ret
 
     def getScriptFunctions(self, scriptHandle):
