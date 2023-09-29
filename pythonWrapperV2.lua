@@ -877,7 +877,7 @@ function getCleanErrorMsg(inMsg)
         end
         msg=string.gsub(msg,escapePattern(sstr),tstr)
         while true do
-            p2,p3=string.find(msg,'[^\n]*@_script_@, line %d+,[^\n]+\n',p1+1)
+            p2,p3=string.find(msg,'[^\n]*@_script_@, line %d+[^\n]*\n',p1+1)
             if p2 then
                 local sn,en=string.find(msg,'%d+',p2)
                 local lineNb=tonumber(string.sub(msg,sn,en))
