@@ -1102,20 +1102,38 @@ class RemoteAPIClient:
                         sim.callScriptFunction(func, scriptHandle, *args)
         })()
 
-def _evalExec(theStr):
+def _pevalExec(theStr):
     sim.protectedCalls(True)
-    reply = "_*empty*_"
     try:
-        reply = eval(theStr,globals())
-    except SyntaxError:
+        global H, SEL, SEL1
+        H = sim.getObject
+        SEL = sim.getObjectSel()
+        SEL1 = None
+        if len(SEL) > 0:
+            SEL1 = SEL[len(SEL) - 1]
+
         try:
-            exec(theStr,globals())
+            print(eval(theStr,globals()))
+        except SyntaxError:
+            try:
+                exec(theStr,globals())
+            except Exception as e:
+                sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, f"Error: {e}")
         except Exception as e:
-            reply = f"Error: {e}"
+            sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, f"Error: {e}")
+
+        if H != sim.getObject:
+            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
+
+        H = sim.getObject
+        SEL = sim.getObjectSel()
+        SEL1 = None
+        if len(SEL) > 0:
+            SEL1 = SEL[len(SEL) - 1]
     except Exception as e:
-        reply = f"Error: {e}"
+        pass
+
     sim.protectedCalls(False)
-    return reply
 
 def _getFuncIfExists(name):
     method=None

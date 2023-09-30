@@ -334,6 +334,39 @@ function _S.sysCallBase_actuation()
     end
 end
 
+function _levalExec(inputStr)
+    function pfunc(theStr)
+        H = sim.getObject
+        SEL = sim.getObjectSel()
+        SEL1 = SEL[#SEL]
+
+        local func, err = load('return '..theStr)
+        if not func then
+            func, err = load(theStr)
+        end
+        if func then
+            local ret = table.pack(pcall(func))
+            if ret[1] then
+                table.remove(ret, 1)
+                print(table.unpack(ret))
+            else
+                sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, ret[2])
+            end
+        else
+            sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
+        end
+
+        if H ~= sim.getObject then
+            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
+        end
+
+        H = sim.getObject
+        SEL = sim.getObjectSel()
+        SEL1 = SEL[#SEL]
+    end
+    pcall(pfunc, inputStr)
+end
+
 _S.coroutineAutoYields={}
 registerScriptFuncHook('sysCall_init','_S.sysCallBase_init',false) -- hook on *before* init is incompatible with implicit module load...
 registerScriptFuncHook('sysCall_nonSimulation','_S.sysCallBase_nonSimulation',true)
