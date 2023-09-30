@@ -1,25 +1,45 @@
---lua
+sim = require('sim')
 
-require('sandboxCommon')
+pythonFailWarnOnly = true
 
-function sysCall_init()
+if sim.getNamedBoolParam('simLuaCmd.autoLoad') ~= false then
+    require('simLuaCmd')
+end
+
+if not sim.getBoolParam(sim.boolparam_headless) then
+    require('simURLDrop')
+end
+
+base16 = require('base16')
+base64 = require('base64')
+
+require('base-ce')
+
+local l = auxFunc('getfiles', sim.getStringParam(sim.stringparam_luadir), 'sim*-ce', 'lua')
+for i = 1, #l, 1 do
+    require(string.gsub(l[i], "%.lua$", ""))
+end
+
+setupLazyLoaders() -- because those were cleared out by our explicit requires
+
+function s_init()
     sim.addLog(sim.verbosity_msgs,"Simulator launched, welcome!")
 end
 
-function sysCall_cleanup()
+function s_cleanup()
     sim.addLog(sim.verbosity_msgs,"Leaving...")
 end
 
-function sysCall_beforeSimulation()
+function s_beforeSimulation()
     sim.addLog(sim.verbosity_msgs,"Simulation started.")
 end
 
-function sysCall_afterSimulation()
+function s_afterSimulation()
     sim.addLog(sim.verbosity_msgs,"Simulation stopped.")
     ___m=nil
 end
 
-function sysCall_sensing()
+function s_sensing()
     local s=sim.getSimulationState()
     if s==sim.simulation_advancing_abouttostop and not ___m then
         sim.addLog(sim.verbosity_msgs,"simulation stopping...")
@@ -27,11 +47,11 @@ function sysCall_sensing()
     end
 end
 
-function sysCall_suspend()
+function s_suspend()
     sim.addLog(sim.verbosity_msgs,"Simulation suspended.")
 end
 
-function sysCall_resume()
+function s_resume()
     sim.addLog(sim.verbosity_msgs,"Simulation resumed.")
 end
 
@@ -39,20 +59,31 @@ function restart()
     __restart=true
 end
 
-function sysCall_nonSimulation()
+function s_nonSimulation()
     if __restart then
         return {cmd='restart'}
     end
 end
 
-function sysCall_actuation()
+function s_actuation()
     if __restart then
         return {cmd='restart'}
     end
 end
 
-function sysCall_suspended()
+function s_suspended()
     if __restart then
         return {cmd='restart'}
     end
 end
+
+sim.registerScriptFuncHook('sysCall_init','s_init',false) -- hook on *before* init is incompatible with implicit module load...
+sim.registerScriptFuncHook('sysCall_cleanup','s_cleanup',false)
+sim.registerScriptFuncHook('sysCall_beforeSimulation','s_beforeSimulation',false)
+sim.registerScriptFuncHook('sysCall_afterSimulation','s_afterSimulation',false)
+sim.registerScriptFuncHook('sysCall_sensing','s_sensing',false)
+sim.registerScriptFuncHook('sysCall_suspend','s_suspend',false)
+sim.registerScriptFuncHook('sysCall_resume','s_resume',false)
+sim.registerScriptFuncHook('sysCall_nonSimulation','s_nonSimulation',false)
+sim.registerScriptFuncHook('sysCall_actuation','s_actuation',false)
+sim.registerScriptFuncHook('sysCall_suspended','s_suspended',false)

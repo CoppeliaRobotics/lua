@@ -132,46 +132,57 @@ function sysCall_init(...)
         end
     end
     prog=prog:gsub("XXXadditionalPathsXXX",tmp)
+
     initPython(prog)
-    pythonCallbacks={pythonCallback1,pythonCallback2,pythonCallback3}
-    pythonCallbackStrs={'','',''}
 
-    corout=coroutine.create(coroutineMain)
-    setAutoYield(false)
-    threadSwitchTiming=0.002 -- time given to service Python scripts
-    threadLastSwitchTime=0
-    threadBusyCnt=0
-    steppingLevel = 0 -- in stepping mode switching is always explicit
-    protectedCallErrorDepth=0
-    protectedCallDepth=0
-    pythonMustHaveRaisedError=false
-    receiveIsNext=true
-    holdCalls = 0
-    doNotInterruptCommLevel=0
-    
-    handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
-
-    -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup, ext and userConfig are special):
     local optionalSysCallbacks={'sysCall_beforeMainScript', 'sysCall_suspended', 'sysCall_beforeSimulation', 'sysCall_afterSimulation', 'sysCall_sensing', 'sysCall_suspend', 'sysCall_resume', 'sysCall_realTimeIdle', 'sysCall_beforeInstanceSwitch', 'sysCall_afterInstanceSwitch', 'sysCall_beforeSave','sysCall_afterSave', 'sysCall_beforeCopy','sysCall_afterCopy', 'sysCall_afterCreate', 'sysCall_beforeDelete', 'sysCall_afterDelete', 'sysCall_addOnScriptSuspend', 'sysCall_addOnScriptResume', 'sysCall_dyn', 'sysCall_joint', 'sysCall_contact', 'sysCall_vision', 'sysCall_trigger', 'sysCall_moduleEntry', 'sysCall_msg', 'sysCall_event'}
 
-    for i=1,#optionalSysCallbacks,1 do
-        local nm=optionalSysCallbacks[i]
-        if pythonFuncs[nm]==nil then
+    if subprocess then
+        pythonCallbacks={pythonCallback1,pythonCallback2,pythonCallback3}
+        pythonCallbackStrs={'','',''}
+
+        corout=coroutine.create(coroutineMain)
+        setAutoYield(false)
+        threadSwitchTiming=0.002 -- time given to service Python scripts
+        threadLastSwitchTime=0
+        threadBusyCnt=0
+        steppingLevel = 0 -- in stepping mode switching is always explicit
+        protectedCallErrorDepth=0
+        protectedCallDepth=0
+        pythonMustHaveRaisedError=false
+        receiveIsNext=true
+        holdCalls = 0
+        doNotInterruptCommLevel=0
+
+        handleRequestsUntilExecutedReceived() -- handle commands from Python prior to start, e.g. initial function calls to CoppeliaSim
+
+        -- Disable optional system callbacks that are not used on Python side (nonSimulation, init, actuation, cleanup, ext and userConfig are special):
+        for i=1,#optionalSysCallbacks,1 do
+            local nm=optionalSysCallbacks[i]
+            if pythonFuncs[nm]==nil then
+                _G[nm]=nil
+            end
+        end
+
+        if pythonFuncs['sysCall_userConfig'] then
+            sysCall_userConfig=_sysCall_userConfig -- special
+        end
+
+        if pythonFuncs["sysCall_init"]==nil and pythonFuncs["sysCall_thread"]==nil then
+            error("can't find sysCall_init nor sysCall_thread functions")
+        end
+
+        auxFunc('stts', 'pythonEmbeddedScript')
+
+        return callRemoteFunction("sysCall_init",{...})
+    else
+        -- Failed initializing Python. And since we have not generated an error, we disable most funcs (want to continue with Lua only)
+        for i=1,#optionalSysCallbacks,1 do
+            local nm=optionalSysCallbacks[i]
             _G[nm]=nil
         end
+        sysCall_userConfig = nil
     end
-
-    if pythonFuncs['sysCall_userConfig'] then
-        sysCall_userConfig=_sysCall_userConfig -- special
-    end
-
-    if pythonFuncs["sysCall_init"]==nil and pythonFuncs["sysCall_thread"]==nil then
-        error("can't find sysCall_init nor sysCall_thread functions")
-    end
-
-    auxFunc('stts', 'pythonEmbeddedScript')
-
-    return callRemoteFunction("sysCall_init",{...})
 end
 
 function sysCall_cleanup(...)
@@ -190,22 +201,26 @@ function coroutineMain()
 end
 
 function sysCall_ext(funcName,...)
-    local args={...}
+    if subprocess then
+        local args={...}
 
-    local f = _G
-    for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
-        if f[w] then
-            f = f[w]
+        local f = _G
+        for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
+            if f[w] then
+                f = f[w]
+            end
         end
-    end
-    if type(f) == 'function' then
-        return f(args[1]) -- this function is defined in Lua, which takes precedence
-    else
-        if pythonFuncs['sysCall_ext'] then
-            return callRemoteFunction('sysCall_ext',{funcName,args})
+        if type(f) == 'function' then
+            return f(args[1]) -- this function is defined in Lua, which takes precedence
         else
-            return callRemoteFunction(funcName,args,true,false)
+            if pythonFuncs['sysCall_ext'] then
+                return callRemoteFunction('sysCall_ext',{funcName,args})
+            else
+                return callRemoteFunction(funcName,args,true,false)
+            end
         end
+    else
+        return "pythonError"
     end
 end
 
@@ -222,17 +237,21 @@ function resumeCoroutine()
 end
 
 function sysCall_nonSimulation(...)
-    if pythonFuncs['sysCall_thread'] then
-        resumeCoroutine()
+    if subprocess then
+        if pythonFuncs['sysCall_thread'] then
+            resumeCoroutine()
+        end
+        return callRemoteFunction("sysCall_nonSimulation",{...})
     end
-    return callRemoteFunction("sysCall_nonSimulation",{...})
 end
 
 function sysCall_actuation(...)
-    if pythonFuncs['sysCall_thread'] then
-        resumeCoroutine()
+    if subprocess then
+        if pythonFuncs['sysCall_thread'] then
+            resumeCoroutine()
+        end
+        return callRemoteFunction("sysCall_actuation",{...})
     end
-    return callRemoteFunction("sysCall_actuation",{...})
 end
 
 function sysCall_beforeMainScript(...)
@@ -766,7 +785,6 @@ function initPython(prog)
         end
     end
     local errMsg
-    local showDlg=true
     if pyth and #pyth>0 then
         subprocess,controlPort=startPythonClientSubprocess(pyth)
         if controlPort then
@@ -801,7 +819,6 @@ function initPython(prog)
             if r>=0 then
                 local rep,o,t=cbor.decode(rep)
                 if rep.err then
-                    showDlg=false
                     errMsg=rep.err
                     errMsg=getCleanErrorMsg(errMsg)
                     simSubprocess.wait(subprocess,0.1)
@@ -829,16 +846,11 @@ function initPython(prog)
         errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
     if errMsg then
-        if showDlg then
-            local r=sim.readCustomDataBlock(sim.handle_app,'msgShown')
-            if r==nil then
-                -- show this only once
-                sim.writeCustomDataBlock(sim.handle_app,'msgShown',"yes")
-                simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,"Python interpreter",errMsg)
-            end
+        if pythonFailWarnOnly then
+            sim.addLog(sim.verbosity_scriptwarnings, errMsg)
+        else
+            error('__[[__'..errMsg..'__]]__')
         end
-        errMsg='__[[__'..errMsg..'__]]__'
-        error(errMsg)
     end
 end
 
