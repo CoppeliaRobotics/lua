@@ -185,17 +185,18 @@ end
 
 function sysCall_ext(funcName,...)
     local args={...}
-    if pythonFuncs['sysCall_ext'] then
-        return callRemoteFunction('sysCall_ext',{funcName,args})
-    else
-        local f = _G
-        for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
-            if f[w] then
-                f = f[w]
-            end
+
+    local f = _G
+    for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
+        if f[w] then
+            f = f[w]
         end
-        if type(f) == 'function' then
-            return f(args[1])
+    end
+    if type(f) == 'function' then
+        return f(args[1]) -- this function is defined in Lua, which takes precedence
+    else
+        if pythonFuncs['sysCall_ext'] then
+            return callRemoteFunction('sysCall_ext',{funcName,args})
         else
             return callRemoteFunction(funcName,args,true,false)
         end
