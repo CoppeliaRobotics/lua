@@ -1,9 +1,9 @@
-startTimeout=2
-sim=require('sim')
-simZMQ=require('simZMQ')
-simSubprocess=require('simSubprocess')
-simUI=require('simUI')
-cbor=require'org.conman.cbor'
+startTimeout = 2
+sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
+simZMQ = require('simZMQ')
+simSubprocess = require('simSubprocess')
+simUI = require('simUI')
+cbor = require'org.conman.cbor'
 removeLazyLoaders()
 
 function sim.setThreadSwitchTiming(switchTiming)
@@ -188,8 +188,14 @@ function sysCall_ext(funcName,...)
     if pythonFuncs['sysCall_ext'] then
         return callRemoteFunction('sysCall_ext',{funcName,args})
     else
-        if _G[funcName] then -- for now ignore functions in tables
-            return _G[funcName](args)
+        local f = _G
+        for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
+            if f[w] then
+                f = f[w]
+            end
+        end
+        if type(f) == 'function' then
+            return f(args[1])
         else
             return callRemoteFunction(funcName,args,true,false)
         end
@@ -1073,6 +1079,19 @@ class RemoteAPIClient:
                     lambda *args:
                         sim.callScriptFunction(func, scriptHandle, *args)
         })()
+
+def _evalExec(theStr):
+    reply = "_*empty*_"
+    try:
+        reply = eval(theStr,globals())
+    except SyntaxError:
+        try:
+            exec(theStr,globals())
+        except Exception as e:
+            reply = f"Error: {e}"
+    except Exception as e:
+        reply = f"Error: {e}"
+    return reply
 
 def _getFuncIfExists(name):
     method=None
