@@ -169,6 +169,8 @@ function sysCall_init(...)
         error("can't find sysCall_init nor sysCall_thread functions")
     end
 
+    auxFunc('stts', 'pythonEmbeddedScript')
+
     return callRemoteFunction("sysCall_init",{...})
 end
 
