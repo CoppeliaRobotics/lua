@@ -84,6 +84,10 @@ function sim.switchThread()
     sim.yield()
 end
 
+function sim.protectedCalls(enable)
+    protectedCalls = enable
+end
+
 function yieldIfAllowed()
     local retVal=false
     if holdCalls==0 and doNotInterruptCommLevel==0 and steppingLevel==0 then
@@ -429,7 +433,9 @@ function handleRequest(req)
         local func=_getField(req['func'])
         local args=req['args'] or {}
         if not func then
-            pythonMustHaveRaisedError = true -- actually not just yet, we still need to send a reply tp Python
+            if not protectedCalls then
+                pythonMustHaveRaisedError = true -- actually not just yet, we still need to send a reply tp Python
+            end
             resp['err']='No such function: '..req['func']
         else
             if func==sim.setThreadAutomaticSwitch then
@@ -491,7 +497,9 @@ function handleRequest(req)
             protectedCallDepth=protectedCallDepth-1
 
             if status==false then
-                pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+                if not protectedCalls then
+                    pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+                end
             end
             resp[status and 'ret' or 'err']=retvals
         end
@@ -504,7 +512,9 @@ function handleRequest(req)
             return ret
         end)
         if status==false then
-            pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+            if not protectedCalls then
+                pythonMustHaveRaisedError=true -- actually not just yet, we still need to send a reply tp Python
+            end
         end
         resp[status and 'ret' or 'err']=retvals
     end
@@ -560,6 +570,13 @@ function receive()
         if not status then
             error('CBOR decode error: '..sim.transformBuffer(dat,sim.buffer_uint8,1,0,sim.buffer_base64))
         end
+
+        -- Handle non-serializable data:
+        if req.args and (type(req.args) == 'string') and req.args:match('^_%*baddata%*_') then
+            req.args = string.gsub(req.args, '_%*baddata%*_','')
+            sim.addLog(sim.verbosity_warnings,"Received non-serializable data: "..req.args)
+        end
+
         return req
     else
         error('Trying to receive data from Python where a send is expected')
@@ -997,7 +1014,9 @@ class RemoteAPIClient:
         try:
             rawReq = cbor.dumps(req)
         except Exception as err:
-            raise Exception("illegal argument " + str(err)) #__EXCEPTION__
+            req['args'] = '_*baddata*_' + str(req['args'])
+            rawReq = cbor.dumps(req)
+            #raise Exception("illegal argument " + str(err)) #__EXCEPTION__
         self.socket.send(rawReq)
 
     def _recv(self):
@@ -1082,6 +1101,7 @@ class RemoteAPIClient:
         })()
 
 def _evalExec(theStr):
+    sim.protectedCalls(True)
     reply = "_*empty*_"
     try:
         reply = eval(theStr,globals())
@@ -1092,6 +1112,7 @@ def _evalExec(theStr):
             reply = f"Error: {e}"
     except Exception as e:
         reply = f"Error: {e}"
+    sim.protectedCalls(False)
     return reply
 
 def _getFuncIfExists(name):
