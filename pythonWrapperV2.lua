@@ -1102,7 +1102,7 @@ class RemoteAPIClient:
                         sim.callScriptFunction(func, scriptHandle, *args)
         })()
 
-def _pevalExec(theStr):
+def _pythonEvalExec(theStr):
     sim.protectedCalls(True)
     try:
         global H, SEL, SEL1
