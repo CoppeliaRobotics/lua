@@ -1039,6 +1039,7 @@ sim.scriptintparam_execorder
 sim.scriptintparam_handle
 sim.scriptintparam_objecthandle
 sim.scriptintparam_type
+sim.scriptintparam_lang
 sim.scriptstringparam_description
 sim.scriptstringparam_name
 sim.scriptstringparam_text
