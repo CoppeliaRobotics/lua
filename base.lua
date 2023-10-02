@@ -341,14 +341,18 @@ function _evalExec(inputStr)
         SEL1 = SEL[#SEL]
 
         local func, err = load('return '..theStr)
+        local rr = true
         if not func then
+            rr = false
             func, err = load(theStr)
         end
         if func then
             local ret = table.pack(pcall(func))
             if ret[1] then
-                table.remove(ret, 1)
-                print(table.unpack(ret))
+                if #ret > 1 or rr then
+                    table.remove(ret, 1)
+                    print(table.unpack(ret))
+                end
             else
                 sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, ret[2])
             end

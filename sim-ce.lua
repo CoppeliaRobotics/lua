@@ -1033,6 +1033,9 @@ sim.ruckig_timesync
 sim.scriptexecorder_first
 sim.scriptexecorder_last
 sim.scriptexecorder_normal
+sim.lang_undefined
+sim.lang_lua
+sim.lang_python
 sim.scriptintparam_enabled
 sim.scriptintparam_execcount
 sim.scriptintparam_execorder
