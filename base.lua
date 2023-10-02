@@ -367,6 +367,14 @@ function _evalExec(inputStr)
     pcall(pfunc, inputStr)
 end
 
+function _getCompletion(input,pos)
+    return {}
+end
+
+function _getCalltip(input,pos)
+    return ''
+end
+
 _S.coroutineAutoYields={}
 registerScriptFuncHook('sysCall_init','_S.sysCallBase_init',false) -- hook on *before* init is incompatible with implicit module load...
 registerScriptFuncHook('sysCall_nonSimulation','_S.sysCallBase_nonSimulation',true)

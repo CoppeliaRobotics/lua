@@ -1164,6 +1164,12 @@ def _evalExec(theStr):
 
     sim.protectedCalls(False)
 
+def _getCompletion(input, pos):
+    return []
+
+def _getCalltip(input, pos):
+    return ''
+
 def _evalExecRet(theStr):
     sim.protectedCalls(True)
     try:
