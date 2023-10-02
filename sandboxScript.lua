@@ -2,10 +2,6 @@ sim = require('sim')
 
 pythonFailWarnOnly = true
 
-if sim.getNamedBoolParam('simLuaCmd.autoLoad') ~= false then
-    require('simLuaCmd')
-end
-
 if not sim.getBoolParam(sim.boolparam_headless) then
     require('simURLDrop')
 end
