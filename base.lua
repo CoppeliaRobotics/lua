@@ -334,7 +334,7 @@ function _S.sysCallBase_actuation()
     end
 end
 
-function _luaEvalExec(inputStr)
+function _evalExec(inputStr)
     function pfunc(theStr)
         H = sim.getObject
         SEL = sim.getObjectSel()

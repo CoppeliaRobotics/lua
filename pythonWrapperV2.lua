@@ -138,6 +138,7 @@ function sysCall_init(...)
     local optionalSysCallbacks={'sysCall_beforeMainScript', 'sysCall_suspended', 'sysCall_beforeSimulation', 'sysCall_afterSimulation', 'sysCall_sensing', 'sysCall_suspend', 'sysCall_resume', 'sysCall_realTimeIdle', 'sysCall_beforeInstanceSwitch', 'sysCall_afterInstanceSwitch', 'sysCall_beforeSave','sysCall_afterSave', 'sysCall_beforeCopy','sysCall_afterCopy', 'sysCall_afterCreate', 'sysCall_beforeDelete', 'sysCall_afterDelete', 'sysCall_addOnScriptSuspend', 'sysCall_addOnScriptResume', 'sysCall_dyn', 'sysCall_joint', 'sysCall_contact', 'sysCall_vision', 'sysCall_trigger', 'sysCall_moduleEntry', 'sysCall_msg', 'sysCall_event'}
 
     if subprocess then
+        _pythonRunning = true
         pythonCallbacks={pythonCallback1,pythonCallback2,pythonCallback3}
         pythonCallbackStrs={'','',''}
 
@@ -201,9 +202,19 @@ function coroutineMain()
 end
 
 function sysCall_ext(funcName,...)
-    if subprocess then
-        local args={...}
+    local args={...}
+    local lang = -1 -- undef
 
+    if funcName:sub(-4) == '@lua' then
+        lang = 0
+        funcName = funcName:sub(1, -4-1)
+    elseif funcName:sub(-7) == '@python' then
+        lang = 1
+        funcName = funcName:sub(1, -7-1)
+    end
+
+    if lang == 0 or lang == -1 then -- Lua takes precedence on Python, if lang not specified
+        -- Lua
         local f = _G
         for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
             if f[w] then
@@ -211,17 +222,23 @@ function sysCall_ext(funcName,...)
             end
         end
         if type(f) == 'function' then
-            return f(args[1]) -- this function is defined in Lua, which takes precedence
-        else
+            return f(args[1])
+        end
+    end
+
+    if lang == 1 or lang == -1 then
+        -- Python
+        if subprocess then
             if pythonFuncs['sysCall_ext'] then
                 return callRemoteFunction('sysCall_ext',{funcName,args})
             else
-                return callRemoteFunction(funcName,args,true,false)
+                if pythonFuncs[funcName] then
+                    return callRemoteFunction(funcName,args,true,false)
+                end
             end
         end
-    else
-        return "pythonError"
     end
+    return "_*funcNotFound*_"
 end
 
 function resumeCoroutine()
@@ -830,7 +847,7 @@ function initPython(prog)
                     simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
-                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets).\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ "
+                errMsg="The Python interpreter could not handle the wrapper script\n(or communication between the launched subprocess and CoppeliaSim could not be established via sockets)\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ "
                 errMsg=errMsg..pyth.." -m pip install pyzmq cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
                 simSubprocess.wait(subprocess,0.1)
                 if simSubprocess.isRunning(subprocess) then
@@ -843,7 +860,7 @@ function initPython(prog)
         end
     else
         local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
-        errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
+        errMsg="The Python interpreter was not set.\nSpecify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
     end
     if errMsg then
         if pythonFailWarnOnly then
@@ -874,7 +891,7 @@ function startPythonClientSubprocess(pythonExec)
         subprocess=ret
     else
         local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir)
-        subprocess="The Python interpreter could not be called. It is currently set at: '"..pythonExec.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
+        subprocess="The Python interpreter could not be called. It is currently set at: '"..pythonExec.."'\nYou can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
         controlPort=nil
     end
     return subprocess,controlPort
@@ -1114,7 +1131,7 @@ class RemoteAPIClient:
                         sim.callScriptFunction(func, scriptHandle, *args)
         })()
 
-def _pythonEvalExec(theStr):
+def _evalExec(theStr):
     sim.protectedCalls(True)
     try:
         global H, SEL, SEL1
@@ -1146,6 +1163,24 @@ def _pythonEvalExec(theStr):
         pass
 
     sim.protectedCalls(False)
+
+def _evalExecRet(theStr):
+    sim.protectedCalls(True)
+    try:
+        reply = "_*empty*_"
+        try:
+            reply = eval(theStr,globals())
+        except SyntaxError:
+            try:
+                exec(theStr,globals())
+            except Exception as e:
+                reply = f"Error: {e}"
+        except Exception as e:
+            reply = f"Error: {e}"
+    except Exception as e:
+        pass
+    sim.protectedCalls(False)
+    return reply
 
 def _getFuncIfExists(name):
     method=None
