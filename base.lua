@@ -367,6 +367,30 @@ function _evalExec(inputStr)
     pcall(pfunc, inputStr)
 end
 
+function _evalExecRet(inputStr)
+    printToConsole("in base.lua, _evalExecRet: "..inputStr)
+    local reply = "_*empty*_"
+    function pfunc(theStr)
+        local func, err = load('return '..theStr)
+        if not func then
+            func, err = load(theStr)
+        end
+        if func then
+            local ret = table.pack(pcall(func))
+            if ret[1] then
+                table.remove(ret, 1)
+                reply = ret
+            else
+                reply = "Error: "..ret[2]
+            end
+        else
+            reply = "Error: "..err
+        end
+    end
+    pcall(pfunc, inputStr)
+    return reply
+end
+
 function _getCompletion(input,pos)
     return {}
 end

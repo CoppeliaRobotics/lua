@@ -216,10 +216,14 @@ function sysCall_ext(funcName,...)
     if lang == 0 or lang == -1 then -- Lua takes precedence on Python, if lang not specified
         -- Lua
         local f = _G
-        for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
-            if f[w] then
-                f = f[w]
+        if string.find(funcName,"%.") then
+            for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
+                if f[w] then
+                    f = f[w]
+                end
             end
+        else
+            f = f[funcName]
         end
         if type(f) == 'function' then
             return f(args[1])
