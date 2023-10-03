@@ -19,13 +19,7 @@ end
 setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
-    local txt = "Simulator launched, welcome! "
-    if _pythonRunning then
-        txt = txt .. "(Python REPL)"
-    else
-        txt = txt .. "(Lua REPL)"
-    end
-    sim.addLog(sim.verbosity_msgs, txt)
+    sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")
 end
 
 function s_cleanup()
