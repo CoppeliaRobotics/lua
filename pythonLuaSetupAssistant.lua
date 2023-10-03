@@ -38,14 +38,14 @@ local function main()
                     file="]]..imagesDir..[[lua-logo.png"
                     style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
                 <button text="Set up for Lua"
-                    on-click="setupForLua@lua" />
+                    on-click="setupForLua" />
             </group>
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[python-logo.png"
                     style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
                 <button text="Set up for Python"
-                    on-click="setupForPython@lua" />
+                    on-click="setupForPython" />
             </group>
         </group>
         <label text="Note: you can change it later by modifying <em>preferredSandboxLang</em> in usrset.txt." />
