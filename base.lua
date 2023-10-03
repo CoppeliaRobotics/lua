@@ -428,11 +428,33 @@ function _evalExecRet(inputStr)
 end
 
 function _getCompletion(input,pos)
-    return {}
+    local ret={}
+    if pos==#input then
+        local what=input:match('[_%a][_%w%.]*$')
+        local base,ext=what:match('^(.-)%.([^.]+)$')
+        if base then
+            base=getvar(base)
+        else
+            base,ext=_G,what
+        end
+        for k in pairs(base) do
+            if k:startswith(ext) and #k>#ext then
+                table.insert(ret,k:sub(#ext+1))
+            end
+        end
+    end
+    return ret
 end
 
 function _getCalltip(input,pos)
-    return ''
+    local parserx=require'parserx'
+    local cc=parserx.getCallContexts(input,pos)
+    if cc and #cc>0 then
+        local sym=cc[#cc][1]
+        return sim.getApiInfo(-1,sym)
+    else
+        return ''
+    end
 end
 
 _S.coroutineAutoYields={}
