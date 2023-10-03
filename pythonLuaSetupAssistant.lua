@@ -28,6 +28,8 @@ local function main()
     local resourcesDir = sim.getStringParam(sim.stringparam_resourcesdir)
     local imagesDir = resourcesDir .. '/helpFiles/en/images/usedByScripts/'
 
+    local imgStyle = 'background-color: white; border: 1px solid white; border-radius: 8px; padding-top: 100px;'
+
     local v=sim.getInt32Param(sim.intparam_program_full_version)
     v=table.join({v//1000000,v//10000%100,v//100%100},'.')
     ui=simUI.create([[<ui closeable="false" title="Welcome to CoppeliaSim ]]..v..[[" modal="true">
@@ -36,14 +38,14 @@ local function main()
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[lua-logo.png"
-                    style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
+                    style="]]..imgStyle..[[" />
                 <button text="Set up for Lua"
                     on-click="setupForLua" />
             </group>
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[python-logo.png"
-                    style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
+                    style="]]..imgStyle..[[" />
                 <button text="Set up for Python"
                     on-click="setupForPython" />
             </group>
