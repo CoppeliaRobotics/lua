@@ -38,14 +38,18 @@ local function main()
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[lua-logo.png"
-                    style="]]..imgStyle..[[" />
+                    style="]]..imgStyle..[["
+                    resize-widget="false"
+                    />
                 <button text="Set up for Lua"
                     on-click="setupForLua" />
             </group>
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[python-logo.png"
-                    style="]]..imgStyle..[[" />
+                    style="]]..imgStyle..[["
+                    resize-widget="false"
+                    />
                 <button text="Set up for Python"
                     on-click="setupForPython" />
             </group>
