@@ -4,6 +4,7 @@ pythonFailWarnOnly = true
 
 if not sim.getBoolParam(sim.boolparam_headless) then
     require('simURLDrop')
+    require('pythonLuaSetupAssistant')
 end
 
 base16 = require('base16')
