@@ -21,9 +21,9 @@ local function main()
         return
     end
 
-    local sim = require 'sim'
-    local simUI = require 'simUI'
-    local simCmd = require 'simCmd'
+    sim = require 'sim'
+    simUI = require 'simUI'
+    simCmd = require 'simCmd'
 
     local resourcesDir = sim.getStringParam(sim.stringparam_resourcesdir)
     local imagesDir = resourcesDir .. '/helpFiles/en/images/usedByScripts/'
@@ -38,14 +38,14 @@ local function main()
                     file="]]..imagesDir..[[lua-logo.png"
                     style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
                 <button text="Set up for Lua"
-                    on-click="setupForLua" />
+                    on-click="setupForLua@lua" />
             </group>
             <group>
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[python-logo.png"
                     style="*{background-color: white; border: 1px solid white; border-radius: 8px; padding: 100px;}"/>
                 <button text="Set up for Python"
-                    on-click="setupForPython" />
+                    on-click="setupForPython@lua" />
             </group>
         </group>
         <label text="Note: you can change it later by modifying <em>preferredSandboxLang</em> in usrset.txt." />
