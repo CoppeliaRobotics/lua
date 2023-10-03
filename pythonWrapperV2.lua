@@ -212,7 +212,20 @@ function sysCall_ext(funcName,...)
         funcName = funcName:sub(1, -7-1)
     end
 
-    if lang == 0 or lang == -1 then -- Lua takes precedence on Python, if lang not specified
+    if lang == 1 or lang == -1 then -- Python takes precedence on Lua, if lang not specified
+        -- Python
+        if subprocess then
+            if pythonFuncs['sysCall_ext'] then
+                return callRemoteFunction('sysCall_ext',{funcName,args})
+            else
+                if pythonFuncs[funcName] then
+                    return callRemoteFunction(funcName,args,true,false)
+                end
+            end
+        end
+    end
+
+    if lang == 0 or lang == -1 then
         -- Lua
         local f = _G
         if string.find(funcName,"%.") then
@@ -229,18 +242,6 @@ function sysCall_ext(funcName,...)
         end
     end
 
-    if lang == 1 or lang == -1 then
-        -- Python
-        if subprocess then
-            if pythonFuncs['sysCall_ext'] then
-                return callRemoteFunction('sysCall_ext',{funcName,args})
-            else
-                if pythonFuncs[funcName] then
-                    return callRemoteFunction(funcName,args,true,false)
-                end
-            end
-        end
-    end
     return "_*funcNotFound*_"
 end
 
