@@ -81,6 +81,40 @@ function string.escpat(x)
              :gsub('%?', '%%?'))
 end
 
+function string.isalnum(s)
+    return s:match('^%w*$')
+end
+
+function string.isalpha(s)
+    return s:match('^%a*$')
+end
+
+function string.isidentifier(s)
+    return s:match('^[_%a][_%w]*$')
+end
+
+function string.islower(s)
+    return s:lower()==s
+end
+
+function string.isnumeric(s)
+    return s:match('^%d*$')
+end
+
+function string.isprintable(s)
+    if #s==0 then return true end
+    local b=string.byte(s)
+    return b>=32 and b<127 and string.isprintable(s:sub(2))
+end
+
+function string.isspace(s)
+    return s:match('^%s*$')
+end
+
+function string.isupper(s)
+    return s:upper()==s
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
@@ -99,5 +133,23 @@ if arg and #arg==1 and arg[1]=='test' then
     assert(table.eq(string.chars('abc'),{'a','b','c'}))
     assert(table.eq(string.bytes('abc'),{0x61,0x62,0x63}))
     assert(string.escpat('[[--x')=='%[%[%-%-x')
+    assert(string.isalnum'abcABC123')
+    assert(not string.isalnum'abc-ABC123')
+    assert(string.isalpha'abcABC')
+    assert(not string.isalpha'abcABC123')
+    assert(string.isidentifier'abcABC3')
+    assert(string.isidentifier'_3')
+    assert(not string.isidentifier'3abcABC123')
+    assert(not string.isidentifier'abc ABC123')
+    assert(string.islower'abc123')
+    assert(not string.islower'abcABC123')
+    assert(string.isnumeric'123')
+    assert(not string.isnumeric'123abcABC')
+    assert(string.isprintable'abc,:ABC!123')
+    assert(not string.isprintable'\xff\x00123abcABC')
+    assert(string.isspace' 	\n')
+    assert(not string.isspace'abc ABC')
+    assert(string.isupper'ABC123')
+    assert(not string.isupper'abcABC123')
     print(debug.getinfo(1,'S').source,'tests passed')
 end
