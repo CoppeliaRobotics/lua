@@ -1201,6 +1201,13 @@ def require(a):
 
 def print(*a):
     client.call('__print__', [' '.join(map(str, a))])
+
+def quit():
+    client.call('quit', [])
+
+def help():
+    client.call('help', [])
+
     
 '''def trace_function(frame, event, arg):
     if event == "line":
