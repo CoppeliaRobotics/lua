@@ -226,7 +226,7 @@ function sysCall_ext(funcName,...)
             f = f[funcName]
         end
         if type(f) == 'function' then
-            return f(args[1])
+            return f(table.unpack(args))
         end
     end
 
