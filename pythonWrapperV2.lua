@@ -797,12 +797,8 @@ function initPython(prog)
         local p=sim.getInt32Param(sim.intparam_platform)
         if p==0 then
             pyth='py'
-        end
-        if p==1 then
-            pyth='/usr/local/bin/python3' -- via Homebrew
-        end
-        if p==2 then
-            pyth='/usr/bin/python3'
+        else
+            pyth='python3'
         end
     end
     local errMsg
@@ -895,7 +891,7 @@ function startPythonClientSubprocess(pythonExec)
         subprocess=ret
     else
         local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir)
-        subprocess="The Python interpreter could not be called. It is currently set at: '"..pythonExec.."'\nYou can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
+        subprocess="The Python interpreter could not be called. It is currently set as: '"..pythonExec.."'\nYou can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
         controlPort=nil
     end
     return subprocess,controlPort
