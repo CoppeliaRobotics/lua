@@ -2,7 +2,6 @@ startTimeout = 2
 sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
 simZMQ = require('simZMQ')
 simSubprocess = require('simSubprocess')
-simUI = require('simUI')
 cbor = require'org.conman.cbor'
 removeLazyLoaders()
 
