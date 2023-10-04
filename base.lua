@@ -379,14 +379,14 @@ function _evalExec(inputStr)
             func, err = load(theStr)
         end
         if func then
-            local ret = table.pack(pcall(func))
-            if ret[1] then
-                if #ret > 1 or rr then
-                    table.remove(ret, 1)
+            local ret = nil
+            local success, err = pcall(function() ret = table.pack(func()) end)
+            if success then
+                if ret.n > 0 and rr then
                     print(table.unpack(ret))
                 end
             else
-                sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, ret[2])
+                sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
             end
         else
             sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
@@ -408,14 +408,18 @@ function _evalExecRet(inputStr)
     local reply = "_*empty*_"
     function pfunc(theStr)
         local func, err = load('return '..theStr)
+        local rr = true
         if not func then
+            rr = false
             func, err = load(theStr)
         end
         if func then
-            local ret = table.pack(pcall(func))
-            if ret[1] then
-                table.remove(ret, 1)
-                reply = ret
+            local ret = nil
+            local success, err = pcall(function() ret = table.pack(func()) end)
+            if success then
+                if ret.n > 0 and rr then
+                    reply = ret
+                end
             else
                 reply = "Error: "..ret[2]
             end
