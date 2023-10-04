@@ -238,7 +238,12 @@ function sysCall_ext(funcName,...)
             f = f[funcName]
         end
         if type(f) == 'function' then
-            return f(table.unpack(args))
+            local status, retvals = pcall(f, table.unpack(args))
+            if status == false then
+                return "_*runtimeError*_" --..retVals
+            else
+                return retvals
+            end
         end
     end
 
@@ -1165,10 +1170,10 @@ def _evalExec(theStr):
     sim.protectedCalls(False)
 
 def _getCompletion(input, pos):
-    return []
+    return client.call('_getCompletion', [input, pos])
 
 def _getCalltip(input, pos):
-    return ''
+    return client.call('_getCalltip', [input, pos])
 
 def _evalExecRet(theStr):
     sim.protectedCalls(True)
