@@ -1164,15 +1164,13 @@ def _evalExec(theStr):
         global H, SEL, SEL1
         H = sim.getObject
         SEL = sim.getObjectSel()
-        SEL1 = None
-        if len(SEL) > 0:
-            SEL1 = SEL[len(SEL) - 1]
+        SEL1 = SEL[-1] if SEL else None
 
         try:
             print(eval(theStr,globals()))
         except SyntaxError:
             try:
-                exec(theStr,globals())
+                exec(theStr, globals())
             except Exception as e:
                 sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, f"Error: {e}")
         except Exception as e:
@@ -1183,19 +1181,11 @@ def _evalExec(theStr):
 
         H = sim.getObject
         SEL = sim.getObjectSel()
-        SEL1 = None
-        if len(SEL) > 0:
-            SEL1 = SEL[len(SEL) - 1]
+        SEL1 = SEL[-1] if SEL else None
     except Exception as e:
         pass
 
     sim.protectedCalls(False)
-
-def _getCompletion(input, pos):
-    return client.call('_getCompletion', [input, pos])
-
-def _getCalltip(input, pos):
-    return client.call('_getCalltip', [input, pos])
 
 def _evalExecRet(theStr):
     sim.protectedCalls(True)
@@ -1223,6 +1213,12 @@ def _getFuncIfExists(name):
         pass
     return method
 
+def _getCompletion(input, pos):
+    return client.call('_getCompletion', [input, pos])
+
+def _getCalltip(input, pos):
+    return client.call('_getCalltip', [input, pos])
+
 def require(a):
     return client.require(a)
 
@@ -1238,12 +1234,11 @@ def help(what=None):
     else:
         client.call('help', [])
 
-    
 '''def trace_function(frame, event, arg):
     if event == "line":
         cnt=0
         cnt=cnt+1
-    return trace_function'''    
+    return trace_function'''
 
 def __startClientScript__():
     global client
@@ -1256,7 +1251,7 @@ def __startClientScript__():
     client.call('setPythonFuncs', [allFuncs])
     #sys.settrace(trace_function)
     client.call('_*executed*_', [])
-    
+
 def __restartClientScript__():
     client.call('_*executed*_', [])
 
