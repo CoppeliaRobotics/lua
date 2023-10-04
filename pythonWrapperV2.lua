@@ -1227,7 +1227,7 @@ def require(a):
     return client.require(a)
 
 def print(*a):
-    client.call('__print__', [' '.join(map(str, a))])
+    client.call('__print__', [', '.join(map(repr, a))])
 
 def quit():
     client.call('quit', [])
