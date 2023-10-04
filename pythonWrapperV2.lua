@@ -1264,7 +1264,11 @@ def require(a):
     return client.require(a)
 
 def print(*a):
-    client.call('__print__', [', '.join(map(repr, a))])
+    if len(a) == 1:
+        a = [str(a[0])]
+    elif len(a) > 1:
+        a = [repr(ai) for ai in a]
+    client.call('__print__', [', '.join(a)])
 
 def quit():
     client.call('quit', [])
