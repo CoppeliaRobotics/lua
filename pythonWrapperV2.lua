@@ -108,6 +108,18 @@ function totxt(data)
     return d
 end
 
+function toarray(data)
+    local d={data=data}
+    setmetatable(d,{__tocbor=function(self) return cbor.TYPE.ARRAY(self.data) end})
+    return d
+end
+
+function tomap(data)
+    local d={data=data}
+    setmetatable(d,{__tocbor=function(self) return cbor.TYPE.MAP(self.data) end})
+    return d
+end
+
 function sysCall_init(...)
     returnTypes={}
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
@@ -458,6 +470,8 @@ function parseFuncsReturnTypes(nameSpace)
                             t[i]=1
                         elseif token=='buffer' then
                             t[i]=2
+                        elseif token=='map' then
+                            t[i]=3
                         else
                             t[i]=0
                         end
@@ -526,7 +540,7 @@ function handleRequest(req)
             doNotInterruptCommLevel=doNotInterruptCommLevel+1
             local status,retvals=xpcall(function()
                 local ret={func(unpack(args))}
-                -- Try to assign correct types to text and buffers:
+                -- Try to assign correct types to text/buffers and arrays/maps:
                 local args=returnTypes[req['func']]
                 if args then
                     local cnt=math.min(#ret,#args)
@@ -535,6 +549,14 @@ function handleRequest(req)
                             ret[i]=totxt(ret[i])
                         elseif args[i]==2 then
                             ret[i]=tobin(ret[i])
+                        else
+                            if type(ret[i])=='table' and next(ret[i])==nil then
+                                if args[i]==3 then
+                                    ret[i]=tomap(ret[i])
+                                else
+                                    ret[i]=toarray(ret[i])
+                                end
+                            end
                         end
                     end
                 end
