@@ -244,15 +244,15 @@ end
 
 function getAsString(...)
     local lb=setAutoYield(false)
-    local a={...}
+    local a = table.pack(...)
     local t=''
-    if #a==1 and type(a[1])=='string' then
+    if a.n == 1 and type(a[1]) == 'string' then
 --        t=string.format('"%s"', a[1])
         t=string.format('%s', a[1])
     else
-        for i=1,#a,1 do
+        for i=1,a.n do
             if i~=1 then
-                t=t..','
+                t = t .. ', '
             end
             if type(a[i])=='table' then
                 t=t.._S.tableToString(a[i],{},99)
@@ -262,7 +262,8 @@ function getAsString(...)
         end
     end
     if #a==0 then
-        t='nil'
+--        t='nil'
+        t = ''
     end
     setAutoYield(lb)
     return(t)
