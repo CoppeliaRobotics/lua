@@ -1218,7 +1218,22 @@ def _getFuncIfExists(name):
     return method
 
 def _getCompletion(input, pos):
-    return client.call('_getCompletion', [input, pos])
+    import re
+    ret = []
+    if pos == len(input):
+        if m := re.search(r'[_\w][_\w\.]*$', input):
+            what = m.group()
+            obj = None
+            *parts, last = what.split('.')
+            for part in parts:
+                if obj is None:
+                    obj = globals()[part]
+                else:
+                    obj = getattr(obj, part)
+            for k in dir(obj) if obj else globals():
+                if k.startswith(last) and len(k) > len(last):
+                    ret.append(k[len(last):])
+    return ret
 
 def _getCalltip(input, pos):
     return client.call('_getCalltip', [input, pos])
