@@ -1042,6 +1042,28 @@ import re
 
 XXXadditionalPathsXXX
 
+
+class RemoteAPIMethod:
+    def __init__(self, client, obj, met):
+        self.client = client
+        self.obj = obj
+        self.met = met
+
+    def __str__(self):
+        return f'{self.obj}.{self.met}'
+
+    def __repr__(self):
+        return f'<{self.__class__.__name__} {self!s}>'
+
+    def __call__(self, *args):
+        return self.client.call(str(self), args)
+
+    def __getattribute__(self, k):
+        if k == '__doc__':
+            return self.client.call('sim.getApiInfo', [-1, str(self)])
+        return object.__getattribute__(self, k)
+
+
 class RemoteAPIClient:
     def __init__(self):
         self.context = zmq.Context()
@@ -1068,7 +1090,7 @@ class RemoteAPIClient:
                         self.callbackFuncs[funcStr] = req['args'][i]
                         req['args'][i] = funcStr + "@func"
 
-        # pack and send:            
+        # pack and send:
         try:
             rawReq = cbor.dumps(req)
         except Exception as err:
@@ -1127,7 +1149,7 @@ class RemoteAPIClient:
             if not isinstance(v, dict):
                 raise ValueError('found nondict')
             if len(v) == 1 and 'func' in v:
-                setattr(ret, k, lambda *a, func=f'{name}.{k}': self.call(func, a))
+                setattr(ret, k, RemoteAPIMethod(self, name, k))
             elif len(v) == 1 and 'const' in v:
                 setattr(ret, k, v['const'])
             else:
@@ -1137,7 +1159,7 @@ class RemoteAPIClient:
             ret.getScriptFunctions = self.getScriptFunctions
 
         return ret
-         
+
     def require(self, name):
         if name in self.requiredItems:
             ret = self.requiredItems[name]
