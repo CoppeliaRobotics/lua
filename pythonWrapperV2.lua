@@ -1162,9 +1162,10 @@ def _evalExec(theStr):
     sim.protectedCalls(True)
     try:
         global H, SEL, SEL1
-        H = sim.getObject
-        SEL = sim.getObjectSel()
-        SEL1 = SEL[-1] if SEL else None
+        if sim.getNamedBoolParam('simCmd.setConvenienceVars') is not False:
+            H = sim.getObject
+            SEL = sim.getObjectSel()
+            SEL1 = SEL[-1] if SEL else None
 
         try:
             ret = eval(theStr, globals())
@@ -1178,12 +1179,13 @@ def _evalExec(theStr):
         except Exception as e:
             sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, f"Error: {e}")
 
-        if H != sim.getObject:
-            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
+        if sim.getNamedBoolParam('simCmd.setConvenienceVars') is not False:
+            if H != sim.getObject:
+                sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
 
-        H = sim.getObject
-        SEL = sim.getObjectSel()
-        SEL1 = SEL[-1] if SEL else None
+            H = sim.getObject
+            SEL = sim.getObjectSel()
+            SEL1 = SEL[-1] if SEL else None
     except Exception as e:
         pass
 

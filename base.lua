@@ -368,9 +368,11 @@ end
 
 function _evalExec(inputStr)
     function pfunc(theStr)
-        H = sim.getObject
-        SEL = sim.getObjectSel()
-        SEL1 = SEL[#SEL]
+        if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
+            H = sim.getObject
+            SEL = sim.getObjectSel()
+            SEL1 = SEL[#SEL]
+        end
 
         local func, err = load('return '..theStr)
         local rr = true
@@ -392,13 +394,15 @@ function _evalExec(inputStr)
             sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
         end
 
-        if H ~= sim.getObject then
-            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
-        end
+        if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
+            if H ~= sim.getObject then
+                sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
+            end
 
-        H = sim.getObject
-        SEL = sim.getObjectSel()
-        SEL1 = SEL[#SEL]
+            H = sim.getObject
+            SEL = sim.getObjectSel()
+            SEL1 = SEL[#SEL]
+        end
     end
     pcall(pfunc, inputStr)
 end
