@@ -1167,7 +1167,9 @@ def _evalExec(theStr):
         SEL1 = SEL[-1] if SEL else None
 
         try:
-            print(eval(theStr,globals()))
+            ret = eval(theStr, globals())
+            if ret is not None:
+                print(ret)
         except SyntaxError:
             try:
                 exec(theStr, globals())
