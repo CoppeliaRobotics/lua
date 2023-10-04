@@ -74,6 +74,18 @@ function s_suspended()
     end
 end
 
+function help()
+    local savedH = help
+    simCmd = require('simCmd')
+    if simCmdHelp then
+        help = simCmdHelp
+    else
+        simCmdHelp = help
+    end
+    help()
+    help = savedH
+end
+
 sim.registerScriptFuncHook('sysCall_init', 's_init', false) -- hook on *before* init is incompatible with implicit module load...
 sim.registerScriptFuncHook('sysCall_cleanup', 's_cleanup', false)
 sim.registerScriptFuncHook('sysCall_beforeSimulation', 's_beforeSimulation', false)
