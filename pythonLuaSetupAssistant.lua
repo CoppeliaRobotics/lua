@@ -29,6 +29,15 @@ local function main()
     local imagesDir = resourcesDir .. '/helpFiles/en/images/usedByScripts/'
 
     local imgStyle = 'background-color: white; border: 1px solid white; border-radius: 8px; padding-top: 100px;'
+    local function imgSize(w, h)
+        local platform = sim.getInt32Param(sim.intparam_platform)
+        if platform == 1 then
+            return ''
+        else
+            local k = 4
+            return string.format('width="%d" height="%d"', w//k, h//k)
+        end
+    end
 
     local v=sim.getInt32Param(sim.intparam_program_full_version)
     v=table.join({v//1000000,v//10000%100,v//100%100},'.')
@@ -39,7 +48,7 @@ local function main()
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[lua-logo.png"
                     style="]]..imgStyle..[["
-                    resize-widget="false"
+                    ]]..imgSize(512, 512)..[[
                     />
                 <button text="Set up for Lua"
                     on-click="setupForLua" />
@@ -48,7 +57,7 @@ local function main()
                 <image scaled-contents="true" keep-aspect-ratio="true"
                     file="]]..imagesDir..[[python-logo.png"
                     style="]]..imgStyle..[["
-                    resize-widget="false"
+                    ]]..imgSize(559, 512)..[[
                     />
                 <button text="Set up for Python"
                     on-click="setupForPython" />
