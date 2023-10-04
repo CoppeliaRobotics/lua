@@ -115,6 +115,49 @@ function string.isupper(s)
     return s:upper()==s
 end
 
+function string.escapehtml(s,opts)
+    opts=opts or {}
+    opts.entities=opts.entities or true
+
+    if opts.entities then
+        local htmlEntities = {
+            ["&"] = "&amp;",
+            ["<"] = "&lt;",
+            [">"] = "&gt;",
+            ['"'] = "&quot;",
+            ["'"] = "&#39;"
+        }
+        s=s:gsub("[&<>\"']", function(match) return htmlEntities[match] end)
+    end
+
+    return s
+end
+
+function string.stripmarkdown(s,opts)
+    opts=opts or {}
+
+    -- Remove headers (##, ###, ####, etc.)
+    s = s:gsub("##+ ([^\n]*)\n", "%1")
+
+    -- Remove bold
+    s = s:gsub("%*%*([^*]+)%*%*", "%1")
+    s = s:gsub("__([^_]+)__", "%1")
+
+    -- Remove italic
+    s = s:gsub("%*([^*]*)%*", "%1")
+    s = s:gsub("_([^_]*)_", "%1")
+
+    -- Remove inline code (`code`)
+    s = s:gsub("`([^`]*)`", "%1")
+
+    if not opts.keeplinks then
+        -- Remove links [text](url)
+        s = s:gsub("%[([^%]]+)%]%([^%)]+%)", "%1")
+    end
+
+    return s
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     require'tablex'
     assert(table.eq(string.split('a%b%c','%',true),{'a','b','c'}))
