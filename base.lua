@@ -382,7 +382,7 @@ function _evalExec(inputStr)
             local success, err = pcall(function() ret = table.pack(func()) end)
             if success then
                 if ret.n > 0 and rr then
-                    print(table.unpack(ret))
+                    print(table.unpack(ret, 1, ret.n))
                 end
             else
                 sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
