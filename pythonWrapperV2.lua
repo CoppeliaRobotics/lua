@@ -891,6 +891,7 @@ function initPython(prog)
     end
     if errMsg then
         if pythonFailWarnOnly then
+            pythonFailMsg = errMsg
             sim.addLog(sim.verbosity_scriptwarnings, errMsg)
         else
             error('__[[__'..errMsg..'__]]__')

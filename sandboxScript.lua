@@ -1,6 +1,6 @@
 sim = require('sim')
 
-pythonFailWarnOnly = true
+pythonFailWarnOnly = true -- error msg can be read in pythonFailMsg
 
 if not sim.getBoolParam(sim.boolparam_headless) then
     require('simURLDrop')
