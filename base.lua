@@ -261,10 +261,6 @@ function getAsString(...)
             end
         end
     end
-    if #a==0 then
---        t='nil'
-        t = ''
-    end
     setAutoYield(lb)
     return(t)
 end
