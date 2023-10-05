@@ -41,7 +41,7 @@ local function main()
 
     local v=sim.getInt32Param(sim.intparam_program_full_version)
     v=table.join({v//1000000,v//10000%100,v//100%100},'.')
-    ui=simUI.create([[<ui closeable="false" title="Welcome to CoppeliaSim ]]..v..[[" modal="true">
+    ui=simUI.create([[<ui closeable="true" title="Welcome to CoppeliaSim ]]..v..[[" modal="true">
         <label text="This version of CoppeliaSim supports both <b>Lua</b> and <b>Python</b> as the scripting languages for writing child scripts, customization scripts and add-ons. Choosing your preferred language will make it easier to access (e.g. in the sandbox).<br/><br/>Which language do you want to set as the preferred language?" wordwrap="true" />
         <group flat="true" layout="hbox">
             <group>
