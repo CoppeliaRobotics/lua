@@ -874,8 +874,8 @@ function initPython(prog)
                     simZMQ.send(pySocket,cbor.encode({cmd='callFunc',func='__startClientScript__',args={}}),0)
                 end
             else
-                errMsg="The Python interpreter could not handle the wrapper script\n(or communication between the launched subprocess and CoppeliaSim could not be established via sockets)\nMake sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ "
-                errMsg=errMsg..pyth.." -m pip install pyzmq cbor\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
+                errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via: $ "
+                errMsg=errMsg..pyth.." -m pip install pyzmq cbor. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
                 simSubprocess.wait(subprocess,0.1)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)
@@ -887,12 +887,15 @@ function initPython(prog)
         end
     else
         local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
-        errMsg="The Python interpreter was not set.\nSpecify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
+        errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
     if errMsg then
+        if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) == sim.scripttype_sandboxscript then
+            sim.setNamedBoolParam("pythonSandboxInitFailed", true)
+        end
         if pythonFailWarnOnly then
-            pythonFailMsg = errMsg
-            sim.addLog(sim.verbosity_scriptwarnings, errMsg)
+            sim.setNamedStringParam("pythonSandboxInitFailMsg", errMsg)
+            sim.addLog(sim.verbosity_scripterrors, errMsg)
         else
             error('__[[__'..errMsg..'__]]__')
         end
@@ -919,7 +922,7 @@ function startPythonClientSubprocess(pythonExec)
         subprocess=ret
     else
         local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir)
-        subprocess="The Python interpreter could not be called. It is currently set as: '"..pythonExec.."'\nYou can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython',\nor via the named string parameter 'python' from the command line"
+        subprocess="The Python interpreter could not be called. It is currently set as: '"..pythonExec.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
         controlPort=nil
     end
     return subprocess,controlPort

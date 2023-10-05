@@ -1,6 +1,6 @@
 sim = require('sim')
 
-pythonFailWarnOnly = true -- error msg can be read in pythonFailMsg
+pythonFailWarnOnly = true -- error msg can be read via sim.getNamedBoolParam("pythonSandboxInitFailMsg")
 
 base16 = require('base16')
 base64 = require('base64')
@@ -18,7 +18,7 @@ function s_init()
     sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")
     if not sim.getBoolParam(sim.boolparam_headless) then
         require('simURLDrop')
-        if not pythonFailMsg then
+        if not sim.getNamedBoolParam("pythonSandboxInitFailed") then
             require('pythonLuaSetupAssistant')
         end
     end
