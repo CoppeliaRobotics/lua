@@ -2,11 +2,6 @@ sim = require('sim')
 
 pythonFailWarnOnly = true -- error msg can be read in pythonFailMsg
 
-if not sim.getBoolParam(sim.boolparam_headless) then
-    require('simURLDrop')
-    require('pythonLuaSetupAssistant')
-end
-
 base16 = require('base16')
 base64 = require('base64')
 
@@ -21,6 +16,12 @@ setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
     sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")
+    if not sim.getBoolParam(sim.boolparam_headless) then
+        require('simURLDrop')
+        if not pythonFailMsg then
+            require('pythonLuaSetupAssistant')
+        end
+    end
 end
 
 function s_cleanup()
