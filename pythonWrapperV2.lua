@@ -964,11 +964,28 @@ function getCleanErrorMsg(inMsg)
             if p2 then
                 local sn,en=string.find(msg,'%d+',p2)
                 local lineNb=tonumber(string.sub(msg,sn,en))
-                if lineNb>boilerplateLines and lineNb<=boilerplateLines+userCodeLines then
-                    msg=msg:sub(1,sn-1)..tostring(lineNb-boilerplateLines)..msg:sub(en+1)
+                if lineNb <= boilerplateLines then
+                    -- Relates to boiler plate lines
+                    msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
+                    --[[
+                    local sp, ep = string.find(msg, "@_script_@", p2)
+                    if sp then
+                        msg = msg:sub(1, sp-1) .. "boilerplatescript" .. msg:sub(ep+1)
+                    end
+                    p1=sn
+                    --]]
+                elseif lineNb<=boilerplateLines+userCodeLines then
+                    -- Relates to user code lines
+                    local off = 0
+                    if externalFile then
+                        off = -1
+                    end
+                    msg=msg:sub(1,sn-1)..tostring(lineNb-boilerplateLines+off)..msg:sub(en+1)
                     p1=sn
                 else
+                    -- Relates to other code lines
                     msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
+                    --p1=sn
                 end
             else
                 break
@@ -1303,4 +1320,5 @@ def __restartClientScript__():
 
 # convenience global var to emulate OOP in scripts:
 self = type('', (object,), {})()
+
 ]=]
