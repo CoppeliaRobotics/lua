@@ -128,6 +128,36 @@ function printBytes(x)
     print(s)
 end
 
+function funcToString(f)
+    for _, objName in ipairs(__lazyLoadModules) do
+        local obj = _G[objName]
+        if obj then
+            local mt = getmetatable(obj)
+            if not mt or not mt.__moduleLazyLoader then
+                for funcName, func in pairs(obj) do
+                    if type(func) == 'function' and func == f then
+                        return objName .. '.' .. funcName
+                    end
+                end
+            end
+        end
+    end
+end
+
+function help(what)
+    if what == nil then
+        simCmd = require 'simCmd'
+        simCmd.help()
+        return
+    end
+    if type(what) == 'function' then
+        what = funcToString(what)
+        assert(what, "name not known")
+    end
+    assert(type(what) == 'string', 'bad type')
+    print(sim.getApiInfo(-1, what))
+end
+
 function isArray(t)
     local m=0
     local count=0

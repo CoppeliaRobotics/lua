@@ -1354,7 +1354,8 @@ def help(what=None):
     if what:
         print(getattr(what, '__doc__', 'No documentation available.'))
     else:
-        client.call('help', [])
+        simCmd = require('simCmd')
+        simCmd.help()
 
 '''def trace_function(frame, event, arg):
     if event == "line":
