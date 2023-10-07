@@ -1101,7 +1101,7 @@ class RemoteAPIClient:
     def _send(self, req):
         # convert a possible function to string:
         if 'args' in req and req['args']!=None and (isinstance(req['args'],tuple) or isinstance(req['args'],list)):
-            req['args']=list(req['args'])
+            req['args'] = list(req['args'])
             for i in range(len(req['args'])):
                 if callable(req['args'][i]):
                     funcStr = str(req['args'][i])
@@ -1110,6 +1110,7 @@ class RemoteAPIClient:
                         funcStr = m.group(1)
                         self.callbackFuncs[funcStr] = req['args'][i]
                         req['args'][i] = funcStr + "@func"
+            req['argsL'] = len(args)
 
         # pack and send:
         try:
