@@ -104,10 +104,11 @@ else
     end
 end
 
-function print(s, ...)
-    local s = _S.anyToString(s, {omitQuotes=true})
-    if table.pack(...).n > 0 then
-        s = s .. ', ' .. getAsString(...)
+function print(...)
+    local a = table.pack(...)
+    local s = ''
+    for i = 1, a.n do
+        s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i], {omitQuotes=true})
     end
 
     local lb = setAutoYield(false)
@@ -181,6 +182,7 @@ function _S.tableToString(tt, opts)
     opts.maxLevel = opts.maxLevel or 99
     opts.indent = opts.indent or 0
     opts.maxLevel = opts.maxLevel - 1
+    opts.omitQuotes = false
 
     if type(tt) == 'table' then
         if opts.maxLevel <= 0 then
