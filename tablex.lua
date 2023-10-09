@@ -20,30 +20,61 @@ function table.eq(a,b)
     return true
 end
 
-function table.join(t,sep,opts,vt)
+function table.isarray(t)
+    local m=0
+    local count=0
+    for k,v in pairs(t) do
+        if type(k)=='number' and math.type(k)=='integer' and k>=1 then
+            if k>m then m=k end
+            count=count+1
+        else
+            return false
+        end
+    end
+    return m==count
+end
+
+function table.join(t,sep,opts,visited)
     sep=sep or ', '
     opts=opts or {}
-    vt=vt or {}
-    s=''
-    vt[tostring(t)]=1
-    local visitedKeys={}
-    local function concat(prefix,key,val)
-        if visitedKeys[key] then return end
-        s=s..(s=='' and '' or sep)..prefix
+    visited=visited or {}
+    local s=''
+    visited[t]=true
+    local function concat(showKey,key,val)
+        if s~='' then s=s..sep end
+        if showKey then
+            if type(key)~='string' then s=s..'[' end
+            s=s..tostring(key)
+            if type(key)~='string' then s=s..']' end
+            s=s..' = '
+        end
         if type(val)=='table' then
-            if vt[tostring(val)] then
+            if visited[val] then
                 s=s..'...'
             else
-                s=s..table.tostring(val)
+                s=s..table.tostring(val,sep,opts,visited)
             end
+        elseif type(val)=='string' then
+            s=s.."'"..val.."'"
         else
             s=s..tostring(val)
         end
-        visitedKeys[key]=1
     end
-    for key,val in ipairs(t) do concat('',key,val) end
-    for key,val in pairs(t) do concat(key..'=',key,val) end
+    local visitedIntKeys={}
+    for key,val in ipairs(t) do
+        visitedIntKeys[key]=true
+        concat(false,key,val)
+    end
+    for key,val in pairs(t) do
+        if not visitedIntKeys[key] then
+            concat(true,key,val)
+        end
+    end
     return s
+end
+
+function table.tostring(t,sep,opts,visited)
+    return '{'..table.join(t,sep,opts,visited)..'}'
 end
 
 function table.slice(t,first,last,step)
@@ -52,10 +83,6 @@ function table.slice(t,first,last,step)
         table.insert(ret,t[i])
     end
     return ret
-end
-
-function table.tostring(t,sep,opts,vt)
-    return '{'..table.join(t,sep,opts,vt)..'}'
 end
 
 function table.print(t)

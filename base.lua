@@ -162,19 +162,7 @@ function help(what)
     print(sim.getApiInfo(-1, what))
 end
 
-function isArray(t)
-    local m=0
-    local count=0
-    for k,v in pairs(t) do
-        if type(k)=="number" and math.floor(k)==k and k>0 then
-            if k>m then m=k end
-            count=count+1
-        else
-            return false
-        end
-    end
-    return m<=count
-end
+require 'tablex'
 
 function _S.tableToString(tt, opts)
     opts = opts and table.clone(opts) or {}
@@ -200,7 +188,7 @@ function _S.tableToString(tt, opts)
             else
                 opts.visitedTables[tt] = true
                 local sb = {}
-                if isArray(tt) then
+                if table.isarray(tt) then
                     table.insert(sb, '{')
                     for i = 1, #tt do
                         if i > 1 then table.insert(sb, ', ') end
