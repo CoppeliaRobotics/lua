@@ -20,6 +20,12 @@ function table.eq(a,b)
     return true
 end
 
+function table.keys(t)
+    local r={}
+    for k in pairs(t) do table.insert(r,k) end
+    return r
+end
+
 function table.isarray(t)
     local m=0
     local count=0
@@ -36,12 +42,20 @@ end
 
 function table.join(t,sep,opts,visited)
     sep=sep or ', '
-    opts=opts or {}
+    opts=opts and table.clone(opts) or {}
+    opts.indentString=opts.indentString or '    '
+    if opts.indent==true then opts.indent=0 end
+    if opts.indent then
+        opts.indent=opts.indent+1
+    end
     visited=visited or {}
     local s=''
     visited[t]=true
     local function concat(showKey,key,val)
-        if s~='' then s=s..sep end
+        if not opts.indent and s~='' then s=s..sep end
+        if opts.indent then
+            s=s..string.rep(opts.indentString,opts.indent)
+        end
         if showKey then
             if type(key)~='string' then s=s..'[' end
             s=s..tostring(key)
@@ -59,22 +73,49 @@ function table.join(t,sep,opts,visited)
         else
             s=s..tostring(val)
         end
+        if opts.indent then
+            s=s..sep..'\n'
+        end
     end
-    local visitedIntKeys={}
+    local allKeys={}
+    for key in pairs(t) do
+        allKeys[key]=true
+    end
     for key,val in ipairs(t) do
-        visitedIntKeys[key]=true
+        allKeys[key]=nil
         concat(false,key,val)
     end
-    for key,val in pairs(t) do
-        if not visitedIntKeys[key] then
-            concat(true,key,val)
+    allKeys=table.keys(allKeys)
+    table.sort(allKeys,function(k1,k2)
+        -- sort keys by type, then by name
+        local v1,v2=t[k1],t[k2]
+        local t1,t2=type(v1),type(v2)
+        local function order(k)
+            return ({['boolean']=1, ['number']=2, ['string']=3, ['function']=4, ['userdata']=5, ['thread']=6, ['table']=7})[k] or 8
         end
+        local o1,o2=order(t1),order(t2)
+        return o1<o2 or (o1==o2 and k1<k2)
+    end)
+    for _,key in ipairs(allKeys) do
+        local val=t[key]
+        concat(true,key,val)
     end
     return s
 end
 
 function table.tostring(t,sep,opts,visited)
-    return '{'..table.join(t,sep,opts,visited)..'}'
+    opts=opts and table.clone(opts) or {}
+    opts.indentString=opts.indentString or '    '
+    if opts.indent==true then opts.indent=0 end
+
+    local s='{'
+    if next(t) then
+        if opts.indent then s=s..'\n' end
+        s=s..table.join(t,sep,opts,visited)
+        if opts.indent then s=s..string.rep(opts.indentString,opts.indent) end
+    end
+    s=s..'}'
+    return s
 end
 
 function table.slice(t,first,last,step)

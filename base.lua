@@ -168,72 +168,72 @@ function _S.tableToString(tt, opts)
     opts = opts and table.clone(opts) or {}
     opts.visitedTables = opts.visitedTables and table.clone(opts.visitedTables) or {}
     opts.maxLevel = opts.maxLevel or 99
-    opts.indent = opts.indent or 0
+    opts.indentString = opts.indentString or '    '
     opts.maxLevel = opts.maxLevel - 1
     opts.omitQuotes = false
     opts.longStringThreshold = 160
 
-    if type(tt) == 'table' then
-        if opts.maxLevel <= 0 then
-            return tostring(tt)
-        else
-            if opts.oneLine == nil then
-                opts.oneLine = true
-                local s = _S.tableToString(tt, opts)
-                if #s <= opts.longStringThreshold then return s end
-                opts.oneLine = false
-            end
-            if opts.visitedTables[tt] then
-                return tostring(tt) .. ' (already visited)'
-            else
-                opts.visitedTables[tt] = true
-                local sb = {}
-                if table.isarray(tt) then
-                    table.insert(sb, '{')
-                    for i = 1, #tt do
-                        if i > 1 then table.insert(sb, ', ') end
-                        table.insert(sb, _S.anyToString(tt[i], opts))
-                    end
-                    table.insert(sb, '}')
-                else
-                    table.insert(sb, '{' .. (opts.oneLine and '' or '\n'))
-                    -- Print the map content ordered according to type, then key:
-                    local usedKeys = {}
-                    for _, t in ipairs{'boolean', 'number', 'string', 'function', 'userdata', 'thread', 'table', 'any'} do
-                        local keysByType = {}
-                        for key, val in pairs(tt) do
-                            if type(val) == t or (t == 'any' and not usedKeys[key]) then
-                                table.insert(keysByType, key)
-                                usedKeys[key]=true
-                            end
-                        end
-                        table.sort(keysByType)
-                        for _, key in ipairs(keysByType) do
-                            local val = tt[key]
-                            table.insert(sb, opts.oneLine and '' or string.rep(' ', opts.indent + 4))
-                            if type(key) == 'string' then
-                                table.insert(sb, _S.getShortString(key, {omitQuotes=true}))
-                            else
-                                table.insert(sb, tostring(key))
-                            end
-                            table.insert(sb, ' = ')
-                            opts.indent = opts.indent + 4
-                            table.insert(sb, _S.anyToString(val, opts))
-                            opts.indent = opts.indent - 4
-                            table.insert(sb, ',' .. (opts.oneLine and ' ' or '\n'))
-                        end
-                    end
-                    table.insert(sb, opts.oneLine and '' or string.rep(' ', opts.indent))
-                    table.insert(sb, '}')
+    --if type(tt) ~= 'table' then
+    --    return _S.anyToString(tt, opts)
+    --end
+
+    if opts.maxLevel <= 0 or opts.visitedTables[tt] then
+        return tostring(tt) .. (opts.maxLevel <= 0 and ' (too deep)' or ' (already visited)')
+    end
+
+    -- print short tables in single line, unless explicitly wanted otherwise:
+    if opts.indent == nil then
+        opts.indent = false
+        local s = _S.tableToString(tt, opts)
+        if #s <= opts.longStringThreshold then return s end
+        opts.indent = true
+    end
+
+    if opts.indent == true then opts.indent = 0 end
+    if opts.indent then opts.indent = opts.indent + 1 end
+    opts.visitedTables[tt] = true
+    local sb = {}
+    if table.isarray(tt) then
+        table.insert(sb, '{')
+        for i = 1, #tt do
+            if i > 1 then table.insert(sb, ', ') end
+            table.insert(sb, _S.anyToString(tt[i], opts))
+        end
+        table.insert(sb, '}')
+    else
+        table.insert(sb, '{' .. (opts.indent and '\n' or ''))
+        -- Print the map content ordered according to type, then key:
+        local usedKeys = {}
+        for _, t in ipairs{'boolean', 'number', 'string', 'function', 'userdata', 'thread', 'table', 'any'} do
+            local keys = {}
+            for key, val in pairs(tt) do
+                if type(val) == t or (t == 'any' and not usedKeys[key]) then
+                    table.insert(keys, key)
+                    usedKeys[key]=true
                 end
-                -- siblings pointing onto a same table should still be explored!
-                opts.visitedTables[tt] = false
-                return table.concat(sb)
+            end
+            table.sort(keys)
+            for _, key in ipairs(keys) do
+                local val = tt[key]
+                if opts.indent then
+                    table.insert(sb, string.rep(opts.indentString, opts.indent))
+                end
+                if type(key) == 'string' then
+                    table.insert(sb, _S.getShortString(key, {omitQuotes=true}))
+                else
+                    table.insert(sb, tostring(key))
+                end
+                table.insert(sb, ' = ')
+                table.insert(sb, _S.anyToString(val, opts))
+                table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
             end
         end
-    else
-        return _S.anyToString(tt, opts)
+        if opts.indent then
+            table.insert(sb, string.rep(opts.indentString, opts.indent - 1))
+        end
+        table.insert(sb, '}')
     end
+    return table.concat(sb)
 end
 
 function _S.anyToString(x, opts)
