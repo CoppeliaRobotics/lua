@@ -1316,6 +1316,7 @@ def _getCalltip(input, pos):
             if t.string == '(':
                 stack.append(last_name)
             elif t.string == ')':
+                if not stack: return []
                 tstart = stack.pop()
                 ranges[tstart.string] = (lpos(code, *tstart.start), lpos(code, *t.end))
             else:
