@@ -539,7 +539,7 @@ function handleRequest(req)
             protectedCallDepth=protectedCallDepth+1
             doNotInterruptCommLevel=doNotInterruptCommLevel+1
             local status,retvals=xpcall(function()
-                local ret={func(unpack(args))}
+                local ret={func(unpack(args,1,req.argsL))}
                 -- Try to assign correct types to text/buffers and arrays/maps:
                 local args=returnTypes[req['func']]
                 if args then
@@ -637,7 +637,7 @@ function receive()
         receiveIsNext=false
         local status,req=pcall(cbor.decode,dat)
         if not status then
-            error('CBOR decode error: '..sim.transformBuffer(dat,sim.buffer_uint8,1,0,sim.buffer_base64))
+            error(req.."\n"..sim.transformBuffer(dat,sim.buffer_uint8,1,0,sim.buffer_base64))
         end
 
         -- Handle non-serializable data:
@@ -657,7 +657,7 @@ function send(reply)
         local dat=reply
         status,reply=pcall(cbor.encode,reply)
         if not status then
-            error('CBOR encode error: '..getAsString(dat))
+            error(reply.."\n"..getAsString(dat))
         end
         simZMQ.send(replySocket,reply,0)
         receiveIsNext=true
@@ -1110,7 +1110,7 @@ class RemoteAPIClient:
                         funcStr = m.group(1)
                         self.callbackFuncs[funcStr] = req['args'][i]
                         req['args'][i] = funcStr + "@func"
-            req['argsL'] = len(args)
+            req['argsL'] = len(req['args'])
 
         # pack and send:
         try:
