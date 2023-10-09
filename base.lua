@@ -90,40 +90,43 @@ function unloadPlugin(name,options)
     _S.unloadPlugin(name,op)
 end
 
-quit=quitSimulator
-exit=quitSimulator
+quit = quitSimulator
+exit = quitSimulator
 
 printToConsole=print
 if auxFunc('headless') then
-    function print(...)
-        local lb=setAutoYield(false)
-        printToConsole(getAsString(...))
-        setAutoYield(lb)
+    function _S.printAsync(s)
+        printToConsole(s)
     end
 else
-    function print(...)
-        local lb=setAutoYield(false)
-        addLog(450+0x0f000,getAsString(...))
-        setAutoYield(lb)
+    function _S.printAsync(s)
+        addLog(450 + 0x0f000, s)
     end
 end
 
-function printf(fmt,...)
-    local a=table.pack(...)
-    for i=1,a.n do
-        if type(a[i])=='table' then
-            a[i]=_S.anyToString(a[i],{},99)
-        elseif type(a[i])=='nil' then
-            a[i]='nil'
-        end
+function print(s, ...)
+    local s = _S.anyToString(s, {omitQuotes=true})
+    if table.pack(...).n > 0 then
+        s = s .. ', ' .. getAsString(...)
     end
-    print(string.format(fmt,table.unpack(a,1,a.n)))
+
+    local lb = setAutoYield(false)
+    _S.printAsync(s)
+    setAutoYield(lb)
+end
+
+function printf(fmt, ...)
+    local a = table.pack(...)
+    for i = 1, a.n do
+        a[i] = _S.anyToString(a[i])
+    end
+    print(string.format(fmt, table.unpack(a, 1, a.n)))
 end
 
 function printBytes(x)
-    s=''
-    for i=1,#x do
-        s=s..string.format('%s%02x',i>1 and ' ' or '',string.byte(x:sub(i,i)))
+    local s = ''
+    for i = 1, #x do
+        s = s .. string.format('%s%02x', i > 1 and ' ' or '', string.byte(x:sub(i, i)))
     end
     print(s)
 end
@@ -172,98 +175,117 @@ function isArray(t)
     return m<=count
 end
 
-function _S.tableToString(tt,visitedTables,maxLevel,indent)
-    indent = indent or 0
-    maxLevel=maxLevel-1
+function _S.tableToString(tt, opts)
+    opts = opts and table.clone(opts) or {}
+    opts.visitedTables = opts.visitedTables and table.clone(opts.visitedTables) or {}
+    opts.maxLevel = opts.maxLevel or 99
+    opts.indent = opts.indent or 0
+    opts.maxLevel = opts.maxLevel - 1
+
     if type(tt) == 'table' then
-        if maxLevel<=0 then
+        if opts.maxLevel <= 0 then
             return tostring(tt)
         else
-            if  visitedTables[tt] then
-                return tostring(tt)..' (already visited)'
+            if opts.visitedTables[tt] then
+                return tostring(tt) .. ' (already visited)'
             else
-                visitedTables[tt]=true
+                opts.visitedTables[tt] = true
                 local sb = {}
                 if isArray(tt) then
                     table.insert(sb, '{')
                     for i = 1, #tt do
-                        table.insert(sb, _S.anyToString(tt[i], visitedTables,maxLevel, indent))
-                        if i < #tt then table.insert(sb, ', ') end
+                        if i > 1 then table.insert(sb, ', ') end
+                        table.insert(sb, _S.anyToString(tt[i], opts))
                     end
                     table.insert(sb, '}')
                 else
                     table.insert(sb, '{\n')
                     -- Print the map content ordered according to type, then key:
-                    local tp={{'boolean',false},{'number',true},{'string',true},{'function',false},{'userdata',false},{'thread',true},{'table',false},{'any',false}}
-                    local ts={}
-                    local usedKeys={}
-                    for j=1,#tp,1 do
-                        local a={}
-                        ts[#ts+1]=a
-                        for key,val in pairs(tt) do
-                            if type(key)==tp[j][1] or (tp[j][1]=='any' and usedKeys[key]==nil) then
-                                a[#a+1]=key
+                    local tp = {
+                        {'boolean', false},
+                        {'number', true},
+                        {'string', true},
+                        {'function', false},
+                        {'userdata', false},
+                        {'thread', true},
+                        {'table', false},
+                        {'any', false},
+                    }
+                    local ts = {}
+                    local usedKeys = {}
+                    for j = 1, #tp do
+                        local a = {}
+                        table.insert(ts, a)
+                        for key, val in pairs(tt) do
+                            if type(key) == tp[j][1] or (tp[j][1] == 'any' and not usedKeys[key]) then
+                                table.insert(a, key)
                                 usedKeys[key]=true
                             end
                         end
                         if tp[j][2] then
                             table.sort(a)
                         end
-                        for k=1,#a,1 do
-                            local key=a[k]
-                            local val=tt[key]
-                            table.insert(sb, string.rep(' ', indent+4))
-                            if type(key)=='string' then
-                                table.insert(sb, _S.getShortString(key,true))
+                        for k = 1, #a do
+                            local key = a[k]
+                            local val = tt[key]
+                            table.insert(sb, string.rep(' ', opts.indent + 4))
+                            if type(key) == 'string' then
+                                table.insert(sb, _S.getShortString(key, {omitQuotes=true}))
                             else
                                 table.insert(sb, tostring(key))
                             end
-                            table.insert(sb, '=')
-                            table.insert(sb, _S.anyToString(val, visitedTables,maxLevel, indent+4))
+                            table.insert(sb, ' = ')
+                            opts.indent = opts.indent + 4
+                            table.insert(sb, _S.anyToString(val, opts))
+                            opts.indent = opts.indent - 4
                             table.insert(sb, ',\n')
                         end
                     end
-                    table.insert(sb, string.rep(' ', indent))
+                    table.insert(sb, string.rep(' ', opts.indent))
                     table.insert(sb, '}')
                 end
-                visitedTables[tt]=false -- siblings pointing onto a same table should still be explored!
+                -- siblings pointing onto a same table should still be explored!
+                opts.visitedTables[tt] = false
                 return table.concat(sb)
             end
         end
     else
-        return _S.anyToString(tt, visitedTables,maxLevel, indent)
+        return _S.anyToString(tt, opts)
     end
 end
 
-function _S.anyToString(x, visitedTables,maxLevel,tblindent)
-    local tblindent = tblindent or 0
-    if 'nil' == type(x) then
+function _S.anyToString(x, opts)
+    local t = type(x)
+    if t == 'nil' then
         return tostring(nil)
-    elseif 'table' == type(x) then
-        return _S.tableToString(x, visitedTables,maxLevel, tblindent)
-    elseif 'string' == type(x) then
-        return _S.getShortString(x)
+    elseif t == 'table' then
+        return _S.tableToString(x, opts)
+    elseif t == 'string' then
+        return _S.getShortString(x, opts)
     else
         return tostring(x)
     end
 end
 
-function _S.getShortString(x,omitQuotes)
-    if type(x)=='string' then
+function _S.getShortString(x, opts)
+    opts = opts or {}
+    opts.omitQuotes = opts.omitQuotes or false
+
+    if type(x) == 'string' then
         if string.find(x,"\0") then
             return "[buffer string]"
         else
-            local a,b=string.gsub(x,"[%a%d%p%s]", "@")
-            if b~=#x then
+            local a, b = string.gsub(x,"[%a%d%p%s]", "@")
+            if b ~= #x then
                 return "[string containing special chars]"
             else
-                if #x>160 then
+                if #x > 160 then
                     return "[long string]"
                 else
-                    if omitQuotes then
+                    if opts.omitQuotes then
                         return string.format('%s', x)
                     else
-                        return string.format('"%s"', x)
+                        return string.format("'%s'", x)
                     end
                 end
             end
@@ -273,26 +295,14 @@ function _S.getShortString(x,omitQuotes)
 end
 
 function getAsString(...)
-    local lb=setAutoYield(false)
+    local lb = setAutoYield(false)
     local a = table.pack(...)
-    local t=''
-    if a.n == 1 and type(a[1]) == 'string' then
---        t=string.format('"%s"', a[1])
-        t=string.format('%s', a[1])
-    else
-        for i=1,a.n do
-            if i~=1 then
-                t = t .. ', '
-            end
-            if type(a[i])=='table' then
-                t=t.._S.tableToString(a[i],{},99)
-            else
-                t=t.._S.anyToString(a[i],{},99)
-            end
-        end
+    local s = ''
+    for i = 1, a.n do
+        s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i])
     end
     setAutoYield(lb)
-    return(t)
+    return s
 end
 
 function moduleLazyLoader(name)
@@ -412,7 +422,7 @@ function _evalExec(inputStr)
             local success, err = pcall(function() ret = table.pack(func()) end)
             if success then
                 if ret.n > 0 and rr then
-                    print(table.unpack(ret, 1, ret.n))
+                    print(getAsString(table.unpack(ret, 1, ret.n)))
                 end
             else
                 sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
