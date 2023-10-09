@@ -1214,7 +1214,7 @@ def _evalExec(theStr):
         try:
             ret = eval(theStr, globals())
             if ret is not None:
-                print(ret)
+                print(repr(ret))
         except SyntaxError:
             try:
                 exec(theStr, globals())
@@ -1343,11 +1343,7 @@ def require(a):
     return client.require(a)
 
 def print(*a):
-    if len(a) == 1:
-        a = [str(a[0])]
-    elif len(a) > 1:
-        a = [repr(ai) for ai in a]
-    client.call('__print__', [', '.join(a)])
+    client.call('__print__', [', '.join(map(str, a))])
 
 def quit():
     client.call('quit', [])
