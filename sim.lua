@@ -52,7 +52,7 @@ end
 sim.switchThread=sim.yield
 sim.getModuleName=sim.getPluginName
 sim.getModuleInfo=sim.getPluginInfo
-sim.SetModuleInfo=sim.setPluginInfo
+sim.setModuleInfo=sim.setPluginInfo
 sim.moduleinfo_extversionstr=sim.plugininfo_extversionstr
 sim.moduleinfo_builddatestr=sim.plugininfo_builddatestr
 sim.moduleinfo_extversionint=sim.plugininfo_extversionint
