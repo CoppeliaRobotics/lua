@@ -99,6 +99,14 @@ function table.reversed(t)
     return ret
 end
 
+function table.clone(t)
+    local copy={}
+    for k, v in pairs(t) do
+        copy[k] = v
+    end
+    return copy
+end
+
 if arg and #arg==1 and arg[1]=='test' then
     assert(table.eq({1,2,3},{1,2,3}))
     assert(not table.eq({1,2,3,4},{1,2,3}))
