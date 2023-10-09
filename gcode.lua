@@ -168,9 +168,9 @@ GCodeInterpreter = {
             self.visualizationMethod=0
         end
         if  self.visualizationMethod==1 then
-            self.greenLineContainer=sim.addDrawingObject(sim.drawing_lines,1,0,-1,99999999,{0,0,0},nil,nil,{0,1,0})
-            self.redLineContainer=sim.addDrawingObject(sim.drawing_lines,1,0,-1,99999999,{0,0,0},nil,nil,{1,0,0})
-            self.bluePointContainer=sim.addDrawingObject(sim.drawing_spherepoints,0.0025,0,-1,99999999,{0,0,0},nil,nil,{0,0,1})
+            self.greenLineContainer=sim.addDrawingObject(sim.drawing_lines,1,0,-1,0,{0,1,0})
+            self.redLineContainer=sim.addDrawingObject(sim.drawing_lines,1,0,-1,0,{1,0,0})
+            self.bluePointContainer=sim.addDrawingObject(sim.drawing_spherepoints,0.0025,0,-1,0,{0,0,1})
         end
 
         local lines=string.splitlines(program)
