@@ -189,6 +189,12 @@ function _S.tableToString(tt, opts)
         if opts.maxLevel <= 0 then
             return tostring(tt)
         else
+            if opts.oneLine == nil then
+                opts.oneLine = true
+                local s = _S.tableToString(tt, opts)
+                if #s <= opts.longStringThreshold then return s end
+                opts.oneLine = false
+            end
             if opts.visitedTables[tt] then
                 return tostring(tt) .. ' (already visited)'
             else
@@ -202,7 +208,7 @@ function _S.tableToString(tt, opts)
                     end
                     table.insert(sb, '}')
                 else
-                    table.insert(sb, '{\n')
+                    table.insert(sb, '{' .. (opts.oneLine and '' or '\n'))
                     -- Print the map content ordered according to type, then key:
                     local tp = {
                         {'boolean', false},
@@ -231,7 +237,7 @@ function _S.tableToString(tt, opts)
                         for k = 1, #a do
                             local key = a[k]
                             local val = tt[key]
-                            table.insert(sb, string.rep(' ', opts.indent + 4))
+                            table.insert(sb, opts.oneLine and '' or string.rep(' ', opts.indent + 4))
                             if type(key) == 'string' then
                                 table.insert(sb, _S.getShortString(key, {omitQuotes=true}))
                             else
@@ -241,10 +247,10 @@ function _S.tableToString(tt, opts)
                             opts.indent = opts.indent + 4
                             table.insert(sb, _S.anyToString(val, opts))
                             opts.indent = opts.indent - 4
-                            table.insert(sb, ',\n')
+                            table.insert(sb, ',' .. (opts.oneLine and ' ' or '\n'))
                         end
                     end
-                    table.insert(sb, string.rep(' ', opts.indent))
+                    table.insert(sb, opts.oneLine and '' or string.rep(' ', opts.indent))
                     table.insert(sb, '}')
                 end
                 -- siblings pointing onto a same table should still be explored!
