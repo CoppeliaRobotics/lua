@@ -183,6 +183,7 @@ function _S.tableToString(tt, opts)
     opts.indent = opts.indent or 0
     opts.maxLevel = opts.maxLevel - 1
     opts.omitQuotes = false
+    opts.longStringThreshold = 160
 
     if type(tt) == 'table' then
         if opts.maxLevel <= 0 then
@@ -281,7 +282,7 @@ function _S.getShortString(x, opts)
             if b ~= #x then
                 return "[string containing special chars]"
             else
-                if #x > 160 then
+                if opts.longStringThreshold and #x > opts.longStringThreshold then
                     return "[long string]"
                 else
                     if opts.omitQuotes then
