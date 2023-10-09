@@ -210,32 +210,17 @@ function _S.tableToString(tt, opts)
                 else
                     table.insert(sb, '{' .. (opts.oneLine and '' or '\n'))
                     -- Print the map content ordered according to type, then key:
-                    local tp = {
-                        {'boolean', false},
-                        {'number', true},
-                        {'string', true},
-                        {'function', false},
-                        {'userdata', false},
-                        {'thread', true},
-                        {'table', false},
-                        {'any', false},
-                    }
-                    local ts = {}
                     local usedKeys = {}
-                    for j = 1, #tp do
-                        local a = {}
-                        table.insert(ts, a)
+                    for _, t in ipairs{'boolean', 'number', 'string', 'function', 'userdata', 'thread', 'table', 'any'} do
+                        local keysByType = {}
                         for key, val in pairs(tt) do
-                            if type(key) == tp[j][1] or (tp[j][1] == 'any' and not usedKeys[key]) then
-                                table.insert(a, key)
+                            if type(val) == t or (t == 'any' and not usedKeys[key]) then
+                                table.insert(keysByType, key)
                                 usedKeys[key]=true
                             end
                         end
-                        if tp[j][2] then
-                            table.sort(a)
-                        end
-                        for k = 1, #a do
-                            local key = a[k]
+                        table.sort(keysByType)
+                        for _, key in ipairs(keysByType) do
                             local val = tt[key]
                             table.insert(sb, opts.oneLine and '' or string.rep(' ', opts.indent + 4))
                             if type(key) == 'string' then
