@@ -212,7 +212,7 @@ function _S.tableToString(tt, opts)
                     usedKeys[key]=true
                 end
             end
-            table.sort(keys)
+            table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
             for _, key in ipairs(keys) do
                 local val = tt[key]
                 if opts.indent then
