@@ -132,8 +132,11 @@ function printBytes(x)
     print(s)
 end
 
-function funcToString(f)
-    for _, objName in ipairs(__lazyLoadModules) do
+function _S.funcToString(f)
+    local sim = require 'sim'
+    local allModules = sim.getLoadedPlugins()
+    table.insert(allModules, 1, 'sim')
+    for _, objName in ipairs(allModules) do
         local obj = _G[objName]
         if obj then
             local mt = getmetatable(obj)
@@ -155,7 +158,7 @@ function help(what)
         return
     end
     if type(what) == 'function' then
-        what = funcToString(what)
+        what = _S.funcToString(what)
         assert(what, "name not known")
     end
     assert(type(what) == 'string', 'bad type')
