@@ -1,134 +1,137 @@
-startTimeout=5
-sim=require('sim')
-simZMQ=require('simZMQ')
-simSubprocess=require('simSubprocess')
-simUI=require('simUI')
-json=require 'dkjson'
+startTimeout = 5
+sim = require('sim')
+simZMQ = require('simZMQ')
+simSubprocess = require('simSubprocess')
+simUI = require('simUI')
+json = require 'dkjson'
 -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
-cborDecode=require'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
+cborDecode = require 'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
 
-pythonWrapper={}
+pythonWrapper = {}
 
 function pythonWrapper.info(obj)
-    if type(obj)=='string' then
-        obj=pythonWrapper.getField(obj) 
-    end
-    if type(obj)~='table' then return obj end
-    local ret={}
-    for k,v in pairs(obj) do
-        if type(v)=='table' then
-            ret[k]=pythonWrapper.info(v)
-        elseif type(v)=='function' then
-            ret[k]={func={}}
-        elseif type(v)~='function' then
-            ret[k]={const=v}
+    if type(obj) == 'string' then obj = pythonWrapper.getField(obj) end
+    if type(obj) ~= 'table' then return obj end
+    local ret = {}
+    for k, v in pairs(obj) do
+        if type(v) == 'table' then
+            ret[k] = pythonWrapper.info(v)
+        elseif type(v) == 'function' then
+            ret[k] = {func = {}}
+        elseif type(v) ~= 'function' then
+            ret[k] = {const = v}
         end
     end
     return ret
 end
 
 function pythonWrapper.getField(f)
-    local v=_G
-    for w in string.gmatch(f,'[%w_]+') do
-        v=v[w]
+    local v = _G
+    for w in string.gmatch(f, '[%w_]+') do
+        v = v[w]
         if not v then return nil end
     end
     return v
 end
 
 function pythonWrapper.handleRequest(req)
-    local resp={}
-    if req['func']~=nil and req['func']~='' then
-        local func=pythonWrapper.getField(req['func'])
-        local args=req['args'] or {}
+    local resp = {}
+    if req['func'] ~= nil and req['func'] ~= '' then
+        local func = pythonWrapper.getField(req['func'])
+        local args = req['args'] or {}
         if not func then
-            resp['error']='No such function: '..req['func']
+            resp['error'] = 'No such function: ' .. req['func']
         else
-            local status,retvals=pcall(function()
-                local ret={func(unpack(args))}
-                return ret
-            end)
-            resp[status and 'ret' or 'error']=retvals
+            local status, retvals = pcall(
+                                        function()
+                    local ret = {func(unpack(args))}
+                    return ret
+                end
+                                    )
+            resp[status and 'ret' or 'error'] = retvals
         end
-    elseif req['eval']~=nil and req['eval']~='' then
-        local status,retvals=pcall(function()
-            local ret={loadstring('return '..req['eval'])()}
-            return ret
-        end)
-        resp[status and 'ret' or 'error']=retvals
+    elseif req['eval'] ~= nil and req['eval'] ~= '' then
+        local status, retvals = pcall(
+                                    function()
+                local ret = {loadstring('return ' .. req['eval'])()}
+                return ret
+            end
+                                )
+        resp[status and 'ret' or 'error'] = retvals
     end
-    resp['success']=resp['error']==nil
+    resp['success'] = resp['error'] == nil
     return resp
 end
 
 function pythonWrapper.handleRawMessage(rawReq)
     -- if first byte is '{', it *might* be a JSON payload
-    if rawReq:byte(1)==123 then
-        local req,ln,err=json.decode(rawReq)
-        if req~=nil then
-            local resp=pythonWrapper.handleRequest(req)
+    if rawReq:byte(1) == 123 then
+        local req, ln, err = json.decode(rawReq)
+        if req ~= nil then
+            local resp = pythonWrapper.handleRequest(req)
             return json.encode(resp)
         end
     end
 
     -- if we are here, it should be a CBOR payload
-    local status,req=pcall(cborDecode.decode,rawReq)
+    local status, req = pcall(cborDecode.decode, rawReq)
     if status then
-        local resp=pythonWrapper.handleRequest(req)
+        local resp = pythonWrapper.handleRequest(req)
         return sim.packCbor(resp)
     end
 
-    sim.addLog(sim.verbosity_scripterrors,'cannot decode message: no suitable decoder')
+    sim.addLog(sim.verbosity_scripterrors, 'cannot decode message: no suitable decoder')
     return ''
 end
 
 function pythonWrapper.handleQueue()
     while true do
-        local rc,revents=simZMQ.poll({rpcSocket},{simZMQ.POLLIN},0)
-        if rc<=0 then break end
-        extCallIsIn=true
-        local rc,req=simZMQ.recv(rpcSocket,0)
-        local resp=pythonWrapper.handleRawMessage(req)
-        simZMQ.send(rpcSocket,resp,0)
-        extCallIsIn=nil
+        local rc, revents = simZMQ.poll({rpcSocket}, {simZMQ.POLLIN}, 0)
+        if rc <= 0 then break end
+        extCallIsIn = true
+        local rc, req = simZMQ.recv(rpcSocket, 0)
+        local resp = pythonWrapper.handleRawMessage(req)
+        simZMQ.send(rpcSocket, resp, 0)
+        extCallIsIn = nil
     end
 end
 
 function pythonWrapper.publishStepCount()
-    simZMQ.send(cntSocket,sim.packUInt32Table{simulationTimeStepCount},0)
+    simZMQ.send(cntSocket, sim.packUInt32Table {simulationTimeStepCount}, 0)
 end
 
 function getFreePortStr()
-    local context=simZMQ.ctx_new()
-    local socket=simZMQ.socket(context,simZMQ.REP)
-    local p=23259
+    local context = simZMQ.ctx_new()
+    local socket = simZMQ.socket(context, simZMQ.REP)
+    local p = 23259
     while true do
---        local a,b=pcall(simZMQ.bind,socket,string.format('tcp://127.0.0.1:%d',p))
---        if a and b==0 then
-        if simZMQ.__noError.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
---        if simZMQ.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
+        --        local a,b=pcall(simZMQ.bind,socket,string.format('tcp://127.0.0.1:%d',p))
+        --        if a and b==0 then
+        if simZMQ.__noError.bind(socket, string.format('tcp://127.0.0.1:%d', p)) == 0 then
+            --        if simZMQ.bind(socket,string.format('tcp://127.0.0.1:%d',p))==0 then
             break
         end
-        p=p+1
+        p = p + 1
     end
     simZMQ.close(socket)
     simZMQ.ctx_term(context)
-    return string.format('tcp://127.0.0.1:%d',p)
+    return string.format('tcp://127.0.0.1:%d', p)
 end
 
 function sysCall_beforeMainScript()
-    if sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_type)~=sim.scripttype_childscript then
+    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
+        sim.scripttype_childscript then
         pythonWrapper.handleQueue()
         local outData
-        if next(steppingClients)~=nil then
-            local canStep=true
-            for uuid,v in pairs(steppingClients) do
-                if steppedClients[uuid]==nil then
-                    canStep=false
+        if next(steppingClients) ~= nil then
+            local canStep = true
+            for uuid, v in pairs(steppingClients) do
+                if steppedClients[uuid] == nil then
+                    canStep = false
                     break
                 end
             end
-            outData={doNotRunMainScript=(not canStep)}
+            outData = {doNotRunMainScript = (not canStep)}
         end
         return outData
     end
@@ -137,103 +140,115 @@ end
 function loadExternalFile(file)
     local f
     local absPath
-    if sim.getInt32Param(sim.intparam_platform)==0 then
-        absPath=( (file:sub(1,1)=='/') or (file:sub(1,1)=='\\') or (file:sub(2,2)==':') )
+    if sim.getInt32Param(sim.intparam_platform) == 0 then
+        absPath = ((file:sub(1, 1) == '/') or (file:sub(1, 1) == '\\') or (file:sub(2, 2) == ':'))
     else
-        absPath=(file:sub(1,1)=='/')
+        absPath = (file:sub(1, 1) == '/')
     end
     if absPath then
-        f=io.open(file,'rb')
+        f = io.open(file, 'rb')
     else
-        local b={sim.getStringParam(sim.stringparam_application_path),sim.getStringParam(sim.stringparam_application_path)..'/python',sim.getStringParam(sim.stringparam_scene_path),sim.getStringParam(sim.stringparam_additionalpythonpath)}
-        if additionalIncludePaths and #additionalIncludePaths>0 then
-            for i=1,#additionalIncludePaths,1 do
-                b[#b+1]=additionalIncludePaths[i]
+        local b = {
+            sim.getStringParam(sim.stringparam_application_path),
+            sim.getStringParam(sim.stringparam_application_path) .. '/python',
+            sim.getStringParam(sim.stringparam_scene_path),
+            sim.getStringParam(sim.stringparam_additionalpythonpath),
+        }
+        if additionalIncludePaths and #additionalIncludePaths > 0 then
+            for i = 1, #additionalIncludePaths, 1 do
+                b[#b + 1] = additionalIncludePaths[i]
             end
         end
-        for i=1,#b,1 do
-            if b[i]~='' then
-                f=io.open(b[i]..'/'..file,'rb')
+        for i = 1, #b, 1 do
+            if b[i] ~= '' then
+                f = io.open(b[i] .. '/' .. file, 'rb')
                 if f then
-                    file=b[i]..'/'..file
+                    file = b[i] .. '/' .. file
                     break
                 end
             end
         end
     end
-    if f==nil then
-        error("include file '"..file.."' not found")
-    end
-    if not pythonProg then
-        pythonProg=''
-    end
-    pythonProg=f:read('*all')..pythonProg
+    if f == nil then error("include file '" .. file .. "' not found") end
+    if not pythonProg then pythonProg = '' end
+    pythonProg = f:read('*all') .. pythonProg
     f:close()
-    while #file>0 do
-        local c=file:sub(#file,#file)
-        if c~='/' and c~='\\' then
-            file=file:sub(1,#file-1)
+    while #file > 0 do
+        local c = file:sub(#file, #file)
+        if c ~= '/' and c ~= '\\' then
+            file = file:sub(1, #file - 1)
         else
             break
         end
     end
-    _additionalPaths={file}
+    _additionalPaths = {file}
 end
 
 function sysCall_init()
-    sim.addLog(sim.verbosity_scriptwarnings,"using the compatibility python wrapper ('pythonWrapper.lua')")
+    sim.addLog(
+        sim.verbosity_scriptwarnings, "using the compatibility python wrapper ('pythonWrapper.lua')"
+    )
     -- Following callbacks are not implemented in Python because either:
     -- They would be quite slow, since called very often
     -- They do not work in Python, since they can be called while already inside of a system callback
-    local cbFuncsToExclude={sysCall_dynCallback=true,sysCall_jointCallback=true,sysCall_contactCallback=true,sysCall_event=true,sysCall_beforeCopy=true,sysCall_afterCopy=true,sysCall_afterCreate=true,sysCall_beforeDelete=true,sysCall_afterDelete=true,sysCall_vision=true,sysCall_trigger=true,sysCall_userConfig=true}
+    local cbFuncsToExclude = {
+        sysCall_dynCallback = true,
+        sysCall_jointCallback = true,
+        sysCall_contactCallback = true,
+        sysCall_event = true,
+        sysCall_beforeCopy = true,
+        sysCall_afterCopy = true,
+        sysCall_afterCreate = true,
+        sysCall_beforeDelete = true,
+        sysCall_afterDelete = true,
+        sysCall_vision = true,
+        sysCall_trigger = true,
+        sysCall_userConfig = true,
+    }
     -- But they can be enabled via additionalFuncs:
-    if additionalFuncs and type(additionalFuncs)=='table' then
-        for i=1,#additionalFuncs,1 do
-            cbFuncsToExclude[additionalFuncs[i]]=nil
-        end
+    if additionalFuncs and type(additionalFuncs) == 'table' then
+        for i = 1, #additionalFuncs, 1 do cbFuncsToExclude[additionalFuncs[i]] = nil end
     end
-    for k,v in pairs(cbFuncsToExclude) do
-        _G[k]=nil
-    end
+    for k, v in pairs(cbFuncsToExclude) do _G[k] = nil end
 
     if not simZMQ then
-        sim.addLog(sim.verbosity_scripterrors,'pythonWrapper: the ZMQ plugin is not available')
-        return {cmd='cleanup'}
+        sim.addLog(sim.verbosity_scripterrors, 'pythonWrapper: the ZMQ plugin is not available')
+        return {cmd = 'cleanup'}
     end
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
-    
-    context=simZMQ.ctx_new()
-    rpcSocket=simZMQ.socket(context,simZMQ.REP)
-    rpcPortStr=getFreePortStr()
-    simZMQ.setsockopt(rpcSocket,simZMQ.LINGER,sim.packUInt32Table{0})
-    simZMQ.bind(rpcSocket,rpcPortStr)
-    cntSocket=simZMQ.socket(context,simZMQ.PUB)
-    simZMQ.setsockopt(cntSocket,simZMQ.CONFLATE,sim.packUInt32Table{1})
-    simZMQ.setsockopt(cntSocket,simZMQ.LINGER,sim.packUInt32Table{0})
-    cntPortStr=getFreePortStr()
-    simZMQ.bind(cntSocket,cntPortStr)
-    simulationTimeStepCount=0
-    steppingClients={}
-    steppedClients={}
-    endSignal=false
-    local prog=pythonProg..otherProg
-    prog=prog:gsub("XXXconnectionAddress1XXX",rpcPortStr)
-    prog=prog:gsub("XXXconnectionAddress2XXX",cntPortStr)
-    local tmp=''
-    if _additionalPaths then 
-        for i=1,#_additionalPaths,1 do
-            tmp=tmp..'sys.path.append("'.._additionalPaths[i]..'")\n'
+
+    context = simZMQ.ctx_new()
+    rpcSocket = simZMQ.socket(context, simZMQ.REP)
+    rpcPortStr = getFreePortStr()
+    simZMQ.setsockopt(rpcSocket, simZMQ.LINGER, sim.packUInt32Table {0})
+    simZMQ.bind(rpcSocket, rpcPortStr)
+    cntSocket = simZMQ.socket(context, simZMQ.PUB)
+    simZMQ.setsockopt(cntSocket, simZMQ.CONFLATE, sim.packUInt32Table {1})
+    simZMQ.setsockopt(cntSocket, simZMQ.LINGER, sim.packUInt32Table {0})
+    cntPortStr = getFreePortStr()
+    simZMQ.bind(cntSocket, cntPortStr)
+    simulationTimeStepCount = 0
+    steppingClients = {}
+    steppedClients = {}
+    endSignal = false
+    local prog = pythonProg .. otherProg
+    prog = prog:gsub("XXXconnectionAddress1XXX", rpcPortStr)
+    prog = prog:gsub("XXXconnectionAddress2XXX", cntPortStr)
+    local tmp = ''
+    if _additionalPaths then
+        for i = 1, #_additionalPaths, 1 do
+            tmp = tmp .. 'sys.path.append("' .. _additionalPaths[i] .. '")\n'
         end
     end
-    if additionalPaths then 
-        for i=1,#additionalPaths,1 do
-            tmp=tmp..'sys.path.append("'..additionalPaths[i]..'")\n'
+    if additionalPaths then
+        for i = 1, #additionalPaths, 1 do
+            tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '")\n'
         end
     end
-    prog=prog:gsub("XXXadditionalPathsXXX",tmp)
-    
-    initPython(prog,0)
-    pythonInitialized=true
+    prog = prog:gsub("XXXadditionalPathsXXX", tmp)
+
+    initPython(prog, 0)
+    pythonInitialized = true
     return handleRemote('sysCall_init')
 end
 
@@ -243,24 +258,22 @@ end
 
 function sysCall_cleanup()
     if pythonInitialized then
-        endSignal=true
-        simulationTimeStepCount=simulationTimeStepCount+1
+        endSignal = true
+        simulationTimeStepCount = simulationTimeStepCount + 1
         pythonWrapper.publishStepCount()
-        
-        local st=sim.getSystemTime()
+
+        local st = sim.getSystemTime()
         if threaded then
-            while sim.getSystemTime()-st<0.5 do
-                if threadEnded then
-                    break
-                end
+            while sim.getSystemTime() - st < 0.5 do
+                if threadEnded then break end
                 pythonWrapper.handleQueue()
             end
         else
-            while sim.getSystemTime()-st<0.3 do
-                handleRemote('sysCall_cleanup',nil,0.31)
+            while sim.getSystemTime() - st < 0.3 do
+                handleRemote('sysCall_cleanup', nil, 0.31)
             end
         end
-        
+
         cleanupPython()
     end
 
@@ -269,48 +282,51 @@ function sysCall_cleanup()
     simZMQ.ctx_term(context)
 end
 
-function initPython(p,method)
-    callMethod=method
-    if method==0 then
-        local portStr=getFreePortStr()
-        local pyth=sim.getStringParam(sim.stringparam_defaultpython)
-        local pyth2=sim.getNamedStringParam("pythonWrapper.python")
-        if pyth2 then
-            pyth=pyth2
-        end
-        if pyth==nil or #pyth==0 then
-            local p=sim.getInt32Param(sim.intparam_platform)
-            if p==1 then
-                pyth='/usr/local/bin/python3' -- via Homebrew
+function initPython(p, method)
+    callMethod = method
+    if method == 0 then
+        local portStr = getFreePortStr()
+        local pyth = sim.getStringParam(sim.stringparam_defaultpython)
+        local pyth2 = sim.getNamedStringParam("pythonWrapper.python")
+        if pyth2 then pyth = pyth2 end
+        if pyth == nil or #pyth == 0 then
+            local p = sim.getInt32Param(sim.intparam_platform)
+            if p == 1 then
+                pyth = '/usr/local/bin/python3' -- via Homebrew
             end
-            if p==2 then
-                pyth='/usr/bin/python3'
-            end
+            if p == 2 then pyth = '/usr/bin/python3' end
         end
         local errMsg
-        if pyth and #pyth>0 then
-            local res,ret=pcall(function() return simSubprocess.execAsync(pyth,{sim.getStringParam(sim.stringparam_pythondir)..'/pythonLauncher.py',portStr},{useSearchPath=true,openNewConsole=false}) end)
-            
-            if res then
-                subprocess=ret
-                pyContext=simZMQ.ctx_new()
-                socket=simZMQ.socket(pyContext,simZMQ.REQ)
-                simZMQ.setsockopt(socket,simZMQ.LINGER,sim.packUInt32Table{0})
-                simZMQ.connect(socket,portStr)
-                simZMQ.send(socket,sim.packCbor({cmd='loadCode',code=p}),0)
-                local st=sim.getSystemTime()
-                local r,rep
-                while sim.getSystemTime()-st<startTimeout do
-                    r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
-                    if r>=0 then
-                        break
-                    end
+        if pyth and #pyth > 0 then
+            local res, ret = pcall(
+                                 function()
+                    return simSubprocess.execAsync(
+                               pyth, {
+                            sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher.py',
+                            portStr,
+                        }, {useSearchPath = true, openNewConsole = false}
+                           )
                 end
-                if r>=0 then
-                    local rep,o,t=cborDecode.decode(rep)
+                             )
+
+            if res then
+                subprocess = ret
+                pyContext = simZMQ.ctx_new()
+                socket = simZMQ.socket(pyContext, simZMQ.REQ)
+                simZMQ.setsockopt(socket, simZMQ.LINGER, sim.packUInt32Table {0})
+                simZMQ.connect(socket, portStr)
+                simZMQ.send(socket, sim.packCbor({cmd = 'loadCode', code = p}), 0)
+                local st = sim.getSystemTime()
+                local r, rep
+                while sim.getSystemTime() - st < startTimeout do
+                    r, rep = simZMQ.__noError.recv(socket, simZMQ.DONTWAIT)
+                    if r >= 0 then break end
+                end
+                if r >= 0 then
+                    local rep, o, t = cborDecode.decode(rep)
                     if rep.err then
-                        msg=rep.err
-                        msg=getCleanErrorMsg(msg)
+                        msg = rep.err
+                        msg = getCleanErrorMsg(msg)
                         if simSubprocess.isRunning(subprocess) then
                             simSubprocess.kill(subprocess)
                         end
@@ -318,10 +334,15 @@ function initPython(p,method)
                         simZMQ.ctx_term(pyContext)
                         error(msg)
                     else
-                        simZMQ.send(socket,sim.packCbor({cmd='callFunc',func='__startClientScript__',args={}}),0)
+                        simZMQ.send(
+                            socket, sim.packCbor(
+                                {cmd = 'callFunc', func = '__startClientScript__', args = {}}
+                            ), 0
+                        )
                     end
                 else
-                    errMsg="The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapper.lua, at the top of the file"
+                    errMsg =
+                        "The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor' and 'zmq' are properly installed, e.g. via:\n$ /path/to/python -m pip install pyzmq\n$ /path/to/python -m pip install cbor. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapper.lua, at the top of the file"
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
                     end
@@ -329,68 +350,70 @@ function initPython(p,method)
                     simZMQ.ctx_term(pyContext)
                 end
             else
-                local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
-                errMsg="The Python interpreter could not be called. It is currently set at: '"..pyth.."'. You can specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
+                local usrSysLoc = sim.getStringParam(sim.stringparam_usersettingsdir)
+                errMsg = "The Python interpreter could not be called. It is currently set at: '" ..
+                             pyth .. "'. You can specify it in " .. usrSysLoc ..
+                             "/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
             end
         else
-            local usrSysLoc=sim.getStringParam(sim.stringparam_usersettingsdir) 
-            errMsg="The Python interpreter was not set. Specify it in "..usrSysLoc.."/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
+            local usrSysLoc = sim.getStringParam(sim.stringparam_usersettingsdir)
+            errMsg = "The Python interpreter was not set. Specify it in " .. usrSysLoc ..
+                         "/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
         end
         if errMsg then
-            local r=sim.readCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown')
-            if r==nil then
+            local r = sim.readCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown')
+            if r == nil then
                 -- show this only once
-                sim.writeCustomDataBlock(sim.handle_app,'pythonWrapper.msgShown',"yes")
-                simUI.msgBox(simUI.msgbox_type.warning,simUI.msgbox_buttons.ok,"Python interpreter",errMsg)
+                sim.writeCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown', "yes")
+                simUI.msgBox(
+                    simUI.msgbox_type.warning, simUI.msgbox_buttons.ok, "Python interpreter", errMsg
+                )
             end
             error(errMsg)
         end
     end
-    if method==1 then
-        state=simPython.initState()
-        simPython.loadCode(state,p)
-        callHandle=simPython.callFuncAsync(state,"__startClientScript__")
+    if method == 1 then
+        state = simPython.initState()
+        simPython.loadCode(state, p)
+        callHandle = simPython.callFuncAsync(state, "__startClientScript__")
     end
 end
 
 function cleanupPython()
-    if callMethod==0 then
+    if callMethod == 0 then
         if subprocess then
-            if simSubprocess.isRunning(subprocess) then
-                simSubprocess.kill(subprocess)
-            end
+            if simSubprocess.isRunning(subprocess) then simSubprocess.kill(subprocess) end
         end
         simZMQ.close(socket)
         simZMQ.ctx_term(pyContext)
     end
-    if callMethod==1 then
-        simPython.cleanupState(state)
-    end
+    if callMethod == 1 then simPython.cleanupState(state) end
 end
 
 function getCleanErrorMsg(inMsg)
-    local msg=inMsg
-    if msg and #msg>0 and not nakedErrors then
-        local code=sim.getScriptStringParam(sim.handle_self,sim.scriptstringparam_text)
-        local _,totLines=string.gsub(code,'\n','')
-        totLines=totLines+1
-        local toRemove={"[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n","[^\n]*exec%(req%['code'%],module%)[^\n]*\n"}
-        for i=1,#toRemove,1 do
-            local p1,p2=string.find(msg,toRemove[i])
-            if p1 then
-                msg=string.sub(msg,1,p1-1)..string.sub(msg,p2+1)
-            end
+    local msg = inMsg
+    if msg and #msg > 0 and not nakedErrors then
+        local code = sim.getScriptStringParam(sim.handle_self, sim.scriptstringparam_text)
+        local _, totLines = string.gsub(code, '\n', '')
+        totLines = totLines + 1
+        local toRemove = {
+            "[^\n]*rep%['ret'%] = func%(%*req%['args'%]%)[^\n]*\n",
+            "[^\n]*exec%(req%['code'%],module%)[^\n]*\n",
+        }
+        for i = 1, #toRemove, 1 do
+            local p1, p2 = string.find(msg, toRemove[i])
+            if p1 then msg = string.sub(msg, 1, p1 - 1) .. string.sub(msg, p2 + 1) end
         end
-        msg=string.gsub(msg,'File "<string>"','script')
-        local p1=0,p2,p3
+        msg = string.gsub(msg, 'File "<string>"', 'script')
+        local p1 = 0, p2, p3
         while true do
-            p2,p3=string.find(msg,'[^\n]*script, line %d+,[^\n]+\n',p1+1)
+            p2, p3 = string.find(msg, '[^\n]*script, line %d+,[^\n]+\n', p1 + 1)
             if p2 then
-                local lineNb=tonumber(string.sub(msg,string.find(msg,'%d+',p2)))
-                if lineNb<=totLines then
-                    p1=p2
+                local lineNb = tonumber(string.sub(msg, string.find(msg, '%d+', p2)))
+                if lineNb <= totLines then
+                    p1 = p2
                 else
-                    msg=string.sub(msg,1,p2-1)..string.sub(msg,p3+1)
+                    msg = string.sub(msg, 1, p2 - 1) .. string.sub(msg, p3 + 1)
                 end
             else
                 break
@@ -401,47 +424,43 @@ function getCleanErrorMsg(inMsg)
 end
 
 function getErrorPython()
-    local a,msg
-    if callMethod==0 then
+    local a, msg
+    if callMethod == 0 then
         if subprocess then
             if simSubprocess.isRunning(subprocess) then
-                local r,rep=simZMQ.__noError.recv(socket,simZMQ.DONTWAIT)
-                if r>=0 then
-                    local rep,o,t=cborDecode.decode(rep)
-                    a=rep.err~=nil
-                    msg=rep.err
-                    msg=getCleanErrorMsg(msg)
+                local r, rep = simZMQ.__noError.recv(socket, simZMQ.DONTWAIT)
+                if r >= 0 then
+                    local rep, o, t = cborDecode.decode(rep)
+                    a = rep.err ~= nil
+                    msg = rep.err
+                    msg = getCleanErrorMsg(msg)
                 end
             end
         end
     end
-    if callMethod==1 then
-        a,msg=simPython.pollResult(state,callHandle)
-    end
-    return a,msg
+    if callMethod == 1 then a, msg = simPython.pollResult(state, callHandle) end
+    return a, msg
 end
 
-function sysCall_ext(funcName,...)
+function sysCall_ext(funcName, ...)
     if _G[funcName] then -- for now ignore functions in tables
-        return _G[funcName](...) 
+        return _G[funcName](...)
     else
         if threaded then
-            extCall_funcName=funcName
-            extCall_args={...}
-            while extCall_funcName do
-                pythonWrapper.handleQueue()
-            end
+            extCall_funcName = funcName
+            extCall_args = {...}
+            while extCall_funcName do pythonWrapper.handleQueue() end
             return extCall_ret
         else
-            return handleRemote(funcName,{...})
+            return handleRemote(funcName, {...})
         end
     end
 end
 
 function sysCall_actuation()
-    steppedClients={}
-    local retVal=handleRemote('sysCall_actuation')
-    simulationTimeStepCount=simulationTimeStepCount+1
+    steppedClients = {}
+    local retVal = handleRemote('sysCall_actuation')
+    simulationTimeStepCount = simulationTimeStepCount + 1
     pythonWrapper.publishStepCount()
     return retVal
 end
@@ -452,119 +471,95 @@ function sysCall_nonSimulation()
 end
 
 function sysCall_beforeSimulation()
-    simulationTimeStepCount=0
+    simulationTimeStepCount = 0
     return handleRemote('sysCall_beforeSimulation')
 end
 
 function sysCall_afterSimulation()
-    steppingClients={} 
-    steppedClients={}
+    steppingClients = {}
+    steppedClients = {}
     return handleRemote('sysCall_afterSimulation')
 end
 
 function sysCall_sensing()
-    local nm='sysCall_sensing'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_sensing'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_suspend()
-    local nm='sysCall_suspend'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_suspend'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_suspended()
-    local nm='sysCall_suspended'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_suspended'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_resume()
-    local nm='sysCall_resume'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_resume'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_beforeInstanceSwitch()
-    local nm='sysCall_beforeInstanceSwitch'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_beforeInstanceSwitch'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_afterInstanceSwitch()
-    local nm='sysCall_afterInstanceSwitch'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_afterInstanceSwitch'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_addOnScriptSuspend()
-    local nm='sysCall_addOnScriptSuspend'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_addOnScriptSuspend'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_addOnScriptResume()
-    local nm='sysCall_addOnScriptResume'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_addOnScriptResume'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_dynCallback(inData)
-    local nm='sysCall_dynCallback'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_dynCallback'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_jointCallback(inData)
-    local nm='sysCall_jointCallback'
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
-    return handleRemote('sysCall_jointCallback',{inData})
+    local nm = 'sysCall_jointCallback'
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
+    return handleRemote('sysCall_jointCallback', {inData})
 end
 
 function sysCall_contactCallback(inData)
-    local nm='sysCall_contactCallback'
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
-    return handleRemote('sysCall_contactCallback',{inData})
+    local nm = 'sysCall_contactCallback'
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
+    return handleRemote('sysCall_contactCallback', {inData})
 end
 
 function sysCall_moduleEntry(inData)
-    local nm='sysCall_moduleEntry'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_moduleEntry'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
@@ -580,131 +575,105 @@ end
 --]]
 
 function sysCall_beforeCopy(inData)
-    local nm='sysCall_beforeCopy'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_beforeCopy'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_afterCopy(inData)
-    local nm='sysCall_afterCopy'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_afterCopy'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_afterCreate(inData)
-    local nm='sysCall_afterCreate'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_afterCreate'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_beforeDelete(inData)
-    local nm='sysCall_beforeDelete'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_beforeDelete'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_afterDelete(inData)
-    local nm='sysCall_afterDelete'
-    local retVal=handleRemote(nm,{inData})
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_afterDelete'
+    local retVal = handleRemote(nm, {inData})
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function sysCall_vision(inData)
-    local nm='sysCall_vision'
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
-    return handleRemote('sysCall_vision',{inData})
+    local nm = 'sysCall_vision'
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
+    return handleRemote('sysCall_vision', {inData})
 end
 
 function sysCall_trigger(inData)
-    local nm='sysCall_trigger'
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
-    return handleRemote('sysCall_trigger',{inData})
+    local nm = 'sysCall_trigger'
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
+    return handleRemote('sysCall_trigger', {inData})
 end
 
 function sysCall_userConfig()
-    local nm='sysCall_userConfig'
-    local retVal=handleRemote(nm)
-    if pythonFuncs==nil or pythonFuncs[nm]==nil then
-        _G[nm]=nil
-    end
+    local nm = 'sysCall_userConfig'
+    local retVal = handleRemote(nm)
+    if pythonFuncs == nil or pythonFuncs[nm] == nil then _G[nm] = nil end
     return retVal
 end
 
 function handleErrors()
-    local a,pr=getErrorPython()
-    if a and #pr>0 then
-        pythonError=true
+    local a, pr = getErrorPython()
+    if a and #pr > 0 then
+        pythonError = true
         error(pr)
     end
 end
 
-function handleRemote(callType,args,timeout)
-    if extCallIsIn then
-        error('Detected reentrance')
-    end
+function handleRemote(callType, args, timeout)
+    if extCallIsIn then error('Detected reentrance') end
     local retVal
-    local st=sim.getSystemTime()
-    if callType=='sysCall_init' or ( pythonFuncs and pythonFuncs[callType]) then
+    local st = sim.getSystemTime()
+    if callType == 'sysCall_init' or (pythonFuncs and pythonFuncs[callType]) then
         -- non-threaded, or first time, i.e. in init
-        if timeout == nil then
-            timeout = 9999
-        end
-        nextCall=callType
-        nextCallArgs=args
-        callDone=false
+        if timeout == nil then timeout = 9999 end
+        nextCall = callType
+        nextCallArgs = args
+        callDone = false
         while not callDone do
             handleErrors()
             pythonWrapper.handleQueue()
-            if threaded or sim.getSystemTime()-st>timeout then
-                break
-            end
+            if threaded or sim.getSystemTime() - st > timeout then break end
         end
-        retVal=returnData
+        retVal = returnData
     else
         -- threaded
-        if callType=='sysCall_nonSimulation' or callType=='sysCall_suspended' or callType=='sysCall_actuation' then
-            if timeout == nil then
-                timeout = 0.001
-            end
+        if callType == 'sysCall_nonSimulation' or callType == 'sysCall_suspended' or callType ==
+            'sysCall_actuation' then
+            if timeout == nil then timeout = 0.001 end
             while true do
                 handleErrors()
                 pythonWrapper.handleQueue()
-                if sim.getScriptInt32Param(sim.handle_self,sim.scriptintparam_type)~=sim.scripttype_childscript or next(steppingClients)==nil then
+                if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
+                    sim.scripttype_childscript or next(steppingClients) == nil then
                     -- Customization scripts in general (stepping handled elsewhere), or scripts in non-stepping mode
-                    if sim.getSystemTime()-st>timeout then
-                        break
-                    end
+                    if sim.getSystemTime() - st > timeout then break end
                 else
                     -- stepping mode child scripts
-                    local breakout=true
-                    for uuid,v in pairs(steppingClients) do
-                        if steppedClients[uuid]==nil then
-                            breakout=false
+                    local breakout = true
+                    for uuid, v in pairs(steppingClients) do
+                        if steppedClients[uuid] == nil then
+                            breakout = false
                             break
                         end
                     end
-                    if breakout then
-                        break
-                    end
+                    if breakout then break end
                 end
             end
         end
@@ -713,79 +682,69 @@ function handleRemote(callType,args,timeout)
 end
 
 function include(arg)
-    _G[arg]=require(arg)
+    _G[arg] = require(arg)
 end
 
-function serviceCall(cmd,data)
-    local retArg1,retArg2
-    returnData=nil
-    if cmd=='callDone' then
-        callDone=true
-        nextCall=nil
-        nextCallArgs=nil
-        returnData=data
+function serviceCall(cmd, data)
+    local retArg1, retArg2
+    returnData = nil
+    if cmd == 'callDone' then
+        callDone = true
+        nextCall = nil
+        nextCallArgs = nil
+        returnData = data
     end
-    if cmd=='getNextCall' then
-        retArg1=nextCall
-        retArg2=nextCallArgs
+    if cmd == 'getNextCall' then
+        retArg1 = nextCall
+        retArg2 = nextCallArgs
     end
-    if cmd=='runningThread' then
-        threaded=true
-    end
-    if cmd=='threadEnded' then
-        threadEnded=true
-    end
-    if cmd=='print' then
-        print(data)
-    end
-    if cmd=='pythonFuncs' then
-        pythonFuncs=data
-    end
+    if cmd == 'runningThread' then threaded = true end
+    if cmd == 'threadEnded' then threadEnded = true end
+    if cmd == 'print' then print(data) end
+    if cmd == 'pythonFuncs' then pythonFuncs = data end
     -- Following to handle threaded scripts and their external calls, see also sysCall_ext:
     ----
-    if cmd=='getExtCall' then
-        retArg1=extCall_funcName
-        retArg2=extCall_args
+    if cmd == 'getExtCall' then
+        retArg1 = extCall_funcName
+        retArg2 = extCall_args
     end
-    if cmd=='setExtCall' then
-        extCall_ret=data
-        extCall_funcName=nil
-        extCall_args=nil
+    if cmd == 'setExtCall' then
+        extCall_ret = data
+        extCall_funcName = nil
+        extCall_args = nil
     end
     ----
-    return retArg1,retArg2
+    return retArg1, retArg2
 end
 
 function getApi()
-    str={}
-    for k,v in pairs(_G) do
-        if type(v)=='table' and k:find('sim',1,true)==1 then
-            str[#str+1]=k
-        end
+    str = {}
+    for k, v in pairs(_G) do
+        if type(v) == 'table' and k:find('sim', 1, true) == 1 then str[#str + 1] = k end
     end
     return str
 end
 
-function setStepping(enable,uuid)
-    if uuid==nil then
-        uuid='ANY' -- to support older clients
+function setStepping(enable, uuid)
+    if uuid == nil then
+        uuid = 'ANY' -- to support older clients
     end
     if enable then
-        steppingClients[uuid]=true
+        steppingClients[uuid] = true
     else
-        steppingClients[uuid]=nil
+        steppingClients[uuid] = nil
     end
-    steppedClients[uuid]=nil
+    steppedClients[uuid] = nil
 end
 
 function step(uuid)
-    if uuid==nil then
-        uuid='ANY' -- to support older clients
+    if uuid == nil then
+        uuid = 'ANY' -- to support older clients
     end
-    steppedClients[uuid]=true
+    steppedClients[uuid] = true
 end
 
-otherProg=[=[
+otherProg = [=[
 
 import time
 import sys

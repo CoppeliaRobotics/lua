@@ -8,9 +8,7 @@ base64 = require('base64')
 require('base-ce')
 
 local l = auxFunc('getfiles', sim.getStringParam(sim.stringparam_luadir), 'sim*-ce', 'lua')
-for i = 1, #l, 1 do
-    require(string.gsub(l[i], "%.lua$", ""))
-end
+for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
 setupLazyLoaders() -- because those were cleared out by our explicit requires
 
@@ -58,21 +56,15 @@ function restart()
 end
 
 function s_nonSimulation()
-    if __restart then
-        return {cmd = 'restart'}
-    end
+    if __restart then return {cmd = 'restart'} end
 end
 
 function s_actuation()
-    if __restart then
-        return {cmd = 'restart'}
-    end
+    if __restart then return {cmd = 'restart'} end
 end
 
 function s_suspended()
-    if __restart then
-        return {cmd = 'restart'}
-    end
+    if __restart then return {cmd = 'restart'} end
 end
 
 sim.registerScriptFuncHook('sysCall_init', 's_init', false) -- hook on *before* init is incompatible with implicit module load...

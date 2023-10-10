@@ -1,4 +1,4 @@
-local codeEditorInfos=[[
+local codeEditorInfos = [[
 sysCall_info()
 sysCall_thread()
 sysCall_init()
@@ -38,4 +38,4 @@ exit()
 
 ConfigUI
 ]]
-registerCodeEditorInfos("",codeEditorInfos)
+registerCodeEditorInfos("", codeEditorInfos)
