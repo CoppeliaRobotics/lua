@@ -497,14 +497,16 @@ function _getCompletion(input, pos)
     local ret = {}
     if pos == #input then
         local what = input:match('[_%a][_%w%.]*$')
-        local base, ext = what:match('^(.-)%.([^.]+)$')
-        if base then
-            base = getvar(base)
-        else
-            base, ext = _G, what
-        end
-        for k in pairs(base) do
-            if k:startswith(ext) and #k > #ext then table.insert(ret, k:sub(#ext + 1)) end
+        if what then
+            local base, ext = what:match('^(.-)%.([^.]+)$')
+            if base then
+                base = getvar(base)
+            else
+                base, ext = _G, what
+            end
+            for k in pairs(base) do
+                if k:startswith(ext) and #k > #ext then table.insert(ret, k:sub(#ext + 1)) end
+            end
         end
     end
     return ret
