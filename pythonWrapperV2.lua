@@ -1297,19 +1297,13 @@ def _getFuncIfExists(name):
     return method
 
 def _getCompletion(input, pos):
-    import re
+    import functools, re
     ret = []
     if pos == len(input):
         if m := re.search(r'[_\w][_\w\.]*$', input):
-            what = m.group()
-            obj = None
-            *parts, last = what.split('.')
-            for part in parts:
-                if obj is None:
-                    obj = globals()[part]
-                else:
-                    obj = getattr(obj, part)
-            for k in dir(obj) if obj else globals():
+            *parts, last = m.group().split('.')
+            obj = functools.reduce(lambda o, k: None if o is None else globals().get(k) if o == globals() else getattr(o, k, None), parts, globals())
+            for k in ([] if obj is None else globals() if obj == globals() else dir(obj)):
                 if k.startswith(last) and len(k) > len(last):
                     ret.append(k[len(last):])
     return ret

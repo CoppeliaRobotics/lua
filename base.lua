@@ -504,8 +504,10 @@ function _getCompletion(input, pos)
             else
                 base, ext = _G, what
             end
-            for k in pairs(base) do
-                if k:startswith(ext) and #k > #ext then table.insert(ret, k:sub(#ext + 1)) end
+            if base then
+                for k in pairs(base) do
+                    if k:startswith(ext) and #k > #ext then table.insert(ret, k:sub(#ext + 1)) end
+                end
             end
         end
     end
