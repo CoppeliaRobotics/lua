@@ -891,8 +891,8 @@ function initPython(prog)
                     simSubprocess.wait(subprocess, 0.1)
                     if simSubprocess.isRunning(subprocess) then
                         simSubprocess.kill(subprocess)
-                        subprocess = nil
                     end
+                    subprocess = nil
                 else
                     simZMQ.send(
                         pySocket,
@@ -909,6 +909,7 @@ function initPython(prog)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)
                 end
+                subprocess = nil
             end
         else
             errMsg = subprocess
