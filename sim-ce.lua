@@ -13,7 +13,7 @@ int particleObjectHandle = sim.addParticleObject(int objectType, float size, flo
 sim.addParticleObjectItem(int objectHandle, float[] itemData)
 sim.addReferencedHandle(int objectHandle, int referencedHandle)
 int scriptHandle = sim.addScript(int scriptType)
-sim.adjustView(int viewHandleOrIndex, int associatedViewableObjectHandle, int options, string viewLabel=nil)
+int res = sim.adjustView(int viewHandleOrIndex, int objectHandle, int options, string viewLabel=nil)
 int result = sim.alignShapeBB(int shapeHandle, float[7] pose)
 float yawAngle, float pitchAngle, float rollAngle = sim.alphaBetaGammaToYawPitchRoll(float alphaAngle, float betaAngle, float gammaAngle)
 int result = sim.announceSceneContentChange()

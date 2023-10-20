@@ -1,5 +1,4 @@
 sim = require 'sim'
-simUI = require 'simUI'
 
 function sysCall_init()
     _S.path.init()
@@ -135,6 +134,7 @@ end
 
 function _S.path.openUserConfigDlg()
     if _S.path.ui == nil then
+        simUI = require 'simUI'
         _S.path.reopenUserConfDlg = nil
         local pos = ' placement="relative" position="-50,50" '
         if _S.path.pathDlgPos then
@@ -1155,6 +1155,7 @@ end
 
 function _S.path.showCtrlPtDlg(selectedCtrlPtHandles)
     if not _S.path.ctrlPtUi then
+        simUI = require 'simUI'
         local pos = 'position="-50,-50"'
         if _S.path.ctrlPtDlgPos then
             pos = 'position="' .. _S.path.ctrlPtDlgPos[1] .. ',' .. _S.path.ctrlPtDlgPos[2] .. '"'
@@ -1261,6 +1262,7 @@ end
 
 function _S.path.showInsertCtrlPtDlg()
     if not _S.path.insertCtrlPtUi then
+        simUI = require 'simUI'
         local pos = 'position="-50,-50"'
         if _S.path.insertCtrlPtDlgPos then
             pos = 'position="' .. _S.path.insertCtrlPtDlgPos[1] .. ',' ..
