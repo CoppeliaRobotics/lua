@@ -44,6 +44,7 @@ function table.join(t, sep, opts, visited)
     sep = sep or ', '
     opts = opts and table.clone(opts) or {}
     opts.indentString = opts.indentString or '    '
+    opts.quoteStrings = opts.quoteStrings == true
     if opts.indent == true then opts.indent = 0 end
     if opts.indent then opts.indent = opts.indent + 1 end
     visited = visited or {}
@@ -65,7 +66,11 @@ function table.join(t, sep, opts, visited)
                 s = s .. table.tostring(val, sep, opts, visited)
             end
         elseif type(val) == 'string' then
-            s = s .. "'" .. val .. "'"
+            if opts.quoteStrings then
+                s = s .. "'" .. val .. "'"
+            else
+                s = s .. val
+            end
         else
             s = s .. tostring(val)
         end
@@ -108,6 +113,7 @@ end
 function table.tostring(t, sep, opts, visited)
     opts = opts and table.clone(opts) or {}
     opts.indentString = opts.indentString or '    '
+    opts.quoteStrings = opts.quoteStrings ~= false
     if opts.indent == true then opts.indent = 0 end
 
     local s = '{'
