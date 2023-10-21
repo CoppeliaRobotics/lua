@@ -9,11 +9,7 @@ function scriptClientBridge.call(b)
     i = cbor.decode(b)
     require 'var'
     f = getvar(i.func)
-    local ok, r = pcall(
-                      function()
-            return {f(table.unpack(i.args))}
-        end
-                  )
+    local ok, r = pcall(function() return {f(table.unpack(i.args))} end)
     if ok then
         r = {success = true, result = r}
     else
