@@ -389,16 +389,22 @@ function sysCall_addOnScriptResume(...)
     return callRemoteFunction("sysCall_addOnScriptResume", {...})
 end
 
-function sysCall_dyn(...)
-    return callRemoteFunction("sysCall_dyn", {...})
+if dynCallback then
+    -- Needs to be explicitly enabled (drastic slowdown)
+    function sysCall_dyn(...)
+        return callRemoteFunction("sysCall_dyn", {...})
+    end
 end
 
 function sysCall_joint(...)
     return callRemoteFunction("sysCall_joint", {...})
 end
 
-function sysCall_contact(...)
-    return callRemoteFunction("sysCall_contact", {...})
+if contactCallback then
+    -- Needs to be explicitly enabled (drastic slowdown)
+    function sysCall_contact(...)
+        return callRemoteFunction("sysCall_contact", {...})
+    end
 end
 
 function sysCall_vision(...)
@@ -421,8 +427,11 @@ function sysCall_msg(...)
     return callRemoteFunction("sysCall_msg", {...})
 end
 
-function sysCall_event(...)
-    return callRemoteFunction("sysCall_event", {...})
+if eventCallback then
+    -- Needs to be explicitly enabled (drastic slowdown)
+    function sysCall_event(...)
+        return callRemoteFunction("sysCall_event", {...})
+    end
 end
 
 function pythonCallback1(...)
