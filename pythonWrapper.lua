@@ -5,7 +5,7 @@ simSubprocess = require('simSubprocess')
 simUI = require('simUI')
 json = require 'dkjson'
 -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
-cborDecode = require 'org.conman.cbor' -- use only for decoding. For encoding use sim.packCbor
+cbor = require 'org.conman.cbor'
 
 pythonWrapper = {}
 
@@ -74,10 +74,10 @@ function pythonWrapper.handleRawMessage(rawReq)
     end
 
     -- if we are here, it should be a CBOR payload
-    local status, req = pcall(cborDecode.decode, rawReq)
+    local status, req = pcall(cbor.decode, rawReq)
     if status then
         local resp = pythonWrapper.handleRequest(req)
-        return sim.packCbor(resp)
+        return cbor.encode(resp)
     end
 
     sim.addLog(sim.verbosity_scripterrors, 'cannot decode message: no suitable decoder')
@@ -170,8 +170,8 @@ function loadExternalFile(file)
         end
     end
     if f == nil then error("include file '" .. file .. "' not found") end
-    if not pythonProg then pythonProg = '' end
-    pythonProg = f:read('*all') .. pythonProg
+    if not pythonUserCode then pythonUserCode = '' end
+    pythonUserCode = f:read('*all') .. pythonUserCode
     f:close()
     while #file > 0 do
         local c = file:sub(#file, #file)
@@ -231,7 +231,7 @@ function sysCall_init()
     steppingClients = {}
     steppedClients = {}
     endSignal = false
-    local prog = pythonProg .. otherProg
+    local prog = pythonUserCode .. otherProg
     prog = prog:gsub("XXXconnectionAddress1XXX", rpcPortStr)
     prog = prog:gsub("XXXconnectionAddress2XXX", cntPortStr)
     local tmp = ''
@@ -302,7 +302,7 @@ function initPython(p, method)
                                  function()
                     return simSubprocess.execAsync(
                                pyth, {
-                            sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher.py',
+                            sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncherV0.py',
                             portStr,
                         }, {useSearchPath = true, openNewConsole = false}
                            )
@@ -315,7 +315,7 @@ function initPython(p, method)
                 socket = simZMQ.socket(pyContext, simZMQ.REQ)
                 simZMQ.setsockopt(socket, simZMQ.LINGER, sim.packUInt32Table {0})
                 simZMQ.connect(socket, portStr)
-                simZMQ.send(socket, sim.packCbor({cmd = 'loadCode', code = p}), 0)
+                simZMQ.send(socket, cbor.encode({cmd = 'loadCode', code = p}), 0)
                 local st = sim.getSystemTime()
                 local r, rep
                 while sim.getSystemTime() - st < startTimeout do
@@ -323,7 +323,7 @@ function initPython(p, method)
                     if r >= 0 then break end
                 end
                 if r >= 0 then
-                    local rep, o, t = cborDecode.decode(rep)
+                    local rep, o, t = cbor.decode(rep)
                     if rep.err then
                         msg = rep.err
                         msg = getCleanErrorMsg(msg)
@@ -335,7 +335,7 @@ function initPython(p, method)
                         error(msg)
                     else
                         simZMQ.send(
-                            socket, sim.packCbor(
+                            socket, cbor.encode(
                                 {cmd = 'callFunc', func = '__startClientScript__', args = {}}
                             ), 0
                         )
@@ -430,7 +430,7 @@ function getErrorPython()
             if simSubprocess.isRunning(subprocess) then
                 local r, rep = simZMQ.__noError.recv(socket, simZMQ.DONTWAIT)
                 if r >= 0 then
-                    local rep, o, t = cborDecode.decode(rep)
+                    local rep, o, t = cbor.decode(rep)
                     a = rep.err ~= nil
                     msg = rep.err
                     msg = getCleanErrorMsg(msg)
