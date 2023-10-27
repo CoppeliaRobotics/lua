@@ -291,10 +291,11 @@ function initPython(p, method)
         if pyth2 then pyth = pyth2 end
         if pyth == nil or #pyth == 0 then
             local p = sim.getInt32Param(sim.intparam_platform)
-            if p == 1 then
-                pyth = '/usr/local/bin/python3' -- via Homebrew
+            if p == 0 then
+                pyth = 'py'
+            else
+                pyth = 'python3'
             end
-            if p == 2 then pyth = '/usr/bin/python3' end
         end
         local errMsg
         if pyth and #pyth > 0 then

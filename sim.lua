@@ -63,6 +63,13 @@ end
 function sim.getThreadSwitchTiming()
     return sim.getAutoYieldDelay() * 1000.0
 end
+function sim.getIsRealTimeSimulation()
+    local ret = 0
+    if sim.getRealTimeSimulation() then
+        ret = 1
+    end
+    return ret
+end
 ---------------------------------
 
 require('stringx')

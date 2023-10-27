@@ -97,6 +97,7 @@ string label, int attributes, float[3] curveColor, float[] xData, float[] yData,
 int bitCoded, float[3] bgColor, float[3] fgColor, int bufferSize = sim.getGraphInfo(int graphHandle)
 int intState = sim.getInt32Param(int parameter)
 int signalValue = sim.getInt32Signal(string signalName)
+bool result = sim.getRealTimeSimulation()
 int result = sim.getIsRealTimeSimulation()
 int masterJointHandle, float offset, float multCoeff = sim.getJointDependency(int jointHandle)
 float forceOrTorque = sim.getJointForce(int jointHandle)
