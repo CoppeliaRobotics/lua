@@ -1139,10 +1139,12 @@ class RemoteAPIMethod:
 
 
 def cbor_encode_anything(encoder, value):
-    if np.issubdtype(type(value), np.floating):
-        value = float(value)
-    if isinstance(value, np.ndarray):
-        value = value.tolist()
+    if 'numpy' in sys.modules:
+        import numpy as np
+        if np.issubdtype(type(value), np.floating):
+            value = float(value)
+        if isinstance(value, np.ndarray):
+            value = value.tolist()
     return encoder.encode(value)
 
 
