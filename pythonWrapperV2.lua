@@ -673,6 +673,9 @@ function receive()
         if req.args and (type(req.args) == 'string') and req.args:match('^_%*baddata%*_') then
             req.args = string.gsub(req.args, '_%*baddata%*_', '')
             sim.addLog(sim.verbosity_warnings, "Received non-serializable data: " .. req.args)
+            if req.cbor_pkg == 'cbor' then
+                sim.addLog(sim.verbosity_warnings, "To get better support for some additional types such as numpy, install pip package 'cbor2'.")
+            end
         end
 
         return req
@@ -1102,9 +1105,14 @@ pythonBoilerplate = [=[
 import time
 import sys
 import os
-import cbor
 import zmq
 import re
+
+try:
+    import cbor2 as cbor
+except ModuleNotFoundError:
+    import cbor
+
 
 XXXadditionalPathsXXX
 
@@ -1128,6 +1136,14 @@ class RemoteAPIMethod:
         if k == '__doc__':
             return self.client.call('sim.getApiInfo', [-1, str(self)])
         return object.__getattribute__(self, k)
+
+
+def cbor_encode_anything(encoder, value):
+    if np.issubdtype(type(value), np.floating):
+        value = float(value)
+    if isinstance(value, np.ndarray):
+        value = value.tolist()
+    return encoder.encode(value)
 
 
 class RemoteAPIClient:
@@ -1159,9 +1175,14 @@ class RemoteAPIClient:
 
         # pack and send:
         try:
-            rawReq = cbor.dumps(req)
+            kwargs = {}
+            if cbor.__package__ == 'cbor2':
+                # only 'cbor2' has a 'default' kwarg:
+                kwargs['default'] = cbor_encode_anything
+            rawReq = cbor.dumps(req, **kwargs)
         except Exception as err:
             req['args'] = '_*baddata*_' + str(req['args'])
+            req['cbor_pkg'] = cbor.__package__
             rawReq = cbor.dumps(req)
             #raise Exception("illegal argument " + str(err)) #__EXCEPTION__
         self.socket.send(rawReq)
