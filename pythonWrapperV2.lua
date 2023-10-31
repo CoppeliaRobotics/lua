@@ -995,7 +995,7 @@ function getCleanErrorMsg(inMsg)
     if msg and #msg > 0 and not nakedErrors then
         msg = string.gsub(msg, "_=NL=_", "\n")
         msg = string.gsub(msg, "_=TB=_", "\t")
-        local tg = "#__EXCEPTION__\n"
+        local tg = "__EXCEPTION__\n"
         local p = string.find(msg, tg)
         if p then
             msg = msg:sub(p + #tg)
@@ -1186,7 +1186,7 @@ class RemoteAPIClient:
             req['args'] = '_*baddata*_' + str(req['args'])
             req['cbor_pkg'] = cbor.__package__
             rawReq = cbor.dumps(req)
-            #raise Exception("illegal argument " + str(err)) #__EXCEPTION__
+            #raise Exception("illegal argument " + str(err)) # __EXCEPTION__
         self.socket.send(rawReq)
 
     def _recv(self):
@@ -1209,7 +1209,7 @@ class RemoteAPIClient:
                 self._send({'func': '_*executed*_', 'args': args})
                 reply = self._recv()
                 if 'err' in reply:
-                    raise Exception(reply.get('err')) #__EXCEPTION__
+                    raise Exception(reply.get('err')) # __EXCEPTION__
                 #if reply['func']=='_*leave*_':
                 #    return
                 funcToRun=_getFuncIfExists(reply['func'])
@@ -1227,7 +1227,7 @@ class RemoteAPIClient:
                 self._send({'func': '_*executed*_', 'args': args})
                 reply = self._recv()
             if 'err' in reply:
-                raise Exception(reply.get('err')) #__EXCEPTION__
+                raise Exception(reply.get('err')) # __EXCEPTION__
             return self._process_response(reply)
 
     def getObject(self, name, _info=None):
