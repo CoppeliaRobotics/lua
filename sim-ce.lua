@@ -27,7 +27,7 @@ float[12] matrix = sim.buildIdentityMatrix()
 float[12] matrix = sim.buildMatrix(float[3] position, float[3] eulerAngles)
 float[12] matrix = sim.buildMatrixQ(float[3] position, float[4] quaternion)
 float[7] pose = sim.buildPose(float[3] position, float[3] eulerAnglesOrAxis, int mode=0, float[3] axis2=nil)
-any outArg = sim.callScriptFunction(string functionName, int scriptHandle, any inArg=nil)
+... = sim.callScriptFunction(string functionName, int scriptHandle, ...)
 int result = sim.cameraFitToView(int viewHandleOrIndex, int[] objectHandles=nil, int options=0, float scaling=1.0)
 map[] originalColorData = sim.changeEntityColor(int entityHandle, float[3] newColor, int colorComponent=sim.colorcomponent_ambient_diffuse)
 int result, int[2] collidingObjects = sim.checkCollision(int entity1Handle, int entity2Handle)
@@ -212,7 +212,7 @@ sim.handleSimulationStart()
 int detectionCount, float[] auxPacket1, float[] auxPacket2 = sim.handleVisionSensor(int sensorHandle)
 float[1..*] vertices, int[1..*] indices = sim.importMesh(int fileformat, string pathAndFilename, int options, float identicalVerticeTolerance, float scalingFactor)
 int shapeHandle = sim.importShape(int fileformat, string pathAndFilename, int options, float identicalVerticeTolerance, float scalingFactor)
-bool result = sim.initScript(int scriptHandle)
+sim.initScript(int scriptHandle)
 int totalVoxelCnt = sim.insertObjectIntoOctree(int octreeHandle, int objectHandle, int options, float[] color=nil, int tag=0)
 int totalPointCnt = sim.insertObjectIntoPointCloud(int pointCloudHandle, int objectHandle, int options, float gridSize, float[] color=nil, float duplicateTolerance=nil)
 int totalPointCnt = sim.insertPointsIntoPointCloud(int pointCloudHandle, int options, float[] points, float[] color=nil, float duplicateTolerance=nil)
@@ -1045,6 +1045,7 @@ sim.scriptintparam_handle
 sim.scriptintparam_objecthandle
 sim.scriptintparam_type
 sim.scriptintparam_lang
+sim.scriptintparam_autorestartonerror
 sim.scriptstringparam_description
 sim.scriptstringparam_name
 sim.scriptstringparam_text
