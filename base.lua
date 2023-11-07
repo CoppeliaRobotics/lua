@@ -267,18 +267,14 @@ function _S.tableToString(tt, opts)
                     usedKeys[key] = true
                 end
             end
-            table.sort(
-                keys, function(a, b)
-                    return tostring(a) < tostring(b)
-                end
-            )
+            table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
             for _, key in ipairs(keys) do
                 local val = tt[key]
                 if opts.indent then
                     table.insert(sb, string.rep(opts.indentString, opts.indent))
                 end
                 if type(key) == 'string' then
-                    table.insert(sb, _S.getShortString(key, {omitQuotes = true}))
+                    table.insert(sb, _S.getShortString(key))
                 else
                     table.insert(sb, tostring(key))
                 end
