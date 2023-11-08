@@ -143,6 +143,17 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
+function reify(func)
+    _S = _S or {}
+    _S.anonymousFunctions = _S.anonymousFunctions or {}
+    if type(func) == 'function' then
+        local funcStr = string.gsub(tostring(f), '^function: 0x', 'f')
+        _S.anonymousFunctions[funcStr] = func
+        return '_S.anonymousFunctions.' .. funcStr
+    end
+    return func
+end
+
 operator = {
     add = function(a, b) return a + b end,
     sub = function(a, b) return a - b end,
