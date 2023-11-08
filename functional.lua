@@ -145,13 +145,21 @@ end
 
 function reify(func)
     _S = _S or {}
-    _S.anonymousFunctions = _S.anonymousFunctions or {}
+    _S.reifiedFunctions = _S.reifiedFunctions or {}
     if type(func) == 'function' then
         local funcStr = string.gsub(tostring(f), '^function: 0x', 'f')
-        _S.anonymousFunctions[funcStr] = func
-        return '_S.anonymousFunctions.' .. funcStr
+        if _S.reifiedFunctions[funcStr] ~= nil and _S.reifiedFunctions[funcStr] ~= func then
+            error('function clash')
+        end
+        _S.reifiedFunctions[funcStr] = func
+        return '_S.reifiedFunctions.' .. funcStr
     end
-    return func
+    if type(func) == 'string' then
+        -- it is already string, but check that points to a function:
+        assert(type(getvar(func)) == 'function')
+        return func
+    end
+    error('unexpected type: ' .. type(func))
 end
 
 operator = {
