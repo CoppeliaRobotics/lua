@@ -15,44 +15,47 @@ function sim.setThreadAutomaticSwitch()
     -- Shadow the original function
 end
 
-originalSetStepping = sim.setStepping
-function sim.setStepping(enabled)
+sim.setStepping = wrap(sim.setStepping, function(origFunc)
     -- Shadow original function:
     -- When stepping is true, CoppeliaSim ALWAYS blocks while Python runs some code
     -- When stepping is false, CoppeliaSim run concurently to Python, i.e. Python is "free" (until a request from Python comes)
-    local retVal = 0
-    if currentFunction == sim.setStepping then
-        if pythonFuncs['sysCall_thread'] then
-            retVal = steppingLevel
-            if enabled then
-                steppingLevel = steppingLevel + 1
-            else
-                if steppingLevel > 0 then steppingLevel = steppingLevel - 1 end
+    return function(enabled)
+        local retVal = 0
+        if currentFunction == 'sim.setStepping' then
+            if pythonFuncs['sysCall_thread'] then
+                retVal = steppingLevel
+                if enabled then
+                    steppingLevel = steppingLevel + 1
+                else
+                    if steppingLevel > 0 then steppingLevel = steppingLevel - 1 end
+                end
             end
+        else
+            retVal = origFunc(enabled)
         end
-    else
-        retVal = originalSetStepping(enabled)
+        return retVal
     end
-    return retVal
-end
+end)
 
-originalAcquireLock = sim.acquireLock
-function sim.acquireLock()
-    if currentFunction == sim.acquireLock then
-        holdCalls = holdCalls + 1
-    else
-        originalAcquireLock()
+sim.acquireLock = wrap(sim.acquireLock, function(origFunc)
+    return function()
+        if currentFunction == 'sim.acquireLock' then
+            holdCalls = holdCalls + 1
+        else
+            origFunc()
+        end
     end
-end
+end)
 
-originalReleaseLock = sim.releaseLock
-function sim.releaseLock()
-    if currentFunction == sim.releaseLock then
-        if holdCalls > 0 then holdCalls = holdCalls - 1 end
-    else
-        originalReleaseLock()
+sim.releaseLock = wrap(sim.releaseLock, function(origFunc)
+    return function()
+        if currentFunction == 'sim.releaseLock' then
+            if holdCalls > 0 then holdCalls = holdCalls - 1 end
+        else
+            origFunc()
+        end
     end
-end
+end)
 
 -- Special handling of sim.yield:
 originalYield = sim.yield
@@ -179,9 +182,6 @@ function sysCall_init(...)
 
     if subprocess then
         _pythonRunning = true
-        pythonCallbacks = {pythonCallback1, pythonCallback2, pythonCallback3}
-        pythonCallbackStrs = {'', '', ''}
-
         corout = coroutine.create(coroutineMain)
         setAutoYield(false)
         threadSwitchTiming = 0.002 -- time given to service Python scripts
@@ -266,16 +266,16 @@ function sysCall_ext(funcName, ...)
 
     if lang == 0 or lang == -1 then
         -- Lua
-        local f = _G
+        local fun = _G
         if string.find(funcName, "%.") then
             for w in funcName:gmatch("[^%.]+") do -- handle cases like sim.func or similar too
-                if f[w] then f = f[w] end
+                if fun[w] then fun = fun[w] end
             end
         else
-            f = f[funcName]
+            fun = fun[funcName]
         end
-        if type(f) == 'function' then
-            local status, retvals = pcall(f, table.unpack(args))
+        if type(fun) == 'function' then
+            local status, retvals = pcall(fun, table.unpack(args))
             if status == false then
                 return "_*runtimeError*_" -- ..retVals
             else
@@ -434,18 +434,6 @@ if eventCallback then
     end
 end
 
-function pythonCallback1(...)
-    return callRemoteFunction(pythonCallbackStrs[1], {...}, false, true)
-end
-
-function pythonCallback2(...)
-    return callRemoteFunction(pythonCallbackStrs[2], {...}, false, true)
-end
-
-function pythonCallback3(...)
-    return callRemoteFunction(pythonCallbackStrs[3], {...}, false, true)
-end
-
 function sim.testCB(a, cb, b)
     for i = 1, 99, 1 do cb(a, b) end
     return cb(a, b)
@@ -533,17 +521,14 @@ function handleRequest(req)
                 end
             end
 
-            currentFunction = func
+            currentFunction = req['func']
 
             -- Handle function arguments:
-            local cbi = 1
             for i = 1, #args, 1 do
                 if type(args[i]) == 'string' then
                     if args[i]:sub(-5) == "@func" then
                         local nm = args[i]:sub(1, -6)
-                        args[i] = pythonCallbacks[cbi]
-                        pythonCallbackStrs[cbi] = nm
-                        cbi = cbi + 1
+                        args[i] = function(...) return callRemoteFunction(nm, {...}, false, true) end
                     end
                 end
             end
@@ -563,7 +548,7 @@ function handleRequest(req)
             protectedCallDepth = protectedCallDepth + 1
             doNotInterruptCommLevel = doNotInterruptCommLevel + 1
             local status, retvals = xpcall(
-                                        function()
+                function()
                     local ret = {func(unpack(args, 1, req.argsL))}
                     -- Try to assign correct types to text/buffers and arrays/maps:
                     local args = returnTypes[req['func']]
@@ -584,8 +569,7 @@ function handleRequest(req)
                         end
                     end
                     return ret
-                end, errHandler
-                                    )
+                end, errHandler)
             doNotInterruptCommLevel = doNotInterruptCommLevel - 1
             protectedCallDepth = protectedCallDepth - 1
 
