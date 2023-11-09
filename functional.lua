@@ -148,7 +148,7 @@ function reify(func, name)
     _S = _S or {}
     _S.reifiedFunctions = _S.reifiedFunctions or {}
     if type(func) == 'function' then
-        local funcStr = name .. string.gsub(tostring(f), '^function: 0x', '_f')
+        local funcStr = name .. string.gsub(tostring(func), '^function: 0x', '_f')
         if _S.reifiedFunctions[funcStr] ~= nil and _S.reifiedFunctions[funcStr] ~= func then
             error('function clash')
         end
