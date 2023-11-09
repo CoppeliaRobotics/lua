@@ -143,11 +143,12 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
-function reify(func)
+function reify(func, name)
+    name = name or ''
     _S = _S or {}
     _S.reifiedFunctions = _S.reifiedFunctions or {}
     if type(func) == 'function' then
-        local funcStr = string.gsub(tostring(f), '^function: 0x', 'f')
+        local funcStr = name .. string.gsub(tostring(f), '^function: 0x', '_f')
         if _S.reifiedFunctions[funcStr] ~= nil and _S.reifiedFunctions[funcStr] ~= func then
             error('function clash')
         end
