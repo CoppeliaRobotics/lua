@@ -788,7 +788,19 @@ function checkPythonError()
                     if not inCleanup then
                         simZMQ.close(replySocket)
                         replySocket = simZMQ.socket(context, simZMQ.REP)
-                        simZMQ.bind(replySocket, replyPortStr)
+
+                        -- simZMQ.bind(replySocket, replyPortStr) -- takes some time for the address to be free again
+                        while true do
+                            local bindResult = simZMQ.__noError.bind(replySocket, replyPortStr)
+                            if bindResult == 0 then
+                                break
+                            elseif bindResult == -1 and simZMQ.errnum() == simZMQ.EADDRINUSE then
+                                -- address already in use -> retry
+                            else
+                                simZMQ.__raise()
+                            end
+                        end
+                        
                         pythonErrorMsg = nil
                         protectedCallDepth = 0
                         protectedCallErrorDepth = 0
