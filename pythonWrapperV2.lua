@@ -786,6 +786,7 @@ function checkPythonError()
                 if protectedCallDepth == 0 then
                     local errMsg = pythonErrorMsg
                     if not inCleanup then
+                        --[[
                         simZMQ.close(replySocket)
                         replySocket = simZMQ.socket(context, simZMQ.REP)
 
@@ -800,6 +801,7 @@ function checkPythonError()
                                 simZMQ.__raise()
                             end
                         end
+                        --]]
                         
                         pythonErrorMsg = nil
                         protectedCallDepth = 0
