@@ -1560,7 +1560,7 @@ function sim.visitTree(...)
     end
 end
 
-function apropos(what, showDeprecated)
+function apropos(what)
     local modNames = {'sim'}
     for i, n in ipairs(sim.getLoadedPlugins()) do
         n = 'sim' .. n
@@ -1571,17 +1571,13 @@ function apropos(what, showDeprecated)
         for k, v in pairs(_G[n]) do
             if k:lower():match(what) then
                 local s = n .. '.' .. k
-                local r, deprecated = pcall(sim.isDeprecated, s)
-                if not r then deprecated = 0 end
-                if showDeprecated or deprecated ~= 1 then
-                    local info = s
-                    if type(v) == 'function' then
-                        info = s .. '(...)'
-                        local i = sim.getApiInfo(-1, s)
-                        if i then info = (string.split(i, '\n'))[1] end
-                    end
-                    table.insert(results, {s, info})
+                local info = s
+                if type(v) == 'function' then
+                    info = s .. '(...)'
+                    local i = sim.getApiInfo(-1, s)
+                    if i and i ~= '' then info = (string.split(i, '\n'))[1] end
                 end
+                table.insert(results, {s, info})
             end
         end
     end
