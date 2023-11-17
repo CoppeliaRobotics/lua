@@ -555,12 +555,11 @@ sim.drawing_vertexcolors
 sim.drawing_wireframe
 sim.dummyfloatparam_size
 sim.dummyintparam_dummytype
+sim.dummystringparam_assemblytag
 sim.dummytype_dynloopclosure
 sim.dummytype_dyntendon
 sim.dummytype_default
 sim.dummytype_assembly
-sim.dummytype_parentassembly
-sim.dummytype_childassembly
 sim.dynmat_default
 sim.dynmat_floor
 sim.dynmat_foot
