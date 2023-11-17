@@ -433,6 +433,8 @@ sim.boolparam_stop_toolbarbutton_enabled
 sim.boolparam_use_glfinish_cmd
 sim.boolparam_video_recording_triggered
 sim.boolparam_waiting_for_trigger
+sim.boolparam_execunsafe
+sim.boolparam_execunsafeext
 sim.buffer_base64
 sim.buffer_clamp
 sim.buffer_double
@@ -552,9 +554,13 @@ sim.drawing_triangles
 sim.drawing_vertexcolors
 sim.drawing_wireframe
 sim.dummyfloatparam_size
-sim.dummyintparam_link_type
-sim.dummylink_dynloopclosure
-sim.dummylink_dyntendon
+sim.dummyintparam_dummytype
+sim.dummytype_dynloopclosure
+sim.dummytype_dyntendon
+sim.dummytype_default
+sim.dummytype_assembly
+sim.dummytype_parentassembly
+sim.dummytype_childassembly
 sim.dynmat_default
 sim.dynmat_floor
 sim.dynmat_foot
@@ -932,6 +938,7 @@ sim.objectproperty_ignoreviewfitting
 sim.objectproperty_selectable
 sim.objectproperty_selectinvisible
 sim.objectproperty_selectmodelbaseinstead
+sim.objectproperty_hiddenforsimulation
 sim.objectspecialproperty_collidable
 sim.objectspecialproperty_detectable
 sim.objectspecialproperty_measurable
@@ -1048,6 +1055,7 @@ sim.scriptintparam_lang
 sim.scriptintparam_autorestartonerror
 sim.scriptstringparam_description
 sim.scriptstringparam_name
+sim.scriptstringparam_nameext
 sim.scriptstringparam_text
 sim.scripttype_addonscript
 sim.scripttype_childscript
@@ -1139,6 +1147,8 @@ sim.stringparam_uniqueid
 sim.stringparam_usersettingsdir
 sim.stringparam_verbosity
 sim.stringparam_video_filename
+sim.stringparam_addondir
+sim.stringparam_sandboxlang
 sim.texturemap_cube
 sim.texturemap_cylinder
 sim.texturemap_plane
@@ -1181,6 +1191,8 @@ sim.visionintparam_windowed_pos_x
 sim.visionintparam_windowed_pos_y
 sim.visionintparam_windowed_size_x
 sim.visionintparam_windowed_size_y
+sim.visionintparam_depthignored
+sim.visionintparam_rgbignored
 sim.volume_cone
 sim.volume_cylinder
 sim.volume_disc
