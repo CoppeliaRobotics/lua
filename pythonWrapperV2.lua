@@ -648,7 +648,11 @@ function receive()
         receiveIsNext = false
         local status, req = pcall(cbor.decode, dat)
         if not status then
-            error(req .. "\n" .. sim.transformBuffer(dat, sim.buffer_uint8, 1, 0, sim.buffer_base64))
+            if #dat < 2000 then
+                error(req .. "\n" .. sim.transformBuffer(dat, sim.buffer_uint8, 1, 0, sim.buffer_base64))
+            else
+                error('Error trying to decode received data:\n' .. req)
+            end
         end
 
         -- Handle non-serializable data:
@@ -669,8 +673,15 @@ end
 function send(reply)
     if not receiveIsNext then
         local dat = reply
-        status, reply = pcall(cbor.encode, reply)
-        if not status then error(reply .. "\n" .. getAsString(dat)) end
+        local status, reply = pcall(cbor.encode, reply)
+        if not status then
+            local s2, rep2 = pcall(getAsString, dat)
+            if s2 then
+                error(reply .. "\n" .. rep2)
+            else
+                error('Error while trying to encode data to send:\n' .. reply)
+            end
+        end
         simZMQ.send(replySocket, reply, 0)
         receiveIsNext = true
     else
