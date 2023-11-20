@@ -33,6 +33,7 @@ sysCall_beforeSave()
 sysCall_afterSave()
 sysCall_msg()
 sysCall_selChange()
+sysCall_data()
 quit()
 exit()
 
