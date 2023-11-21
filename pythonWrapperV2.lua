@@ -2,7 +2,8 @@ startTimeout = 2
 sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
 simZMQ = require('simZMQ')
 simSubprocess = require('simSubprocess')
-cbor = require 'org.conman.cbor'
+cbor = require('org.conman.cbor')
+require('utils')
 removeLazyLoaders()
 
 function sim.setThreadSwitchTiming(switchTiming)
@@ -865,6 +866,9 @@ function initPython(prog)
         end
     end
     local errMsg
+    if pythonExecutable then
+        pyth = pythonExecutable
+    end
     if pyth and #pyth > 0 then
         subprocess, controlPort = startPythonClientSubprocess(pyth)
         if controlPort then
@@ -964,16 +968,14 @@ end
 function startPythonClientSubprocess(pythonExec)
     local subprocess
     local controlPort = getFreePortStr()
+    local args = string.qsplit(pythonExec, ' ')
+    local ex = table.remove(args, 1)
+    args[#args + 1] = sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher.py'
+    args[#args + 1] = controlPort
     local res, ret = pcall(
-                         function()
-            return simSubprocess.execAsync(
-                       pythonExec, {
-                    sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher.py',
-                    controlPort,
-                }, {useSearchPath = true, openNewConsole = false}
-                   )
-        end
-                     )
+                        function()
+                            return simSubprocess.execAsync(ex, args, {useSearchPath = true, openNewConsole = false})
+                        end)
     if res then
         subprocess = ret
     else

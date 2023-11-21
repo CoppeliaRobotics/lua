@@ -85,6 +85,41 @@ function string.split(s, pat)
     return fields
 end
 
+function string.qsplit(s, pat) -- respects single and double quotes
+    local quotes = {}
+    local retVal = {}
+    local w = ''
+    local i = 1
+    while i <= #s do
+        local si = string.find(s, pat, i)
+        if si == i and #quotes == 0 then
+            i = i + #pat
+            if #w > 0 then
+                retVal[#retVal + 1] = w
+                w = ''
+            end
+        else
+            local c = string.sub(s, i, i)
+            if c == '"' or c == "'" then
+                if #quotes == 0 or quotes[#quotes] ~= c then
+                    w = w .. c
+                    quotes[#quotes + 1] = c
+                else
+                    table.remove(quotes)
+                    w = w .. c
+                end
+            else
+                w = w .. c
+            end
+            i = i + 1
+        end
+    end
+    if #w > 0 then
+        retVal[#retVal + 1] = w
+    end
+    return retVal
+end
+
 function string.splitlines(s)
     return string.split(s, "(.-)\r?\n")
 end
