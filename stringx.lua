@@ -66,11 +66,11 @@ function string.split(text, pattern, plain)
 end
 
 function string.startswith(s, prefix)
-    return s:sub(1, #prefix) == prefix
+    return prefix == '' or s:sub(1, #prefix) == prefix
 end
 
 function string.endswith(s, suffix)
-    return ending == '' or s:sub(-#suffix) == suffix
+    return suffix == '' or s:sub(-#suffix) == suffix
 end
 
 function string.trim(s)
