@@ -3,7 +3,6 @@ sim = require('sim') -- keep here, since we have several sim-functions defined/r
 simZMQ = require('simZMQ')
 simSubprocess = require('simSubprocess')
 cbor = require('org.conman.cbor')
-require('utils')
 removeLazyLoaders()
 
 function sim.setThreadSwitchTiming(switchTiming)
