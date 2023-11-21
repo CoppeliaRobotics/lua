@@ -70,11 +70,11 @@ function string.split(text, pattern, plain)
 end
 
 function string.startswith(s, prefix)
-    return s:sub(1, #prefix) == prefix
+    return prefix == '' or s:sub(1, #prefix) == prefix
 end
 
 function string.endswith(s, suffix)
-    return ending == '' or s:sub(-#suffix) == suffix
+    return suffix == '' or s:sub(-#suffix) == suffix
 end
 
 function string.trim(s)
@@ -203,6 +203,12 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.eq(string.split('a', '%', true), {'a'}))
     assert(table.eq(string.split('a%', '%', true), {'a', ''}))
     assert(table.eq(string.split('a%--b', '%-', true), {'a', '-b'}))
+    assert(table.eq(string.split('"a b" "c d"', '"', true), {'', 'a b', ' ', 'c d', ''}))
+    assert(table.eq(string.split('"a b" "c d"', ' ', true), {'"a', 'b"', '"c', 'd"'}))
+    assert(table.eq(string.qsplit('"a b" "c d"', ' '), {'"a b"', '"c d"'}))
+    assert(table.eq(string.qsplit("'a b' 'c d'", ' '), {"'a b'", "'c d'"}))
+    assert(table.eq(string.qsplit('"a\' b" "c d"', ' '), {'"a\' b"', '"c d"'}))
+    assert(table.eq(string.qsplit("'a\" b' 'c d'", ' '), {"'a\" b'", "'c d'"}))
     assert(string.startswith('abcde', 'abc'))
     assert(string.startswith('abc', 'abc'))
     assert(not string.startswith('bcde', 'abc'))
