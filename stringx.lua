@@ -16,7 +16,11 @@ function string.qsplit(s, pat) -- respects single and double quotes
             if c == '"' or c == "'" then
                 if #quotes == 0 or quotes[#quotes] ~= c then
                     w = w .. c
-                    quotes[#quotes + 1] = c
+                    if #quotes > 1 then
+                        quotes = {}
+                    else
+                        quotes[#quotes + 1] = c
+                    end
                 else
                     table.remove(quotes)
                     w = w .. c
