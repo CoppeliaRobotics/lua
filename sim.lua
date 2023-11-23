@@ -286,12 +286,12 @@ function sim.getMatchingPersistentDataTags(...)
     return result
 end
 
-function sim.throttle(t, f)
+function sim.throttle(t, func, ...)
     if _S.lastExecTime == nil then _S.lastExecTime = {} end
-    local h = string.dump(f)
+    local h = string.dump(func)
     local now = sim.getSystemTime()
     if _S.lastExecTime[h] == nil or _S.lastExecTime[h] + t < now then
-        f()
+        func(...)
         _S.lastExecTime[h] = now
     end
 end
@@ -1327,7 +1327,13 @@ function sim.getObjectHandle(path, options)
     if options.proxy then proxy = options.proxy end
     if options.index then index = options.index end
     if options.noError then option = 1 end
-    return sim._getObjectHandle(path, index, proxy, option)
+    local h = sim._getObjectHandle(path, index, proxy, option)
+    local c = string.sub(path, 1, 1)
+    if c ~= '.' and c ~= ':' and c ~= '/' and _S.getObjectHandleWarning == nil then
+        _S.getObjectHandleWarning = true
+        sim.addLog(sim.verbosity_scriptwarnings, "sim.getObjectHandle is deprecated. Use sim.getObject instead.")
+    end
+    return h
 end
 
 function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
