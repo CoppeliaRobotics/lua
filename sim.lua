@@ -1871,6 +1871,7 @@ function sim.getDialogResult(...)
 end
 _S.dlg = {}
 function _S.dlg.ok_callback(ui)
+    local simUI = require 'simUI'
     local h = _S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state = sim.dlgret_ok
     if _S.dlg.allDlgResults[h].style == sim.dlgstyle_input then
@@ -1888,6 +1889,7 @@ function _S.dlg.input_callback(ui, id, val)
     _S.dlg.allDlgResults[h].input = val
 end
 function _S.dlg.yes_callback(ui)
+    local simUI = require 'simUI'
     local h = _S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state = sim.dlgret_yes
     if _S.dlg.allDlgResults[h].style == sim.dlgstyle_input then
@@ -1896,6 +1898,7 @@ function _S.dlg.yes_callback(ui)
     _S.dlg.removeUi(h)
 end
 function _S.dlg.no_callback(ui)
+    local simUI = require 'simUI'
     local h = _S.dlg.openDlgsUi[ui]
     _S.dlg.allDlgResults[h].state = sim.dlgret_no
     if _S.dlg.allDlgResults[h].style == sim.dlgstyle_input then
@@ -1904,6 +1907,7 @@ function _S.dlg.no_callback(ui)
     _S.dlg.removeUi(h)
 end
 function _S.dlg.removeUi(handle)
+    local simUI = require 'simUI'
     local ui = _S.dlg.openDlgs[handle]
     simUI.destroy(ui)
     _S.dlg.openDlgsUi[ui] = nil

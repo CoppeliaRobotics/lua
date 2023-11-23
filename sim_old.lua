@@ -681,6 +681,7 @@ function sim.displayDialog(...)
         xml = xml .. '</group>'
     end
     xml = xml .. '</ui>'
+    local simUI = require 'simUI'
     local ui = simUI.create(xml)
     if style == sim.dlgstyle_input then simUI.setEditValue(ui, 1, initTxt) end
     if not _S.dlg.allDlgResults then _S.dlg.allDlgResults = {} end
