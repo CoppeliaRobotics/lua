@@ -1529,9 +1529,16 @@ function sim.getScriptFunctions(...)
     })
 end
 
-function sim.addReferencedHandle(objectHandle, referencedHandle)
+function sim.addReferencedHandle(objectHandle, referencedHandle, options)
+    options = options or {}
     local refHandles = sim.getReferencedHandles(objectHandle)
-    table.insert(refHandles, referencedHandle)
+    local handlesToAdd = {referencedHandle}
+    if options.wholeTree then
+        handlesToAdd = sim.getObjectsInTree(referencedHandle)
+    end
+    for _, handle in ipairs(handlesToAdd) do
+        table.insert(refHandles, handle)
+    end
     sim.setReferencedHandles(objectHandle, refHandles)
 end
 
