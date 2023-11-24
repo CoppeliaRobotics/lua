@@ -1176,9 +1176,16 @@ class RemoteAPIClient:
             for i in range(len(req['args'])):
                 if callable(req['args'][i]):
                     funcStr = str(req['args'][i])
-                    m = re.search(r"<function (.+) at ", funcStr)
+                    m = re.search(r"<function (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
                     if m:
-                        funcStr = m.group(1)
+                        funcStr = m.group(1) + '_' + m.group(2)
+                    else:
+                        m = re.search(r"<(.*)method (.+) of (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
+                        if m:
+                            funcStr = m.group(2) + '_' + m.group(4)
+                        else:
+                            funcStr = None
+                    if funcStr:
                         self.callbackFuncs[funcStr] = req['args'][i]
                         req['args'][i] = funcStr + "@func"
             req['argsL'] = len(req['args'])
