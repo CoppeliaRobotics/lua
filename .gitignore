@@ -8,3 +8,4 @@ sim*.lua
 !sim_old.lua
 getCallContexts.lua
 simBB.lua
+threejsFrontend-custom.lua

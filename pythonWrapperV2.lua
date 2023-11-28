@@ -505,23 +505,25 @@ end
 function handleRequest(req)
     local resp = {}
     if req['func'] ~= nil and req['func'] ~= '' then
-        local func = _getField(req['func'])
+        local reqFunc = req['func']
+        local func = _getField(reqFunc)
         local args = req['args'] or {}
         if not func then
             if not protectedCalls then
                 pythonMustHaveRaisedError = true -- actually not just yet, we still need to send a reply tp Python
             end
-            resp['err'] = 'No such function: ' .. req['func']
+            resp['err'] = 'No such function: ' .. reqFunc
         else
-            if func == sim.setThreadAutomaticSwitch then
+            if reqFunc == 'sim.setThreadAutomaticSwitch' then
                 -- For backward compatibility with pythonWrapperV1
                 func = sim.setStepping
+                reqFunc = 'sim.setStepping'
                 if #args > 0 then
                     if not isnumber(args[1]) then args[1] = not args[1] end
                 end
             end
 
-            currentFunction = req['func']
+            currentFunction = reqFunc
 
             -- Handle function arguments:
             for i = 1, #args, 1 do
@@ -551,7 +553,7 @@ function handleRequest(req)
                 function()
                     local ret = {func(unpack(args, 1, req.argsL))}
                     -- Try to assign correct types to text/buffers and arrays/maps:
-                    local args = returnTypes[req['func']]
+                    local args = returnTypes[reqFunc]
                     if args then
                         local cnt = math.min(#ret, #args)
                         for i = 1, cnt, 1 do
