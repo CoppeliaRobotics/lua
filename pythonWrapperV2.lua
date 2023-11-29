@@ -434,8 +434,9 @@ if eventCallback then
     end
 end
 
-function sim.testCB(a, cb, b)
-    for i = 1, 99, 1 do cb(a, b) end
+function sim.testCB(a, cb, b, iterations)
+    iterations = iterations or 99
+    for i = 1, iterations, 1 do cb(a, b) end
     return cb(a, b)
 end
 

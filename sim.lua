@@ -80,6 +80,20 @@ require('grid')
 require('functional')
 require('var')
 
+sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
+    return function(wait)
+        origFunc()
+        local t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type)
+        if wait and t ~= sim.scripttype_mainscript and t ~= sim.scripttype_childscript and getYieldAllowed() then
+            local cnt = 0
+            while sim.getSimulationState() ~= sim.simulation_stopped and cnt < 20 do -- even if we run in a thread, we might not be able to yield (e.g. across a c-boundary)
+                cnt = cnt + 1
+                sim.step()
+            end
+        end
+    end
+end)
+
 -- Make sim.registerScriptFuncHook work also with a function as arg 2:
 function _S.registerScriptFuncHook(funcNm, func, before)
     local retVal
