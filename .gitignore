@@ -9,3 +9,4 @@ sim*.lua
 getCallContexts.lua
 simBB.lua
 threejsFrontend-custom.lua
+booleanMesh.lua
