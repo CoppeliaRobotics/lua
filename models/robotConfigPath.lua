@@ -13,7 +13,7 @@ function robotConfigPath.create(pathMtx, parent, jointGroupPath)
     sim.setObjectPose(pathDummy, {0, 0, 0, 0, 0, 0, 1}, sim.handle_parent)
     local s = sim.addScript(sim.scripttype_customizationscript)
     sim.setScriptStringParam(
-        s, sim.scriptstringparam_text, [[require'models.robotConfigPath_customization']]
+        s, sim.scriptstringparam_text, [[require 'models.robotConfigPath_customization']]
     )
     sim.associateScriptWithObject(s, pathDummy)
     sim.writeCustomTableData(pathDummy, 'path', pathMtx:totable())
@@ -26,11 +26,11 @@ function robotConfigPath.create(pathMtx, parent, jointGroupPath)
     sim.setObjectProperty(stateDummy, sim.objectproperty_collapsed)
     local s = sim.addScript(sim.scripttype_customizationscript)
     sim.setScriptStringParam(
-        s, sim.scriptstringparam_text, [[require'models.robotConfig_customization'
-model=sim.getObject'::'
-color={1,1,0}
-ik=false
-jointGroupPath=']] .. jointGroupPath .. [['
+        s, sim.scriptstringparam_text, [[require 'models.robotConfig_customization'
+model = sim.getObject '::'
+color = {1, 1, 0}
+ik = false
+jointGroupPath = ']] .. jointGroupPath .. [['
 ]]
     )
     sim.associateScriptWithObject(s, stateDummy)
