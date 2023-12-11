@@ -149,13 +149,27 @@ end
 function Matrix:droprow(i)
     local m, n = self:rows(), self:cols()
     assert(i >= 1 and i <= m, 'out of bounds')
-    return Matrix.vertcat(self:slice(1, 1, i - 1, n), self:slice(i + 1, 1, m, n))
+    local ms = {}
+    if i > 1 then
+        table.insert(ms, self:slice(1, 1, i - 1, n))
+    end
+    if i < m then
+        table.insert(ms, self:slice(i + 1, 1, m, n))
+    end
+    return Matrix.vertcat(table.unpack(ms))
 end
 
 function Matrix:dropcol(j)
     local m, n = self:rows(), self:cols()
     assert(j >= 1 and j <= n, 'out of bounds')
-    return Matrix.horzcat(self:slice(1, 1, m, j - 1), self:slice(1, j + 1, m, n))
+    local ms = {}
+    if j > 1 then
+        table.insert(ms, self:slice(1, 1, m, j - 1))
+    end
+    if j < n then
+        table.insert(ms, self:slice(1, j + 1, m, n))
+    end
+    return Matrix.horzcat(table.unpack(ms))
 end
 
 function Matrix:at(rowidx, colidx)
@@ -1502,8 +1516,12 @@ if arg and #arg == 1 and arg[1] == 'test' then
     m:assign(1, 2, m:slice(1, 1, 4, 1))
     m:assign(1, 3, m:slice(1, 1, 4, 1))
     m:assign(1, 4, m:slice(1, 1, 4, 1))
+    assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):droprow(1) == Matrix(2, 3, {2, 2, 2, 3, 3, 3}))
     assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):droprow(2) == Matrix(2, 3, {1, 1, 1, 3, 3, 3}))
+    assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):droprow(3) == Matrix(2, 3, {1, 1, 1, 2, 2, 2}))
+    assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):dropcol(1) == Matrix(3, 2, {1, 1, 2, 2, 3, 3}))
     assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):dropcol(2) == Matrix(3, 2, {1, 1, 2, 2, 3, 3}))
+    assert(Matrix(3, 3, {1, 1, 1, 2, 2, 2, 3, 3, 3}):dropcol(3) == Matrix(3, 2, {1, 1, 2, 2, 3, 3}))
     assert(m == Matrix(4, 4, {11, 11, 11, 11, 21, 21, 21, 21, 31, 31, 31, 31, 41, 41, 41, 41}))
     function approxEq(a, b, tol)
         tol = tol or 1e-5
