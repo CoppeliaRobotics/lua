@@ -413,6 +413,7 @@ sim.boolparam_force_calcstruct_all_visible
 sim.boolparam_full_model_copy_from_api
 sim.boolparam_fullscreen
 sim.boolparam_headless
+sim.boolparam_cansave
 sim.boolparam_hierarchy_toolbarbutton_enabled
 sim.boolparam_hierarchy_visible
 sim.boolparam_infotext_visible
