@@ -38,7 +38,7 @@ end
 function s_sensing()
     local s = sim.getSimulationState()
     if s == sim.simulation_advancing_abouttostop and not ___m then
-        sim.addLog(sim.verbosity_msgs, "simulation stopping...")
+        sim.addLog(sim.verbosity_msgs, "Simulation stopping...")
         ___m = true
     end
 end
