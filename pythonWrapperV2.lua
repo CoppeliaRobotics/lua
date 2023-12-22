@@ -275,11 +275,13 @@ function sysCall_ext(funcName, ...)
             fun = fun[funcName]
         end
         if type(fun) == 'function' then
-            local status, retvals = pcall(fun, table.unpack(args))
+            local retVals = {pcall(fun, table.unpack(args))}
+            local status = retVals[1]
+            table.remove(retVals, 1)
             if status == false then
                 return "_*runtimeError*_" -- ..retVals
             else
-                return retvals
+                return table.unpack(retVals)
             end
         end
     end
