@@ -1,6 +1,7 @@
 -- Keep lazy loading
 -- back-compatibility version for CoppeliaSim V4.2.0
 path = require('path_customization')
+simQHull = require 'simQHull'
 
 _S.conveyor = {}
 
