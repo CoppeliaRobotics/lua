@@ -173,6 +173,39 @@ function table.clone(t)
     return copy
 end
 
+function table.add(...)
+    local ar = {...}
+    local retVal = {}
+    for i = 1, #ar do
+        for j = 1, #ar[i], 1 do
+            table.insert(retVal, ar[i][j])
+        end
+    end
+    return retVal
+end
+
+function table.rep(value, size)
+    local retVal = {}
+    for i = 1, size do
+        table.insert(retVal, value)
+    end
+    return retVal
+end
+
+function table.batched(tbl, n)
+    local retVal = {}
+    local ind = 1
+    while ind <= #tbl do
+        local t = {}
+        for i = 1, n do
+            table.insert(t, tbl[ind])
+            ind = ind + 1
+        end
+        table.insert(retVal, t)
+    end
+    return retVal
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
@@ -186,5 +219,9 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.compare({11, 0}, {10, 1}) > 0)
     assert(table.compare({9, 0}, {10, 1}) < 0)
     assert(table.eq(table.reversed {10, 20, 30}, {30, 20, 10}))
+    assert(table.compare(table.add({1, 2},{3, 4},{5, 6}), {1, 2, 3, 4, 5, 6}) == 0)
+    assert(table.compare(table.add({},{}), {}) == 0)
+    assert(table.compare(table.rep(21, 3), {21, 21, 21}) == 0)
+    assert(table.tostring(table.batched({1, 2, 3, 4, 5, 6}, 2)) == '{{1, 2}, {3, 4}, {5, 6}}')
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
