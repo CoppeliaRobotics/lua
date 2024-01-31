@@ -463,7 +463,7 @@ function sim.moveToPose(...)
         })
     end
 
-    local outMatrix = sim.copyTable(currentMatrix)
+    local outMatrix = table.deepcopy(currentMatrix)
     local axis, angle = sim.getRotationAxis(currentMatrix, targetMatrix)
     local timeLeft = 0
     if type(callback) == 'string' then callback = _G[callback] end
@@ -779,26 +779,8 @@ function sim.generateTimeOptimalTrajectory(...)
     return Matrix:fromtable(r.qs[1]):data(), r.ts
 end
 
-function sim.copyTable(...)
-    local orig, copies = checkargs({{type = 'any'}, {type = 'table', default = {}}}, ...)
-    copies = copies or {}
-    local orig_type = type(orig)
-    local copy
-    if orig_type == 'table' then
-        if copies[orig] then
-            copy = copies[orig]
-        else
-            copy = {}
-            copies[orig] = copy
-            for orig_key, orig_value in next, orig, nil do
-                copy[sim.copyTable(orig_key, copies)] = sim.copyTable(orig_value, copies)
-            end
-            setmetatable(copy, sim.copyTable(getmetatable(orig), copies))
-        end
-    else -- number, string, boolean, etc
-        copy = orig
-    end
-    return copy
+function sim.copyTable(t)
+    return table.deepcopy(t)
 end
 
 function sim.getPathInterpolatedConfig(...)
@@ -1733,7 +1715,7 @@ end
 function _S.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, index, tipHandle)
     if index > #jointHandles then
         if tipHandle == -1 then
-            return {sim.copyTable(confS)}
+            return {table.deepcopy(confS)}
         else
             for i = 1, #jointHandles, 1 do
                 sim.setJointPosition(jointHandles[i], confS[i])
@@ -1741,7 +1723,7 @@ function _S.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, i
             local p = sim.getObjectMatrix(tipHandle)
             local axis, angle = sim.getRotationAxis(desiredPose, p)
             if math.abs(angle) < 0.1 * 180 / math.pi then -- checking is needed in case some joints are dependent on others
-                return {sim.copyTable(confS)}
+                return {table.deepcopy(confS)}
             else
                 return {}
             end
