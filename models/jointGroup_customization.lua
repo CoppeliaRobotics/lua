@@ -92,14 +92,10 @@ function moveToConfigStep(opts)
     retVal.pos = table.slice(newPosVelAccel, 1, #joints)
     retVal.vel = table.slice(newPosVelAccel, #joints + 1, 2* #joints)
     retVal.accel = table.slice(newPosVelAccel, 2 * #joints + 1, 3 * #joints)
-    if opts.callback then
-        opts.callback(retVal.pos)
+    if isDynamicallyEnabled() then
+        setTargetConfig(retVal.pos)
     else
-        if isDynamicallyEnabled() then
-            setTargetConfig(retVal.pos)
-        else
-            setConfig(retVal.pos)
-        end
+        setConfig(retVal.pos)
     end
     if result == 1 then
         moveToConfigCleanup()
