@@ -4,6 +4,12 @@ function sysCall_init()
     self = sim.getObject '.'
 end
 
+function sysCall_actuation()
+    if ruckig and ruckig.run then
+        moveToConfigStep()
+    end
+end
+
 function getJoints()
     return sim.getReferencedHandles(self)
 end
@@ -30,61 +36,50 @@ end
 
 function moveToConfig(opts)
     moveToConfigInit(opts)
-    local restore = sim.setStepping(true)
-    while moveToConfigStep(opts) do
-        sim.step()
-    end
-    sim.setStepping(restore)
+    ruckig.run = true
 end
 
 function moveToConfigInit(opts)
-    if ruckigObject then
+    if ruckig then
         moveToConfigCleanup()
     end
-
     local joints = getJoints()
-
     opts = opts or {}
-
     if opts.targetPos == nil or type(opts.targetPos) ~= 'table' or #joints ~= #opts.targetPos then
         error("missing or invalid 'targetPos' field")
     end
-
     opts.flags = opts.flags or -1
-
-    opts.maxVel = opts.maxVel or table.rep(0.5 * math.pi, #joints)
-    opts.maxAccel = opts.maxAccel or table.rep(0.1 * math.pi, #joints)
-    opts.maxJerk = opts.maxJerk or table.rep(0.2 * math.pi, #joints)
-
+    opts.maxVel = opts.maxVel or table.rep(1.5 * math.pi, #joints)
+    opts.maxAccel = opts.maxAccel or table.rep(0.5 * math.pi, #joints)
+    opts.maxJerk = opts.maxJerk or table.rep(0.25 * math.pi, #joints)
     opts.vel = opts.vel or table.rep(0.0, #joints)
     opts.accel = opts.accel or table.rep(0.0, #joints)
     opts.targetVel = opts.targetVel or table.rep(0.0, #joints)
-
-    local pos = getConfig()
-
-    ruckigObject = sim.ruckigPos(#joints, 0.0001, -1, table.add(pos, opts.vel, opts.accel),
-                    table.add(opts.maxVel, opts.maxAccel, opts.maxJerk), table.rep(1, #joints),
-                    table.add(opts.targetPos, opts.targetVel))
+    ruckig = {
+        handle = sim.ruckigPos(
+            #joints, 0.0001, -1,
+            table.add(getConfig(), opts.vel, opts.accel),
+            table.add(opts.maxVel, opts.maxAccel, opts.maxJerk),
+            table.rep(1, #joints),
+            table.add(opts.targetPos, opts.targetVel)
+        ),
+    }
 end
 
 function moveToConfigCleanup()
-    if ruckigObject then
-        sim.ruckigRemove(ruckigObject)
-        ruckigObject = nil
+    if ruckig then
+        sim.ruckigRemove(ruckig.handle)
+        ruckig = nil
     end
 end
 
-function moveToConfigStep(opts)
-    if not ruckigObject then
+function moveToConfigStep()
+    if not ruckig then
         sim.addLog(sim.verbosity_warnings, 'motion not active')
         return
     end
-
-    opts = opts or {}
-
     local joints = getJoints()
-
-    local result, newPosVelAccel = sim.ruckigStep(ruckigObject, sim.getSimulationTimeStep())
+    local result, newPosVelAccel = sim.ruckigStep(ruckig.handle, sim.getSimulationTimeStep())
     if result < 0 then
         error('sim.ruckigStep returned error code ' .. result)
     end
@@ -102,4 +97,9 @@ function moveToConfigStep(opts)
         return
     end
     return retVal
+end
+
+function isMoveToConfigRunning()
+    if not ruckig then return false end
+    return not not ruckig.run
 end
