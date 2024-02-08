@@ -39,7 +39,7 @@ end
 
 function moveToConfigInit(opts)
     if ruckigObject then
-        error('a motion is already active')
+        moveToConfigCleanup()
     end
 
     local joints = getJoints()
@@ -76,7 +76,8 @@ end
 
 function moveToConfigStep(opts)
     if not ruckigObject then
-        error('a motion is not active')
+        sim.addLog(sim.verbosity_warnings, 'motion not active')
+        return
     end
 
     opts = opts or {}
@@ -84,29 +85,25 @@ function moveToConfigStep(opts)
     local joints = getJoints()
 
     local result, newPosVelAccel = sim.ruckigStep(ruckigObject, sim.getSimulationTimeStep())
-    local retVal = {}
-    if result >= 0 then
-        retVal.pos = table.slice(newPosVelAccel, 1, #joints)
-        retVal.vel = table.slice(newPosVelAccel, #joints + 1, 2* #joints)
-        retVal.accel = table.slice(newPosVelAccel, 2 * #joints + 1, 3 * #joints)
-        if opts.callback then
-            opts.callback(retVal.pos)
-        else
-            for i = 1, #joints do
-                if sim.isDynamicallyEnabled(joints[i]) then
-                    sim.setJointTargetPosition(joints[i], retVal.pos[i])
-                else
-                    sim.setJointPosition(joints[i], retVal.pos[i])
-                end
-            end
-        end
-        if result == 1 then
-            moveToConfigCleanup()
-        else
-            return true -- continue
-        end
-    else
+    if result < 0 then
         error('sim.ruckigStep returned error code ' .. result)
+    end
+    local retVal = {}
+    retVal.pos = table.slice(newPosVelAccel, 1, #joints)
+    retVal.vel = table.slice(newPosVelAccel, #joints + 1, 2* #joints)
+    retVal.accel = table.slice(newPosVelAccel, 2 * #joints + 1, 3 * #joints)
+    if opts.callback then
+        opts.callback(retVal.pos)
+    else
+        if isDynamicallyEnabled() then
+            setTargetConfig(retVal.pos)
+        else
+            setConfig(retVal.pos)
+        end
+    end
+    if result == 1 then
+        moveToConfigCleanup()
+        return
     end
     return retVal
 end
