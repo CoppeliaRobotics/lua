@@ -45,20 +45,8 @@ __oldModeConsts = {
     customizationscriptcall_aftercopy = true,
 }
 
-math.atan2 = math.atan2 or math.atan
-math.pow = math.pow or function(a, b)
-    return a ^ b
-end
-math.log10 = math.log10 or function(a)
-    return math.log(a, 10)
-end
-math.ldexp = math.ldexp or function(x, exp)
-    return x * 2.0 ^ exp
-end
-math.frexp = math.frexp or function(x)
-    return auxFunc('frexp', x)
-end
-math.mod = math.mod or math.fmod
+require 'mathx'
+
 table.getn = table.getn or function(a)
     return #a
 end
