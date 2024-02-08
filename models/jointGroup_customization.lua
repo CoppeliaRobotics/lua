@@ -12,8 +12,16 @@ function getConfig()
     return map(sim.getJointPosition, getJoints())
 end
 
+function getTargetConfig()
+    return map(sim.setJointTargetPosition, getJoints())
+end
+
 function setConfig(cfg)
     foreach(sim.setJointPosition, getJoints(), cfg)
+end
+
+function setTargetConfig(cfg)
+    foreach(sim.setJointTargetPosition, getJoints(), cfg)
 end
 
 function moveToConfigInit(opts)
