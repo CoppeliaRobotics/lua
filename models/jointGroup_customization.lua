@@ -28,6 +28,15 @@ function setTargetConfig(cfg)
     foreach(sim.setJointTargetPosition, getJoints(), cfg)
 end
 
+function moveToConfig(opts)
+    moveToConfigInit(opts)
+    local restore = sim.setStepping(true)
+    while moveToConfigStep(opts) do
+        sim.step()
+    end
+    sim.setStepping(restore)
+end
+
 function moveToConfigInit(opts)
     if ruckigObject then
         error('a motion is already active')
