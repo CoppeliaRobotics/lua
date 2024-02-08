@@ -8,6 +8,10 @@ function getJoints()
     return sim.getReferencedHandles(self)
 end
 
+function isDynamicallyEnabled()
+    return all(sim.isDynamicallyEnabled, getJoints())
+end
+
 function getConfig()
     return map(sim.getJointPosition, getJoints())
 end
