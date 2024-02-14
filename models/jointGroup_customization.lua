@@ -49,9 +49,9 @@ function moveToConfigInit(opts)
         error("missing or invalid 'targetPos' field")
     end
     opts.flags = opts.flags or -1
-    opts.maxVel = opts.maxVel or table.rep(1.5 * math.pi, #joints)
-    opts.maxAccel = opts.maxAccel or table.rep(0.5 * math.pi, #joints)
-    opts.maxJerk = opts.maxJerk or table.rep(0.25 * math.pi, #joints)
+    opts.maxVel = opts.maxVel or table.rep(1440 * math.pi / 180, #joints)
+    opts.maxAccel = opts.maxAccel or table.rep(720 * math.pi / 180, #joints)
+    opts.maxJerk = opts.maxJerk or table.rep(360 * math.pi / 180, #joints)
     opts.vel = opts.vel or table.rep(0.0, #joints)
     opts.accel = opts.accel or table.rep(0.0, #joints)
     opts.targetVel = opts.targetVel or table.rep(0.0, #joints)
