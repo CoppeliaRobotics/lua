@@ -154,6 +154,10 @@ function string.isupper(s)
     return s:upper() == s
 end
 
+function string.capitalize(s)
+    return s:sub(1, 1):upper() .. s:sub(2)
+end
+
 function string.escapehtml(s, opts)
     opts = opts or {}
     opts.entities = opts.entities or true
@@ -239,5 +243,6 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(not string.isspace 'abc ABC')
     assert(string.isupper 'ABC123')
     assert(not string.isupper 'abcABC123')
+    assert(string.capitalize 'robot' == 'Robot')
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
