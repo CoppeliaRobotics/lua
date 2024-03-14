@@ -771,6 +771,9 @@ function sim.generateTimeOptimalTrajectory(...)
     simZMQ.msg_close(msg)
     simZMQ.msg_destroy(msg)
 
+    if isbuffer(data) then
+        data = data.__buff__
+    end
     local r = json.decode(data)
     simZMQ.close(socket)
     simZMQ.ctx_term(context)
@@ -1257,6 +1260,9 @@ function sim.readCustomTableData(...)
     if data == nil then
         data = {}
     else
+        if isbuffer(data) then
+            data = data.__buff__
+        end
         if #data > 0 then
             if dataType == 'cbor' then
                 local cbor = require 'org.conman.cbor'
@@ -1944,8 +1950,11 @@ end
 
 function _S.unpackTable(data, scheme)
     if scheme == nil then
+        if isbuffer(data) then
+            data = data.__buff__
+        end
         if #data > 0 then
-            if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
+            if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 or string.byte(data, 1) == 6 then
                 return _S.unpackTableOrig(data)
             else
                 local cbor = require 'org.conman.cbor'

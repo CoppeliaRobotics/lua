@@ -128,21 +128,6 @@ function iter(tbl)
     end
 end
 
-function wrap(originalFunction, wrapperFunctionGenerator)
-    --[[
-    e.g. a wrapper that print args before calling the original function:
-
-    sim.getObject = wrap(sim.getObject, function(origFunc)
-        return function(...)
-            print('you are calling sim.getObject with args:', ...)
-            return origFunc(...)
-        end
-    end)
-
-    ]]--
-    return wrapperFunctionGenerator(originalFunction)
-end
-
 function reify(func, name)
     name = name or ''
     _S = _S or {}

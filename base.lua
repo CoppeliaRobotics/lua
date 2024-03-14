@@ -61,6 +61,152 @@ else
     unpack = table.unpack
 end
 
+function tobuffer(txt)
+    return setmetatable({__buff__ = txt}, {
+        __tostring = function(self) return self.__buff__ end,
+        __concat = function(a, b) return tobuffer(tostring(a) .. tostring(b)) end,
+        __len = function(self) return #self.__buff__ end,
+        __eq = function(a, b) return isbuffer(a) and isbuffer(b) and a.__buff__ == b.__buff__ end,
+        __index = function(self, k)
+            -- Mimic string behavior: return the character at position k if k is a number
+            if type(k) == "number" then
+                return string.sub(self.__buff__, k, k)
+            elseif type(k) == "string" then
+                -- Allow access to string methods, e.g., bufferObj:find(...)
+                local strFunc = string[k]
+                if strFunc and type(strFunc) == "function" then
+                    -- Return a function that, when called, applies the string function to the buffer's content
+                    return function(_, ...)
+                        return strFunc(self.__buff__, ...)
+                    end
+                end
+            end
+            -- Optional: handle other keys or throw an error
+            error('attempt to index a buffer value with an unsupported key')
+        end,
+        __newindex = function(self, k) error('attempt to modify a buffer value') end,
+        __tocbor = function(self) return cbor.TYPE.BIN(self.__buff__) end,
+    })
+end
+
+function isbuffer(obj)
+    return getmetatable(obj) and obj.__buff__ ~= nil
+end
+
+function wrap(originalFunction, wrapperFunctionGenerator)
+    --[[
+    e.g. a wrapper that print args before calling the original function:
+
+    sim.getObject = wrap(sim.getObject, function(origFunc)
+        return function(...)
+            print('you are calling sim.getObject with args:', ...)
+            return origFunc(...)
+        end
+    end)
+
+    ]]--
+    return wrapperFunctionGenerator(originalFunction)
+end
+
+string.byte = wrap(string.byte, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.sub = wrap(string.sub, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.gsub = wrap(string.gsub, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.match = wrap(string.match, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.gmatch = wrap(string.gmatch, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.find = wrap(string.find, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.len = wrap(string.len, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.rep = wrap(string.rep, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.reverse = wrap(string.reverse, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.upper = wrap(string.upper, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
+string.lower = wrap(string.lower, function(origFunc)
+    return function(s, ...)
+        if isbuffer(s) then
+            s = s.__buff__
+        end
+        return origFunc(s, ...)
+    end
+end)
+
 _S.require = require
 function require(...)
     local requiredName = table.unpack {...}
@@ -282,7 +428,11 @@ function _S.anyToString(x, opts)
     if t == 'nil' then
         return tostring(nil)
     elseif t == 'table' then
-        return _S.tableToString(x, opts)
+        if isbuffer(x) then
+            return _S.getShortString(x.__buff__, opts)
+        else
+            return _S.tableToString(x, opts)
+        end
     elseif t == 'string' then
         return _S.getShortString(x, opts)
     else
