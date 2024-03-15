@@ -429,7 +429,7 @@ function _S.anyToString(x, opts)
         return tostring(nil)
     elseif t == 'table' then
         if isbuffer(x) then
-            return _S.getShortString(x.__buff__, opts)
+            return string.format('[buffer (%s bytes)]', #x.__buff__)
         else
             return _S.tableToString(x, opts)
         end
@@ -446,14 +446,14 @@ function _S.getShortString(x, opts)
 
     if type(x) == 'string' then
         if string.find(x, "\0") then
-            return "[buffer string]"
+            return string.format('[binary string (%s bytes)]', #x)
         else
             local a, b = string.gsub(x, "[%a%d%p%s]", "@")
             if b ~= #x then
-                return "[string containing special chars]"
+                return string.format('[binary string (%s bytes)]', #x)
             else
                 if opts.longStringThreshold and #x > opts.longStringThreshold then
-                    return "[long string]"
+                    return string.format('[long string (%s bytes)]', #x)
                 else
                     if opts.omitQuotes then
                         return string.format('%s', x)
