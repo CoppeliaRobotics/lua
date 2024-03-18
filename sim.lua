@@ -181,7 +181,7 @@ function sim.getObjectsWithTag(tagName, justModels)
     for i = 1, #objs, 1 do
         if (not justModels) or ((sim.getModelProperty(objs[i]) & sim.modelproperty_not_model) == 0) then
             local dat = sim.readCustomDataBlockTags(objs[i])
-            if dat then
+            if dat and #dat > 0 then
                 for j = 1, #dat, 1 do
                     if dat[j] == tagName then
                         retObjs[#retObjs + 1] = objs[i]
@@ -208,7 +208,7 @@ function sim.fastIdleLoop(enable)
     local data = sim.readCustomDataBlock(sim.handle_app, '__IDLEFPSSTACKSIZE__')
     local stage = 0
     local defaultIdleFps
-    if data then
+    if data and #data > 0 then
         data = sim.unpackInt32Table(data)
         stage = data[1]
         defaultIdleFps = data[2]
@@ -1257,26 +1257,22 @@ function sim.readCustomTableData(...)
         {type = 'table', default = {}},
     }, ...)
     local data, dataType = sim.readCustomDataBlockEx(handle, tagName)
-    if data == nil then
+    if data == nil or #data == 0 then
         data = {}
     else
         if isbuffer(data) then
             data = data.__buff__
         end
-        if #data > 0 then
-            if dataType == 'cbor' then
-                local cbor = require 'org.conman.cbor'
-                local data0 = data
-                data = cbor.decode(data0)
-                if type(data) ~= 'table' and tagName == '__info__' then
-                    -- backward compat: old __info__ blocks were encoded with sim.packTable
-                    data = sim.unpackTable(data0)
-                end
-            else
-                data = sim.unpackTable(data)
+        if dataType == 'cbor' then
+            local cbor = require 'org.conman.cbor'
+            local data0 = data
+            data = cbor.decode(data0)
+            if type(data) ~= 'table' and tagName == '__info__' then
+                -- backward compat: old __info__ blocks were encoded with sim.packTable
+                data = sim.unpackTable(data0)
             end
         else
-            data = {}
+            data = sim.unpackTable(data)
         end
     end
     return data

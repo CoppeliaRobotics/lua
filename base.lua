@@ -62,31 +62,35 @@ else
 end
 
 function tobuffer(txt)
-    return setmetatable({__buff__ = txt}, {
-        __tostring = function(self) return self.__buff__ end,
-        __concat = function(a, b) return tobuffer(tostring(a) .. tostring(b)) end,
-        __len = function(self) return #self.__buff__ end,
-        __eq = function(a, b) return isbuffer(a) and isbuffer(b) and a.__buff__ == b.__buff__ end,
-        __index = function(self, k)
-            -- Mimic string behavior: return the character at position k if k is a number
-            if type(k) == "number" then
-                return string.sub(self.__buff__, k, k)
-            elseif type(k) == "string" then
-                -- Allow access to string methods, e.g., bufferObj:find(...)
-                local strFunc = string[k]
-                if strFunc and type(strFunc) == "function" then
-                    -- Return a function that, when called, applies the string function to the buffer's content
-                    return function(_, ...)
-                        return strFunc(self.__buff__, ...)
+    if auxFunc('useBuffers') then
+        return setmetatable({__buff__ = txt}, {
+            __tostring = function(self) return self.__buff__ end,
+            __concat = function(a, b) return tobuffer(tostring(a) .. tostring(b)) end,
+            __len = function(self) return #self.__buff__ end,
+            __eq = function(a, b) return isbuffer(a) and isbuffer(b) and a.__buff__ == b.__buff__ end,
+            __index = function(self, k)
+                -- Mimic string behavior: return the character at position k if k is a number
+                if type(k) == "number" then
+                    return string.sub(self.__buff__, k, k)
+                elseif type(k) == "string" then
+                    -- Allow access to string methods, e.g., bufferObj:find(...)
+                    local strFunc = string[k]
+                    if strFunc and type(strFunc) == "function" then
+                        -- Return a function that, when called, applies the string function to the buffer's content
+                        return function(_, ...)
+                            return strFunc(self.__buff__, ...)
+                        end
                     end
                 end
-            end
-            -- Optional: handle other keys or throw an error
-            error('attempt to index a buffer value with an unsupported key')
-        end,
-        __newindex = function(self, k) error('attempt to modify a buffer value') end,
-        __tocbor = function(self) return cbor.TYPE.BIN(self.__buff__) end,
-    })
+                -- Optional: handle other keys or throw an error
+                error('attempt to index a buffer value with an unsupported key')
+            end,
+            __newindex = function(self, k) error('attempt to modify a buffer value') end,
+            __tocbor = function(self) return cbor.TYPE.BIN(self.__buff__) end,
+        })
+    else
+        return txt
+    end
 end
 
 function isbuffer(obj)

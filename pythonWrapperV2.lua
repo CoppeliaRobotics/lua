@@ -965,7 +965,7 @@ end
 _S.readCustomDataBlock = sim.readCustomDataBlock
 function sim.readCustomDataBlock(obj, tag)
     local retVal = _S.readCustomDataBlock(obj, tag)
-    if retVal == nil then retVal = '' end
+    if retVal == nil or #retVal == 0 then retVal = tobuffer('') end
     return retVal
 end
 

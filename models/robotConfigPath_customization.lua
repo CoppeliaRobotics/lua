@@ -124,7 +124,8 @@ function sysCall_init()
                 local tip = -1
                 sim.visitTree(
                     self, function(handle)
-                        if sim.readCustomDataBlock(handle, 'ikTip') then
+                        local _dat = sim.readCustomDataBlock(handle, 'ikTip')
+                        if _dat and #_dat > 0 then
                             tip = handle
                             return false
                         end

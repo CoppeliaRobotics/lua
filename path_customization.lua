@@ -218,7 +218,7 @@ end
 
 function _S.path.createNewIfNeeded()
     local data = sim.readCustomDataBlock(_S.path.model, _S.path.pathCreationTag)
-    if data then
+    if data and #data > 0 then
         data = sim.unpackTable(data)
         sim.writeCustomDataBlock(_S.path.model, _S.path.pathCreationTag, '')
         _S.path.createNew(data[1], false, data[2], data[3], data[4], data[5], data[6])
@@ -401,7 +401,7 @@ function _S.path.setPathShape(shape)
     local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomDataBlock(shapes[i], _S.path.shapeTag)
-        if dat then sim.removeObject(shapes[i]) end
+        if dat and #dat > 0 then sim.removeObjects({shapes[i]}) end
     end
     if sim.isHandle(shape) then
         sim.writeCustomDataBlock(shape, _S.path.shapeTag, "a")
@@ -420,7 +420,7 @@ function _S.path.getPathShapeColor()
     local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomDataBlock(shapes[i], _S.path.shapeTag)
-        if dat then
+        if dat and #dat > 0 then
             local r, col = sim.getShapeColor(shapes[i], '', sim.colorcomponent_ambient_diffuse)
             return col
         end
@@ -801,7 +801,7 @@ end
 
 function _S.path.readInfo()
     local data = sim.readCustomDataBlock(_S.path.model, _S.path.pathObjectTag)
-    if data then
+    if data and #data > 0 then
         data = sim.unpackTable(data)
     else
         data = {}

@@ -419,7 +419,7 @@ end
 
 function _S.graph.readInfo()
     local data = sim.readCustomDataBlock(_S.graph.model, 'ABC_GRAPH_INFO')
-    if data then
+    if data and #data > 0 then
         data = sim.unpackTable(data)
     else
         data = {}

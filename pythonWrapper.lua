@@ -363,7 +363,7 @@ function initPython(p, method)
         end
         if errMsg then
             local r = sim.readCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown')
-            if r == nil then
+            if r == nil or #r == 0 then
                 -- show this only once
                 sim.writeCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown', "yes")
                 simUI.msgBox(

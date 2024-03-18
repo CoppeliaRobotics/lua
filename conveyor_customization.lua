@@ -92,14 +92,14 @@ function _S.conveyor.init(config)
     local oldPads = {}
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomDataBlock(shapes[i], 'PATHPAD')
-        if dat then oldPads[#oldPads + 1] = shapes[i] end
+        if dat and #dat > 0 then oldPads[#oldPads + 1] = shapes[i] end
     end
 
     local joints = sim.getObjectsInTree(_S.conveyor.model, sim.object_joint_type, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
         local dat = sim.readCustomDataBlock(joints[i], 'PATHROL')
-        if dat then oldJoints[#oldJoints + 1] = joints[i] end
+        if dat and #dat > 0 then oldJoints[#oldJoints + 1] = joints[i] end
     end
 
     _S.conveyor.padHandles = {}
@@ -184,7 +184,7 @@ end
 function _S.conveyor.actuation()
     local dat = sim.readCustomDataBlock(_S.conveyor.model, 'CONVMOV')
     local off
-    if dat then
+    if dat and #dat > 0 then
         dat = sim.unpackTable(dat)
         if dat.offset then off = dat.offset end
         if dat.vel then _S.conveyor.velocity = dat.vel end

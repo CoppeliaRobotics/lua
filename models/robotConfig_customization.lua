@@ -57,10 +57,13 @@ function createModelClone()
         if scriptHandle ~= -1 then
             if parent == clonedModel and alias == 'IK' then
                 table.insert(scriptsToInit, scriptHandle)
-            elseif parent == clonedModel and sim.readCustomDataBlock(handle, '__jointGroup__') then
-                table.insert(scriptsToInit, scriptHandle)
             else
-                sim.removeScript(scriptHandle)
+                local _a = sim.readCustomDataBlock(handle, '__jointGroup__')
+                if parent == clonedModel and _a and #_a > 0 then
+                    table.insert(scriptsToInit, scriptHandle)
+                else
+                    sim.removeScript(scriptHandle)
+                end
             end
         end
         if sim.getObjectType(handle) == sim.object_shape_type then

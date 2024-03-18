@@ -80,10 +80,10 @@ function _S.conveyorSystem.prepare()
     local oldBorder
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomDataBlock(shapes[i], 'PATHPAD')
-        if dat then
-            if dat == 'a' then oldPads[#oldPads + 1] = shapes[i] end
-            if dat == 'b' then oldRespondable = shapes[i] end
-            if dat == 'c' then oldBorder = shapes[i] end
+        if dat and #dat > 0 then
+            if tostring(dat) == 'a' then oldPads[#oldPads + 1] = shapes[i] end
+            if tostring(dat) == 'b' then oldRespondable = shapes[i] end
+            if tostring(dat) == 'c' then oldBorder = shapes[i] end
         end
     end
 
@@ -91,7 +91,7 @@ function _S.conveyorSystem.prepare()
     local oldJoints = {}
     for i = 1, #joints, 1 do
         local dat = sim.readCustomDataBlock(joints[i], 'PATHROL')
-        if dat then oldJoints[#oldJoints + 1] = joints[i] end
+        if dat and #dat > 0 then oldJoints[#oldJoints + 1] = joints[i] end
     end
 
     _S.conveyorSystem.padHandles = oldPads
