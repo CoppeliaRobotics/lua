@@ -1648,6 +1648,9 @@ end
 
 function _S.parseBool(v)
     if v == nil then return nil end
+    if isbuffer(v) then
+        v = v.__buff__
+    end
     if v == 'true' then return true end
     if v == 'false' then return false end
     if v == 'on' then return true end

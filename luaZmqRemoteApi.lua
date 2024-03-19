@@ -6,7 +6,7 @@ local RemoteApiClient = {}
 function RemoteApiClient.init(host, port)
     host = host or '127.0.0.1'
     port = port or 23000
-    RemoteApiClient.cbor = require 'org.conman.cbor'
+    cbor = require 'org.conman.cbor'
     RemoteApiClient.context = simZMQ.ctx_new()
     RemoteApiClient.socket = simZMQ.socket(RemoteApiClient.context, simZMQ.REQ)
     simZMQ.connect(RemoteApiClient.socket, 'tcp://' .. host .. ':' .. port)
@@ -39,13 +39,13 @@ function RemoteApiClient._send(req)
     end
     req.uuid = RemoteApiClient.uuid
     req.ver = RemoteApiClient.VERSION
-    local rawReq = RemoteApiClient.cbor.encode(req)
+    local rawReq = cbor.encode(req)
     simZMQ.send(RemoteApiClient.socket, rawReq, 0)
 end
 
 function RemoteApiClient._recv()
     local r, rawResp = simZMQ.recv(RemoteApiClient.socket, 0)
-    local resp, a = RemoteApiClient.cbor.decode(rawResp)
+    local resp, a = cbor.decode(rawResp)
     return resp
 end
 
