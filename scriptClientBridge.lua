@@ -6,7 +6,7 @@ end
 
 function scriptClientBridge.call(b)
     cbor = require 'org.conman.cbor'
-    i = cbor.decode(b)
+    i = cbor.decode(tostring(b))
     require 'var'
     f = getvar(i.func)
     local ok, r = pcall(function() return {f(table.unpack(i.args))} end)

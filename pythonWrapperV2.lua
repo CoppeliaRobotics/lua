@@ -651,7 +651,7 @@ function receive()
 
         local rc, dat = simZMQ.recv(replySocket, 0)
         receiveIsNext = false
-        local status, req = pcall(cbor.decode, dat)
+        local status, req = pcall(cbor.decode, tostring(dat))
         if not status then
             if #dat < 2000 then
                 error(req .. "\n" .. sim.transformBuffer(dat, sim.buffer_uint8, 1, 0, sim.buffer_base64))
@@ -783,7 +783,7 @@ function checkPythonError()
             while pythonErrorMsg == nil do
                 local r, rep = simZMQ.__noError.recv(pySocket, simZMQ.DONTWAIT)
                 if r >= 0 then
-                    local rep, o, t = cbor.decode(rep)
+                    local rep, o, t = cbor.decode(tostring(rep))
                     if rep.err then
                         -- print(getAsString(rep.err))
                         local msg = getCleanErrorMsg(rep.err)
@@ -911,7 +911,7 @@ function initPython(prog)
                 if r >= 0 then break end
             end
             if r >= 0 then
-                local rep, o, t = cbor.decode(rep)
+                local rep, o, t = cbor.decode(tostring(rep))
                 if rep.err then
                     errMsg = rep.err
                     errMsg = getCleanErrorMsg(errMsg)

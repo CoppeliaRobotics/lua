@@ -1947,23 +1947,25 @@ function _S.sysCallEx_cleanup()
     _S.dlg.switch() -- remove all
 end
 
-function _S.unpackTable(data, scheme)
-    if scheme == nil then
-        if isbuffer(data) then
-            data = data.__buff__
-        end
-        if #data > 0 then
-            if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
-                return _S.unpackTableOrig(data)
+sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
+    return function(data, scheme)
+        if scheme == nil then
+            if isbuffer(data) then
+                data = data.__buff__
+            end
+            if #data == 0 then
+                return {} -- since 20.03.2024: empty buffer results in an empty table
             else
-                local cbor = require 'org.conman.cbor'
-                return cbor.decode(data)
+                if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
+                    return origFunc(data)
+                else
+                    local cbor = require 'org.conman.cbor'
+                    return cbor.decode(data)
+                end
             end
         end
     end
-end
-_S.unpackTableOrig = sim.unpackTable
-sim.unpackTable = _S.unpackTable
+end)
 
 sim.registerScriptFuncHook('sysCall_init', '_S.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)

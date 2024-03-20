@@ -45,7 +45,7 @@ end
 
 function RemoteApiClient._recv()
     local r, rawResp = simZMQ.recv(RemoteApiClient.socket, 0)
-    local resp, a = cbor.decode(rawResp)
+    local resp, a = cbor.decode(tostring(rawResp))
     return resp
 end
 

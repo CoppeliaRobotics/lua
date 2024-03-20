@@ -66,7 +66,7 @@ end
 function pythonWrapper.handleRawMessage(rawReq)
     -- if first byte is '{', it *might* be a JSON payload
     if rawReq:byte(1) == 123 then
-        local req, ln, err = json.decode(rawReq)
+        local req, ln, err = json.decode(tostring(rawReq))
         if req ~= nil then
             local resp = pythonWrapper.handleRequest(req)
             return json.encode(resp)
@@ -74,7 +74,7 @@ function pythonWrapper.handleRawMessage(rawReq)
     end
 
     -- if we are here, it should be a CBOR payload
-    local status, req = pcall(cbor.decode, rawReq)
+    local status, req = pcall(cbor.decode, tostring(rawReq))
     if status then
         local resp = pythonWrapper.handleRequest(req)
         return cbor.encode(resp)
@@ -324,7 +324,7 @@ function initPython(p, method)
                     if r >= 0 then break end
                 end
                 if r >= 0 then
-                    local rep, o, t = cbor.decode(rep)
+                    local rep, o, t = cbor.decode(tostring(rep))
                     if rep.err then
                         msg = rep.err
                         msg = getCleanErrorMsg(msg)
@@ -431,7 +431,7 @@ function getErrorPython()
             if simSubprocess.isRunning(subprocess) then
                 local r, rep = simZMQ.__noError.recv(socket, simZMQ.DONTWAIT)
                 if r >= 0 then
-                    local rep, o, t = cbor.decode(rep)
+                    local rep, o, t = cbor.decode(tostring(rep))
                     a = rep.err ~= nil
                     msg = rep.err
                     msg = getCleanErrorMsg(msg)
