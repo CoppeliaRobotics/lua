@@ -143,6 +143,18 @@ function tomap(data)
     return d
 end
 
+cbornil = {
+    __tocbor = function(self)
+        return cbor.SIMPLE.null()
+    end,
+}
+
+function tonil()
+    local d = {}
+    setmetatable(d, cbornil)
+    return d
+end
+
 function sysCall_init(...)
     returnTypes = {}
     simZMQ.__raiseErrors(true) -- so we don't need to check retval with every call
@@ -554,25 +566,38 @@ function handleRequest(req)
             doNotInterruptCommLevel = doNotInterruptCommLevel + 1
             local status, retvals = xpcall(
                 function()
-                    local ret = {func(unpack(args, 1, req.argsL))}
+                    local pret = table.pack(func(unpack(args, 1, req.argsL)))
+                    local ret = {}
+                    for i = 1, pret.n do
+                        if pret[i] ~= nil then
+                            ret[i] = pret[i]
+                        else
+                            ret[i] = tonil()
+                        end
+                    end
+                    --local ret = {func(unpack(args, 1, req.argsL))}
+                    
                     -- Try to assign correct types to text/buffers and arrays/maps:
                     local args = returnTypes[reqFunc]
                     if args then
                         local cnt = math.min(#ret, #args)
-                        for i = 1, cnt, 1 do
-                            if args[i] == 1 then
+                        for i = 1, cnt do
+                            if args[i] == 1 and type(ret[i]) == 'string' then
                                 ret[i] = totxt(ret[i])
-                            elseif args[i] == 2 then
+                            elseif args[i] == 2 and type(ret[i]) == 'string' then
                                 ret[i] = tobin(ret[i])
                             elseif type(ret[i]) == 'table' then
-                                if table.isarray(ret[i]) then
-                                    ret[i] = toarray(ret[i])
-                                else
-                                    ret[i] = tomap(ret[i])
+                                if (not isbuffer(ret[i])) and (getmetatable(ret[i]) ~= cbornil) then 
+                                    if table.isarray(ret[i]) then
+                                        ret[i] = toarray(ret[i])
+                                    else
+                                        ret[i] = tomap(ret[i])
+                                    end
                                 end
                             end
                         end
                     end
+
                     return ret
                 end, errHandler)
             doNotInterruptCommLevel = doNotInterruptCommLevel - 1
