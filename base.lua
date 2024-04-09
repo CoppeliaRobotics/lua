@@ -205,14 +205,14 @@ __buffmetatable__ = {
     __index = function(self, k)
         -- Mimic string behavior: return the character at position k if k is a number
         if type(k) == "number" then
-            return string.sub(self.__buff__, k, k)
+            return string.sub(self.__buff__, k, k) -- return a string
         elseif type(k) == "string" then
             -- Allow access to string methods, e.g., bufferObj:find(...)
             local strFunc = string[k]
             if strFunc and type(strFunc) == "function" then
                 -- Return a function that, when called, applies the string function to the buffer's content
                 return function(_, ...)
-                    return strFunc(self.__buff__, ...)
+                    return strFunc(self.__buff__, ...) -- return a string
                 end
             end
         end
