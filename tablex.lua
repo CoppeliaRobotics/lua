@@ -173,22 +173,36 @@ function table.clone(t)
     return copy
 end
 
-function table.deepcopy(orig, copies)
+function table.deepcopy(orig, opts, copies)
+    opts = opts or {}
     copies = copies or {}
+    
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
+        local mo = getmetatable(orig)
+        if mo and opts.cloneMetatable == nil then
+            addLog(430, "cloning (table.deepcopy) a table with a metatable: the metatable will not be cloned. pass opts={cloneMetatable=true} to clone it, or opts={cloneMetatable=false} to silence this warning.")
+            opts.cloneMetatable = false
+        end
+
         if copies[orig] then
             copy = copies[orig]
         else
             copy = {}
             copies[orig] = copy
             for orig_key, orig_value in next, orig, nil do
-                copy[table.deepcopy(orig_key, copies)] = table.deepcopy(orig_value, copies)
+                copy[table.deepcopy(orig_key, opts, copies)] = table.deepcopy(orig_value, opts, copies)
             end
-            setmetatable(copy, table.deepcopy(getmetatable(orig), copies))
+            if mo then
+                if opts.cloneMetatable then
+                    setmetatable(copy, table.deepcopy(getmetatable(orig), opts, copies))
+                else
+                    setmetatable(copy, getmetatable(orig))
+                end
+            end
         end
-    else -- number, string, boolean, etc
+    else
         copy = orig
     end
     return copy

@@ -62,7 +62,8 @@ else
 end
 
 function isbuffer(obj)
-    return getmetatable(obj) == __buffmetatable__ and obj.__buff__ ~= nil
+    local m = getmetatable(obj)
+    return m and m._isBuffer_ and obj.__buff__ ~= nil
 end
 
 function wrap(originalFunction, wrapperFunctionGenerator)
@@ -199,6 +200,7 @@ end)
 
 
 __buffmetatable__ = {
+    _isBuffer_ = true,
     __concat = function(a, b) return tobuffer(tostring(a) .. tostring(b)) end,
     __len = function(self) return #self.__buff__ end,
     __eq = function(a, b) return isbuffer(a) and isbuffer(b) and a.__buff__ == b.__buff__ end,
@@ -278,7 +280,7 @@ function rerequire(name)
             if success then
                 return result
             else
-                sim.addLog(sim.verbosity_errors, result)
+                addLog(420, result)
                 return
             end
         end
@@ -605,15 +607,15 @@ function _evalExec(inputStr)
                     print(getAsString(table.unpack(ret, 1, ret.n)))
                 end
             else
-                sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
+                addLog(420 | 0x0f000, err)
             end
         else
-            sim.addLog(sim.verbosity_scripterrors | sim.verbosity_undecorated, err)
+            addLog(420 | 0x0f000, err)
         end
 
         if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
             if H ~= sim.getObject then
-                sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_undecorated, "cannot change 'H' variable")
+                addLog(430 | 0x0f000, "cannot change 'H' variable")
             end
 
             H = sim.getObject
