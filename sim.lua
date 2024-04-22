@@ -1657,7 +1657,6 @@ function sim.removeReferencedObjects(objectHandle)
 end
 
 function sim.visitTree(...)
-    -- deprecated.
     local rootHandle, visitorFunc, options = checkargs({
         {type = 'int'},
         {type = 'func'},
