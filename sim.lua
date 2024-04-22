@@ -414,290 +414,392 @@ function sim.getAlternateConfigs(...)
     return configs
 end
 
-function sim.moveToPose(...)
-    local flags, currentPoseOrMatrix, maxVel, maxAccel, maxJerk, targetPoseOrMatrix, callback,
-          auxData, metric, timeStep = checkargs({
-        {type = 'int'},
-        {type = 'table', size = '7..12'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', size = '7..12'},
-        {type = 'any'},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'table', size = 4, default = NIL, nullable = true},
-        {type = 'float', default = 0},
-    }, ...)
+function sim.moveToConfig_init(params)
+    params = params or {}
+    if params.pos == nil or type(params.pos) ~= 'table' or #params.pos == 0 then
+        error("missing or invalid 'pos' field.")
+    end
+    if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= #params.pos then
+        error("missing or invalid 'targetPos' field.")
+    end
+    params.flags = params.flags or -1
+    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    params.vel = params.vel or table.rep(0.0, #params.pos)
+    params.accel = params.accel or table.rep(0.0, #params.pos)
+    params.maxVel = params.maxVel or table.rep(0.5, #params.pos)
+    params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+    params.maxAccel = params.maxAccel or table.rep(0.1, #params.pos)
+    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    params.maxJerk = params.maxJerk or table.rep(0.2, #params.pos)
+    params.targetVel = params.targetVel or table.rep(0.0, #params.pos)
+    params.timeStep = params.timeStep or 0
+    table.slice(params.vel, 1, #params.pos)
+    table.slice(params.accel, 1, #params.pos)
+    table.slice(params.maxVel, 1, #params.pos)
+    table.slice(params.minVel, 1, #params.pos)
+    table.slice(params.maxAccel, 1, #params.pos)
+    table.slice(params.minAccel, 1, #params.pos)
+    table.slice(params.maxJerk, 1, #params.pos)
+    table.slice(params.targetVel, 1, #params.pos)
 
-    local maxMinVelCnt = #maxJerk
-    if flags >= 0 and (flags & sim.ruckig_minvel) ~= 0 then
-        maxMinVelCnt = maxMinVelCnt + #maxJerk
+    for i = 1, #params.pos do
+        local v = params.pos[i]
+        local w = params.targetPos[i]
+        if params.cyclicJoints and params.cyclicJoints[i] then
+            while w - v >= math.pi * 2 do w = w - math.pi * 2 end
+            while w - v < 0 do w = w + math.pi * 2 end
+            if w - v > math.pi then w = w - math.pi * 2 end
+        end
+        params.targetPos[i] = w
     end
-    local maxMinAccelCnt = #maxJerk
-    if flags >= 0 and (flags & sim.ruckig_minaccel) ~= 0 then
-        maxMinAccelCnt = maxMinAccelCnt + #maxJerk
+    local currentPosVelAccel = table.add(params.pos, params.vel, params.accel)
+    local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
+    local targetPosVel = table.add(params.targetPos, params.targetVel)
+    local sel = table.rep(1, #params.pos)
+    
+    local data = {}
+    data.ruckigObj = sim.ruckigPos(#params.pos, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
+    data.pos = table.clone(params.pos)
+    data.vel = table.clone(params.vel)
+    data.accel = table.clone(params.accel)
+    data.callback = params.callback
+    if type(data.callback) == 'string' then
+        data.callback = _G[data.callback]
+    end
+    data.auxData = params.auxData
+    data.timeStep = params.timeStep
+    data.timeLeft = 0
+    
+    return data
+end
+
+function sim.moveToConfig_step(data)
+    local dt = data.timeStep
+    if dt == 0 then
+        dt = sim.getSimulationTimeStep()
+    end
+    local res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+    if res >= 0 then
+        if res == 0 then
+            data.timeLeft = dt - syncTime
+        end
+        for i = 1, #data.pos do
+            data.pos[i] = newPosVelAccel[i]
+            data.vel[i] = newPosVelAccel[#data.pos + i]
+            data.accel[i] = newPosVelAccel[#data.pos * 2 + i]
+        end
+        if data.callback(data.pos, data.vel, data.accel, data.auxData) then
+            res = 2 -- aborted
+        end
     end
 
-    if #maxJerk < 1 or #maxVel < maxMinVelCnt or #maxAccel < maxMinAccelCnt then
-        error("Bad table size.")
+    return res, data
+end
+
+function sim.moveToConfig_cleanup(data)
+    sim.ruckigRemove(data.ruckigObj)
+end
+
+function sim.moveToConfig(...)
+    local params = ...
+    
+    -- backw. compatibility part:
+    -----------------------------
+    if type(params) == 'number' then
+        params = {}
+        local flags, currentPos, currentVel, currentAccel, maxVel, maxAccel, maxJerk, targetPos,
+              targetVel, callback, auxData, cyclicJoints, timeStep = checkargs({
+            {type = 'int'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float', nullable = true},
+            {type = 'table', item_type = 'float', nullable = true},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float', nullable = true},
+            {type = 'any'},
+            {type = 'any', default = NIL, nullable = true},
+            {type = 'table', item_type = 'bool', default = NIL, nullable = true},
+            {type = 'float', default = 0},
+        }, ...)
+        params.flags = flags
+        params.pos = currentPos
+        params.vel = currentVel
+        params.accel = currentAccel
+        params.maxVel = table.slice(maxVel, 1, #params.pos)
+        params.minVel = map(function(h) return (-h) end, params.maxVel)
+        params.maxAccel = table.slice(maxAccel, 1, #params.pos)
+        params.minAccel = map(function(h) return (-h) end, params.maxAccel)
+        params.maxJerk = maxJerk
+        params.targetPos = targetPos
+        params.targetVel = targetVel
+        params.callback = callback
+        params.auxData = auxData
+        params.cyclicJoints = cyclicJoints
+        params.timeStep = timeStep
+        if params.flags >= 0 and (params.flags & sim.ruckig_minvel) ~= 0 then
+            params.minVel = table.slice(maxVel, #params.pos + 1)
+            params.flags = params.flags - sim.ruckig_minvel
+        end
+        if params.flags >= 0 and (params.flags & sim.ruckig_minaccel) ~= 0 then
+            params.minAccel = table.slice(maxAccel, #params.pos + 1)
+            params.flags = params.flags - sim.ruckig_minaccel
+        end
     end
-    if not metric and #maxJerk < 4 then
-        error("Argument #5 should be of size 4. (in function 'sim.moveToPose')")
-    end
+    -----------------------------
 
     local lb = sim.setStepping(true)
-
-    local usingMatrices = (#currentPoseOrMatrix >= 12)
-    local currentMatrix, targetMatrix
-    if usingMatrices then
-        currentMatrix = currentPoseOrMatrix
-        targetMatrix = targetPoseOrMatrix
-    else
-        currentMatrix = sim.buildMatrixQ(currentPoseOrMatrix, {
-            currentPoseOrMatrix[4], currentPoseOrMatrix[5],
-            currentPoseOrMatrix[6], currentPoseOrMatrix[7],
-        })
-        targetMatrix = sim.buildMatrixQ(targetPoseOrMatrix, {
-            targetPoseOrMatrix[4], targetPoseOrMatrix[5],
-            targetPoseOrMatrix[6], targetPoseOrMatrix[7],
-        })
+    local data = sim.moveToConfig_init(params)
+    local outParams = {}
+    while true do
+        local res, outParams = sim.moveToConfig_step(data)
+        if res ~= 0 then
+            if res < 0 then
+                error('sim.moveToConfig_step returned error code ' .. res)
+            end
+            break
+        end
+        sim.step()
     end
+    sim.moveToConfig_cleanup(data)
+    sim.setStepping(lb)
+    return outParams.pos, outParams.vel, outParams.accel, outParams.timeLeft, outParams -- ret args for backw. comp.
+end
 
-    local outMatrix = table.deepcopy(currentMatrix)
-    local axis, angle = sim.getRotationAxis(currentMatrix, targetMatrix)
-    local timeLeft = 0
-    if type(callback) == 'string' then callback = _G[callback] end
-    if metric then
+function sim.moveToPose_init(params)
+    params = params or {}
+    if params.pose == nil or type(params.pose) ~= 'table' or #params.pose ~= 7 then
+        error("missing or invalid 'pose' field.")
+    end
+    if params.targetPose == nil or type(params.targetPose) ~= 'table' or #params.targetPose ~= 7 then
+        error("missing or invalid 'targetPose' field.")
+    end
+    params.flags = params.flags or -1
+    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    local dim = 4
+    if params.metric then
+        dim = 1
+        params.maxVel = params.maxVel or table.rep(0.2, dim)
+        params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+        params.maxAccel = params.maxAccel or table.rep(0.1, dim)
+        params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+        params.maxJerk = params.maxJerk or table.rep(0.1, dim)
+    else
+        params.maxVel = params.maxVel or {0.2, 0.2, 0.2, 1.0 * math.pi}
+        params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+        params.maxAccel = params.maxAccel or {0.1, 0.1, 0.1, 0.5 * math.pi}
+        params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+        params.maxJerk = params.maxJerk or {0.1, 0.1, 0.1, 0.5 * math.pi}
+    end
+    params.timeStep = params.timeStep or 0
+    table.slice(params.maxVel, 1, dim)
+    table.slice(params.minVel, 1, dim)
+    table.slice(params.maxAccel, 1, dim)
+    table.slice(params.minAccel, 1, dim)
+    table.slice(params.maxJerk, 1, dim)
+
+    local data = {}
+    data.startMatrix = sim.poseToMatrix(params.pose)
+    data.targetMatrix = sim.poseToMatrix(params.targetPose)
+    data.useMatrices = params.useMatrices
+    data.pose = table.clone(params.pose)
+    data.matrix = table.clone(data.startMatrix)
+    data.callback = params.callback
+    if type(data.callback) == 'string' then
+        data.callback = _G[data.callback]
+    end
+    data.auxData = params.auxData
+    data.timeStep = params.timeStep
+    data.metric = params.metric
+    data.timeLeft = 0
+    data.dist = 1.0
+    
+    local axis, angle = sim.getRotationAxis(data.startMatrix, data.targetMatrix)
+    data.angle = angle
+    if data.metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
         -- the start and goal pose. This always results in straight line movement paths
         local dx = {
-            (targetMatrix[4] - currentMatrix[4]) * metric[1],
-            (targetMatrix[8] - currentMatrix[8]) * metric[2],
-            (targetMatrix[12] - currentMatrix[12]) * metric[3], angle * metric[4],
+            (data.targetMatrix[4] - data.startMatrix[4]) * data.metric[1],
+            (data.targetMatrix[8] - data.startMatrix[8]) * data.metric[2],
+            (data.targetMatrix[12] - data.startMatrix[12]) * data.metric[3], data.angle * data.metric[4],
         }
-        local distance = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
-        if distance > 0.000001 then
+        data.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
+        if data.dist > 0.000001 then
             local currentPosVelAccel = {0, 0, 0}
-            local maxVelAccelJerk = {maxVel[1], maxAccel[1], maxJerk[1]}
-            if flags >= 0 and (flags & sim.ruckig_minvel) ~= 0 then
-                maxVelAccelJerk[#maxVelAccelJerk + 1] = maxVel[2]
-            end
-            if flags >= 0 and (flags & sim.ruckig_minaccel) ~= 0 then
-                maxVelAccelJerk[#maxVelAccelJerk + 1] = maxAccel[2]
-            end
-            local targetPosVel = {distance, 0}
-            local ruckigObject = sim.ruckigPos(
-                                     1, 0.0001, flags, currentPosVelAccel, maxVelAccelJerk, {1},
-                                     targetPosVel
-                                 )
-            local result = 0
-            while result == 0 do
-                local dt = timeStep
-                if dt == 0 then dt = sim.getSimulationTimeStep() end
-                local syncTime
-                result, newPosVelAccel, syncTime = sim.ruckigStep(ruckigObject, dt)
-                if result >= 0 then
-                    if result == 0 then timeLeft = dt - syncTime end
-                    local t = newPosVelAccel[1] / distance
-                    outMatrix = sim.interpolateMatrices(currentMatrix, targetMatrix, t)
-                    local nv = {newPosVelAccel[2]}
-                    local na = {newPosVelAccel[3]}
-                    if not usingMatrices then
-                        local q = sim.getQuaternionFromMatrix(outMatrix)
-                        outMatrix = {
-                            outMatrix[4], outMatrix[8], outMatrix[12], q[1], q[2], q[3], q[4],
-                        }
-                    end
-                    if callback(outMatrix, nv, na, auxData) then break end
-                else
-                    error('sim.ruckigStep returned error code ' .. result)
-                end
-                if result == 0 then sim.step() end
-            end
-            sim.ruckigRemove(ruckigObject)
+            local maxVelAccelJerk = {params.maxVel[1], params.maxAccel[1], params.maxJerk[1], params.minVel[1], params.minAccel[1]}
+            data.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {data.dist, 0} )
         end
     else
         -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
         -- is handled and controlled individually. This can result in non-straight line movement paths,
         -- due to how the Ruckig functions operate depending on 'flags'
         local dx = {
-            targetMatrix[4] - currentMatrix[4], targetMatrix[8] - currentMatrix[8],
-            targetMatrix[12] - currentMatrix[12], angle,
+            data.targetMatrix[4] - data.startMatrix[4], data.targetMatrix[8] - data.startMatrix[8],
+            data.targetMatrix[12] - data.startMatrix[12], data.angle,
         }
-        local currentPosVelAccel = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-        local maxVelAccelJerk = {
-            maxVel[1], maxVel[2], maxVel[3], maxVel[4], maxAccel[1], maxAccel[2], maxAccel[3],
-            maxAccel[4], maxJerk[1], maxJerk[2], maxJerk[3], maxJerk[4],
-        }
-        if flags >= 0 and (flags & sim.ruckig_minvel) ~= 0 then
-            for i = 1, 4, 1 do maxVelAccelJerk[#maxVelAccelJerk + 1] = maxVel[4 + i] end
-        end
-        if flags >= 0 and (flags & sim.ruckig_minaccel) ~= 0 then
-            for i = 1, 4, 1 do maxVelAccelJerk[#maxVelAccelJerk + 1] = maxAccel[4 + i] end
-        end
-        local targetPosVel = {dx[1], dx[2], dx[3], dx[4], 0, 0, 0, 0, 0}
-        local ruckigObject = sim.ruckigPos(
-                                 4, 0.0001, flags, currentPosVelAccel, maxVelAccelJerk,
-                                 {1, 1, 1, 1}, targetPosVel
-                             )
-        local result = 0
-        while result == 0 do
-            local dt = timeStep
-            if dt == 0 then dt = sim.getSimulationTimeStep() end
-            local syncTime
-            result, newPosVelAccel, syncTime = sim.ruckigStep(ruckigObject, dt)
-            if result >= 0 then
-                if result == 0 then timeLeft = dt - syncTime end
-                local t = 0
-                if math.abs(angle) > math.pi * 0.00001 then
-                    t = newPosVelAccel[4] / angle
-                end
-                outMatrix = sim.interpolateMatrices(currentMatrix, targetMatrix, t)
-                outMatrix[4] = currentMatrix[4] + newPosVelAccel[1]
-                outMatrix[8] = currentMatrix[8] + newPosVelAccel[2]
-                outMatrix[12] = currentMatrix[12] + newPosVelAccel[3]
-                local nv = {
-                    newPosVelAccel[5], newPosVelAccel[6], newPosVelAccel[7], newPosVelAccel[8],
-                }
-                local na = {
-                    newPosVelAccel[9], newPosVelAccel[10], newPosVelAccel[11], newPosVelAccel[12],
-                }
-                if not usingMatrices then
-                    local q = sim.getQuaternionFromMatrix(outMatrix)
-                    outMatrix = {outMatrix[4], outMatrix[8], outMatrix[12], q[1], q[2], q[3], q[4]}
-                end
-                if callback(outMatrix, nv, na, auxData) then break end
-            else
-                error('sim.ruckigStep returned error code ' .. result)
-            end
-            if result == 0 then sim.step() end
-        end
-        sim.ruckigRemove(ruckigObject)
+        local currentPosVelAccel = table.rep(0.0, 3 * dim)
+        local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
+        local targetPosVel = table.add(dx, {0.0, 0.0, 0.0, 0.0})
+        data.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
     end
 
-    sim.setStepping(lb)
-    return outMatrix, timeLeft
+    data.vel  = table.rep(0.0, dim)
+    data.accel  = table.rep(0.0, dim)
+    
+    return data
+end
+            
+function sim.moveToPose_step(data)
+    local res
+    local dt = data.timeStep
+    if dt == 0 then
+        dt = sim.getSimulationTimeStep()
+    end
+    if data.metric then
+        -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
+        -- the start and goal pose. This always results in straight line movement paths
+        if data.dist > 0.000001 then
+            local newPosVelAccel, syncTime
+            res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+            if res >= 0 then
+                if res == 0 then
+                    data.timeLeft = dt - syncTime
+                end
+                local t = newPosVelAccel[1] / data.dist
+                data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
+                data.pose = sim.matrixToPose(data.matrix)
+                data.vel = {newPosVelAccel[2]}
+                data.accel = {newPosVelAccel[3]}
+                if data.callback then
+                    local arg = data.pose
+                    if data.useMatrices then
+                        arg = data.matrix
+                    end
+                    if data.callback(arg, data.vel, data.accel, data.auxData) then
+                        res = 2 -- aborted
+                    end
+                end
+            end
+        else
+            res = 1 -- i.e. there is no motion to be executed
+        end
+    else
+        -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
+        -- is handled and controlled individually. This can result in non-straight line movement paths,
+        -- due to how the Ruckig functions operate depending on 'flags'
+        local newPosVelAccel, syncTime
+        res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+        if res >= 0 then
+            if res == 0 then
+                data.timeLeft = dt - syncTime
+            end
+            local t = 0
+            if math.abs(data.angle) > math.pi * 0.00001 then
+                t = newPosVelAccel[4] / data.angle
+            end
+            data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
+            data.matrix[4] = data.startMatrix[4] + newPosVelAccel[1]
+            data.matrix[8] = data.startMatrix[8] + newPosVelAccel[2]
+            data.matrix[12] = data.startMatrix[12] + newPosVelAccel[3]
+            data.pose = sim.matrixToPose(data.matrix)
+            data.vel  = table.slice(newPosVelAccel, 5, 8)
+            data.accel = table.slice(newPosVelAccel, 9, 12)
+            if data.callback then
+                local arg = data.pose
+                if data.useMatrices then
+                    arg = data.matrix
+                end
+                if data.callback(arg, data.vel, data.accel, data.auxData) then
+                    res = 2 -- aborted
+                end
+            end
+        end
+    end
+
+    return res, data
 end
 
-function sim.moveToConfig(...)
-    local flags, currentPos, currentVel, currentAccel, maxVel, maxAccel, maxJerk, targetPos,
-          targetVel, callback, auxData, cyclicJoints, timeStep = checkargs({
-        {type = 'int'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float', nullable = true},
-        {type = 'table', item_type = 'float', nullable = true},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float'},
-        {type = 'table', item_type = 'float', nullable = true},
-        {type = 'any'},
-        {type = 'any', default = NIL, nullable = true},
-        {type = 'table', item_type = 'bool', default = NIL, nullable = true},
-        {type = 'float', default = 0},
-    }, ...)
+function sim.moveToPose_cleanup(data)
+    sim.ruckigRemove(data.ruckigObj)
+end
 
-    local maxMinVelCnt = #currentPos
-    if flags >= 0 and (flags & sim.ruckig_minvel) ~= 0 then
-        maxMinVelCnt = maxMinVelCnt + #currentPos
+function sim.moveToPose(...)
+    local params = ...
+    
+    -- backw. compatibility part:
+    -----------------------------
+    if type(params) == 'number' then
+        params = {}
+        local flags, currentPoseOrMatrix, maxVel, maxAccel, maxJerk, targetPoseOrMatrix, callback,
+              auxData, metric, timeStep = checkargs({
+            {type = 'int'},
+            {type = 'table', size = '7..12'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', item_type = 'float'},
+            {type = 'table', size = '7..12'},
+            {type = 'any'},
+            {type = 'any', default = NIL, nullable = true},
+            {type = 'table', size = 4, default = NIL, nullable = true},
+            {type = 'float', default = 0},
+        }, ...)
+        params.flags = flags
+        if #currentPoseOrMatrix == 7 then
+            params.pose = currentPoseOrMatrix
+        else
+            params.pose = sim.matrixToPose(currentPoseOrMatrix)
+            params.useMatrices = true
+        end
+        params.metric = metric
+        local dim = 4
+        if params.metric then
+            dim = 1
+        end
+        params.maxVel = table.slice(maxVel, 1, dim)
+        params.minVel = map(function(h) return (-h) end, params.maxVel)
+        params.maxAccel = table.slice(maxAccel, 1, dim)
+        params.minAccel = map(function(h) return (-h) end, params.maxAccel)
+        params.maxJerk = maxJerk
+        if #targetPoseOrMatrix == 7 then
+            params.targetPose = targetPoseOrMatrix
+        else
+            params.targetPose = sim.matrixToPose(targetPoseOrMatrix)
+        end
+        params.callback = callback
+        params.auxData = auxData
+        params.timeStep = timeStep
+
+        if params.flags >= 0 and (params.flags & sim.ruckig_minvel) ~= 0 then
+            params.minVel = table.slice(maxVel, dim + 1)
+            params.flags = params.flags - sim.ruckig_minvel
+        end
+        if params.flags >= 0 and (params.flags & sim.ruckig_minaccel) ~= 0 then
+            params.minAccel = table.slice(maxAccel, dim + 1)
+            params.flags = params.flags - sim.ruckig_minaccel
+        end
     end
-    local maxMinAccelCnt = #currentPos
-    if flags >= 0 and (flags & sim.ruckig_minaccel) ~= 0 then
-        maxMinAccelCnt = maxMinAccelCnt + #currentPos
-    end
-
-    if #currentPos < 1 or maxMinVelCnt > #maxVel or maxMinAccelCnt > #maxAccel or #currentPos >
-        #maxJerk or #currentPos > #targetPos or (currentVel and #currentPos > #currentVel) or
-        (currentAccel and #currentPos > #currentAccel) or (targetVel and #currentPos > #targetVel) or
-        (cyclicJoints and #currentPos > #cyclicJoints) then error("Bad table size.") end
-
+    -----------------------------
+    
     local lb = sim.setStepping(true)
-
-    local currentPosVelAccel = {}
-    local maxVelAccelJerk = {}
-    local targetPosVel = {}
-    local sel = {}
-    local outPos = {}
-    local outVel = {}
-    local outAccel = {}
-    for i = 1, #currentPos, 1 do
-        local v = currentPos[i]
-        currentPosVelAccel[i] = v
-        outPos[i] = v
-        maxVelAccelJerk[i] = maxVel[i]
-        local w = targetPos[i]
-        if cyclicJoints and cyclicJoints[i] then
-            while w - v >= math.pi * 2 do w = w - math.pi * 2 end
-            while w - v < 0 do w = w + math.pi * 2 end
-            if w - v > math.pi then w = w - math.pi * 2 end
-        end
-        targetPosVel[i] = w
-        sel[i] = 1
-    end
-    for i = #currentPos + 1, #currentPos * 2 do
-        if currentVel then
-            currentPosVelAccel[i] = currentVel[i - #currentPos]
-            outVel[i - #currentPos] = currentVel[i - #currentPos]
-        else
-            currentPosVelAccel[i] = 0
-            outVel[i - #currentPos] = 0
-        end
-        maxVelAccelJerk[i] = maxAccel[i - #currentPos]
-        if targetVel then
-            targetPosVel[i] = targetVel[i - #currentPos]
-        else
-            targetPosVel[i] = 0
-        end
-    end
-    for i = #currentPos * 2 + 1, #currentPos * 3 do
-        if currentAccel then
-            currentPosVelAccel[i] = currentAccel[i - #currentPos * 2]
-            outAccel[i - #currentPos * 2] = currentAccel[i - #currentPos * 2]
-        else
-            currentPosVelAccel[i] = 0
-            outAccel[i - #currentPos * 2] = 0
-        end
-        maxVelAccelJerk[i] = maxJerk[i - #currentPos * 2]
-    end
-    if flags >= 0 and (flags & sim.ruckig_minvel) ~= 0 then
-        for i = 1, #currentPos, 1 do
-            maxVelAccelJerk[#maxVelAccelJerk + 1] = maxVel[#currentPos + i]
-        end
-    end
-    if flags >= 0 and (flags & sim.ruckig_minaccel) ~= 0 then
-        for i = 1, #currentPos, 1 do
-            maxVelAccelJerk[#maxVelAccelJerk + 1] = maxAccel[#currentPos + i]
-        end
-    end
-
-    local ruckigObject = sim.ruckigPos(
-                             #currentPos, 0.0001, flags, currentPosVelAccel, maxVelAccelJerk, sel,
-                             targetPosVel
-                         )
-    local result = 0
-    local timeLeft = 0
-    if type(callback) == 'string' then callback = _G[callback] end
-    while result == 0 do
-        local dt = timeStep
-        if dt == 0 then dt = sim.getSimulationTimeStep() end
-        local syncTime
-        result, newPosVelAccel, syncTime = sim.ruckigStep(ruckigObject, dt)
-        if result >= 0 then
-            if result == 0 then timeLeft = dt - syncTime end
-            for i = 1, #currentPos, 1 do
-                outPos[i] = newPosVelAccel[i]
-                outVel[i] = newPosVelAccel[#currentPos + i]
-                outAccel[i] = newPosVelAccel[#currentPos * 2 + i]
+    local data = sim.moveToPose_init(params)
+    local outParams = {}
+    while true do
+        local res, outParams = sim.moveToPose_step(data)
+        if res ~= 0 then
+            if res < 0 then
+                error('sim.moveToPose_step returned error code ' .. res)
             end
-            if callback(outPos, outVel, outAccel, auxData) then break end
-        else
-            error('sim.ruckigStep returned error code ' .. result)
+            break
         end
-        if result == 0 then sim.step() end
+        sim.step()
     end
-    sim.ruckigRemove(ruckigObject)
+    sim.moveToPose_cleanup(data)
     sim.setStepping(lb)
-    return outPos, outVel, outAccel, timeLeft
+    return outParams.matrix, outParams.timeLeft, outParams -- ret args for backw. comp.
 end
 
 function sim.generateTimeOptimalTrajectory(...)
@@ -1555,6 +1657,7 @@ function sim.removeReferencedObjects(objectHandle)
 end
 
 function sim.visitTree(...)
+    -- deprecated.
     local rootHandle, visitorFunc, options = checkargs({
         {type = 'int'},
         {type = 'func'},
