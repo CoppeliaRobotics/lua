@@ -540,12 +540,29 @@ function handleRequest(req)
 
             currentFunction = reqFunc
 
-            -- Handle function arguments:
+            -- Handle function arguments (up to a depth of 2):
             for i = 1, #args, 1 do
                 if type(args[i]) == 'string' then
+                    -- depth 1
                     if args[i]:sub(-5) == "@func" then
                         local nm = args[i]:sub(1, -6)
                         args[i] = function(...) return callRemoteFunction(nm, {...}, false, true) end
+                    end
+                else
+                    if type(args[i]) == 'table' then
+                        -- depth 2
+                        local cnt = 0
+                        for k, v in pairs(args[i]) do
+                            if type(v) == 'string' and v:sub(-5) == "@func" then
+                                local nm = v:sub(1, -6)
+                                v = function(...) return callRemoteFunction(nm, {...}, false, true) end
+                                args[i][k] = v
+                            end
+                            cnt = cnt + 1
+                            if cnt >= 16 then
+                                break -- parse no more than 16 items
+                            end
+                        end
                     end
                 end
             end
@@ -1200,24 +1217,36 @@ class RemoteAPIClient:
         self.context.term()
 
     def _send(self, req):
-        # convert a possible function to string:
-        if 'args' in req and req['args']!=None and (isinstance(req['args'],tuple) or isinstance(req['args'],list)):
+        def handle_func_arg(arg):
+            retArg = arg
+            if callable(arg):
+                funcStr = str(arg)
+                m = re.search(r"<function (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
+                if m:
+                    funcStr = m.group(1) + '_' + m.group(2)
+                else:
+                    m = re.search(r"<(.*)method (.+) of (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
+                    if m:
+                        funcStr = m.group(2) + '_' + m.group(4)
+                    else:
+                        funcStr = None
+                if funcStr:
+                    self.callbackFuncs[funcStr] = arg
+                    retArg = funcStr + "@func"
+            return retArg 
+
+        # convert a possible function to string (up to a depth of 2):
+        if 'args' in req and req['args'] != None and isinstance(req['args'], (tuple, list)):
             req['args'] = list(req['args'])
             for i in range(len(req['args'])):
-                if callable(req['args'][i]):
-                    funcStr = str(req['args'][i])
-                    m = re.search(r"<function (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
-                    if m:
-                        funcStr = m.group(1) + '_' + m.group(2)
-                    else:
-                        m = re.search(r"<(.*)method (.+) of (.+) at 0x([0-9a-fA-F]+)(.*)", funcStr)
-                        if m:
-                            funcStr = m.group(2) + '_' + m.group(4)
-                        else:
-                            funcStr = None
-                    if funcStr:
-                        self.callbackFuncs[funcStr] = req['args'][i]
-                        req['args'][i] = funcStr + "@func"
+                req['args'][i] = handle_func_arg(req['args'][i]) # depth 1
+                if isinstance(req['args'][i], tuple):
+                    req['args'][i] = list(req['args'][i])
+                if isinstance(req['args'][i], list) and len(req['args'][i]) <= 16: # parse no more than 16 items
+                    for j in range(len(req['args'][i])):
+                        req['args'][i][j] = handle_func_arg(req['args'][i][j]) #depth 2
+                if isinstance(req['args'][i], dict) and len(req['args'][i]) <= 16:
+                    req['args'][i] = {key: handle_func_arg(value) for key, value in req['args'][i].items()} #depth 2
             req['argsL'] = len(req['args'])
 
         # pack and send:
