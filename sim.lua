@@ -422,16 +422,22 @@ function sim.moveToConfig_init(params)
     if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= #params.pos then
         error("missing or invalid 'targetPos' field.")
     end
+    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= #params.pos then
+        error("missing or invalid 'maxVel' field.")
+    end
+    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= #params.pos then
+        error("missing or invalid 'maxAccel' field.")
+    end
+    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= #params.pos then
+        error("missing or invalid 'maxJerk' field.")
+    end
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
     params.vel = params.vel or table.rep(0.0, #params.pos)
     params.accel = params.accel or table.rep(0.0, #params.pos)
-    params.maxVel = params.maxVel or table.rep(0.5, #params.pos)
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
-    params.maxAccel = params.maxAccel or table.rep(0.1, #params.pos)
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
-    params.maxJerk = params.maxJerk or table.rep(0.2, #params.pos)
     params.targetVel = params.targetVel or table.rep(0.0, #params.pos)
     params.timeStep = params.timeStep or 0
     table.slice(params.vel, 1, #params.pos)
@@ -582,18 +588,20 @@ function sim.moveToPose_init(params)
     local dim = 4
     if params.metric then
         dim = 1
-        params.maxVel = params.maxVel or table.rep(0.2, dim)
-        params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
-        params.maxAccel = params.maxAccel or table.rep(0.1, dim)
-        params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
-        params.maxJerk = params.maxJerk or table.rep(0.1, dim)
-    else
-        params.maxVel = params.maxVel or {0.2, 0.2, 0.2, 1.0 * math.pi}
-        params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
-        params.maxAccel = params.maxAccel or {0.1, 0.1, 0.1, 0.5 * math.pi}
-        params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
-        params.maxJerk = params.maxJerk or {0.1, 0.1, 0.1, 0.5 * math.pi}
     end
+    
+    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
+        error("missing or invalid 'maxVel' field.")
+    end
+    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
+        error("missing or invalid 'maxAccel' field.")
+    end
+    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
+        error("missing or invalid 'maxJerk' field.")
+    end
+    params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    
     params.timeStep = params.timeStep or 0
     table.slice(params.maxVel, 1, dim)
     table.slice(params.minVel, 1, dim)
