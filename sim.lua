@@ -441,18 +441,35 @@ function sim.moveToConfig_init(params)
     if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= dim then
         error("missing or invalid 'targetPos' field.")
     end
-    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
-        error("missing or invalid 'maxVel' field.")
+    if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
+        error("invalid 'maxVel' field.")
     end
-    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
-        error("missing or invalid 'maxAccel' field.")
+    if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
+        error("invalid 'maxAccel' field.")
     end
-    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
-        error("missing or invalid 'maxJerk' field.")
+    if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
+        error("invalid 'maxJerk' field.")
     end
-    params.flags = params.flags or -1
-    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    if params.maxVel or params.maxAccel or params.maxJerk then
+        if params.maxVel == nil then
+            error("missing 'maxVel' field.")
+        end
+        if params.maxAccel == nil then
+            error("missing 'maxAccel' field.")
+        end
+        if params.maxJerk == nil then
+            error("missing 'maxJerk' field.")
+        end
+        params.flags = params.flags or -1
+        if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+        params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    else
+        params.maxVel = params.maxVel or table.rep(9999.0, dim)
+        params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
+        params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+        params.flags = sim.ruckig_nosync | sim.ruckig_minvel | sim.ruckig_minaccel
+        params.timeStep = 10.0
+    end
     params.vel = params.vel or table.rep(0.0, dim)
     params.accel = params.accel or table.rep(0.0, dim)
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
@@ -666,23 +683,41 @@ function sim.moveToPose_init(params)
     if params.targetPose == nil or type(params.targetPose) ~= 'table' or #params.targetPose ~= 7 then
         error("missing or invalid 'targetPose' field.")
     end
-    params.flags = params.flags or -1
-    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
     local dim = 4
     if params.metric then
         dim = 1
     end
-    
-    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
-        error("missing or invalid 'maxVel' field.")
+
+    if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
+        error("invalid 'maxVel' field.")
     end
-    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
-        error("missing or invalid 'maxAccel' field.")
+    if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
+        error("invalid 'maxAccel' field.")
     end
-    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
-        error("missing or invalid 'maxJerk' field.")
+    if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
+        error("invalid 'maxJerk' field.")
     end
+    if params.maxVel or params.maxAccel or params.maxJerk then
+        if params.maxVel == nil then
+            error("missing 'maxVel' field.")
+        end
+        if params.maxAccel == nil then
+            error("missing 'maxAccel' field.")
+        end
+        if params.maxJerk == nil then
+            error("missing 'maxJerk' field.")
+        end
+        params.flags = params.flags or -1
+        if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+        params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    else
+        params.maxVel = params.maxVel or table.rep(9999.0, dim)
+        params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
+        params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+        params.flags = sim.ruckig_nosync | sim.ruckig_minvel | sim.ruckig_minaccel
+        params.timeStep = 10.0
+    end
+
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
     if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
@@ -694,6 +729,7 @@ function sim.moveToPose_init(params)
     
     if params.ik then
         simIK = require('simIK')
+        params.ik.breakFlags = params.ik.breakFlags or 0
         params.ik.base = params.ik.base or -1
         params.ik.method = params.ik.method or simIK.method_damped_least_squares
         params.ik.damping = params.ik.damping or 0.02
@@ -831,7 +867,10 @@ function sim.moveToPose_step(data)
                         sim.setObjectPose(data.object, data.pose, data.relObject)
                     end
                     if data.ik then
-                        simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
+                        local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
+                        if f & cmd.params.ik.breakFlags ~= 0 then
+                            error('simIK.handleGroup in sim.moveToPose_step returned flags ' .. f)
+                        end
                     end
                 end
             end
