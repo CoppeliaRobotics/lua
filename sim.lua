@@ -416,40 +416,74 @@ end
 
 function sim.moveToConfig_init(params)
     params = params or {}
-    if params.pos == nil or type(params.pos) ~= 'table' or #params.pos == 0 then
-        error("missing or invalid 'pos' field.")
+    params = table.deepcopy(params) -- do not modify input values
+    if params.pos then
+        if type(params.pos) ~= 'table' or #params.pos == 0 then
+            error("invalid 'pos' field.")
+        end
+        if params.joints ~= nil and (type(params.joints) ~= 'table' or #params.joints ~= #params.pos) then
+            error("invalid 'pos' field.")
+        end
+    else
+        if params.joints == nil then
+            error("missing field: either 'pos' or 'joints' is required.")
+        else
+            if type(params.joints) ~= 'table' or #params.joints == 0 then
+                error("invalid 'joints' field.")
+            end
+            params.pos = {}
+            for i = 1, #params.joints do
+                params.pos[i] = sim.getJointPosition(params.joints[i])
+            end
+        end
     end
-    if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= #params.pos then
+    local dim = #params.pos
+    if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= dim then
         error("missing or invalid 'targetPos' field.")
     end
-    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= #params.pos then
+    if params.maxVel == nil or type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
         error("missing or invalid 'maxVel' field.")
     end
-    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= #params.pos then
+    if params.maxAccel == nil or type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
         error("missing or invalid 'maxAccel' field.")
     end
-    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= #params.pos then
+    if params.maxJerk == nil or type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
         error("missing or invalid 'maxJerk' field.")
     end
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
-    params.vel = params.vel or table.rep(0.0, #params.pos)
-    params.accel = params.accel or table.rep(0.0, #params.pos)
+    params.vel = params.vel or table.rep(0.0, dim)
+    params.accel = params.accel or table.rep(0.0, dim)
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
-    params.targetVel = params.targetVel or table.rep(0.0, #params.pos)
+    params.targetVel = params.targetVel or table.rep(0.0, dim)
     params.timeStep = params.timeStep or 0
-    table.slice(params.vel, 1, #params.pos)
-    table.slice(params.accel, 1, #params.pos)
-    table.slice(params.maxVel, 1, #params.pos)
-    table.slice(params.minVel, 1, #params.pos)
-    table.slice(params.maxAccel, 1, #params.pos)
-    table.slice(params.minAccel, 1, #params.pos)
-    table.slice(params.maxJerk, 1, #params.pos)
-    table.slice(params.targetVel, 1, #params.pos)
+    if type(params.vel) ~= 'table' or #params.vel ~= dim then
+        error("missing or invalid 'vel' field.")
+    end
+    if type(params.accel) ~= 'table' or #params.accel ~= dim then
+        error("missing or invalid 'accel' field.")
+    end
+    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
+        error("missing or invalid 'minVel' field.")
+    end
+    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
+        error("missing or invalid 'minAccel' field.")
+    end
+    if type(params.targetVel) ~= 'table' or #params.targetVel ~= dim then
+        error("missing or invalid 'targetVel' field.")
+    end
+    table.slice(params.vel, 1, dim)
+    table.slice(params.accel, 1, dim)
+    table.slice(params.maxVel, 1, dim)
+    table.slice(params.minVel, 1, dim)
+    table.slice(params.maxAccel, 1, dim)
+    table.slice(params.minAccel, 1, dim)
+    table.slice(params.maxJerk, 1, dim)
+    table.slice(params.targetVel, 1, dim)
 
-    for i = 1, #params.pos do
+    for i = 1, dim do
         local v = params.pos[i]
         local w = params.targetPos[i]
         if params.cyclicJoints and params.cyclicJoints[i] then
@@ -462,22 +496,20 @@ function sim.moveToConfig_init(params)
     local currentPosVelAccel = table.add(params.pos, params.vel, params.accel)
     local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
     local targetPosVel = table.add(params.targetPos, params.targetVel)
-    local sel = table.rep(1, #params.pos)
+    local sel = table.rep(1, dim)
     
-    local data = {}
-    data.ruckigObj = sim.ruckigPos(#params.pos, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
-    data.pos = table.clone(params.pos)
-    data.vel = table.clone(params.vel)
-    data.accel = table.clone(params.accel)
-    data.callback = params.callback
-    if type(data.callback) == 'string' then
-        data.callback = _G[data.callback]
+    params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
+    if type(params.callback) == 'string' then
+        params.callback = _G[params.callback]
     end
-    data.auxData = params.auxData
-    data.timeStep = params.timeStep
-    data.timeLeft = 0
+    if _S.simMoveToConfig_callbacks == nil then
+        _S.simMoveToConfig_callbacks = {}
+    end
+    _S.simMoveToConfig_callbacks[params] = params.callback
+    params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
+    params.timeLeft = 0
     
-    return data
+    return params
 end
 
 function sim.moveToConfig_step(data)
@@ -495,8 +527,27 @@ function sim.moveToConfig_step(data)
             data.vel[i] = newPosVelAccel[#data.pos + i]
             data.accel[i] = newPosVelAccel[#data.pos * 2 + i]
         end
-        if data.callback(data.pos, data.vel, data.accel, data.auxData) then
-            res = 2 -- aborted
+        local cb = _S.simMoveToConfig_callbacks[data]
+        if cb then
+            if data.legacyCallback then
+                if cb(data.pos, data.vel, data.accel, data.auxData) then
+                    res = 2 -- aborted
+                end
+            else
+                if cb(data) then
+                    res = 2 -- aborted
+                end
+            end
+        else
+            if data.joints then
+                for i = 1, #data.joints do
+                    if sim.isDynamicallyEnabled(data.joints[i]) then
+                        sim.setJointTargetPosition(data.joints[i], data.pos[i])
+                    else    
+                        sim.setJointPosition(data.joints[i], data.pos[i])
+                    end
+                end
+            end
         end
     end
 
@@ -504,7 +555,11 @@ function sim.moveToConfig_step(data)
 end
 
 function sim.moveToConfig_cleanup(data)
-    sim.ruckigRemove(data.ruckigObj)
+    if data.ruckigObj then
+        sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj = nil
+        _S.simMoveToConfig_callbacks[data] = nil
+    end
 end
 
 function sim.moveToConfig(...)
@@ -541,10 +596,11 @@ function sim.moveToConfig(...)
         params.maxJerk = maxJerk
         params.targetPos = targetPos
         params.targetVel = targetVel
-        params.callback = callback
         params.auxData = auxData
         params.cyclicJoints = cyclicJoints
         params.timeStep = timeStep
+        params.callback = callback
+        params.legacyCallback = true
         if params.flags >= 0 and (params.flags & sim.ruckig_minvel) ~= 0 then
             params.minVel = table.slice(maxVel, #params.pos + 1)
             params.flags = params.flags - sim.ruckig_minvel
@@ -561,24 +617,52 @@ function sim.moveToConfig(...)
     local outParams = {}
     while true do
         local res, outParams = sim.moveToConfig_step(data)
-        if res ~= 0 then
-            if res < 0 then
-                error('sim.moveToConfig_step returned error code ' .. res)
-            end
-            break
+        if res < 0 then
+            error('sim.moveToConfig_step returned error code ' .. res)
         end
         sim.step()
+        if res ~= 0 then
+            break
+        end
     end
     sim.moveToConfig_cleanup(data)
     sim.setStepping(lb)
-    return outParams.pos, outParams.vel, outParams.accel, outParams.timeLeft, outParams -- ret args for backw. comp.
+    return outParams.pos, outParams.vel, outParams.accel, outParams.timeLeft -- ret args for backw. comp.
 end
 
 function sim.moveToPose_init(params)
     params = params or {}
-    if params.pose == nil or type(params.pose) ~= 'table' or #params.pose ~= 7 then
-        error("missing or invalid 'pose' field.")
+    params = table.deepcopy(params) -- do not modify input values
+    params.relObject = params.relObject or -1
+    if params.pose then
+        if type(params.pose) ~= 'table' or #params.pose ~= 7 then
+            error("invalid 'pose' field.")
+        end
+        params.relObject = -1
+        params.object = nil
+        params.ik = nil
+    else
+        if params.object then
+            if type(params.object) ~= 'number' then
+                error("invalid 'object' field.")
+            end
+            params.pose = sim.getObjectPose(params.object, params.relObject)
+            params.ik = nil
+        else
+            if params.ik == nil then
+                error("missing field: either 'pose', 'object' or 'ik' is required.")
+            else
+                if type(params.ik) ~= 'table' or type(params.ik.tip) ~= 'number' or type(params.ik.target) ~= 'number' then
+                    error("invalid 'ik' field, or missing/invalid sub-fields.")
+                end
+                params.relObject = -1
+                params.object = params.ik.target
+                sim.setObjectPose(params.ik.target, sim.getObjectPose(params.ik.tip))
+                params.pose = sim.getObjectPose(params.object)
+            end
+        end
     end
+    
     if params.targetPose == nil or type(params.targetPose) ~= 'table' or #params.targetPose ~= 7 then
         error("missing or invalid 'targetPose' field.")
     end
@@ -601,6 +685,54 @@ function sim.moveToPose_init(params)
     end
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
+        error("missing or invalid 'minVel' field.")
+    end
+    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
+        error("missing or invalid 'minAccel' field.")
+    end
+    
+    if params.ik then
+        simIK = require('simIK')
+        params.ik.base = params.ik.base or -1
+        params.ik.method = params.ik.method or simIK.method_damped_least_squares
+        params.ik.damping = params.ik.damping or 0.02
+        params.ik.iterations = params.ik.iterations or 20
+        params.ik.constraints = params.ik.constraints or simIK.constraint_pose
+        params.ik.precision = params.ik.precision or {0.001, 0.5 * math.pi / 180}
+        params.ik.allowError = params.ik.allowError
+        params.ik.ikEnv = simIK.createEnvironment()
+        params.ik.ikGroup = simIK.createGroup(params.ik.ikEnv)
+        simIK.setGroupCalculation(params.ik.ikEnv, params.ik.ikGroup, params.ik.method, params.ik.damping, params.ik.iterations)
+        params.ik.ikElement, params.ik.simToIkMap, params.ik.ikToSimMap = simIK.addElementFromScene(params.ik.ikEnv, params.ik.ikGroup, params.ik.base, params.ik.tip, params.ik.target, params.ik.constraints)
+        simIK.setElementPrecision(params.ik.ikEnv, params.ik.ikGroup, params.ik.ikElement, params.ik.precision)
+        local hadJoints = params.ik.joints and (#params.ik.joints > 0)
+        if not hadJoints then
+            params.ik.joints = {}
+        end
+        for k, v in pairs(params.ik.simToIkMap) do
+            if sim.getObjectType(k) == sim.object_joint_type then
+                if hadJoints then
+                    local found = false
+                    for i = 1, #params.ik.joints do
+                        if params.ik.joints[i] == k then
+                            found = true
+                            break
+                        end
+                    end
+                    if not found then
+                        simIK.setJointMode(params.ik.ikEnv, v, simIK.jointmode_passive)
+                    end
+                else
+                    params.ik.joints[#params.ik.joints + 1] = k
+                end
+            end
+        end
+    end
+
+    params.vel = params.vel or table.rep(0.0, dim)
+    params.accel = params.accel or table.rep(0.0, dim)
+    params.targetVel = params.targetVel or table.rep(0.0, dim)
     
     params.timeStep = params.timeStep or 0
     table.slice(params.maxVel, 1, dim)
@@ -609,56 +741,53 @@ function sim.moveToPose_init(params)
     table.slice(params.minAccel, 1, dim)
     table.slice(params.maxJerk, 1, dim)
 
-    local data = {}
-    data.startMatrix = sim.poseToMatrix(params.pose)
-    data.targetMatrix = sim.poseToMatrix(params.targetPose)
-    data.useMatrices = params.useMatrices
-    data.pose = table.clone(params.pose)
-    data.matrix = table.clone(data.startMatrix)
-    data.callback = params.callback
-    if type(data.callback) == 'string' then
-        data.callback = _G[data.callback]
-    end
-    data.auxData = params.auxData
-    data.timeStep = params.timeStep
-    data.metric = params.metric
-    data.timeLeft = 0
-    data.dist = 1.0
+    params.startMatrix = sim.poseToMatrix(params.pose)
+    params.targetMatrix = sim.poseToMatrix(params.targetPose)
+    params.matrix = table.clone(params.startMatrix)
     
-    local axis, angle = sim.getRotationAxis(data.startMatrix, data.targetMatrix)
-    data.angle = angle
-    if data.metric then
+    if type(params.callback) == 'string' then
+        params.callback = _G[params.callback]
+    end
+    if _S.simMoveToPose_callbacks == nil then
+        _S.simMoveToPose_callbacks = {}
+    end
+    _S.simMoveToPose_callbacks[params] = params.callback
+    params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
+    
+    params.timeLeft = 0
+    params.dist = 1.0
+    
+    local axis, angle = sim.getRotationAxis(params.startMatrix, params.targetMatrix)
+    params.angle = angle
+    if params.metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
         -- the start and goal pose. This always results in straight line movement paths
         local dx = {
-            (data.targetMatrix[4] - data.startMatrix[4]) * data.metric[1],
-            (data.targetMatrix[8] - data.startMatrix[8]) * data.metric[2],
-            (data.targetMatrix[12] - data.startMatrix[12]) * data.metric[3], data.angle * data.metric[4],
+            (params.targetMatrix[4] - params.startMatrix[4]) * params.metric[1],
+            (params.targetMatrix[8] - params.startMatrix[8]) * params.metric[2],
+            (params.targetMatrix[12] - params.startMatrix[12]) * params.metric[3], params.angle * params.metric[4],
         }
-        data.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
-        if data.dist > 0.000001 then
-            local currentPosVelAccel = {0, 0, 0}
+        params.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
+        if params.dist > 0.000001 then
+            local currentPosVelAccel = {0, params.vel[1], params.accel[1]}
             local maxVelAccelJerk = {params.maxVel[1], params.maxAccel[1], params.maxJerk[1], params.minVel[1], params.minAccel[1]}
-            data.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {data.dist, 0} )
+            params.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {params.dist, params.targetVel[1]} )
         end
     else
         -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
         -- is handled and controlled individually. This can result in non-straight line movement paths,
         -- due to how the Ruckig functions operate depending on 'flags'
         local dx = {
-            data.targetMatrix[4] - data.startMatrix[4], data.targetMatrix[8] - data.startMatrix[8],
-            data.targetMatrix[12] - data.startMatrix[12], data.angle,
+            params.targetMatrix[4] - params.startMatrix[4], params.targetMatrix[8] - params.startMatrix[8],
+            params.targetMatrix[12] - params.startMatrix[12], params.angle,
         }
-        local currentPosVelAccel = table.rep(0.0, 3 * dim)
+        local currentPosVelAccel = table.add(table.rep(0.0, dim), params.vel, params.accel)
         local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
-        local targetPosVel = table.add(dx, {0.0, 0.0, 0.0, 0.0})
-        data.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
+        local targetPosVel = table.add(dx, params.targetVel)
+        params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
     end
-
-    data.vel  = table.rep(0.0, dim)
-    data.accel  = table.rep(0.0, dim)
     
-    return data
+    return params
 end
             
 function sim.moveToPose_step(data)
@@ -682,13 +811,27 @@ function sim.moveToPose_step(data)
                 data.pose = sim.matrixToPose(data.matrix)
                 data.vel = {newPosVelAccel[2]}
                 data.accel = {newPosVelAccel[3]}
-                if data.callback then
-                    local arg = data.pose
-                    if data.useMatrices then
-                        arg = data.matrix
+                local cb = _S.simMoveToPose_callbacks[data]
+                if cb then
+                    if data.legacyCallback then
+                        local arg = data.pose
+                        if data.useMatrices then
+                            arg = data.matrix
+                        end
+                        if cb(arg, data.vel, data.accel, data.auxData) then
+                            res = 2 -- aborted
+                        end
+                    else
+                        if cb(data) then
+                            res = 2 -- aborted
+                        end
                     end
-                    if data.callback(arg, data.vel, data.accel, data.auxData) then
-                        res = 2 -- aborted
+                else
+                    if data.object then
+                        sim.setObjectPose(data.object, data.pose, data.relObject)
+                    end
+                    if data.ik then
+                        simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                     end
                 end
             end
@@ -716,13 +859,27 @@ function sim.moveToPose_step(data)
             data.pose = sim.matrixToPose(data.matrix)
             data.vel  = table.slice(newPosVelAccel, 5, 8)
             data.accel = table.slice(newPosVelAccel, 9, 12)
-            if data.callback then
-                local arg = data.pose
-                if data.useMatrices then
-                    arg = data.matrix
+            local cb = _S.simMoveToPose_callbacks[data]
+            if cb then
+                if data.legacyCallback then
+                    local arg = data.pose
+                    if data.useMatrices then
+                        arg = data.matrix
+                    end
+                    if cb(arg, data.vel, data.accel, data.auxData) then
+                        res = 2 -- aborted
+                    end
+                else
+                    if cb(data) then
+                        res = 2 -- aborted
+                    end
                 end
-                if data.callback(arg, data.vel, data.accel, data.auxData) then
-                    res = 2 -- aborted
+            else
+                if data.object then
+                    sim.setObjectPose(data.object, data.pose, data.relObject)
+                end
+                if data.ik then
+                    simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                 end
             end
         end
@@ -732,7 +889,15 @@ function sim.moveToPose_step(data)
 end
 
 function sim.moveToPose_cleanup(data)
-    sim.ruckigRemove(data.ruckigObj)
+    if data.ruckigObj then
+        sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj = nil
+        _S.simMoveToPose_callbacks[data] = nil
+    end
+    if data.ik then
+        simIK.eraseEnvironment(data.ik.ikEnv)
+        data.ik = nil
+    end
 end
 
 function sim.moveToPose(...)
@@ -771,13 +936,14 @@ function sim.moveToPose(...)
         params.minVel = map(function(h) return (-h) end, params.maxVel)
         params.maxAccel = table.slice(maxAccel, 1, dim)
         params.minAccel = map(function(h) return (-h) end, params.maxAccel)
-        params.maxJerk = maxJerk
+        params.maxJerk = table.slice(maxJerk, 1, dim)
         if #targetPoseOrMatrix == 7 then
             params.targetPose = targetPoseOrMatrix
         else
             params.targetPose = sim.matrixToPose(targetPoseOrMatrix)
         end
         params.callback = callback
+        params.legacyCallback = true
         params.auxData = auxData
         params.timeStep = timeStep
 
@@ -797,17 +963,17 @@ function sim.moveToPose(...)
     local outParams = {}
     while true do
         local res, outParams = sim.moveToPose_step(data)
-        if res ~= 0 then
-            if res < 0 then
-                error('sim.moveToPose_step returned error code ' .. res)
-            end
-            break
+        if res < 0 then
+            error('sim.moveToPose_step returned error code ' .. res)
         end
         sim.step()
+        if res ~= 0 then
+            break
+        end
     end
     sim.moveToPose_cleanup(data)
     sim.setStepping(lb)
-    return outParams.matrix, outParams.timeLeft, outParams -- ret args for backw. comp.
+    return outParams.matrix, outParams.timeLeft -- ret args for backw. comp.
 end
 
 function sim.generateTimeOptimalTrajectory(...)

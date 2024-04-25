@@ -719,6 +719,30 @@ end
 
 function send(reply)
     if not receiveIsNext then
+        --[[
+        -- Make sure the data does not contain any function. If there is, convert it to string. We do that up to a depth of 2:
+        for i = 1, #reply do
+            local ob = reply[i]
+            if type(ob) == 'function' then
+                reply[i] = tostring(ob)
+                            print("bli")
+            else
+                if type(ob) == table and not isBuffer(ob) then
+                    local cnt = 0
+                    for k, v in pairs(ob) do
+                        if type(v) == 'function' then
+                            print("bla")
+                            ob[k] = tostring(v)
+                        end
+                        cnt = cnt + 1
+                        if cnt > 16 then
+                            break
+                        end
+                    end
+                end
+            end
+        end
+        --]]
         local dat = reply
         local status, reply = pcall(cbor.encode, reply)
         if not status then
