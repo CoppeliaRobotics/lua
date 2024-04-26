@@ -546,7 +546,7 @@ function sim.moveToConfig_step(data)
         end
         local cb = _S.simMoveToConfig_callbacks[data]
         if cb then
-            if data.legacyCallback then
+            if data.legacyFunc then
                 if cb(data.pos, data.vel, data.accel, data.auxData) then
                     res = 2 -- aborted
                 end
@@ -617,7 +617,7 @@ function sim.moveToConfig(...)
         params.cyclicJoints = cyclicJoints
         params.timeStep = timeStep
         params.callback = callback
-        params.legacyCallback = true
+        params.legacyFunc = true
         if params.flags >= 0 and (params.flags & sim.ruckig_minvel) ~= 0 then
             params.minVel = table.slice(maxVel, #params.pos + 1)
             params.flags = params.flags - sim.ruckig_minvel
@@ -632,8 +632,9 @@ function sim.moveToConfig(...)
     local lb = sim.setStepping(true)
     local data = sim.moveToConfig_init(params)
     local outParams = {}
+    local res
     while true do
-        local res, outParams = sim.moveToConfig_step(data)
+        res, outParams = sim.moveToConfig_step(data)
         if res < 0 then
             error('sim.moveToConfig_step returned error code ' .. res)
         end
@@ -644,7 +645,11 @@ function sim.moveToConfig(...)
     end
     sim.moveToConfig_cleanup(data)
     sim.setStepping(lb)
-    return outParams.pos, outParams.vel, outParams.accel, outParams.timeLeft -- ret args for backw. comp.
+    if data.legacyFunc then
+        return outParams.pos, outParams.vel, outParams.accel, outParams.timeLeft -- ret args for backw. comp.
+    else
+        return outParams
+    end
 end
 
 function sim.moveToPose_init(params)
@@ -849,7 +854,7 @@ function sim.moveToPose_step(data)
                 data.accel = {newPosVelAccel[3]}
                 local cb = _S.simMoveToPose_callbacks[data]
                 if cb then
-                    if data.legacyCallback then
+                    if data.legacyFunc then
                         local arg = data.pose
                         if data.useMatrices then
                             arg = data.matrix
@@ -900,7 +905,7 @@ function sim.moveToPose_step(data)
             data.accel = table.slice(newPosVelAccel, 9, 12)
             local cb = _S.simMoveToPose_callbacks[data]
             if cb then
-                if data.legacyCallback then
+                if data.legacyFunc then
                     local arg = data.pose
                     if data.useMatrices then
                         arg = data.matrix
@@ -982,7 +987,7 @@ function sim.moveToPose(...)
             params.targetPose = sim.matrixToPose(targetPoseOrMatrix)
         end
         params.callback = callback
-        params.legacyCallback = true
+        params.legacyFunc = true
         params.auxData = auxData
         params.timeStep = timeStep
 
@@ -1000,8 +1005,9 @@ function sim.moveToPose(...)
     local lb = sim.setStepping(true)
     local data = sim.moveToPose_init(params)
     local outParams = {}
+    local res
     while true do
-        local res, outParams = sim.moveToPose_step(data)
+        res, outParams = sim.moveToPose_step(data)
         if res < 0 then
             error('sim.moveToPose_step returned error code ' .. res)
         end
@@ -1012,7 +1018,11 @@ function sim.moveToPose(...)
     end
     sim.moveToPose_cleanup(data)
     sim.setStepping(lb)
-    return outParams.matrix, outParams.timeLeft -- ret args for backw. comp.
+    if data.legacyFunc then
+        return outParams.matrix, outParams.timeLeft -- ret args for backw. comp.
+    else
+        return outParams
+    end
 end
 
 function sim.generateTimeOptimalTrajectory(...)
