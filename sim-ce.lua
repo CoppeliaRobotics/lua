@@ -501,6 +501,7 @@ sim.cameraintparam_pov_focal_blur
 sim.cameraintparam_remotecameramode
 sim.cameraintparam_rendering_attributes
 sim.cameraintparam_trackedobject
+sim.octreefloatparam_voxelsize
 sim.colorcomponent_ambient
 sim.colorcomponent_ambient_diffuse
 sim.colorcomponent_auxiliary

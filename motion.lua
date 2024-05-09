@@ -30,13 +30,19 @@ function sim.moveToConfig_init(params)
         error("missing or invalid 'targetPos' field.")
     end
     if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
-        error("invalid 'maxVel' field.")
+        if not params.tolerantArgs or #params.maxVel < dim then
+            error("invalid 'maxVel' field.")
+        end
     end
     if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
-        error("invalid 'maxAccel' field.")
+        if not params.tolerantArgs or #params.maxAccel < dim then
+            error("invalid 'maxAccel' field.")
+        end
     end
     if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
-        error("invalid 'maxJerk' field.")
+        if not params.tolerantArgs or #params.maxJerk < dim then
+            error("invalid 'maxJerk' field.")
+        end
     end
     if params.maxVel or params.maxAccel or params.maxJerk then
         if params.maxVel == nil then
@@ -65,19 +71,29 @@ function sim.moveToConfig_init(params)
     params.targetVel = params.targetVel or table.rep(0.0, dim)
     params.timeStep = params.timeStep or 0
     if type(params.vel) ~= 'table' or #params.vel ~= dim then
-        error("missing or invalid 'vel' field.")
+        if not params.tolerantArgs or #params.vel < dim then
+            error("missing or invalid 'vel' field.")
+        end
     end
     if type(params.accel) ~= 'table' or #params.accel ~= dim then
-        error("missing or invalid 'accel' field.")
+        if not params.tolerantArgs or #params.accel < dim then
+            error("missing or invalid 'accel' field.")
+        end
     end
     if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
-        error("missing or invalid 'minVel' field.")
+        if not params.tolerantArgs or #params.minVel < dim then
+            error("missing or invalid 'minVel' field.")
+        end
     end
     if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
-        error("missing or invalid 'minAccel' field.")
+        if not params.tolerantArgs or #params.minAccel < dim then
+            error("missing or invalid 'minAccel' field.")
+        end
     end
     if type(params.targetVel) ~= 'table' or #params.targetVel ~= dim then
-        error("missing or invalid 'targetVel' field.")
+        if not params.tolerantArgs or #params.targetVel < dim then
+            error("missing or invalid 'targetVel' field.")
+        end
     end
     table.slice(params.vel, 1, dim)
     table.slice(params.accel, 1, dim)
@@ -190,6 +206,7 @@ function sim.moveToConfig(...)
             {type = 'table', item_type = 'bool', default = NIL, nullable = true},
             {type = 'float', default = 0},
         }, ...)
+        params.tolerantArgs = true
         params.flags = flags
         params.pos = currentPos
         params.vel = currentVel
@@ -282,13 +299,19 @@ function sim.moveToPose_init(params)
     end
 
     if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
-        error("invalid 'maxVel' field.")
+        if not params.tolerantArgs or #params.maxVel < dim then
+            error("invalid 'maxVel' field.")
+        end
     end
     if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
-        error("invalid 'maxAccel' field.")
+        if not params.tolerantArgs or #params.maxAccel < dim then
+            error("invalid 'maxAccel' field.")
+        end
     end
     if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
-        error("invalid 'maxJerk' field.")
+        if not params.tolerantArgs or #params.maxJerk < dim then
+            error("invalid 'maxJerk' field.")
+        end
     end
     if params.maxVel or params.maxAccel or params.maxJerk then
         if params.maxVel == nil then
@@ -552,6 +575,7 @@ function sim.moveToPose(...)
             {type = 'table', size = 4, default = NIL, nullable = true},
             {type = 'float', default = 0},
         }, ...)
+        params.tolerantArgs = true
         params.flags = flags
         if #currentPoseOrMatrix == 7 then
             params.pose = currentPoseOrMatrix
