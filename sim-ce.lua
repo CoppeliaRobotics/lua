@@ -391,6 +391,8 @@ sim.writeCustomTableData(int handle, string tagName, map theTable, map options={
 sim.writeTexture(int textureId, int options, buffer textureData, int posX=0, int posY=0, int sizeX=0, int sizeY=0, float interpol=0.0)
 float alphaAngle, float betaAngle, float gammaAngle = sim.yawPitchRollToAlphaBetaGamma(float yawAngle, float pitchAngle, float rollAngle)
 int ret = sim.testCB(int a, func cb, int b)
+map savedData = sim.getShapeAppearance(int handle, map opts={})
+int handle = sim.setShapeAppearance(int handle, map savedData, map opts={})
 sim.appobj_object_type
 sim.appobj_script_type
 sim.appobj_simulation_type

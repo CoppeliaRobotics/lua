@@ -1176,6 +1176,52 @@ function sim.visitTree(...)
     end
 end
 
+function sim.getShapeAppearance(handle, opts)
+    assert(sim.getObjectType(handle) == sim.object_shape_type, 'not a shape')
+    opts = opts or {}
+    local r = {}
+    if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
+        r.subShapes = {}
+        local subShapesCopy = sim.ungroupShape((sim.copyPasteObjects{handle})[1])
+        for i, subShape in ipairs(subShapesCopy) do
+            r.subShapes[i] = sim.getShapeAppearance(subShape, opts)
+        end
+        sim.removeObjects(subShapesCopy)
+    else
+        r.edges = sim.getObjectInt32Param(handle, sim.shapeintparam_edge_visibility)
+        r.culling = sim.getObjectInt32Param(handle, sim.shapeintparam_culling)
+        r.shadingAngle = sim.getObjectFloatParam(handle, sim.shapefloatparam_shading_angle)
+        r.color = {}
+        _, r.color.ambientDiffuse = sim.getShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse)
+        _, r.color.specular = sim.getShapeColor(handle, nil, sim.colorcomponent_specular)
+        _, r.color.emission = sim.getShapeColor(handle, nil, sim.colorcomponent_emission)
+        _, r.color.transparency = sim.getShapeColor(handle, nil, sim.colorcomponent_transparency)
+    end
+    return r
+end
+
+function sim.setShapeAppearance(handle, savedData, opts)
+    assert(sim.getObjectType(handle) == sim.object_shape_type, 'not a shape')
+    opts = opts or {}
+    if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
+        local subShapes = sim.ungroupShape(handle)
+        for i, subShape in ipairs(subShapes) do
+            sim.setShapeAppearance(subShape, (savedData.subShapes or {})[i] or (savedData.subShapes or {})[1] or savedData, opts)
+        end
+        return sim.groupShapes(subShapes)
+    else
+        savedData = (savedData.subShapes or {})[1] or savedData
+        sim.setObjectInt32Param(handle, sim.shapeintparam_edge_visibility, savedData.edges)
+        sim.setObjectInt32Param(handle, sim.shapeintparam_culling, savedData.culling)
+        sim.setObjectFloatParam(handle, sim.shapefloatparam_shading_angle, savedData.shadingAngle)
+        sim.setShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse, savedData.color.ambientDiffuse)
+        sim.setShapeColor(handle, nil, sim.colorcomponent_specular, savedData.color.specular)
+        sim.setShapeColor(handle, nil, sim.colorcomponent_emission, savedData.color.emission)
+        sim.setShapeColor(handle, nil, sim.colorcomponent_transparency, savedData.color.transparency)
+        return handle
+    end
+end
+
 function apropos(what)
     local modNames = {'sim'}
     for i, n in ipairs(sim.getLoadedPlugins()) do
