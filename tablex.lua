@@ -176,7 +176,7 @@ end
 function table.deepcopy(orig, opts, copies)
     opts = opts or {}
     copies = copies or {}
-    
+
     local orig_type = type(orig)
     local copy
     if orig_type == 'table' then
@@ -208,16 +208,24 @@ function table.deepcopy(orig, opts, copies)
     return copy
 end
 
-
 function table.add(...)
     local ar = {...}
     local retVal = {}
     for i = 1, #ar do
-        for j = 1, #ar[i], 1 do
-            table.insert(retVal, ar[i][j])
+        for j, v in ipairs(ar[i]) do
+            table.insert(retVal, v)
         end
     end
     return retVal
+end
+
+function table.extend(t, ...)
+    local ar = {...}
+    for i = 1, #ar do
+        for j, v in ipairs(ar[i]) do
+            table.insert(t, v)
+        end
+    end
 end
 
 function table.rep(value, size)
