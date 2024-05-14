@@ -589,12 +589,14 @@ function Matrix:t()
 end
 
 function Matrix:dot(m)
+    if self:rows() == 1 then return self:t():dot(m:t()) end
     assert(self:cols() == 1, 'supported only on vectors')
     assert(self:sameshape(m), 'shape mismatch')
     return (self:t() * m):get(1, 1)
 end
 
 function Matrix:cross(m)
+    if self:sameshape{1, 3} then return self:t():cross(m:t()):t() end
     assert(self:sameshape{3, 1}, 'supported only on 3d vectors')
     assert(self:sameshape(m), 'shape mismatch')
     return Matrix(3, 1, {
