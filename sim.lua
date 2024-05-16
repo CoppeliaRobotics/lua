@@ -1257,6 +1257,18 @@ function apropos(what)
     print(s)
 end
 
+-- wrap require() to load embedded scripts' code when called with a script handle, e.g. require(sim.getObject '/foo')
+require = wrap(require, function(origRequire)
+    return function (...)
+        local arg = ({...})[1]
+        if math.type(arg) == 'integer' and sim.isHandle(arg) and sim.getObjectType(arg) == sim.object_script_type then
+            local txt = sim.getScriptStringParam(arg, sim.scriptstringparam_text)
+            return loadstring(tostring(txt))()
+        end
+        return origRequire(...)
+    end
+end)
+
 -- Hidden, internal functions:
 ----------------------------------------------------------
 
