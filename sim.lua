@@ -88,7 +88,6 @@ function sim.step(wait)
 end
 
 require('stringx')
-require('tablex')
 require('checkargs')
 require('matrix')
 require('grid')

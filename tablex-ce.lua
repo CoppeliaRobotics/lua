@@ -1,4 +1,4 @@
-registerCodeEditorInfos('table', [[
+registerCodeEditorInfos('tablex', [[
 table t = table.add(table t1, table t2, ...)
 table tableOfTables = table.batched(table t, int n)
 table copy = table.clone(table t)
