@@ -37,6 +37,22 @@ function sim.readCustomDataTags(obj)
     return retVal
 end
 
+function sim.getBufferSignal(sigName)
+    local retVal = sim.getStringSignal(sigName)
+    if retVal then
+        retVal = tobuffer(retVal)
+    end
+    return retVal
+end
+
+function sim.setBufferSignal(sigName, data)
+    sim.setStringSignal(sigName, tostring(data))
+end
+
+function sim.clearBufferSignal(sigName)
+    sim.setClearStringSignal(sigName)
+end
+
 function sim.setStepping(enable)
     -- Convenience function, so that we have the same, more intuitive name also with external clients
     -- Needs to be overridden by Python wrapper and remote API server code
