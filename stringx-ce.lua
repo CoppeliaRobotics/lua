@@ -1,4 +1,4 @@
-registerCodeEditorInfos('string', [[
+registerCodeEditorInfos('stringx', [[
 int ch, ... = string.byte(string s, int i = 1, int j = i)
 table t = string.bytes(string s)
 string t = string.capitalize(string s)

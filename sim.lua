@@ -87,6 +87,7 @@ function sim.step(wait)
     sim.yield()
 end
 
+require('mathx')
 require('stringx')
 require('checkargs')
 require('matrix')

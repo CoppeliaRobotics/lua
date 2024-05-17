@@ -1,4 +1,4 @@
-registerCodeEditorInfos('math', [[
+registerCodeEditorInfos('mathx', [[
 number y = math.abs(number x)
 number y = math.acos(number x)
 number y = math.asin(number x)

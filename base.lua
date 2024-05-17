@@ -45,8 +45,6 @@ __oldModeConsts = {
     customizationscriptcall_aftercopy = true,
 }
 
-require('mathx')
-
 table.getn = table.getn or function(a)
     return #a
 end
