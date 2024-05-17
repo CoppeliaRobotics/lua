@@ -9,6 +9,34 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+function sim.readCustomStringData(obj, tag)
+    return sim.readCustomDataBlock(obj, tag)
+end
+
+function sim.writeCustomStringData(obj, tag, data)
+    return sim.writeCustomDataBlock(obj, tag, data)
+end
+
+function sim.readCustomBufferData(obj, tag)
+    local retVal = sim.readCustomDataBlock(obj, tag)
+    if retVal then
+        retVal = tobuffer(retVal)
+    end
+    return retVal
+end
+
+function sim.writeCustomBufferData(obj, tag, data)
+    return sim.writeCustomDataBlock(obj, tag, data)
+end
+
+function sim.readCustomDataTags(obj)
+    local retVal = sim.readCustomDataBlockTags(obj)
+    if retVal == nil then
+        retVal = {}
+    end
+    return retVal
+end
+
 function sim.setStepping(enable)
     -- Convenience function, so that we have the same, more intuitive name also with external clients
     -- Needs to be overridden by Python wrapper and remote API server code
@@ -178,7 +206,7 @@ function sim.executeLuaCode(theCode)
 end
 
 function sim.fastIdleLoop(enable)
-    local data = sim.readCustomDataBlock(sim.handle_app, '__IDLEFPSSTACKSIZE__')
+    local data = sim.readCustomStringData(sim.handle_app, '__IDLEFPSSTACKSIZE__')
     local stage = 0
     local defaultIdleFps
     if data and #data > 0 then
@@ -198,7 +226,7 @@ function sim.fastIdleLoop(enable)
     else
         sim.setInt32Param(sim.intparam_idle_fps, defaultIdleFps)
     end
-    sim.writeCustomDataBlock(
+    sim.writeCustomStringData(
         sim.handle_app, '__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps})
     )
 end
@@ -521,7 +549,7 @@ end]]
         prop = sim.getObjectProperty(retVal)
         sim.setObjectProperty(retVal, prop | sim.objectproperty_canupdatedna | sim.objectproperty_collapsed)
         local data = sim.packTable({ctrlPts, options, subdiv, smoothness, orientationMode, upVector})
-        sim.writeCustomDataBlock(retVal, "ABC_PATH_CREATION", data)
+        sim.writeCustomStringData(retVal, "ABC_PATH_CREATION", data)
         sim.initScript(scriptHandle)
         setYieldAllowed(fl)
     end
@@ -831,7 +859,7 @@ end
 function sim.readCustomDataBlockEx(handle, tag, options)
     -- Undocumented function (for now)
     options = options or {}
-    local data = sim.readCustomDataBlock(handle, tag)
+    local data = sim.readCustomStringData(handle, tag)
     if tag == '__info__' then
         return data, 'cbor'
     else
@@ -845,7 +873,7 @@ end
 function sim.writeCustomDataBlockEx(handle, tag, data, options)
     -- Undocumented function (for now)
     options = options or {}
-    sim.writeCustomDataBlock(handle, tag, data)
+    sim.writeCustomStringData(handle, tag, data)
     if tag ~= '__info__' and options.dataType then
         local info = sim.readCustomTableData(handle, '__info__')
         info.blocks = info.blocks or {}
