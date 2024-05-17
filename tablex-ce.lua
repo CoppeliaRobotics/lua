@@ -1,6 +1,4 @@
 registerCodeEditorInfos('table', [[
-function iterator = pairs(table t)
-function iterator = ipairs(table t)
 table t = table.add(table t1, table t2, ...)
 table tableOfTables = table.batched(table t, int n)
 table copy = table.clone(table t)
