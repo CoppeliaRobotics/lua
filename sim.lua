@@ -96,6 +96,7 @@ require('functional')
 require('var')
 require('motion').extend(sim)
 require('old').extend(sim)
+require('sim-deprecated').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
