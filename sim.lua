@@ -1176,9 +1176,17 @@ function sim.getScriptFunctions(...)
     })
 end
 
-function sim.addReferencedHandle(objectHandle, referencedHandle, options)
+function sim.addReferencedHandle(objectHandle, referencedHandle, tag, options)
+    -- backwards compatibility: arg 'tag' was added at a later point
+    if type(tag) == 'table' and options == nil then
+        options = tag
+        tag = ''
+    end
+    -- .
+
+    tag = tag or ''
     options = options or {}
-    local refHandles = sim.getReferencedHandles(objectHandle)
+    local refHandles = sim.getReferencedHandles(objectHandle, tag)
     local handlesToAdd = {referencedHandle}
     if options.wholeTree then
         handlesToAdd = sim.getObjectsInTree(referencedHandle)
@@ -1186,11 +1194,12 @@ function sim.addReferencedHandle(objectHandle, referencedHandle, options)
     for _, handle in ipairs(handlesToAdd) do
         table.insert(refHandles, handle)
     end
-    sim.setReferencedHandles(objectHandle, refHandles)
+    sim.setReferencedHandles(objectHandle, refHandles, tag)
 end
 
-function sim.removeReferencedObjects(objectHandle)
-    local refHandles = sim.getReferencedHandles(objectHandle)
+function sim.removeReferencedObjects(objectHandle, tag)
+    tag = tag or ''
+    local refHandles = sim.getReferencedHandles(objectHandle, tag)
     -- remove models with sim.removeModel, the rest with sim.removeObjects:
     for _, h in ipairs(refHandles) do
         if sim.isHandle(h) then
@@ -1200,7 +1209,7 @@ function sim.removeReferencedObjects(objectHandle)
         end
     end
     sim.removeObjects(refHandles)
-    sim.setReferencedHandles(objectHandle, {})
+    sim.setReferencedHandles(objectHandle, {}, tag)
 end
 
 function sim.visitTree(...)
