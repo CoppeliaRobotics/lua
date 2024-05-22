@@ -543,12 +543,7 @@ function sim.createPath(...)
             {type = 'table', item_type = 'float', size = '3', default = {0, 0, 1}},
         }, ...)
         local fl = setYieldAllowed(false)
-        retVal = sim.createDummy(0.04, {0, 0.68, 0.47, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-        sim.setObjectAlias(retVal, "Path")
-        local scriptHandle = sim.addScript(sim.scripttype_customizationscript)
-        local code = [[path=require('path_customization')
-
-function path.shaping(path,pathIsClosed,upVector)
+        local code = [[function path.shaping(path,pathIsClosed,upVector)
     local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
     local color={0.7,0.9,0.9}
     local options=0
@@ -559,8 +554,20 @@ function path.shaping(path,pathIsClosed,upVector)
     sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
     return shape
 end]]
-        sim.setScriptText(scriptHandle, code)
-        sim.associateScriptWithObject(scriptHandle, retVal)
+        
+        retVal = sim.createDummy(0.04, {0, 0.68, 0.47, 0, 0, 0, 0, 0, 0, 0, 0, 0})
+        sim.setObjectAlias(retVal, "Path")
+        local scriptHandle
+        if sim.getBoolParam(sim.boolparam_usingscriptobjects) then
+            code = "path = require('models/path_customization-2')\n\n" .. code
+            scriptHandle = sim.createScript(sim.scripttype_customizationscript, code)
+            sim.setObjectParent(scriptHandle, retVal)
+        else
+            scriptHandle = sim.addScript(sim.scripttype_customizationscript)
+            code = "path = require('path_customization')\n\n" .. code
+            sim.setScriptText(scriptHandle, code)
+            sim.associateScriptWithObject(scriptHandle, retVal)
+        end
         local prop = sim.getModelProperty(retVal)
         sim.setModelProperty(retVal, (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model) -- model
         prop = sim.getObjectProperty(retVal)
