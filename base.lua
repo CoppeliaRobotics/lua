@@ -302,7 +302,7 @@ function _S.anyToString(x, opts)
         return tostring(nil)
     elseif t == 'table' then
         if isbuffer(x) then
-            return string.format('[buffer (%s bytes)]', #x.__buff__)
+            return string.format('[buffer (%s bytes)]', #x)
         else
             return _S.tableToString(x, opts)
         end

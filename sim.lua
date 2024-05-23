@@ -918,7 +918,7 @@ function sim.readCustomTableData(...)
         data = {}
     else
         if isbuffer(data) then
-            data = data.__buff__
+            data = tostring(data)
         end
         if dataType == 'cbor' then
             local cbor = require 'org.conman.cbor'
@@ -1373,7 +1373,7 @@ end
 function _S.parseBool(v)
     if v == nil then return nil end
     if isbuffer(v) then
-        v = v.__buff__
+        v = tostring(v)
     end
     if v == 'true' then return true end
     if v == 'false' then return false end
@@ -1561,7 +1561,7 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
     return function(data, scheme)
         if scheme == nil then
             if isbuffer(data) then
-                data = data.__buff__
+                data = tostring(data)
             end
             if #data == 0 then
                 return {} -- since 20.03.2024: empty buffer results in an empty table

@@ -709,7 +709,7 @@ function sim.generateTimeOptimalTrajectory(...)
     simZMQ.msg_destroy(msg)
 
     if isbuffer(data) then
-        data = data.__buff__
+        data = tostring(data)
     end
     local r = json.decode(data)
     simZMQ.close(socket)
