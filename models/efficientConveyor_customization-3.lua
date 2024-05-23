@@ -35,9 +35,9 @@ function _S.conveyor.init(config)
 
     _S.conveyor.forwarder = sim.getObject('../forwarder')
 
-    local fingerPrint = sim.readCustomDataBlock(_S.conveyor.model, '__fingerPrint__')
+    local fingerPrint = sim.readCustomBufferData(_S.conveyor.model, '__fingerPrint__')
     if sim.packTable(_S.conveyor.config) ~= fingerPrint then
-        sim.writeCustomDataBlock(
+        sim.writeCustomBufferData(
             _S.conveyor.model, '__fingerPrint__', sim.packTable(_S.conveyor.config)
         )
         local visible1 = sim.getObject('../visible1')

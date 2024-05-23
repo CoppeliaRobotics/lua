@@ -42,20 +42,20 @@ function _S.conveyor.init2(config)
     local shapes = sim.getObjectsInTree(_S.conveyor.model, sim.object_shape_type, 1 + 2)
     local oldPads = {}
     for i = 1, #shapes, 1 do
-        local dat = sim.readCustomDataBlock(shapes[i], 'PATHPAD')
+        local dat = sim.readCustomStringData(shapes[i], 'PATHPAD')
         if dat and #dat > 0 then oldPads[#oldPads + 1] = shapes[i] end
     end
 
     local joints = sim.getObjectsInTree(_S.conveyor.model, sim.object_joint_type, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
-        local dat = sim.readCustomDataBlock(joints[i], 'PATHROL')
+        local dat = sim.readCustomStringData(joints[i], 'PATHROL')
         if dat and #dat > 0 then oldJoints[#oldJoints + 1] = joints[i] end
     end
 
     _S.conveyor.padHandles = {}
     _S.conveyor.rolHandles = {}
-    local fingerPrint = sim.readCustomDataBlock(_S.conveyor.model, '__fingerPrint__')
+    local fingerPrint = sim.readCustomBufferData(_S.conveyor.model, '__fingerPrint__')
     if sim.packTable(_S.conveyor.config) ~= fingerPrint then
         _S.conveyor.rebuildConveyor(oldPads, oldJoints)
     else
@@ -68,10 +68,10 @@ end
 function _S.conveyor.getPathData()
     -- Build the shape from the control points path, since the other path is interpolated and does only work well with enough interpol. points:
     -- Instead of:
-    -- local pathData=sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model,'PATH'))
+    -- local pathData=sim.unpackDoubleTable(sim.readCustomBufferData(_S.conveyor.model,'PATH'))
     -- We do:
     local pathData =
-        sim.unpackDoubleTable(sim.readCustomDataBlock(_S.conveyor.model, 'PATHCTRLPTS'))
+        sim.unpackDoubleTable(sim.readCustomBufferData(_S.conveyor.model, 'PATHCTRLPTS'))
     for i = 1, 7, 1 do pathData[#pathData + 1] = pathData[i] end
 
     local m = Matrix(math.floor(#pathData / 7), 7, pathData)
@@ -96,7 +96,7 @@ function _S.conveyor.getPathData()
 end
 
 function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
-    sim.writeCustomDataBlock(_S.conveyor.model, '__fingerPrint__', sim.packTable(_S.conveyor.config))
+    sim.writeCustomBufferData(_S.conveyor.model, '__fingerPrint__', sim.packTable(_S.conveyor.config))
     path.forceFullRebuild = true
     local ctrlPts = path.init()
     local r = _S.conveyor.config.radius
@@ -123,10 +123,10 @@ function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
 
     _S.conveyor.getPathData()
 
-    for i = 1, #oldPads, 1 do sim.removeObject(oldPads[i]) end
+    sim.removeObjects(oldPads)
     for i = 1, #oldJoints, 1 do
-        sim.removeObject(sim.getObjectChild(oldJoints[i], 0))
-        sim.removeObject(oldJoints[i])
+        sim.removeObjects({sim.getObjectChild(oldJoints[i], 0)})
+        sim.removeObjects({oldJoints[i]})
     end
     if _S.conveyor.config.type == 2 then
         local dx = _S.conveyor.config.length / (_S.conveyor.config.rollerCnt - 1)
@@ -149,7 +149,7 @@ function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
             sim.setObjectAlias(cyl, 'rol')
             sim.setShapeColor(cyl, nil, sim.colorcomponent_ambient_diffuse, _S.conveyor.config.color)
             sim.setObjectParent(jnt, _S.conveyor.model, true)
-            sim.writeCustomDataBlock(jnt, 'PATHROL', 'a')
+            sim.writeCustomStringData(jnt, 'PATHROL', 'a')
             sim.setObjectProperty(cyl, sim.objectproperty_selectmodelbaseinstead)
             sim.setObjectInt32Param(jnt, sim.objintparam_visibility_layer, 512)
             local m = Matrix3x3:rotx(-math.pi / 2)
@@ -182,7 +182,7 @@ function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
                 _S.conveyor.config.color
             )
             sim.setObjectParent(_S.conveyor.padHandles[i], _S.conveyor.model, true)
-            sim.writeCustomDataBlock(_S.conveyor.padHandles[i], 'PATHPAD', 'a')
+            sim.writeCustomStringData(_S.conveyor.padHandles[i], 'PATHPAD', 'a')
             sim.setObjectProperty(
                 _S.conveyor.padHandles[i], sim.objectproperty_selectmodelbaseinstead
             )
@@ -281,13 +281,13 @@ function path.shaping(path, pathIsClosed, upVector)
     local options = 0
     if pathIsClosed then options = options | 4 end
     -- Build the shape from the control points path, since the other path is interpolated and does only work well with enough interpol. points:
-    local path = sim.unpackDoubleTable(sim.readCustomDataBlock(sim.getObject '..', 'PATHCTRLPTS'))
+    local path = sim.unpackDoubleTable(sim.readCustomBufferData(sim.getObject '..', 'PATHCTRLPTS'))
     local shape = sim.generateShapeFromPath(path, section, options, upVector)
     local vert, ind = sim.getShapeMesh(shape)
     vert, ind = simQHull.compute(vert, true)
     vert = sim.multiplyVector(sim.getObjectMatrix(shape, -1), vert)
-    sim.removeObject(shape)
-    shape = sim.createMeshShape(0, 0, vert, ind)
+    sim.removeObjects({shape})
+    shape = sim.createShape(0, 0, vert, ind)
     sim.setShapeColor(shape, nil, sim.colorcomponent_ambient_diffuse, _S.conveyor.config.frameColor)
     if _S.conveyor.config.respondable then
         sim.setObjectInt32Param(shape, sim.shapeintparam_respondable, 1)

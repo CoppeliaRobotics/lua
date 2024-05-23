@@ -10,7 +10,7 @@ function _S.conveyorSystem.init(config)
 
     _S.conveyorSystem.velocity = _S.conveyorSystem.config.initVel
     _S.conveyorSystem.offset = _S.conveyorSystem.config.initPos
-    sim.writeCustomDataBlock(
+    sim.writeCustomBufferData(
         _S.conveyorSystem.model, 'CONVMOV', sim.packTable({currentPos = _S.conveyorSystem.offset})
     )
 
@@ -24,7 +24,7 @@ end
 function sysCall_afterSimulation()
     _S.conveyorSystem.velocity = _S.conveyorSystem.config.initVel
     _S.conveyorSystem.offset = _S.conveyorSystem.config.initPos
-    sim.writeCustomDataBlock(
+    sim.writeCustomBufferData(
         _S.conveyorSystem.model, 'CONVMOV', sim.packTable({currentPos = _S.conveyorSystem.offset})
     )
 
@@ -32,7 +32,7 @@ function sysCall_afterSimulation()
 end
 
 function sysCall_actuation()
-    local dat = sim.readCustomDataBlock(_S.conveyorSystem.model, 'CONVMOV')
+    local dat = sim.readCustomBufferData(_S.conveyorSystem.model, 'CONVMOV')
     local off
     if dat and #dat > 0 then
         dat = sim.unpackTable(dat)
@@ -59,7 +59,7 @@ function sysCall_actuation()
     end
     if not dat then dat = {} end
     dat.currentPos = _S.conveyorSystem.offset
-    sim.writeCustomDataBlock(_S.conveyorSystem.model, 'CONVMOV', sim.packTable(dat))
+    sim.writeCustomBufferData(_S.conveyorSystem.model, 'CONVMOV', sim.packTable(dat))
 end
 
 function path.refreshTrigger(ctrlPts, pathData, config)
@@ -106,7 +106,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
     local oldRespondable
     local oldBorder
     for i = 1, #shapes, 1 do
-        local dat = sim.readCustomDataBlock(shapes[i], 'PATHPAD')
+        local dat = sim.readCustomStringData(shapes[i], 'PATHPAD')
         if dat and #dat > 0 then
             if tostring(dat) == 'a' then oldPads[#oldPads + 1] = shapes[i] end
             if tostring(dat) == 'b' then oldRespondable = shapes[i] end
@@ -117,26 +117,26 @@ function path.refreshTrigger(ctrlPts, pathData, config)
     local joints = sim.getObjectsInTree(_S.conveyorSystem.model, sim.object_joint_type, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
-        local dat = sim.readCustomDataBlock(joints[i], 'PATHROL')
+        local dat = sim.readCustomStringData(joints[i], 'PATHROL')
         if dat and #dat > 0 then oldJoints[#oldJoints + 1] = joints[i] end
     end
 
     _S.conveyorSystem.padHandles = {}
     _S.conveyorSystem.rolHandles = {}
     if padCnt == #oldPads and rolCnt == #oldJoints and sim.packTable(_S.conveyorSystem.config) ==
-        sim.readCustomDataBlock(_S.conveyorSystem.model, 'CONVEYORSET') then
+        sim.readCustomBufferData(_S.conveyorSystem.model, 'CONVEYORSET') then
         _S.conveyorSystem.padHandles = oldPads -- reuse old pads, they are the same
         _S.conveyorSystem.rolHandles = oldJoints
     else
-        sim.writeCustomDataBlock(
+        sim.writeCustomBufferData(
             _S.conveyorSystem.model, 'CONVEYORSET', sim.packTable(_S.conveyorSystem.config)
         )
-        for i = 1, #oldPads, 1 do sim.removeObject(oldPads[i]) end
-        if oldRespondable then sim.removeObject(oldRespondable) end
-        if oldBorder then sim.removeObject(oldBorder) end
+        sim.removeObjects(oldPads)
+        if oldRespondable then sim.removeObjects({oldRespondable}) end
+        if oldBorder then sim.removeObjects({oldBorder}) end
         for i = 1, #oldJoints, 1 do
-            sim.removeObject(sim.getObjectChild(oldJoints[i], 0))
-            sim.removeObject(oldJoints[i])
+            sim.removeObjects({sim.getObjectChild(oldJoints[i], 0)})
+            sim.removeObjects({oldJoints[i]})
         end
         if _S.conveyorSystem.config.useRollers then
             for i = 1, rolCnt, 1 do
@@ -159,7 +159,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                     cyl, nil, sim.colorcomponent_ambient_diffuse, _S.conveyorSystem.config.padCol
                 )
                 sim.setObjectParent(jnt, _S.conveyorSystem.model, true)
-                sim.writeCustomDataBlock(jnt, 'PATHROL', 'a')
+                sim.writeCustomStringData(jnt, 'PATHROL', 'a')
                 sim.setObjectProperty(cyl, sim.objectproperty_selectmodelbaseinstead)
                 sim.setObjectInt32Param(jnt, sim.objintparam_visibility_layer, 512)
                 local o = (i - 1) * _S.conveyorSystem.padOffset
@@ -193,7 +193,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                     _S.conveyorSystem.config.padCol
                 )
                 sim.setObjectParent(_S.conveyorSystem.padHandles[i], _S.conveyorSystem.model, true)
-                sim.writeCustomDataBlock(_S.conveyorSystem.padHandles[i], 'PATHPAD', 'a')
+                sim.writeCustomStringData(_S.conveyorSystem.padHandles[i], 'PATHPAD', 'a')
                 sim.setObjectProperty(
                     _S.conveyorSystem.padHandles[i], sim.objectproperty_selectmodelbaseinstead
                 )
@@ -254,7 +254,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
             end
             local resp = sim.groupShapes(el)
             sim.setObjectParent(resp, _S.conveyorSystem.model, true)
-            sim.writeCustomDataBlock(resp, 'PATHPAD', 'b')
+            sim.writeCustomStringData(resp, 'PATHPAD', 'b')
             sim.setObjectProperty(resp, sim.objectproperty_selectmodelbaseinstead)
             sim.setObjectInt32Param(resp, sim.objintparam_visibility_layer, 256)
             sim.setObjectAlias(resp, 'respondable')
@@ -306,7 +306,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
             end
             local resp = sim.groupShapes(el)
             sim.setObjectParent(resp, _S.conveyorSystem.model, true)
-            sim.writeCustomDataBlock(resp, 'PATHPAD', 'c')
+            sim.writeCustomStringData(resp, 'PATHPAD', 'c')
             sim.setObjectProperty(resp, sim.objectproperty_selectmodelbaseinstead)
             sim.setObjectInt32Param(resp, sim.objintparam_visibility_layer, 1 + 256)
             sim.setObjectAlias(resp, 'border')

@@ -45,11 +45,26 @@ function sim.getIsRealTimeSimulation()
     return ret
 end
 
+function sim.readCustomDataBlock(obj, tag) 
+    return sim.readCustomStringData(obj, tag)
+end
+
+function sim.writeCustomDataBlock(obj, tag, data)
+    return sim.writeCustomStringData(obj, tag, data)
+end
+
+function sim.readCustomDataBlockTags(obj)
+    local retVal = sim.readCustomDataTags(obj)
+    if #retVal == 0 then
+        retVal = nil
+    end
+    return retVal
+end
+
 function sim.rmlMoveToJointPositions(...)
     require("sim_old")
     return sim.rmlMoveToJointPositions(...)
 end
-
 
 function sim.rmlMoveToPosition(...)
     require("sim_old")

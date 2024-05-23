@@ -9,16 +9,8 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
-function sim.readCustomStringData(obj, tag)
-    return sim.readCustomDataBlock(obj, tag)
-end
-
-function sim.writeCustomStringData(obj, tag, data)
-    return sim.writeCustomDataBlock(obj, tag, data)
-end
-
 function sim.readCustomBufferData(obj, tag)
-    local retVal = sim.readCustomDataBlock(obj, tag)
+    local retVal = sim.readCustomStringData(obj, tag)
     if retVal then
         retVal = tobuffer(retVal)
     end
@@ -26,15 +18,7 @@ function sim.readCustomBufferData(obj, tag)
 end
 
 function sim.writeCustomBufferData(obj, tag, data)
-    return sim.writeCustomDataBlock(obj, tag, data)
-end
-
-function sim.readCustomDataTags(obj)
-    local retVal = sim.readCustomDataBlockTags(obj)
-    if retVal == nil then
-        retVal = {}
-    end
-    return retVal
+    return sim.writeCustomStringData(obj, tag, data)
 end
 
 function sim.getBufferSignal(sigName)
@@ -198,13 +182,11 @@ function sim.getObjectsWithTag(tagName, justModels)
     local objs = sim.getObjectsInTree(sim.handle_scene)
     for i = 1, #objs, 1 do
         if (not justModels) or ((sim.getModelProperty(objs[i]) & sim.modelproperty_not_model) == 0) then
-            local dat = sim.readCustomDataBlockTags(objs[i])
-            if dat and #dat > 0 then
-                for j = 1, #dat, 1 do
-                    if dat[j] == tagName then
-                        retObjs[#retObjs + 1] = objs[i]
-                        break
-                    end
+            local dat = sim.readCustomDataTags(objs[i])
+            for j = 1, #dat, 1 do
+                if dat[j] == tagName then
+                    retObjs[#retObjs + 1] = objs[i]
+                    break
                 end
             end
         end
@@ -658,8 +640,8 @@ function _S.getConfigDistance(confA, confB, metric, types)
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
-                local m1 = sim.buildMatrixQ({0, 0, 0}, {confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
-                local m2 = sim.buildMatrixQ({0, 0, 0}, {confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
+                local m1 = sim.poseToMatrix({0, 0, 0, confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
+                local m2 = sim.poseToMatrix({0, 0, 0, confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
                 local a, angle = sim.getRotationAxis(m1, m2)
                 dd = angle * metric[j - 3]
             end
@@ -1417,18 +1399,14 @@ function _S.linearInterpolate(conf1, conf2, t, types)
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
-                local m1 = sim.buildMatrixQ(
-                               {0, 0, 0}, {conf1[i - 3], conf1[i - 2], conf1[i - 1], conf1[i - 0]}
-                           )
-                local m2 = sim.buildMatrixQ(
-                               {0, 0, 0}, {conf2[i - 3], conf2[i - 2], conf2[i - 1], conf2[i - 0]}
-                           )
+                local m1 = sim.poseToMatrix({0, 0, 0, conf1[i - 3], conf1[i - 2], conf1[i - 1], conf1[i - 0]})
+                local m2 = sim.poseToMatrix({0, 0, 0, conf2[i - 3], conf2[i - 2], conf2[i - 1], conf2[i - 0]})
                 local m = sim.interpolateMatrices(m1, m2, t)
-                local q = sim.getQuaternionFromMatrix(m)
-                retVal[i - 3] = q[1]
-                retVal[i - 2] = q[2]
-                retVal[i - 1] = q[3]
-                retVal[i - 0] = q[4]
+                local p = sim.matrixToPose(m)
+                retVal[i - 3] = p[4]
+                retVal[i - 2] = p[5]
+                retVal[i - 1] = p[6]
+                retVal[i - 0] = p[7]
             end
         end
     end

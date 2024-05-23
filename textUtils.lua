@@ -83,7 +83,7 @@ function textUtils.generateTextShape(txt, color, height, centered, alphabetModel
         while true do
             local c = sim.getObjectChild(parentDummy, 0)
             if c == -1 then break end
-            sim.removeObject(c)
+            sim.removeObjects({c})
         end
         retVal = parentDummy
     end

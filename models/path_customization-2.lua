@@ -36,10 +36,10 @@ function sysCall_beforeCopy(inData)
     for key, value in pairs(inData.objectHandles) do
         if _S.path.ctrlPtsMap[key] then
             -- This ctrl point will be copied, append some temp data:
-            local dat = sim.readCustomDataBlock(key, _S.path.ctrlPtsTag)
+            local dat = sim.readCustomBufferData(key, _S.path.ctrlPtsTag)
             dat = sim.unpackTable(dat)
             dat.pasteTo = _S.path.uniqueId
-            sim.writeCustomDataBlock(key, _S.path.ctrlPtsTag, sim.packTable(dat))
+            sim.writeCustomBufferData(key, _S.path.ctrlPtsTag, sim.packTable(dat))
         end
     end
 end
@@ -48,10 +48,10 @@ function sysCall_afterCopy(inData)
     for key, value in pairs(inData.objectHandles) do
         if _S.path.ctrlPtsMap[key] then
             -- This ctrl point was copied. Remove the temp data previously added:
-            local dat = sim.readCustomDataBlock(key, _S.path.ctrlPtsTag)
+            local dat = sim.readCustomBufferData(key, _S.path.ctrlPtsTag)
             dat = sim.unpackTable(dat)
             dat.pasteTo = nil
-            sim.writeCustomDataBlock(key, _S.path.ctrlPtsTag, sim.packTable(dat))
+            sim.writeCustomBufferData(key, _S.path.ctrlPtsTag, sim.packTable(dat))
         end
     end
 end
@@ -61,7 +61,7 @@ function sysCall_afterCreate(inData)
     for i = 1, #inData.objectHandles, 1 do
         local h = inData.objectHandles[i]
         if sim.getObjectParent(h) == -1 then
-            local dat = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+            local dat = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
             if dat and #dat > 0 then
                 dat = sim.unpackTable(dat)
                 if dat.pasteTo == _S.path.uniqueId then
@@ -81,7 +81,7 @@ function sysCall_afterCreate(inData)
         local highIndex = pts[#pts].index
         for i = 1, #pts, 1 do
             pts[i].index = highIndex + (pts[i].index / 100000)
-            sim.writeCustomDataBlock(pts[i].handle, _S.path.ctrlPtsTag, sim.packTable(pts[i]))
+            sim.writeCustomBufferData(pts[i].handle, _S.path.ctrlPtsTag, sim.packTable(pts[i]))
             sim.setObjectParent(pts[i].handle, _S.path.model, true)
         end
         _S.path.setup()
@@ -217,10 +217,10 @@ function _S.path.openUserConfigDlg()
 end
 
 function _S.path.createNewIfNeeded()
-    local data = sim.readCustomDataBlock(_S.path.model, _S.path.pathCreationTag)
+    local data = sim.readCustomBufferData(_S.path.model, _S.path.pathCreationTag)
     if data and #data > 0 then
         data = sim.unpackTable(data)
-        sim.writeCustomDataBlock(_S.path.model, _S.path.pathCreationTag, '')
+        sim.writeCustomBufferData(_S.path.model, _S.path.pathCreationTag, '')
         _S.path.createNew(data[1], false, data[2], data[3], data[4], data[5], data[6])
     end
 end
@@ -244,7 +244,7 @@ function _S.path.createNew(ctrlPts, onlyPosData, options, pointCount, smoothing,
     sysCall_afterDelete = nil
 
     local children = sim.getObjectsInTree(_S.path.model, sim.object_dummy_type, 1)
-    for i = 1, #children, 1 do sim.removeObject(children[i]) end
+    sim.removeObjects(children)
 
     local dof = 7
     if onlyPosData then dof = 3 end
@@ -264,7 +264,7 @@ function _S.path.createNew(ctrlPts, onlyPosData, options, pointCount, smoothing,
         else
             sim.setObjectQuaternion(ctrlPt, fq(ctrlPts, i), _S.path.model)
         end
-        sim.writeCustomDataBlock(ctrlPt, _S.path.ctrlPtsTag, sim.packTable({index = i}))
+        sim.writeCustomBufferData(ctrlPt, _S.path.ctrlPtsTag, sim.packTable({index = i}))
     end
 
     sysCall_afterDelete = tmp4
@@ -280,10 +280,10 @@ function _S.path.cleanup()
     local d = sim.getObjectsInTree(_S.path.model, sim.object_dummy_type, 1)
     for i = 1, #d, 1 do
         local h = d[i]
-        local dat = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+        local dat = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
         if dat and #dat > 0 and _S.path.ctrlPtsMap[h] == nil then
-            sim.writeCustomDataBlock(h, _S.path.ctrlPtsTag, '')
-            sim.writeCustomDataBlock(h, _S.path.childTag, '') -- old: childTag not used anymore
+            sim.writeCustomBufferData(h, _S.path.ctrlPtsTag, '')
+            sim.writeCustomStringData(h, _S.path.childTag, '') -- old: childTag not used anymore
         end
     end
 end
@@ -299,8 +299,8 @@ function _S.path.nonSimulation()
     local selectedCtrlPts = {}
     if (c.bitCoded & 64) ~= 0 then
         -- Maybe open the ctrl pt dialog
-        local s = sim.getObjectSelection()
-        if s and #s > 0 then
+        local s = sim.getObjectSel()
+        if #s > 0 then
             selectedCtrlPts = s
             for i = 1, #s, 1 do
                 if _S.path.ctrlPtsMap[s[i]] == nil then
@@ -317,7 +317,7 @@ function _S.path.nonSimulation()
     end
 
     -- Check if we need to display the insert ctrl pt dialog:
-    local s = sim.getObjectSelection()
+    local s = sim.getObjectSel()
     local insert = #s > 1
     for i = 1, #s, 1 do
         if sim.getObjectType(s[i]) ~= sim.object_dummy_type then
@@ -400,11 +400,11 @@ end
 function _S.path.setPathShape(shape)
     local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
     for i = 1, #shapes, 1 do
-        local dat = sim.readCustomDataBlock(shapes[i], _S.path.shapeTag)
+        local dat = sim.readCustomStringData(shapes[i], _S.path.shapeTag)
         if dat and #dat > 0 then sim.removeObjects({shapes[i]}) end
     end
     if sim.isHandle(shape) then
-        sim.writeCustomDataBlock(shape, _S.path.shapeTag, "a")
+        sim.writeCustomStringData(shape, _S.path.shapeTag, "a")
         sim.setObjectParent(shape, _S.path.model, false)
         local p = sim.getObjectProperty(shape)
         sim.setObjectProperty(
@@ -412,14 +412,14 @@ function _S.path.setPathShape(shape)
                 sim.objectproperty_dontshowasinsidemodel
         )
         sim.setObjectAlias(shape, 'shape')
-        sim.writeCustomDataBlock(shape, _S.path.childTag, '') -- old: childTag not used anymore
+        sim.writeCustomStringData(shape, _S.path.childTag, '') -- old: childTag not used anymore
     end
 end
 
 function _S.path.getPathShapeColor()
     local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
     for i = 1, #shapes, 1 do
-        local dat = sim.readCustomDataBlock(shapes[i], _S.path.shapeTag)
+        local dat = sim.readCustomStringData(shapes[i], _S.path.shapeTag)
         if dat and #dat > 0 then
             local r, col = sim.getShapeColor(shapes[i], '', sim.colorcomponent_ambient_diffuse)
             return col
@@ -442,24 +442,24 @@ function _S.path.setup()
             _S.path.paths[1], _S.path.paths[2], _S.path.paths[3], _S.path.paths[4] = _S.path
                                                                                          .computePaths()
             if (c.bitCoded & 2) ~= 0 then -- path is closed. First and last pts are duplicate
-                sim.writeCustomDataBlock(
+                sim.writeCustomBufferData(
                     _S.path.model, 'PATHCTRLPTS',
                     sim.packDoubleTable(_S.path.paths[1], 0, #_S.path.paths[1] - 7)
                 )
-                sim.writeCustomDataBlock(
+                sim.writeCustomBufferData(
                     _S.path.model, 'PATHCTRLPTS_X',
                     sim.packDoubleTable(_S.path.paths[3], 0, #_S.path.paths[3] - 5)
                 )
             else
-                sim.writeCustomDataBlock(
+                sim.writeCustomBufferData(
                     _S.path.model, 'PATHCTRLPTS', sim.packDoubleTable(_S.path.paths[1])
                 )
-                sim.writeCustomDataBlock(
+                sim.writeCustomBufferData(
                     _S.path.model, 'PATHCTRLPTS_X', sim.packDoubleTable(_S.path.paths[3])
                 )
             end
-            sim.writeCustomDataBlock(_S.path.model, 'PATH', sim.packDoubleTable(_S.path.paths[2]))
-            sim.writeCustomDataBlock(_S.path.model, 'PATH_X', sim.packDoubleTable(_S.path.paths[4]))
+            sim.writeCustomBufferData(_S.path.model, 'PATH', sim.packDoubleTable(_S.path.paths[2]))
+            sim.writeCustomBufferData(_S.path.model, 'PATH_X', sim.packDoubleTable(_S.path.paths[4]))
 
             local prevColor = _S.path.getPathShapeColor()
             _S.path.setPathShape(-1)
@@ -476,18 +476,18 @@ function _S.path.setup()
             end
         else
             _S.path.paths[1] = sim.unpackDoubleTable(
-                                   sim.readCustomDataBlock(
+                                   sim.readCustomBufferData(
                                        _S.path.model, 'PATHCTRLPTS'
                                    )
                                )
-            _S.path.paths[2] = sim.unpackDoubleTable(sim.readCustomDataBlock(_S.path.model, 'PATH'))
+            _S.path.paths[2] = sim.unpackDoubleTable(sim.readCustomBufferData(_S.path.model, 'PATH'))
             _S.path.paths[3] = sim.unpackDoubleTable(
-                                   sim.readCustomDataBlock(
+                                   sim.readCustomBufferBlock(
                                        _S.path.model, 'PATHCTRLPTS_X'
                                    )
                                )
             _S.path.paths[4] = sim.unpackDoubleTable(
-                                   sim.readCustomDataBlock(_S.path.model, 'PATH_X')
+                                   sim.readCustomBufferData(_S.path.model, 'PATH_X')
                                )
             if (c.bitCoded & 2) ~= 0 then -- path is closed. First and last pts are duplicate
                 for i = 1, 7, 1 do
@@ -530,7 +530,7 @@ function _S.path.computePaths()
         path[#path + 1] = q[2]
         path[#path + 1] = q[3]
         path[#path + 1] = q[4]
-        local data = sim.readCustomDataBlock(handles[i], _S.path.ctrlPtsTag)
+        local data = sim.readCustomBufferData(handles[i], _S.path.ctrlPtsTag)
         data = sim.unpackTable(data)
         local auxDat = {0, 0, 0, 0, 0}
         if data.virtualDist then auxDat[1] = data.virtualDist end
@@ -692,11 +692,11 @@ function _S.path.getCtrlPts()
     local map = {}
     for i = 1, #d, 1 do
         local h = d[i]
-        local dat = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+        local dat = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
         if dat and #dat > 0 then
             dat = sim.unpackTable(dat)
             dat.handle = h
-            sim.writeCustomDataBlock(h, _S.path.childTag, '') -- old: childTag not used anymore
+            sim.writeCustomStringData(h, _S.path.childTag, '') -- old: childTag not used anymore
         end
         if dat then
             pts[#pts + 1] = dat
@@ -716,7 +716,7 @@ function _S.path.getCtrlPts()
     local _min = {999, 999, 999}
     for i = 1, #pts, 1 do
         pts[i].index = i -- indices could be fractions and/or not contiguous
-        sim.writeCustomDataBlock(pts[i].handle, _S.path.ctrlPtsTag, sim.packTable(pts[i]))
+        sim.writeCustomBufferData(pts[i].handle, _S.path.ctrlPtsTag, sim.packTable(pts[i]))
         sim.setObjectInt32Param(pts[i].handle, sim.objintparam_visibility_layer, v)
         local p = sim.getObjectPosition(pts[i].handle, _S.path.model)
         for j = 1, 3, 1 do
@@ -800,7 +800,7 @@ function _S.path.getDefaultInfoForNonExistingFields(info)
 end
 
 function _S.path.readInfo()
-    local data = sim.readCustomDataBlock(_S.path.model, _S.path.pathObjectTag)
+    local data = sim.readCustomBufferData(_S.path.model, _S.path.pathObjectTag)
     if data and #data > 0 then
         data = sim.unpackTable(data)
     else
@@ -812,9 +812,9 @@ end
 
 function _S.path.writeInfo(data)
     if data then
-        sim.writeCustomDataBlock(_S.path.model, _S.path.pathObjectTag, sim.packTable(data))
+        sim.writeCustomBufferData(_S.path.model, _S.path.pathObjectTag, sim.packTable(data))
     else
-        sim.writeCustomDataBlock(_S.path.model, _S.path.pathObjectTag, '')
+        sim.writeCustomBufferData(_S.path.model, _S.path.pathObjectTag, '')
     end
 end
 
@@ -1188,7 +1188,7 @@ function _S.path.updateCtrlPtUi()
     local vals
     for i = 1, #_S.path.selectedCtrlPtHandles, 1 do
         local h = _S.path.selectedCtrlPtHandles[i]
-        local data = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+        local data = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
         data = sim.unpackTable(data)
         local v = {0, 0, 0, 0, 0}
         if data.virtualDist then v[1] = data.virtualDist end
@@ -1232,10 +1232,10 @@ function _S.path.ctrlPtVdist_callback(ui, id, v)
     if v then
         for i = 1, #_S.path.selectedCtrlPtHandles, 1 do
             local h = _S.path.selectedCtrlPtHandles[i]
-            local data = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+            local data = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
             data = sim.unpackTable(data)
             data.virtualDist = v
-            sim.writeCustomDataBlock(h, _S.path.ctrlPtsTag, sim.packTable(data))
+            sim.writeCustomBufferData(h, _S.path.ctrlPtsTag, sim.packTable(data))
         end
         _S.path.setup()
         sim.announceSceneContentChange()
@@ -1248,11 +1248,11 @@ function _S.path.ctrlPtChannel_callback(ui, id, v)
     if v then
         for i = 1, #_S.path.selectedCtrlPtHandles, 1 do
             local h = _S.path.selectedCtrlPtHandles[i]
-            local data = sim.readCustomDataBlock(h, _S.path.ctrlPtsTag)
+            local data = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
             data = sim.unpackTable(data)
             if not data.auxChannels then data.auxChannels = {0, 0, 0, 0} end
             data.auxChannels[id] = v
-            sim.writeCustomDataBlock(h, _S.path.ctrlPtsTag, sim.packTable(data))
+            sim.writeCustomBufferData(h, _S.path.ctrlPtsTag, sim.packTable(data))
         end
         _S.path.setup()
         sim.announceSceneContentChange()
@@ -1290,7 +1290,7 @@ function _S.path.hideInsertCtrlPtDlg()
 end
 
 function _S.path.insertExtDummy_callback(ui, id)
-    local s = sim.getObjectSelection()
+    local s = sim.getObjectSel()
     local newCtrlPts = {}
     local dh = s[#s]
     for i = 1, #s - 1, 1 do

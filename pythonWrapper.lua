@@ -362,10 +362,10 @@ function initPython(p, method)
                          "/usrset.txt with 'defaultPython', or via the named string parameter 'pythonWrapper.python' from the command line"
         end
         if errMsg then
-            local r = sim.readCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown')
+            local r = sim.readCustomStringData(sim.handle_app, 'pythonWrapper.msgShown')
             if r == nil or #r == 0 then
                 -- show this only once
-                sim.writeCustomDataBlock(sim.handle_app, 'pythonWrapper.msgShown', "yes")
+                sim.writeCustomStringData(sim.handle_app, 'pythonWrapper.msgShown', "yes")
                 simUI.msgBox(
                     simUI.msgbox_type.warning, simUI.msgbox_buttons.ok, "Python interpreter", errMsg
                 )
@@ -1029,8 +1029,8 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
         currentMatrix = currentPoseOrMatrix
         targetMatrix = targetPoseOrMatrix
     else:
-        currentMatrix = sim.buildMatrixQ(currentPoseOrMatrix,[currentPoseOrMatrix[3],currentPoseOrMatrix[4],currentPoseOrMatrix[5],currentPoseOrMatrix[6]])
-        targetMatrix = sim.buildMatrixQ(targetPoseOrMatrix,[targetPoseOrMatrix[3],targetPoseOrMatrix[4],targetPoseOrMatrix[5],targetPoseOrMatrix[6]])
+        currentMatrix = sim.poseToMatrix(currentPoseOrMatrix)
+        targetMatrix = sim.poseToMatrix(targetPoseOrMatrix)
 
     outMatrix = sim.copyTable(currentMatrix)
     axis,angle = sim.getRotationAxis(currentMatrix,targetMatrix)
@@ -1063,8 +1063,7 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
                     nv = [newPosVelAccel[1]]
                     na = [newPosVelAccel[2]]
                     if not usingMatrices:
-                        q = sim.getQuaternionFromMatrix(outMatrix)
-                        outMatrix = [outMatrix[3],outMatrix[7],outMatrix[11],q[0],q[1],q[2],q[3]]
+                        outMatrix = sim.matrixToPose(outMatrix)
                     if callback(outMatrix,nv,na,auxData):
                         break
                 else:
@@ -1106,8 +1105,7 @@ def _moveToPose(flags,currentPoseOrMatrix,maxVel,maxAccel,maxJerk,targetPoseOrMa
                 nv = [newPosVelAccel[4],newPosVelAccel[5],newPosVelAccel[6],newPosVelAccel[7]]
                 na = [newPosVelAccel[8],newPosVelAccel[9],newPosVelAccel[10],newPosVelAccel[11]]
                 if not usingMatrices:
-                    q = sim.getQuaternionFromMatrix(outMatrix)
-                    outMatrix = [outMatrix[3],outMatrix[7],outMatrix[11],q[0],q[1],q[2],q[3]]
+                    outMatrix = sim.matrixToPose(outMatrix)
                 if callback(outMatrix,nv,na,auxData):
                     break
             else:

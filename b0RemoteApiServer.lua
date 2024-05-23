@@ -413,23 +413,21 @@ function RemoveObjects(...)
     debugFunc("RemoveObjects", ...)
     local objHandles, options = ...
     local allObjs1 = sim.getObjectsInTree(sim.handle_scene, sim.handle_all, 0)
-    if (options & 2) > 0 then
-        sim.removeObject(sim.handle_all)
-    else
+    if (options & 2) == 0 then
         if (options & 1) > 0 then
             for i = 1, #objHandles, 1 do
                 local h = objHandles[i]
                 if sim.isHandle(h) then
                     local mp = sim.getModelProperty(h)
                     if (mp & sim.modelproperty_not_model) > 0 then
-                        sim.removeObject(objHandles[i])
+                        sim.removeObjects({objHandles[i]})
                     else
                         sim.removeModel(objHandles[i])
                     end
                 end
             end
         else
-            for i = 1, #objHandles, 1 do sim.removeObject(objHandles[i]) end
+            sim.removeObjects(objHandles)
         end
     end
     local allObjs2 = sim.getObjectsInTree(sim.handle_scene, sim.handle_all, 0)
@@ -866,7 +864,7 @@ end
 
 function GetObjectSelection(...)
     debugFunc("GetObjectSelection", ...)
-    local t = sim.getObjectSelection()
+    local t = sim.getObjectSel()
     if t == nil then t = {} end
     return t
 end
@@ -887,7 +885,7 @@ end
 function LoadModelFromFile(...)
     debugFunc("LoadModelFromFile", ...)
     local filename = ...
-    local s = sim.getObjectSelection()
+    local s = sim.getObjectSel()
     local h = sim.loadModel(filename)
     sim.removeObjectFromSelection(sim.handle_all, -1);
     if s then sim.addObjectToSelection(s) end
@@ -897,7 +895,7 @@ end
 function LoadModelFromBuffer(...)
     debugFunc("LoadModelFromBuffer", ...)
     local buff = ...
-    local s = sim.getObjectSelection()
+    local s = sim.getObjectSel()
     local h = sim.loadModel(buff)
     sim.removeObjectFromSelection(sim.handle_all, -1);
     if s then sim.addObjectToSelection(s) end
@@ -1589,7 +1587,7 @@ end
 function onDebugLevelChanged(uiHandle, id, newIndex)
     configUiData.debugLevel = newIndex
     modelData.debugLevel = newIndex
-    sim.writeCustomDataBlock(model, modelTag, sim.packTable(modelData))
+    sim.writeCustomBufferData(model, modelTag, sim.packTable(modelData))
 end
 
 function updateDebugLevelCombobox()
@@ -1600,7 +1598,7 @@ end
 function onSimOnlyChanged(ui, id, newval)
     configUiData.duringSimulationOnly = not configUiData.duringSimulationOnly
     modelData.duringSimulationOnly = not modelData.duringSimulationOnly
-    sim.writeCustomDataBlock(model, modelTag, sim.packTable(modelData))
+    sim.writeCustomBufferData(model, modelTag, sim.packTable(modelData))
     if modelData.duringSimulationOnly then
         destroyNode()
     else
@@ -1611,7 +1609,7 @@ end
 function onPackStrAsBinChanged(ui, id, newval)
     configUiData.packStrAsBin = not configUiData.packStrAsBin
     modelData.packStrAsBin = not modelData.packStrAsBin
-    sim.writeCustomDataBlock(model, modelTag, sim.packTable(modelData))
+    sim.writeCustomBufferData(model, modelTag, sim.packTable(modelData))
     if modelData.packStrAsBin then
         messagePack.set_string('binary')
     else
@@ -1622,7 +1620,7 @@ end
 function onConfigRestartNode(ui, id, newVal)
     modelData.nodeName = configUiData.nodeName
     modelData.channelName = configUiData.channelName
-    sim.writeCustomDataBlock(model, modelTag, sim.packTable(modelData))
+    sim.writeCustomBufferData(model, modelTag, sim.packTable(modelData))
     if not modelData.duringSimulationOnly then
         destroyNode()
         createNode()
@@ -1660,7 +1658,7 @@ function sysCall_init()
     else
         -- We are probably running this script via a customization script
         modelTag = 'b0-remoteApi'
-        --        sim.writeCustomDataBlock(model,modelTag,sim.packTable({nodeName='b0RemoteApi_CoppeliaSim',channelName='b0RemoteApi',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}))
+        --        sim.writeCustomBufferData(model,modelTag,sim.packTable({nodeName='b0RemoteApi_CoppeliaSim',channelName='b0RemoteApi',debugLevel=1,packStrAsBin=false,duringSimulationOnly=false}))
 
         local objs = sim.getObjectsWithTag(modelTag, true)
         if #objs > 1 then
@@ -1670,7 +1668,7 @@ function sysCall_init()
             sim.addObjectToSelection(sim.handle_single, objs[1])
             abort = true
         else
-            modelData = sim.unpackTable(sim.readCustomDataBlock(model, modelTag))
+            modelData = sim.unpackTable(sim.readCustomBufferData(model, modelTag))
         end
     end
     syncMode = false

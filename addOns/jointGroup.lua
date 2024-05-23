@@ -7,7 +7,7 @@ function getJointGroups(modelHandle)
             if h ~= modelHandle and sim.getModelProperty(h) & sim.modelproperty_not_model == 0 then
                 return false
             end
-            local a = sim.readCustomDataBlock(h, '__jointGroup__')
+            local a = sim.readCustomStringData(h, '__jointGroup__')
             if a and #a > 0 then table.insert(ret, h) end
         end
     )

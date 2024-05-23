@@ -21,7 +21,7 @@ function sysCall_beforeSimulation()
     _S.animator.config = c
     _S.animator.handles = sim.getReferencedHandles(_S.animator.self)
     _S.animator.animationData = sim.unpackTable(
-                                    sim.readCustomDataBlock(
+                                    sim.readCustomBufferData(
                                         _S.animator.self, 'animationData'
                                     )
                                 )
@@ -30,7 +30,7 @@ function sysCall_beforeSimulation()
     _S.animator.pos = _S.animator.config.initPos * _S.animator.totalTime
     local initM = sim.getObjectMatrix(_S.animator.self, sim.handle_parent)
     local p = _S.animator.animationData.initPoses[1]
-    local m = sim.buildMatrixQ(p, {p[4], p[5], p[6], p[7]})
+    local m = sim.poseToMatrix(p)
     sim.invertMatrix(m)
     _S.animator.corrM = sim.multiplyMatrices(initM, m)
     for i = 2, #_S.animator.handles, 1 do
@@ -94,8 +94,7 @@ function _S.animator.applyPos()
                       )
             if i == 1 then
                 if not _S.animator.config.immobile then
-                    local m = sim.buildMatrixQ(p, {p[4], p[5], p[6], p[7]})
-                    local m = sim.multiplyMatrices(_S.animator.corrM, m)
+                    local m = sim.multiplyMatrices(_S.animator.corrM, sim.poseToMatrix(p))
                     sim.setObjectMatrix(_S.animator.handles[i], m, sim.handle_parent)
                 end
             else

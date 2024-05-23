@@ -45,7 +45,7 @@ function _S.conveyor.init(config)
 
     _S.conveyor.velocity = _S.conveyor.config.initVel
     _S.conveyor.offset = _S.conveyor.config.initPos
-    sim.writeCustomDataBlock(
+    sim.writeCustomBufferData(
         _S.conveyor.model, 'CONVMOV', sim.packTable({currentPos = _S.conveyor.offset})
     )
 
@@ -91,14 +91,14 @@ function _S.conveyor.init(config)
     local shapes = sim.getObjectsInTree(_S.conveyor.model, sim.object_shape_type, 1 + 2)
     local oldPads = {}
     for i = 1, #shapes, 1 do
-        local dat = sim.readCustomDataBlock(shapes[i], 'PATHPAD')
+        local dat = sim.readCustomStringData(shapes[i], 'PATHPAD')
         if dat and #dat > 0 then oldPads[#oldPads + 1] = shapes[i] end
     end
 
     local joints = sim.getObjectsInTree(_S.conveyor.model, sim.object_joint_type, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
-        local dat = sim.readCustomDataBlock(joints[i], 'PATHROL')
+        local dat = sim.readCustomStringData(joints[i], 'PATHROL')
         if dat and #dat > 0 then oldJoints[#oldJoints + 1] = joints[i] end
     end
 
@@ -106,15 +106,15 @@ function _S.conveyor.init(config)
     _S.conveyor.rolHandles = {}
     if padCnt == #oldPads and _S.conveyor.config.rollerCnt == #oldJoints and
         sim.packTable(_S.conveyor.config) ==
-        sim.readCustomDataBlock(_S.conveyor.model, 'CONVEYORSET') then
+        sim.readCustomBufferData(_S.conveyor.model, 'CONVEYORSET') then
         _S.conveyor.padHandles = oldPads -- reuse old pads, they are the same
         _S.conveyor.rolHandles = oldJoints
     else
-        sim.writeCustomDataBlock(_S.conveyor.model, 'CONVEYORSET', sim.packTable(_S.conveyor.config))
-        for i = 1, #oldPads, 1 do sim.removeObject(oldPads[i]) end
+        sim.writeCustomBufferData(_S.conveyor.model, 'CONVEYORSET', sim.packTable(_S.conveyor.config))
+        sim.removeObjects(oldPads)
         for i = 1, #oldJoints, 1 do
-            sim.removeObject(sim.getObjectChild(oldJoints[i], 0))
-            sim.removeObject(oldJoints[i])
+            sim.removeObjects({sim.getObjectChild(oldJoints[i], 0)})
+            sim.removeObjects({oldJoints[i]})
         end
         if _S.conveyor.config.type == 2 then
             local dx = _S.conveyor.config.length / (_S.conveyor.config.rollerCnt - 1)
@@ -136,7 +136,7 @@ function _S.conveyor.init(config)
                     cyl, nil, sim.colorcomponent_ambient_diffuse, _S.conveyor.config.color
                 )
                 sim.setObjectParent(jnt, _S.conveyor.model, true)
-                sim.writeCustomDataBlock(jnt, 'PATHROL', 'a')
+                sim.writeCustomStringData(jnt, 'PATHROL', 'a')
                 sim.setObjectProperty(cyl, sim.objectproperty_selectmodelbaseinstead)
                 sim.setObjectInt32Param(jnt, sim.objintparam_visibility_layer, 512)
                 local m = Matrix3x3:rotx(-math.pi / 2)
@@ -161,7 +161,7 @@ function _S.conveyor.init(config)
                     _S.conveyor.config.color
                 )
                 sim.setObjectParent(_S.conveyor.padHandles[i], _S.conveyor.model, true)
-                sim.writeCustomDataBlock(_S.conveyor.padHandles[i], 'PATHPAD', 'a')
+                sim.writeCustomStringData(_S.conveyor.padHandles[i], 'PATHPAD', 'a')
                 sim.setObjectProperty(
                     _S.conveyor.padHandles[i], sim.objectproperty_selectmodelbaseinstead
                 )
@@ -174,7 +174,7 @@ end
 function _S.conveyor.afterSimulation()
     _S.conveyor.velocity = _S.conveyor.config.initVel
     _S.conveyor.offset = _S.conveyor.config.initPos
-    sim.writeCustomDataBlock(
+    sim.writeCustomBufferData(
         _S.conveyor.model, 'CONVMOV', sim.packTable({currentPos = _S.conveyor.offset})
     )
 
@@ -182,7 +182,7 @@ function _S.conveyor.afterSimulation()
 end
 
 function _S.conveyor.actuation()
-    local dat = sim.readCustomDataBlock(_S.conveyor.model, 'CONVMOV')
+    local dat = sim.readCustomBufferData(_S.conveyor.model, 'CONVMOV')
     local off
     if dat and #dat > 0 then
         dat = sim.unpackTable(dat)
@@ -208,7 +208,7 @@ function _S.conveyor.actuation()
     end
     if not dat then dat = {} end
     dat.currentPos = _S.conveyor.offset
-    sim.writeCustomDataBlock(_S.conveyor.model, 'CONVMOV', sim.packTable(dat))
+    sim.writeCustomBufferData(_S.conveyor.model, 'CONVMOV', sim.packTable(dat))
 end
 
 function path.shaping(path, pathIsClosed, upVector)
@@ -234,8 +234,8 @@ function path.shaping(path, pathIsClosed, upVector)
     local vert, ind = sim.getShapeMesh(shape)
     vert, ind = simQHull.compute(vert, true)
     vert = sim.multiplyVector(sim.getObjectMatrix(shape), vert)
-    sim.removeObject(shape)
-    shape = sim.createMeshShape(0, 0, vert, ind)
+    sim.removeObjects({shape})
+    shape = sim.createShape(0, 0, vert, ind)
     sim.setShapeColor(shape, nil, sim.colorcomponent_ambient_diffuse, _S.conveyor.config.frameColor)
     if _S.conveyor.config.respondable then
         sim.setObjectInt32Param(shape, sim.shapeintparam_respondable, 1)

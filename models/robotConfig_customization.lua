@@ -58,7 +58,7 @@ function createModelClone()
             if parent == clonedModel and alias == 'IK' then
                 table.insert(scriptsToInit, scriptHandle)
             else
-                local _a = sim.readCustomDataBlock(handle, '__jointGroup__')
+                local _a = sim.readCustomStringData(handle, '__jointGroup__')
                 if parent == clonedModel and _a and #_a > 0 then
                     table.insert(scriptsToInit, scriptHandle)
                 else
@@ -142,8 +142,8 @@ function restoreIkTarget(pose)
 end
 
 function reset()
-    sim.writeCustomDataBlock(self, 'config', '')
-    sim.writeCustomDataBlock(self, 'ikTargetPose', '')
+    sim.writeCustomBufferData(self, 'config', '')
+    sim.writeCustomBufferData(self, 'ikTargetPose', '')
 end
 
 function ObjectProxy(path, proxy, t)

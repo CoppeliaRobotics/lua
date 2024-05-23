@@ -1027,11 +1027,10 @@ function initPython(prog)
     end
 end
 
--- For Python, we should always return a string:
-_S.readCustomDataBlock = sim.readCustomDataBlock
 function sim.readCustomDataBlock(obj, tag)
-    local retVal = _S.readCustomDataBlock(obj, tag)
-    if retVal == nil or #retVal == 0 then retVal = tobuffer('') end
+    -- Backw. comp. For Python, we should always return a string:
+    local retVal = sim.readCustomStringData(obj, tag)
+    if retVal == nil or #retVal == 0 then retVal = '' end
     return retVal
 end
 

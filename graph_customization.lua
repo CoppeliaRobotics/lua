@@ -418,7 +418,7 @@ function _S.graph.getDefaultInfoForNonExistingFields(info)
 end
 
 function _S.graph.readInfo()
-    local data = sim.readCustomDataBlock(_S.graph.model, 'ABC_GRAPH_INFO')
+    local data = sim.readCustomBufferData(_S.graph.model, 'ABC_GRAPH_INFO')
     if data and #data > 0 then
         data = sim.unpackTable(data)
     else
@@ -430,9 +430,9 @@ end
 
 function _S.graph.writeInfo(data)
     if data then
-        sim.writeCustomDataBlock(_S.graph.model, 'ABC_GRAPH_INFO', sim.packTable(data))
+        sim.writeCustomBufferData(_S.graph.model, 'ABC_GRAPH_INFO', sim.packTable(data))
     else
-        sim.writeCustomDataBlock(_S.graph.model, 'ABC_GRAPH_INFO', '')
+        sim.writeCustomBufferData(_S.graph.model, 'ABC_GRAPH_INFO', '')
     end
 end
 

@@ -125,7 +125,7 @@ function sim.rmlMoveToPosition(...)
     local mStart = sim.getObjectMatrix(handle, rel)
     if targetPos == nil then targetPos = {mStart[4], mStart[8], mStart[12]} end
     if targetQuat == nil then targetQuat = sim.getObjectQuaternion(handle, rel) end
-    local mGoal = sim.buildMatrixQ(targetPos, targetQuat)
+    local mGoal = sim.poseToMatrix({targetPos[1], targetPos[2], targetPos[3], targetQuat[1], targetQuat[2], targetQuat[3], targetQuat[4]})
     function _S.tmpCb(m, v, a, data)
         sim.setObjectMatrix(data.handle, m, data.rel)
     end
@@ -139,7 +139,8 @@ function sim.rmlMoveToPosition(...)
     local nPos, nQuat
     if endMatrix then
         nPos = {endMatrix[4], endMatrix[8], endMatrix[12]}
-        nQuat = sim.getQuaternionFromMatrix(endMatrix)
+        local mmm = sim.matrixToPose(endMatrix)
+        nQuat = {mmm[4], mmm[5], mmm[6], mmm[7]}
         res = 1
     end
     _S.tmpCb = nil
