@@ -150,16 +150,22 @@ deprecated.functions = {
     {"switchThread", "step"},
     {"unloadModule", "unloadPlugin"},
     {"writeCustomDataBlock", "writeCustomStringData"},
+    --]]
 }
 
 function deprecated.extend(sim)
-    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~= sim.scripttype_mainscript then
+    local n = sim.getInt32Param(sim.intparam_notifydeprecated)
+    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~= sim.scripttype_mainscript and n > 0 then
+        local traceback = ''
+        if n > 1 then
+            traceback = debug.traceback("", 2)
+        end
         for _, pair in ipairs(deprecated.functions) do
             local old, new = table.unpack(pair)
             if new == '' then
                 sim[old] = wrap(sim[old], function(origFunc)
                     return function(...)
-                        sim.addLog(sim.verbosity_warnings | sim.verbosity_once, string.format('sim.%s is deprecated and the related functionality will disappear in a future release.%s', old, new, debug.traceback("", 2)))
+                        sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, string.format('sim.%s is deprecated and the related functionality will disappear in a future release.%s', old, new, traceback))
                         return origFunc(...)
                     end
                 end)
@@ -167,14 +173,14 @@ function deprecated.extend(sim)
                 if sim[new] == nil then
                     sim[old] = wrap(sim[old], function(origFunc)
                         return function(...)
-                            sim.addLog(sim.verbosity_warnings | sim.verbosity_once, string.format('sim.%s is deprecated. please use %s instead.%s', old, new, debug.traceback("", 2)))
+                            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, string.format('sim.%s is deprecated. please use %s instead.%s', old, new, traceback))
                             return origFunc(...)
                         end
                     end)
                 else
                     sim[old] = wrap(sim[old], function(origFunc)
                         return function(...)
-                            sim.addLog(sim.verbosity_warnings | sim.verbosity_once, string.format('sim.%s is deprecated. please use sim.%s instead.%s', old, new, debug.traceback("", 2)))
+                            sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, string.format('sim.%s is deprecated. please use sim.%s instead.%s', old, new, traceback))
                             return origFunc(...)
                         end
                     end)
