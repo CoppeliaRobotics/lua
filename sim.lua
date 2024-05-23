@@ -1275,8 +1275,8 @@ function sim.setShapeAppearance(handle, savedData, opts)
     else
         savedData = (savedData.subShapes or {})[1] or savedData
         sim.setObjectInt32Param(handle, sim.shapeintparam_edge_visibility, savedData.edges)
-        sim.setObjectInt32Param(handle, sim.shapeintparam_wireframe, r.wireframe)
-        sim.setObjectInt32Param(handle, sim.objintparam_visibility_layer, r.visibilityLayer)
+        sim.setObjectInt32Param(handle, sim.shapeintparam_wireframe, savedData.wireframe)
+        sim.setObjectInt32Param(handle, sim.objintparam_visibility_layer, savedData.visibilityLayer)
         sim.setObjectInt32Param(handle, sim.shapeintparam_culling, savedData.culling)
         sim.setObjectFloatParam(handle, sim.shapefloatparam_shading_angle, savedData.shadingAngle)
         sim.setShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse, savedData.color.ambientDiffuse)
