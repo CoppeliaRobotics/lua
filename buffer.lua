@@ -12,15 +12,6 @@ tonumber = wrap(tonumber, function(origFunc)
     end
 end)
 
-tostring = wrap(tostring, function(origFunc)
-    return function(s)
-        if isbuffer(s) then
-            s = s.__buff__
-        end
-        return origFunc(s)
-    end
-end)
-
 string.byte = wrap(string.byte, function(origFunc)
     return function(s, ...)
         if isbuffer(s) then
@@ -143,6 +134,7 @@ __buffmetatable__ = {
         error('attempt to index a buffer value with an unsupported key')
     end,
     __newindex = function(self, k) error('attempt to modify a buffer value') end,
+    __tostring = function(self) return self.__buff__ end,
     __tocbor = function(self) return cbor.TYPE.BIN(self.__buff__) end,
 }
 
