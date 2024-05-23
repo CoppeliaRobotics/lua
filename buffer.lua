@@ -51,11 +51,13 @@ function isbuffer(obj)
 end
 
 function tobuffer(txt)
+    local retVal = txt
     if auxFunc('useBuffers') then
-        return __buffmetatable__.newobj(txt)
-    else
-        return txt
+        if not isbuffer(retVal) then
+            retVal = __buffmetatable__.newobj(txt)
+        end
     end
+    return retVal
 end
 
 -- 'buffer' integration with common functions:
