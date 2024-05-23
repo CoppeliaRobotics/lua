@@ -1308,11 +1308,7 @@ function apropos(what)
             end
         end
     end
-    table.sort(
-        results, function(a, b)
-            return a[1] < b[1]
-        end
-    )
+    table.sort(results, function(a, b) return a[1] < b[1] end)
     local s = ''
     for i, result in ipairs(results) do s = s .. (s == '' and '' or '\n') .. result[2] end
     print(s)
