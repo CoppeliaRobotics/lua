@@ -37,7 +37,8 @@ __buffmetatable__ = {
         return cbor.TYPE.BIN(self.__buff__)
     end,
     newobj = function(txt)
-        return setmetatable({__buff__ = txt}, __buffmetatable__)
+        if __buffmetatable__.isinstance(txt) then return txt end
+        return setmetatable({__buff__ = tostring(txt)}, __buffmetatable__)
     end,
     isinstance = function(obj)
         return getmetatable(obj) == __buffmetatable__ and obj.__buff__
@@ -47,17 +48,19 @@ __buffmetatable__ = {
 -- 'buffer' interface:
 
 function isbuffer(obj)
-    return __buffmetatable__.isinstance(obj)
+    if auxFunc('useBuffers') then
+        return __buffmetatable__.isinstance(obj)
+    else
+        sim.addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
+    end
 end
 
 function tobuffer(txt)
-    local retVal = txt
     if auxFunc('useBuffers') then
-        if not isbuffer(retVal) then
-            retVal = __buffmetatable__.newobj(txt)
-        end
+        return __buffmetatable__.newobj(txt)
+    else
+        return tostring(txt)
     end
-    return retVal
 end
 
 -- 'buffer' integration with common functions:
