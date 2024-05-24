@@ -372,7 +372,8 @@ function path.refreshTrigger(ctrlPts, pathData, config)
             sim.setObjectPosition(pa, {0, (w - _S.conveyorSystem.config.borderElementThickness) / 2, 0})
             sim.setObjectPosition(pb, {0, -(w - _S.conveyorSystem.config.borderElementThickness) / 2, 0})
             el[i] = sim.groupShapes({pa, pb})
-            sim.reorientShapeBoundingBox(el[i], -1)
+            sim.alignShapeBB(el[i], {0, 0 , 0, 0, 0, 0, 1})
+            sim.relocateShapeFrame(el[i], {0, 0 , 0, 0, 0, 0, 0})
             local pos = sim.getPathInterpolatedConfig(_S.conveyorSystem.pathPositions, _S.conveyorSystem.pathLengths, p)
             if _S.conveyorSystem.config.type == 2 then
                 pos[3] = pos[3] - _S.conveyorSystem.config.rollerRadius +

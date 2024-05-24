@@ -482,7 +482,7 @@ function _S.path.setup()
                                )
             _S.path.paths[2] = sim.unpackDoubleTable(sim.readCustomBufferData(_S.path.model, 'PATH'))
             _S.path.paths[3] = sim.unpackDoubleTable(
-                                   sim.readCustomBufferBlock(
+                                   sim.readCustomBufferData(
                                        _S.path.model, 'PATHCTRLPTS_X'
                                    )
                                )
