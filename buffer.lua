@@ -41,7 +41,7 @@ __buffmetatable__ = {
         return setmetatable({__buff__ = tostring(txt)}, __buffmetatable__)
     end,
     isinstance = function(obj)
-        return getmetatable(obj) == __buffmetatable__ and obj.__buff__
+        return getmetatable(obj) == __buffmetatable__
     end,
 }
 
