@@ -1155,7 +1155,7 @@ function sim.getScriptFunctions(...)
     local scriptHandle = args[1]
     assert(#args >= 1, 'not enough args')
     assert(#args <= 1, 'too many args')
-    assert(scriptHandle and pcall(sim.getScriptName, scriptHandle), 'invalid script handle')
+    assert(scriptHandle and (sim.isHandle(scriptHandle) or pcall(sim.getScriptName, scriptHandle)), 'invalid script handle')
     return setmetatable({}, {
         __index = function(self, k)
             return function(self_, ...)
