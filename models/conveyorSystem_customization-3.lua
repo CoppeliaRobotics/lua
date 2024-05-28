@@ -1,6 +1,6 @@
 sim = require 'sim'
 
-path = require('models/path_customization-2')
+path = require('models.path_customization-2')
 
 _S.conveyorSystem = {}
 

@@ -541,7 +541,7 @@ end]]
         sim.setObjectAlias(retVal, "Path")
         local scriptHandle
         if sim.getBoolParam(sim.boolparam_usingscriptobjects) then
-            code = "path = require('models/path_customization-2')\n\n" .. code
+            code = "path = require('models.path_customization-2')\n\n" .. code
             scriptHandle = sim.createScript(sim.scripttype_customizationscript, code)
             sim.setObjectParent(scriptHandle, retVal)
         else
