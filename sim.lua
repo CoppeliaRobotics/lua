@@ -741,7 +741,7 @@ function sim.waitForSignal(...)
     local retVal
     while true do
         retVal = sim.getInt32Signal(sigName) or sim.getFloatSignal(sigName) or
-                     sim.getDoubleSignal(sigName) or sim.getStringSignal(sigName)
+                     sim.getStringSignal(sigName)
         if retVal then break end
         sim.step()
     end
