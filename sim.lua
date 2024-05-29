@@ -1204,15 +1204,20 @@ end
 function sim.removeReferencedObjects(objectHandle, tag)
     tag = tag or ''
     local refHandles = sim.getReferencedHandles(objectHandle, tag)
+    local toRemove = {}
     -- remove models with sim.removeModel, the rest with sim.removeObjects:
     for _, h in ipairs(refHandles) do
         if sim.isHandle(h) then
             if sim.getModelProperty(h) & sim.modelproperty_not_model == 0 then
                 sim.removeModel(h)
+            else
+                table.insert(toRemove, h)
             end
         end
     end
-    sim.removeObjects(refHandles)
+    if #toRemove > 0 then
+        sim.removeObjects(toRemove)
+    end
     sim.setReferencedHandles(objectHandle, {}, tag)
 end
 
