@@ -1143,19 +1143,33 @@ end
 
 function sim.getScriptFunctions(...)
     local args = {...}
+
+    -- shorthand: first arg can be an object path:
     if type(args[1]) == 'string' then
         assert(#args <= 2, 'too many args')
         args[1] = sim.getObject(args[1])
     end
-    if pcall(sim.getObjectType, args[1]) then
+
+    -- shorthand: first arg can be any object handle
+    -- script will be fetched via sim.getScript, second arg specifies script type
+    local scriptHandle
+    local ok, objType = pcall(sim.getObjectType, args[1])
+    if ok then
+        -- args[1] is a object handle (either new script, or other object)
         assert(#args <= 2, 'too many args')
-        args[1] = sim.getScript(args[2] or sim.scripttype_customizationscript, args[1])
+        if objType ~= sim.object_script_type then
+            scriptHandle = sim.getScript(args[2] or sim.scripttype_customizationscript, args[1])
+        else
+            scriptHandle = args[1]
+        end
         args[2] = nil
+    else
+        -- args[1] is a old script handle
+        scriptHandle = args[1]
+        assert(scriptHandle and pcall(sim.getScriptName, scriptHandle), 'invalid script handle')
     end
-    local scriptHandle = args[1]
-    assert(#args >= 1, 'not enough args')
-    assert(#args <= 1, 'too many args')
-    assert(scriptHandle and (sim.isHandle(scriptHandle) or pcall(sim.getScriptName, scriptHandle)), 'invalid script handle')
+
+    -- at this point we have the script handle from every possible overload (scriptHandle)
     return setmetatable({}, {
         __index = function(self, k)
             return function(self_, ...)
