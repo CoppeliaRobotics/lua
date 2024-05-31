@@ -27,6 +27,7 @@ function table.keys(t)
 end
 
 function table.isarray(t)
+    if type(t) ~= 'table' then return false end
     local m = 0
     local count = 0
     for k, v in pairs(t) do
