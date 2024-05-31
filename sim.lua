@@ -1565,14 +1565,17 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
             else
                 if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
                     return origFunc(data)
-                else
+                elseif (string.byte(data, 1) == 128) or (string.byte(data, 1) == 128 + 32) or (string.byte(data, 1) == 128 + 31) or (string.byte(data, 1) == 128 + 31 + 32) then
                     local cbor = require 'org.conman.cbor'
                     return cbor.decode(data)
+                else
+                    error('invalid input data.')
                 end
             end
         end
     end
 end)
+
 
 sim.registerScriptFuncHook('sysCall_init', '_S.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)
