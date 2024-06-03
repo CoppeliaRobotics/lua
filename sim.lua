@@ -231,26 +231,20 @@ function sim.fastIdleLoop(enable)
 end
 
 function sim.getLoadedPlugins()
-    local ret = {}
-    local index = 0
-    while true do
-        local moduleName = sim.getModuleName(index)
-        if moduleName then
-            table.insert(ret, moduleName)
-        else
-            break
-        end
+    local ret, index, moduleName = {}, 0, ''
+    while moduleName do
+        moduleName = sim.getPluginName(index)
+        if moduleName then table.insert(ret, moduleName) end
         index = index + 1
     end
     return ret
 end
 
 function sim.isPluginLoaded(pluginName)
-    local index = 0
-    local moduleName = ''
+    local index, moduleName = 0, ''
     while moduleName do
-        moduleName = sim.getModuleName(index)
-        if moduleName == pluginName then return (true) end
+        moduleName = sim.getPluginName(index)
+        if moduleName == pluginName then return true end
         index = index + 1
     end
     return false
