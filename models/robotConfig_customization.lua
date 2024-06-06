@@ -53,7 +53,7 @@ function createModelClone()
     for _, handle in ipairs(clonedObjects) do
         local parent = sim.getObjectParent(handle)
         local alias = sim.getObjectAlias(handle)
-        local scriptHandle = sim.getScript(sim.scripttype_customizationscript, handle)
+        local scriptHandle = sim.getScript(sim.scripttype_customization, handle)
         if scriptHandle ~= -1 then
             if parent == clonedModel and alias == 'IK' then
                 table.insert(scriptsToInit, scriptHandle)
@@ -147,7 +147,7 @@ function reset()
 end
 
 function ObjectProxy(path, proxy, t)
-    t = t or sim.scripttype_customizationscript
+    t = t or sim.scripttype_customization
     local o = sim.getObject(path, {proxy = proxy, noError = true})
     if o ~= -1 then return sim.getScriptFunctions(sim.getScript(t, o)) end
 end

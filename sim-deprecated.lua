@@ -155,7 +155,7 @@ deprecated.functions = {
 
 function deprecated.extend(sim)
     local n = sim.getInt32Param(sim.intparam_notifydeprecated)
-    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) == sim.scripttype_mainscript then return end
+    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) == sim.scripttype_main then return end
     if n <= 0 then return end
     for _, pair in ipairs(deprecated.functions) do
         local old, new = table.unpack(pair)

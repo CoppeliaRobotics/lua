@@ -1055,11 +1055,12 @@ sim.scriptstringparam_description
 sim.scriptstringparam_name
 sim.scriptstringparam_nameext
 sim.scriptstringparam_text
-sim.scripttype_addonscript
-sim.scripttype_childscript
-sim.scripttype_customizationscript
-sim.scripttype_mainscript
-sim.scripttype_sandboxscript
+sim.scripttype_addon
+sim.scripttype_simulation
+sim.scripttype_customization
+sim.scripttype_main
+sim.scripttype_sandbox
+sim.scripttype_passive
 sim.shape_multishape_subtype
 sim.shape_simpleshape_subtype
 sim.shapefloatparam_edge_angle

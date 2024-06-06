@@ -120,7 +120,7 @@ end
 
 function sysCall_beforeMainScript()
     if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
-        sim.scripttype_childscript then
+        sim.scripttype_simulation then
         pythonWrapper.handleQueue()
         local outData
         if next(steppingClients) ~= nil then
@@ -662,7 +662,7 @@ function handleRemote(callType, args, timeout)
                 handleErrors()
                 pythonWrapper.handleQueue()
                 if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
-                    sim.scripttype_childscript or next(steppingClients) == nil then
+                    sim.scripttype_simulation or next(steppingClients) == nil then
                     -- Customization scripts in general (stepping handled elsewhere), or scripts in non-stepping mode
                     if sim.getSystemTime() - st > timeout then break end
                 else

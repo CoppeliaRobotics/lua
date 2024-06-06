@@ -3,7 +3,7 @@ sim = require 'sim'
 local robotConfigPath = {}
 
 function robotConfigPath.create(pathMtx, parent, jointGroupPath)
-    local pathScript = sim.createScript(sim.scripttype_customizationscript, [[require 'models.robotConfigPath_customization']])
+    local pathScript = sim.createScript(sim.scripttype_customization, [[require 'models.robotConfigPath_customization']])
     sim.setObjectAlias(pathScript, 'Path')
     sim.setModelProperty(pathScript, 0)
     sim.setObjectParent(pathScript, parent)
@@ -12,7 +12,7 @@ function robotConfigPath.create(pathMtx, parent, jointGroupPath)
     sim.setObjectProperty(pathScript, sim.objectproperty_collapsed)
     sim.setObjectPose(pathScript, {0, 0, 0, 0, 0, 0, 1}, sim.handle_parent)
     sim.writeCustomTableData(pathScript, 'path', pathMtx:totable())
-    local stateScript = sim.createScript(sim.scripttype_customizationscript, [[require 'models.robotConfig_customization'
+    local stateScript = sim.createScript(sim.scripttype_customization, [[require 'models.robotConfig_customization'
 model = sim.getObject '::'
 color = {1, 1, 0}
 ik = false

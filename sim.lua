@@ -86,7 +86,7 @@ sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
         origFunc()
         local t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type)
-        if wait and t ~= sim.scripttype_mainscript and t ~= sim.scripttype_childscript and getYieldAllowed() then
+        if wait and t ~= sim.scripttype_main and t ~= sim.scripttype_simulation and getYieldAllowed() then
             local cnt = 0
             while sim.getSimulationState() ~= sim.simulation_stopped and cnt < 20 do -- even if we run in a thread, we might not be able to yield (e.g. across a c-boundary)
                 cnt = cnt + 1
@@ -231,20 +231,26 @@ function sim.fastIdleLoop(enable)
 end
 
 function sim.getLoadedPlugins()
-    local ret, index, moduleName = {}, 0, ''
-    while moduleName do
-        moduleName = sim.getPluginName(index)
-        if moduleName then table.insert(ret, moduleName) end
+    local ret = {}
+    local index = 0
+    while true do
+        local moduleName = sim.getModuleName(index)
+        if moduleName then
+            table.insert(ret, moduleName)
+        else
+            break
+        end
         index = index + 1
     end
     return ret
 end
 
 function sim.isPluginLoaded(pluginName)
-    local index, moduleName = 0, ''
+    local index = 0
+    local moduleName = ''
     while moduleName do
-        moduleName = sim.getPluginName(index)
-        if moduleName == pluginName then return true end
+        moduleName = sim.getModuleName(index)
+        if moduleName == pluginName then return (true) end
         index = index + 1
     end
     return false
@@ -536,10 +542,10 @@ end]]
         local scriptHandle
         if sim.getBoolParam(sim.boolparam_usingscriptobjects) then
             code = "path = require('models.path_customization-2')\n\n" .. code
-            scriptHandle = sim.createScript(sim.scripttype_customizationscript, code)
+            scriptHandle = sim.createScript(sim.scripttype_customization, code)
             sim.setObjectParent(scriptHandle, retVal)
         else
-            scriptHandle = sim.addScript(sim.scripttype_customizationscript)
+            scriptHandle = sim.addScript(sim.scripttype_customization)
             code = "path = require('path_customization')\n\n" .. code
             sim.setScriptText(scriptHandle, code)
             sim.associateScriptWithObject(scriptHandle, retVal)
@@ -1152,7 +1158,7 @@ function sim.getScriptFunctions(...)
         -- args[1] is a object handle (either new script, or other object)
         assert(#args <= 2, 'too many args')
         if objType ~= sim.object_script_type then
-            scriptHandle = sim.getScript(args[2] or sim.scripttype_customizationscript, args[1])
+            scriptHandle = sim.getScript(args[2] or sim.scripttype_customization, args[1])
         else
             scriptHandle = args[1]
         end

@@ -153,6 +153,6 @@ function sysCall_nonSimulation()
 end
 
 function ObjectProxy(p, t)
-    t = t or sim.scripttype_customizationscript
+    t = t or sim.scripttype_customization
     return sim.getScriptFunctions(sim.getScript(t, sim.getObject(p)))
 end

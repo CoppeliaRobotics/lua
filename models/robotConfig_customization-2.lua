@@ -145,7 +145,7 @@ function reset()
 end
 
 function ObjectProxy(path, proxy, t)
-    t = t or sim.scripttype_customizationscript
+    t = t or sim.scripttype_customization
     local o = sim.getObject(path, {proxy = proxy, noError = true})
     if o ~= -1 then return sim.getScriptFunctions(sim.getScript(t, o)) end
 end

@@ -1015,7 +1015,7 @@ function initPython(prog)
     end
     if errMsg then
         if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ==
-            sim.scripttype_sandboxscript then
+            sim.scripttype_sandbox then
             sim.setNamedBoolParam("pythonSandboxInitFailed", true)
         end
         if pythonFailWarnOnly then
