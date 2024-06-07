@@ -201,7 +201,7 @@ buffer image, int[2] resolution = sim.getVisionSensorImg(int sensorHandle, int o
 sim.getVisionSensorRes(int sensorHandle)
 int shapeHandle = sim.groupShapes(int[] shapeHandles, bool merge=false)
 int count = sim.handleAddOnScripts(int callType)
-int calledScripts = sim.handleChildScripts(int callType)
+int calledScripts = sim.handleSimulationScripts(int callType)
 int result = sim.handleDynamics(float deltaTime)
 int calledScripts = sim.handleEmbeddedScripts(int callType)
 sim.handleExtCalls()
