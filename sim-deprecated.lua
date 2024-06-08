@@ -152,7 +152,7 @@ deprecated.functions = {
     {"sim.writeCustomDataBlock", "sim.writeCustomStringData"},
     {"sim.convexDecompose", "the simConvex functionality"},
     {"sim.getQHull", "simConvex.qhull"},
-    {"sim.getDecimatedMesh", "the simOpenMesh functionality"},
+    {"sim.getDecimatedMesh", "simOpenMesh.decimate"},
 
     --]]
 }

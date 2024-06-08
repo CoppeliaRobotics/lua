@@ -827,20 +827,6 @@ function sim.serialClose(...)
     if _S.serialPortData then _S.serialPortData[portHandle] = nil end
 end
 
-function sim.getShapeBB(handle)
-    local s = {}
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_max_x)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_min_x)
-    s[1] = m - n
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_max_y)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_min_y)
-    s[2] = m - n
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_max_z)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_objbbox_min_z)
-    s[3] = m - n
-    return s
-end
-
 function sim.setShapeBB(handle, size)
     local s = sim.getShapeBB(handle)
     for i = 1, 3, 1 do if math.abs(s[i]) > 0.00001 then s[i] = size[i] / s[i] end end
