@@ -12,12 +12,10 @@ sim.addItemToCollection(int collectionHandle, int what, int objectHandle, int op
 int particleObjectHandle = sim.addParticleObject(int objectType, float size, float density, float[] params, float lifeTime, int maxItemCount, float[3] color=nil)
 sim.addParticleObjectItem(int objectHandle, float[] itemData)
 sim.addReferencedHandle(int objectHandle, int referencedHandle, string tag='', map opts={})
-int scriptHandle = sim.addScript(int scriptType)
 int res = sim.adjustView(int viewHandleOrIndex, int objectHandle, int options, string viewLabel=nil)
 int result = sim.alignShapeBB(int shapeHandle, float[7] pose)
 float yawAngle, float pitchAngle, float rollAngle = sim.alphaBetaGammaToYawPitchRoll(float alphaAngle, float betaAngle, float gammaAngle)
 int result = sim.announceSceneContentChange()
-sim.associateScriptWithObject(int scriptHandle, int objectHandle)
 int result = sim.auxiliaryConsoleClose(int consoleHandle)
 int consoleHandle = sim.auxiliaryConsoleOpen(string title, int maxLines, int mode, int[2] position=nil, int[2] size=nil, float[3] textColor=nil, float[3] backgroundColor=nil)
 int result = sim.auxiliaryConsolePrint(int consoleHandle, string text)
@@ -160,10 +158,8 @@ string[] tags = sim.getReferencedHandlesTags(int objectHandle)
 float[3] axis, float angle = sim.getRotationAxis(float[12] matrixStart, float[12] matrixGoal)
 float[3] axis, float angle = sim.getRotationAxis(float[7] poseStart, float[7] poseGoal)
 buffer imageOut, int[2] effectiveResolutionOut = sim.getScaledImage(buffer imageIn, int[2] resolutionIn, int[2] desiredResolutionOut, int options)
-int scriptHandle = sim.getScript(int scriptType, int objectHandle=-1, string scriptName='')
+int scriptHandle = sim.getScript(int scriptType, string scriptName='')
 map wrapper = sim.getScriptFunctions(int scriptHandle)
-int parameter = sim.getScriptInt32Param(int scriptHandle, int parameterID)
-buffer parameter = sim.getScriptStringParam(int scriptHandle, int parameterID)
 bool value = sim.getSettingBool(string key)
 float value = sim.getSettingFloat(string key)
 int value = sim.getSettingInt32(string key)
@@ -275,7 +271,6 @@ sim.removeObjects(int[1..*] objectHandles, bool delayedRemoval = false)
 sim.removeParticleObject(int particleObjectHandle)
 int totalPointCnt = sim.removePointsFromPointCloud(int pointCloudHandle, int options, float[] points, float tolerance)
 sim.removeReferencedObjects(int objectHandle, string tag='')
-sim.removeScript(int scriptHandle)
 int totalVoxelCnt = sim.removeVoxelsFromOctree(int octreeHandle, int options, float[] points)
 float[] path = sim.resamplePath(float[] path, float[] pathLengths, int finalConfigCnt, map method={type='linear', strength=1.0, forceOpen=false}, int[] types=nil)
 sim.resetDynamicObject(int objectHandle)
@@ -352,8 +347,6 @@ sim.setObjectStringParam(int objectHandle, int parameterID, buffer parameter)
 sim.setPage(int pageIndex)
 sim.setPointCloudOptions(int pointCloudHandle, float maxVoxelSize, int maxPtCntPerVoxel, int options, float pointSize)
 sim.setReferencedHandles(int objectHandle, int[] referencedHandles, string tag='')
-sim.setScriptInt32Param(int scriptHandle, int parameterID, int parameter)
-sim.setScriptStringParam(int scriptHandle, int parameterID, buffer parameter)
 sim.setShapeBB(int shapeHandle, float[3] size)
 sim.setShapeColor(int shapeHandle, string colorName, int colorComponent, float[3] rgbData)
 sim.setShapeInertia(int shapeHandle, float[9] inertiaMatrix, float[12] comMatrix)
@@ -1043,10 +1036,7 @@ sim.lang_python
 sim.scriptintparam_enabled
 sim.scriptintparam_execcount
 sim.scriptintparam_execorder
-sim.scriptintparam_handle
-sim.scriptintparam_objecthandle
 sim.scriptintparam_type
-sim.scriptintparam_lang
 sim.scriptintparam_autorestartonerror
 sim.scriptstringparam_description
 sim.scriptstringparam_name

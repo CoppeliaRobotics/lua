@@ -85,7 +85,7 @@ require('sim-deprecated').extend(sim)
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
         origFunc()
-        local t = sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type)
+        local t = sim.getObjectInt32Param(sim.getScript(sim.handle_self), sim.scriptintparam_type)
         if wait and t ~= sim.scripttype_main and t ~= sim.scripttype_simulation and getYieldAllowed() then
             local cnt = 0
             while sim.getSimulationState() ~= sim.simulation_stopped and cnt < 20 do -- even if we run in a thread, we might not be able to yield (e.g. across a c-boundary)
@@ -1306,7 +1306,7 @@ require = wrap(require, function(origRequire)
     return function (...)
         local arg = ({...})[1]
         if math.type(arg) == 'integer' and sim.isHandle(arg) and sim.getObjectType(arg) == sim.object_script_type then
-            local txt = sim.getScriptStringParam(arg, sim.scriptstringparam_text)
+            local txt = sim.getObjectStringParam(arg, sim.scriptstringparam_text)
             return loadstring(tostring(txt))()
         end
         return origRequire(...)

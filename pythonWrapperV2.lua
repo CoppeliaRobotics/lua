@@ -955,8 +955,8 @@ function initPython(prog)
             virtualPythonFilename = virtualPythonFilename .. '_' ..
                                         tostring(sim.getInt32Param(sim.intparam_scene_unique_id))
             virtualPythonFilename = virtualPythonFilename ..
-                                        sim.getScriptStringParam(
-                                            sim.handle_self, sim.scriptstringparam_nameext
+                                        sim.getObjectStringParam(
+                                            sim.getScript(sim.handle_self), sim.scriptstringparam_nameext
                                         )
             if sim.getInt32Param(sim.intparam_platform) == 0 then
                 virtualPythonFilename = "z:\\" .. virtualPythonFilename
@@ -1014,7 +1014,7 @@ function initPython(prog)
                      "/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
     if errMsg then
-        if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ==
+        if sim.getObjectInt32Param(sim.getScript(sim.handle_self), sim.scriptintparam_type) ==
             sim.scripttype_sandbox then
             sim.setNamedBoolParam("pythonSandboxInitFailed", true)
         end

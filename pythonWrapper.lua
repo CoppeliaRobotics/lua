@@ -119,7 +119,7 @@ function getFreePortStr()
 end
 
 function sysCall_beforeMainScript()
-    if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
+    if sim.getObjectInt32Param(sim.getScript(sim.handle_self), sim.scriptintparam_type) ~=
         sim.scripttype_simulation then
         pythonWrapper.handleQueue()
         local outData
@@ -394,7 +394,7 @@ end
 function getCleanErrorMsg(inMsg)
     local msg = inMsg
     if msg and #msg > 0 and not nakedErrors then
-        local code = sim.getScriptStringParam(sim.handle_self, sim.scriptstringparam_text)
+        local code = sim.getObjectStringParam(sim.getScript(sim.handle_self), sim.scriptstringparam_text)
         local _, totLines = string.gsub(code, '\n', '')
         totLines = totLines + 1
         local toRemove = {
@@ -661,7 +661,7 @@ function handleRemote(callType, args, timeout)
             while true do
                 handleErrors()
                 pythonWrapper.handleQueue()
-                if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) ~=
+                if sim.getObjectInt32Param(sim.getScript(sim.handle_self), sim.scriptintparam_type) ~=
                     sim.scripttype_simulation or next(steppingClients) == nil then
                     -- Customization scripts in general (stepping handled elsewhere), or scripts in non-stepping mode
                     if sim.getSystemTime() - st > timeout then break end

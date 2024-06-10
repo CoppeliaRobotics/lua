@@ -15,6 +15,7 @@ local old = {}
 
 function old.extend(sim)
 
+sim.getQHull = sim._qhull
 sim.handleChildScripts = sim.handleSimulationScripts
 sim.switchThread = sim.yield
 sim.getModuleName = sim.getPluginName

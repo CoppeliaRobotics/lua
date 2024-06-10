@@ -153,6 +153,13 @@ deprecated.functions = {
     {"sim.convexDecompose", "the simConvex functionality"},
     {"sim.getQHull", "simConvex.qhull"},
     {"sim.getDecimatedMesh", "simOpenMesh.decimate"},
+    {"sim.addScript", "sim.createScript"},
+    {"sim.associateScriptWithObject", "sim.createScript / sim.setObjectParent"},
+    {"sim.removeScript", "sim.removeObject"},
+    {"sim.getScriptInt32Param", "sim.getObjectInt32Param"},
+    {"sim.setScriptInt32Param", "sim.setObjectInt32Param"},
+    {"sim.getScriptStringParam", "sim.getObjectStringParam"},
+    {"sim.setScriptStringParam", "sim.setObjectStringParam"},
 
     --]]
 }
