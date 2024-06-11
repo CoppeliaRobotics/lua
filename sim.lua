@@ -234,7 +234,7 @@ function sim.getLoadedPlugins()
     local ret = {}
     local index = 0
     while true do
-        local moduleName = sim.getModuleName(index)
+        local moduleName = sim.getPluginName(index)
         if moduleName then
             table.insert(ret, moduleName)
         else
@@ -249,7 +249,7 @@ function sim.isPluginLoaded(pluginName)
     local index = 0
     local moduleName = ''
     while moduleName do
-        moduleName = sim.getModuleName(index)
+        moduleName = sim.getPluginName(index)
         if moduleName == pluginName then return (true) end
         index = index + 1
     end
