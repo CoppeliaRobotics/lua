@@ -280,11 +280,7 @@ function _S.tableToString(tt, opts)
                 if opts.indent then
                     table.insert(sb, string.rep(opts.indentString, opts.indent))
                 end
-                if type(key) == 'string' then
-                    table.insert(sb, _S.getShortString(key))
-                else
-                    table.insert(sb, tostring(key))
-                end
+                table.insert(sb, _S.tableKeyToString(key))
                 table.insert(sb, ' = ')
                 table.insert(sb, _S.anyToString(val, opts))
                 table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
@@ -338,6 +334,22 @@ function _S.getShortString(x, opts)
         end
     end
     return "[not a string]"
+end
+
+function _S.isIdentifier(x)
+    return type(x) == 'string' and x:match('^[a-zA-Z_][a-zA-Z0-9_]*$') ~= nil
+end
+
+function _S.tableKeyToString(x)
+    if type(x) == 'string' then
+        if _S.isIdentifier(x) then
+            return x
+        else
+            return '[' .. _S.getShortString(x) .. ']'
+        end
+    else
+        return '[' .. tostring(x) .. ']'
+    end
 end
 
 function getAsString(...)
