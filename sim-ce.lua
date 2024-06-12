@@ -906,6 +906,7 @@ sim.newton_joint_pospid2
 sim.newton_joint_pospid3
 sim.object_camera_type
 sim.object_dummy_type
+sim.object_script_type
 sim.object_forcesensor_type
 sim.object_graph_type
 sim.object_joint_type
