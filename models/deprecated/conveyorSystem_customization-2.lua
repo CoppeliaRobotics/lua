@@ -1,6 +1,6 @@
 sim = require 'sim'
 
-path = require('path_customization')
+path = require('models.deprecated.path_customization')
 
 _S.conveyorSystem = {}
 

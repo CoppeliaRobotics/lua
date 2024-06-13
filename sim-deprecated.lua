@@ -168,14 +168,18 @@ function deprecated.extend(sim)
     local n = sim.getInt32Param(sim.intparam_notifydeprecated)
     if sim.getScriptInt32Param(sim.handle_self, sim.scriptintparam_type) == sim.scripttype_main then return end
     if n <= 0 then return end
+    local inf = ''
+    if n == 1 then
+        inf = ' (control verbosity via notifyDeprecated in usrset.txt)'
+    end
     for _, pair in ipairs(deprecated.functions) do
         local old, new = table.unpack(pair)
         assert(old:sub(1, 4) == 'sim.')
         local msg
         if new == '' then
-            msg = string.format('%s is deprecated and the related functionality will disappear in a future release.', old)
+            msg = string.format('%s is deprecated and the related functionality will disappear in a future release.', old) .. inf
         else
-            msg = string.format('%s is deprecated. please use %s instead.', old, new)
+            msg = string.format('%s is deprecated. please use %s instead.', old, new) .. inf
         end
         old = old:sub(5)
         sim[old] = wrap(sim[old], function(origFunc)

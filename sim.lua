@@ -79,7 +79,7 @@ require('grid')
 require('functional')
 require('var')
 require('motion').extend(sim)
-require('old').extend(sim)
+require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
@@ -546,7 +546,7 @@ end]]
             sim.setObjectParent(scriptHandle, retVal)
         else
             scriptHandle = sim.addScript(sim.scripttype_customization)
-            code = "path = require('path_customization')\n\n" .. code
+            code = "path = require('models.deprecated.path_customization')\n\n" .. code
             sim.setScriptText(scriptHandle, code)
             sim.associateScriptWithObject(scriptHandle, retVal)
         end
