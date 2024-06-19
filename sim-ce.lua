@@ -1,6 +1,7 @@
 local codeEditorInfos = [[
 string info = sim.getLastInfo()
 int prevStepLevel = sim.setStepping(bool enabled)
+sim.systemSemaphore(string key, bool acquire)
 sim.addLog(int verbosityLevel, string logMessage)
 int drawingObjectHandle = sim.addDrawingObject(int objectType, float size, float duplicateTolerance, int parentObjectHandle, int maxItemCount, float[3] color=nil)
 int result = sim.addDrawingObjectItem(int drawingObjectHandle, float[] itemData)
@@ -110,7 +111,6 @@ int jointType = sim.getJointType(int objectHandle)
 float velocity = sim.getJointVelocity(int jointHandle)
 int state, float[3] zero, float[3] diffusePart, float[3] specular = sim.getLightParameters(int lightHandle)
 int linkDummyHandle = sim.getLinkDummy(int dummyHandle)
-string[] tags = sim.getMatchingPersistentDataTags(string pattern)
 float[12] matrix = sim.getMatrixInverse(float[12] matrix)
 int property = sim.getModelProperty(int objectHandle)
 bool value = sim.getNamedBoolParam(string name)
@@ -148,7 +148,6 @@ float[] voxels = sim.getOctreeVoxels(int octreeHandle)
 int pageIndex = sim.getPage()
 float[] config = sim.getPathInterpolatedConfig(float[] path, float[] pathLengths, float t, map method={type='linear', strength=1.0, forceOpen=false}, int[] types=nil)
 float[] pathLengths, float totalLength = sim.getPathLengths(float[] path, int dof, func distCallback=nil)
-string[] tags = sim.getPersistentDataTags()
 float maxVoxelSize, int maxPtCntPerVoxel, int options, float pointSize = sim.getPointCloudOptions(int pointCloudHandle)
 float[] points = sim.getPointCloudPoints(int pointCloudHandle)
 float[7] pose = sim.getPoseInverse(float[7] pose)
@@ -250,8 +249,6 @@ buffer data = sim.packUInt16Table(int[] uint16Numbers, int startUint16Index=0, i
 buffer data = sim.packUInt32Table(int[] uint32Numbers, int startUInt32Index=0, int uint32Count=0)
 buffer data = sim.packUInt8Table(int[] uint8Numbers, int startUint8Index=0, int uint8count=0)
 sim.pauseSimulation()
-buffer dataValue = sim.persistentDataRead(string dataTag)
-sim.persistentDataWrite(string dataTag, buffer dataValue, int options=0)
 float[12] matrix = sim.poseToMatrix(float[7] pose)
 sim.pushUserEvent(string event, int handle, int uid, map eventData, int options=0)
 sim.quitSimulator()
@@ -618,6 +615,7 @@ sim.handle_all
 sim.handle_all_except_explicit
 sim.handle_all_except_self
 sim.handle_app
+sim.handle_appstorage
 sim.handle_chain
 sim.handle_default
 sim.handle_inverse
@@ -659,6 +657,9 @@ sim.intparam_dynamic_engine
 sim.intparam_dynamic_iteration_count
 sim.intparam_dynamic_step_divider
 sim.intparam_dynamic_warning_disabled_mask
+sim.intparam_notifydeprecated
+sim.intparam_processid
+sim.intparam_processcnt
 sim.intparam_edit_mode_type
 sim.intparam_error_report_mode
 sim.intparam_exitcode

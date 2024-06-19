@@ -31,6 +31,15 @@ sim.getThreadSwitchAllowed = getYieldAllowed
 sim.setThreadAutomaticSwitch = setAutoYield
 sim.getThreadAutomaticSwitch = getAutoYield
 
+function sim.getMatchingPersistentDataTags(...)
+    local pattern = checkargs({{type = 'string'}}, ...)
+    local result = {}
+    for index, value in ipairs(sim.getPersistentDataTags()) do
+        if value:match(pattern) then result[#result + 1] = value end
+    end
+    return result
+end
+
 function sim.setThreadSwitchTiming(dtInMs)
     sim.setAutoYieldDelay(dtInMs / 1000.0)
 end

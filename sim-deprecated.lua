@@ -160,6 +160,10 @@ deprecated.functions = {
     {"sim.setScriptInt32Param", "sim.setObjectInt32Param"},
     {"sim.getScriptStringParam", "sim.getObjectStringParam"},
     {"sim.setScriptStringParam", "sim.setObjectStringParam"},
+    {"sim.persistentDataWrite", "sim.writeCustomBufferData"},
+    {"sim.persistentDataRead", "sim.readCustomBufferData"},
+    {"sim.getPersistentDataTags", "sim.readCustomDataTags"},
+    {"sim.getMatchingPersistentDataTags", "sim.readCustomDataTags"},
 
     --]]
 }

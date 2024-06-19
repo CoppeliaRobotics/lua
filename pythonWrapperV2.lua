@@ -909,18 +909,29 @@ function checkPythonError()
 end
 
 function getFreePortStr()
-    local tmpContext = simZMQ.ctx_new()
-    local tmpSocket = simZMQ.socket(tmpContext, simZMQ.REP)
-    local p = 23259
+    local pythonWrapperPortStart = 23259
     while true do
-        if simZMQ.__noError.bind(tmpSocket, string.format('tcp://127.0.0.1:%d', p)) == 0 then
-            break
+        sim.systemSemaphore('pythonWrapper', true)
+        local dat = sim.readCustomBufferData(sim.handle_appstorage, 'nextPythonWrapperCommPort')
+        if dat == nil then
+            dat = sim.packInt32Table({pythonWrapperPortStart})
         end
-        p = p + 1
+        local p = sim.unpackInt32Table(dat)[1]
+        local np = p + 1
+        if np >= pythonWrapperPortStart + 800 then
+            np = pythonWrapperPortStart
+        end
+        sim.writeCustomBufferData(sim.handle_appstorage, 'nextPythonWrapperCommPort', sim.packInt32Table({np}))
+        sim.systemSemaphore('pythonWrapper', false)
+    
+        local tmpContext = simZMQ.ctx_new()
+        local tmpSocket = simZMQ.socket(tmpContext, simZMQ.REP)
+        if simZMQ.__noError.bind(tmpSocket, string.format('tcp://127.0.0.1:%d', p)) == 0 then
+            simZMQ.close(tmpSocket)
+            simZMQ.ctx_term(tmpContext)
+            return string.format('tcp://127.0.0.1:%d', p)
+        end
     end
-    simZMQ.close(tmpSocket)
-    simZMQ.ctx_term(tmpContext)
-    return string.format('tcp://127.0.0.1:%d', p)
 end
 
 function initPython(prog)
