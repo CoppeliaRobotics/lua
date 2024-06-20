@@ -638,7 +638,6 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-print(...)
     simZMQ = require 'simZMQ'
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout =
         checkargs({
