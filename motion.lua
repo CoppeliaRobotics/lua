@@ -638,6 +638,7 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
+print(...)
     simZMQ = require 'simZMQ'
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout =
         checkargs({
@@ -716,6 +717,9 @@ function sim.generateTimeOptimalTrajectory(...)
     simZMQ.ctx_term(context)
 
     sim.setStepping(lb)
+    if not r.success then
+        error('toppra failed with following message: ' .. r.error)
+    end
     return Matrix:fromtable(r.qs[1]):data(), r.ts
 end
 
