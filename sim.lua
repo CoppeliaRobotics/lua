@@ -1254,11 +1254,34 @@ function sim.setShapeAppearance(handle, savedData, opts)
     assert(sim.getObjectType(handle) == sim.object_shape_type, 'not a shape')
     opts = opts or {}
     if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
+        -- we need to temporarily detach all its children, then attach them again
+        -- otherwise it will mess up poses of dynamic objects
+        local tmp = sim.createDummy(0)
+        local i = 0
+        while true do
+            local h = sim.getObjectChild(handle, i)
+            if h == -1 then break end
+            i = i + 1
+            sim.setObjectParent(h, tmp, true)
+        end
+
         local subShapes = sim.ungroupShape(handle)
         for i, subShape in ipairs(subShapes) do
             sim.setShapeAppearance(subShape, (savedData.subShapes or {})[i] or (savedData.subShapes or {})[1] or savedData, opts)
         end
-        return sim.groupShapes(subShapes)
+        local newHandle = sim.groupShapes(subShapes)
+
+        -- reattach children
+        i = 0
+        while true do
+            local h = sim.getObjectChild(tmp, i)
+            if h == -1 then break end
+            i = i + 1
+            sim.setObjectParent(h, newHandle, true)
+        end
+        sim.removeObjects{tmp}
+
+        return newHandle
     else
         savedData = (savedData.subShapes or {})[1] or savedData
         sim.setObjectInt32Param(handle, sim.shapeintparam_edge_visibility, savedData.edges)
