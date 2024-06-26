@@ -26,7 +26,7 @@ local function main()
     simCmd = require 'simCmd'
 
     local resourcesDir = sim.getStringParam(sim.stringparam_resourcesdir)
-    local imagesDir = resourcesDir .. '/helpFiles/en/images/usedByScripts/'
+    local imagesDir = resourcesDir .. '/manual/en/images/usedByScripts/'
 
     local imgStyle =
         'background-color: white; border: 1px solid white; border-radius: 8px; padding-top: 100px;'
