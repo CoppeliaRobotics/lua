@@ -7,11 +7,11 @@ function setupForLang(lang)
 end
 
 function setupForLua()
-    setupForLang 'Lua'
+    setupForLang 'lua'
 end
 
 function setupForPython()
-    setupForLang 'Python'
+    setupForLang 'python'
 end
 
 local function main()
