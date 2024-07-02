@@ -929,13 +929,18 @@ function sim.getTableProperty(...)
         {type = 'int'},
         {type = 'string'},
     }, ...)
-    local data = sim.getBufferProperty(handle, tagName)
-    if #data == 0 then
-        data = {}
+    local retVal = {}
+    if string.sub(tagName, 1, 11) == 'customData.' then
+        tagName = 'customData.@tbl@.' .. string.sub(tagName, 11 + 1)
+        local data = sim.getBufferProperty(handle, tagName)
+        if #data > 0 then
+            retVal = sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
+        end
     else
-        data = sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
+        -- add more table properties here
+        error('unknown property (for the specified type and target).')
     end
-    return data
+    return retVal
 end
 
 function sim.setTableProperty(...)
@@ -945,16 +950,22 @@ function sim.setTableProperty(...)
         {type = 'table'},
         {type = 'table', default = {}},
     }, ...)
-    if next(theTable) == nil then
-        sim.setBufferProperty(handle, tagName, tobuffer(''))
-    else
-        if options.dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
-            theTable = cbor.encode(theTable)
+    if string.sub(tagName, 1, 11) == 'customData.' then
+        tagName = 'customData.@tbl@.' .. string.sub(tagName, 11 + 1)
+        if next(theTable) == nil then
+            sim.setBufferProperty(handle, tagName, tobuffer(''))
         else
-            theTable = sim.packTable(theTable)
+            if options.dataType == 'cbor' then
+                local cbor = require 'org.conman.cbor'
+                theTable = cbor.encode(theTable)
+            else
+                theTable = sim.packTable(theTable)
+            end
+            sim.setBufferProperty(handle, tagName, theTable)
         end
-        sim.setBufferProperty(handle, tagName, theTable)
+    else
+        -- add more table properties here
+        error('unknown property (for the specified type and target).')
     end
 end
 
