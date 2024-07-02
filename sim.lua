@@ -924,6 +924,40 @@ function sim.writeCustomTableData(...)
     end
 end
 
+function sim.getTableProperty(...)
+    local handle, tagName = checkargs({
+        {type = 'int'},
+        {type = 'string'},
+    }, ...)
+    local data = sim.getBufferProperty(handle, tagName)
+    if #data == 0 then
+        data = {}
+    else
+        data = sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
+    end
+    return data
+end
+
+function sim.setTableProperty(...)
+    local handle, tagName, theTable, options = checkargs({
+        {type = 'int'},
+        {type = 'string'},
+        {type = 'table'},
+        {type = 'table', default = {}},
+    }, ...)
+    if next(theTable) == nil then
+        sim.setBufferProperty(handle, tagName, tobuffer(''))
+    else
+        if options.dataType == 'cbor' then
+            local cbor = require 'org.conman.cbor'
+            theTable = cbor.encode(theTable)
+        else
+            theTable = sim.packTable(theTable)
+        end
+        sim.setBufferProperty(handle, tagName, theTable)
+    end
+end
+
 function sim.getObject(path, options)
     options = options or {}
     local proxy = -1
@@ -1573,7 +1607,7 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
                 return {} -- since 20.03.2024: empty buffer results in an empty table
             else
                 if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
-                    return origFunc(data)
+                    return origFunc(data) -- CoppeliaSim's pack format
                 elseif (string.byte(data, 1) == 128) or (string.byte(data, 1) == 128 + 32) or (string.byte(data, 1) == 128 + 31) or (string.byte(data, 1) == 128 + 31 + 32) then
                     local cbor = require 'org.conman.cbor'
                     return cbor.decode(data)
