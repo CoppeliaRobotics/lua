@@ -251,6 +251,38 @@ function table.batched(tbl, n)
     return retVal
 end
 
+function table.flatten(tbl, opts, prefix, tbl1)
+    opts = opts or {}
+    prefix = prefix or ''
+    tbl1 = tbl1 or {}
+    for k, v in pairs(tbl) do
+        assert(type(k) == 'string', 'only string keys are supported')
+        if type(v) == 'table' and type(k) == 'string' then
+            table.flatten(v, opts, prefix .. k .. '.', tbl1)
+        else
+            tbl1[prefix .. k] = v
+        end
+    end
+    return tbl1
+end
+
+function table.unflatten(tbl, opts)
+    opts = opts or {}
+    local ret = {}
+    for k, v in pairs(tbl) do
+        assert(type(k) == 'string', 'only string keys are supported')
+        local ks = {}
+        for ki in string.gmatch(k, '([^.]+)') do table.insert(ks, ki) end
+        local tmp = ret
+        for i = 1, #ks - 1 do
+            tmp[ks[i]] = tmp[ks[i]] or {}
+            tmp = tmp[ks[i]]
+        end
+        tmp[ks[#ks]] = v
+    end
+    return ret
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
@@ -268,5 +300,7 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.compare(table.add({},{}), {}) == 0)
     assert(table.compare(table.rep(21, 3), {21, 21, 21}) == 0)
     assert(table.tostring(table.batched({1, 2, 3, 4, 5, 6}, 2)) == '{{1, 2}, {3, 4}, {5, 6}}')
+    assert(table.eq(table.flatten {a = {b = 1, c = 3}, x = {y = 10, z = 3}}, {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}))
+    assert(table.eq(table.unflatten {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}, {a = {b = 1, c = 3}, x = {y = 10, z = 3}}))
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
