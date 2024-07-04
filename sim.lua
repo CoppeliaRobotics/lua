@@ -924,6 +924,86 @@ function sim.writeCustomTableData(...)
     end
 end
 
+function sim.getProperty(target, pname)
+    local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
+    assert(ptype, 'no such property: ' .. pname)
+    local getPropertyFunc = 'get' .. string.capitalize(sim.getPropertyTypeString(ptype)) .. 'Property'
+    assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
+    return sim[getPropertyFunc](target, pname)
+end
+
+function sim.setProperty(target, pname, pvalue, ptype)
+    if type(ptype) == 'string' then
+        ptype = sim['propertytype_' .. ptype]
+        assert(ptype, 'invalid property type string')
+    end
+    if ptype == nil then
+        -- ptype not provided -> guess it
+        local ltype = type(pvalue)
+        if ltype == 'number' then
+            if math.type(pvalue) == 'integer' then
+                ptype = sim.propertytype_int32
+            else
+                ptype = sim.propertytype_float
+            end
+        elseif ltype == 'string' then
+            ptype = sim.propertytype_string
+        elseif ltype == 'boolean' then
+            ptype = sim.propertytype_bool
+        elseif ltype == 'table' then
+            ptype = sim.propertytype_table
+        else
+            error('unsupported property type: ' .. ltype)
+        end
+    end
+    local setPropertyFunc = 'set' .. string.capitalize(sim.getPropertyTypeString(ptype)) .. 'Property'
+    assert(sim[setPropertyFunc], 'no such function: sim.' .. setPropertyFunc)
+    return sim[setPropertyFunc](target, pname, pvalue)
+end
+
+function sim.getPropertyTypeString(ptype)
+    if not _S.propertytypeToStringMap then
+        _S.propertytypeToStringMap = {}
+        for k, v in pairs(sim) do
+            local m = string.match(k, 'propertytype_(.*)')
+            if m then _S.propertytypeToStringMap[v] = m end
+        end
+    end
+    return _S.propertytypeToStringMap[ptype]
+end
+
+function sim.getPropertiesNames(target)
+    local propertiesNames = {}
+    for i = 0, 1e100 do
+        local pname = sim.getPropertyName(target, i)
+        if not pname then break end
+        table.insert(propertiesNames, pname)
+    end
+    table.sort(propertiesNames)
+    return propertiesNames
+end
+
+function sim.getPropertiesInfos(target)
+    local propertiesInfos = {}
+    for i, pname in ipairs(sim.getPropertiesNames(target)) do
+        local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
+        propertiesInfos[pname] = {
+            type = ptype,
+            flags = pflags,
+            size = psize,
+        }
+    end
+    return propertiesInfos
+end
+
+function sim.getProperties(target)
+    local properties = {}
+    for i, pname in ipairs(sim.getPropertiesNames(target)) do
+        properties[pname] = sim.getProperty(target, pname)
+    end
+    return properties
+end
+
 function sim.getTableProperty(...)
     local handle, tagName = checkargs({
         {type = 'int'},
@@ -967,22 +1047,6 @@ function sim.setTableProperty(...)
         -- add more table properties here
         error('unknown property (for the specified type and target).')
     end
-end
-
-function sim.getProperties(target)
-    local retVal = {}
-    local index = 0
-    while true do
-        local n = sim.getPropertyName(target, index)
-        if n then
-            local tp, flags, size = sim.getPropertyInfo(target, n)
-            retVal[n] = {tp, flags, size}
-            index = index + 1
-        else
-            break
-        end
-    end
-    return retVal
 end
 
 function sim.getObject(path, options)
