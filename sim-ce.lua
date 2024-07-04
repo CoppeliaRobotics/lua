@@ -412,9 +412,21 @@ float[3] pValue = sim.getColorProperty(int target, string pName)
 sim.setVectorProperty(int target, string pName, float[] pValue)
 float[] pValue = sim.getVectorProperty(int target, string pName)
 sim.removeProperty(int target, string pName)
-string pName = sim.getProperty(int target, int index)
-int pType, int pFlags = sim.getPropertyInfo(int target, string pName)
-bool hasProp = sim.hasProperty(int target, string pName)
+string pName = sim.getPropertyName(int target, int index)
+int pType, int pFlags, int size = sim.getPropertyInfo(int target, string pName)
+sim.propertytype_bool
+sim.propertytype_int32
+sim.propertytype_float
+sim.propertytype_string
+sim.propertytype_buffer
+sim.propertytype_vector3
+sim.propertytype_quaternion
+sim.propertytype_pose
+sim.propertytype_matrix3x3
+sim.propertytype_matrix4x4
+sim.propertytype_color
+sim.propertytype_vector
+sim.propertytype_table
 sim.appobj_object_type
 sim.appobj_script_type
 sim.appobj_simulation_type

@@ -969,6 +969,22 @@ function sim.setTableProperty(...)
     end
 end
 
+function sim.getProperties(target)
+    local retVal = {}
+    local index = 0
+    while true do
+        local n = sim.getPropertyName(target, index)
+        if n then
+            local tp, flags, size = sim.getPropertyInfo(target, n)
+            retVal[n] = {tp, flags, size}
+            index = index + 1
+        else
+            break
+        end
+    end
+    return retVal
+end
+
 function sim.getObject(path, options)
     options = options or {}
     local proxy = -1
