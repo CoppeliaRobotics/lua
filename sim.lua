@@ -1423,14 +1423,13 @@ function sim.setShapeAppearance(handle, savedData, opts)
 end
 
 function apropos(what)
-    local modNames = {'sim'}
+    local mods = {sim = sim}
     for i, n in ipairs(sim.getLoadedPlugins()) do
-        n = 'sim' .. n
-        if type(_G[n]) == 'table' then table.insert(modNames, n) end
+        pcall(function() mods[n] = require(n) end)
     end
     local results = {}
-    for i, n in ipairs(modNames) do
-        for k, v in pairs(_G[n]) do
+    for n, m in pairs(mods) do
+        for k, v in pairs(m) do
             if k:lower():match(what) then
                 local s = n .. '.' .. k
                 local info = s
