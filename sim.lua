@@ -1011,7 +1011,7 @@ function sim.getTableProperty(...)
     }, ...)
     local retVal = {}
     if string.sub(tagName, 1, 11) == 'customData.' then
-        tagName = 'customData.@tbl@.' .. string.sub(tagName, 11 + 1)
+        tagName = 'customData.&tbl&.' .. string.sub(tagName, 11 + 1)
         local data = sim.getBufferProperty(handle, tagName)
         if #data > 0 then
             retVal = sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
@@ -1031,7 +1031,7 @@ function sim.setTableProperty(...)
         {type = 'table', default = {}},
     }, ...)
     if string.sub(tagName, 1, 11) == 'customData.' then
-        tagName = 'customData.@tbl@.' .. string.sub(tagName, 11 + 1)
+        tagName = 'customData.&tbl&.' .. string.sub(tagName, 11 + 1)
         if next(theTable) == nil then
             sim.setBufferProperty(handle, tagName, tobuffer(''))
         else
