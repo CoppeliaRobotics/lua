@@ -387,8 +387,8 @@ map savedData = sim.getShapeAppearance(int handle, map opts={})
 int handle = sim.setShapeAppearance(int handle, map savedData, map opts={})
 sim.setBoolProperty(int target, string pName, bool pValue)
 bool pValue = sim.getBoolProperty(int target, string pName)
-sim.setInt32Property(int target, string pName, int pValue)
-int pValue = sim.getInt32Property(int target, string pName)
+sim.setIntProperty(int target, string pName, int pValue)
+int pValue = sim.getIntProperty(int target, string pName)
 sim.setFloatProperty(int target, string pName, float pValue)
 float pValue = sim.getFloatProperty(int target, string pName)
 sim.setStringProperty(int target, string pName, string pValue)
@@ -411,6 +411,8 @@ sim.setColorProperty(int target, string pName, float[3] pValue)
 float[3] pValue = sim.getColorProperty(int target, string pName)
 sim.setVectorProperty(int target, string pName, float[] pValue)
 float[] pValue = sim.getVectorProperty(int target, string pName)
+sim.setIntVectorProperty(int target, string pName, int[] pValue)
+int[] pValue = sim.getIntVectorProperty(int target, string pName)
 sim.removeProperty(int target, string pName)
 string pName = sim.getPropertyName(int target, int index)
 int pType, int pFlags, int size = sim.getPropertyInfo(int target, string pName)
@@ -421,7 +423,7 @@ string[] pNames = sim.getPropertiesNames(int target)
 map infos = sim.getPropertiesInfos(int target)
 map properties = sim.getProperties(int target)
 sim.propertytype_bool
-sim.propertytype_int32
+sim.propertytype_int
 sim.propertytype_float
 sim.propertytype_string
 sim.propertytype_buffer
@@ -432,6 +434,7 @@ sim.propertytype_matrix3x3
 sim.propertytype_matrix4x4
 sim.propertytype_color
 sim.propertytype_vector
+sim.propertytype_intvector
 sim.propertytype_table
 sim.appobj_object_type
 sim.appobj_script_type

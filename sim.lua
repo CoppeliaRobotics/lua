@@ -942,7 +942,7 @@ function sim.setProperty(target, pname, pvalue, ptype)
         local ltype = type(pvalue)
         if ltype == 'number' then
             if math.type(pvalue) == 'integer' then
-                ptype = sim.propertytype_int32
+                ptype = sim.propertytype_int
             else
                 ptype = sim.propertytype_float
             end
