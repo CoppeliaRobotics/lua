@@ -927,7 +927,12 @@ end
 function sim.getProperty(target, pname)
     local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
     assert(ptype, 'no such property: ' .. pname)
-    local getPropertyFunc = 'get' .. string.capitalize(sim.getPropertyTypeString(ptype)) .. 'Property'
+    ptype = sim.getPropertyTypeString(ptype)
+    ptype = string.capitalize(ptype)
+    for _, suffix in ipairs{'vector', 'array'} do
+        ptype = string.gsub(ptype, suffix .. '$', string.capitalize(suffix))
+    end
+    local getPropertyFunc = 'get' .. ptype .. 'Property'
     assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
     return sim[getPropertyFunc](target, pname)
 end
