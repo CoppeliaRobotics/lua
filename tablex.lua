@@ -257,7 +257,7 @@ function table.flatten(tbl, opts, prefix, tbl1)
     tbl1 = tbl1 or {}
     for k, v in pairs(tbl) do
         assert(type(k) == 'string', 'only string keys are supported')
-        if type(v) == 'table' and type(k) == 'string' then
+        if type(v) == 'table' and not table.isarray(v) and type(k) == 'string' then
             table.flatten(v, opts, prefix .. k .. '.', tbl1)
         else
             tbl1[prefix .. k] = v
