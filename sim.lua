@@ -73,6 +73,7 @@ end
 
 require('mathx')
 require('stringx')
+require('tablex')
 require('checkargs')
 require('matrix')
 require('grid')
@@ -977,7 +978,9 @@ function sim.getPropertyTypeString(ptype)
     return _S.propertytypeToStringMap[ptype]
 end
 
-function sim.getPropertiesNames(target)
+function sim.getProperties(target, opts)
+    opts = opts or {}
+
     local propertiesNames = {}
     for i = 0, 1e100 do
         local pname = sim.getPropertyName(target, i)
@@ -985,12 +988,14 @@ function sim.getPropertiesNames(target)
         table.insert(propertiesNames, pname)
     end
     table.sort(propertiesNames)
-    return propertiesNames
-end
 
-function sim.getPropertiesInfos(target)
+    local propertiesValues = {}
+    for i, pname in ipairs(propertiesNames) do
+        propertiesValues[pname] = sim.getProperty(target, pname)
+    end
+
     local propertiesInfos = {}
-    for i, pname in ipairs(sim.getPropertiesNames(target)) do
+    for i, pname in ipairs(propertiesNames) do
         local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
         propertiesInfos[pname] = {
             type = ptype,
@@ -998,15 +1003,13 @@ function sim.getPropertiesInfos(target)
             size = psize,
         }
     end
-    return propertiesInfos
-end
 
-function sim.getProperties(target)
-    local properties = {}
-    for i, pname in ipairs(sim.getPropertiesNames(target)) do
-        properties[pname] = sim.getProperty(target, pname)
+    if opts.unflatten then
+        propertiesValues = table.unflatten(propertiesValues)
+        propertiesInfos = table.unflatten(propertiesInfos)
     end
-    return properties
+
+    return propertiesValues, propertiesInfos
 end
 
 function sim.getTableProperty(...)

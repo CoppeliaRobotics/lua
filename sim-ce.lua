@@ -419,9 +419,7 @@ int pType, int pFlags, int size = sim.getPropertyInfo(int target, string pName)
 any pValue = sim.getProperty(int target, string pName)
 sim.setProperty(int target, string pName, any pValue, int pType=nil)
 string pTypeStr = sim.getPropertyTypeString(int pType)
-string[] pNames = sim.getPropertiesNames(int target)
-map infos = sim.getPropertiesInfos(int target)
-map properties = sim.getProperties(int target)
+map values, map infos = sim.getProperties(int target, map opts={})
 sim.propertytype_bool
 sim.propertytype_int
 sim.propertytype_float
