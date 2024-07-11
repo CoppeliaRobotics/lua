@@ -981,27 +981,22 @@ end
 function sim.getProperties(target, opts)
     opts = opts or {}
 
-    local propertiesNames = {}
-    for i = 0, 1e100 do
-        local pname = sim.getPropertyName(target, i)
-        if not pname then break end
-        table.insert(propertiesNames, pname)
-    end
-    table.sort(propertiesNames)
-
-    local propertiesValues = {}
-    for i, pname in ipairs(propertiesNames) do
-        propertiesValues[pname] = sim.getProperty(target, pname)
-    end
-
     local propertiesInfos = {}
-    for i, pname in ipairs(propertiesNames) do
+    for i = 0, 1e100 do
+        local pname, pclass = sim.getPropertyName(target, i)
+        if not pname then break end
         local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
         propertiesInfos[pname] = {
             type = ptype,
             flags = pflags,
             size = psize,
+            class = pclass,
         }
+    end
+
+    local propertiesValues = {}
+    for pname, _ in pairs(propertiesInfos) do
+        propertiesValues[pname] = sim.getProperty(target, pname)
     end
 
     if opts.unflatten then
