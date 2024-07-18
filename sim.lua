@@ -335,7 +335,7 @@ function sim.getAlternateConfigs(...)
         local c, interv = sim.getJointInterval(jointHandles[i])
         local t = sim.getJointType(jointHandles[i])
         local sp = sim.getObjectFloatParam(jointHandles[i], sim.jointfloatparam_screw_pitch)
-        if t == sim.joint_revolute_subtype and not c then
+        if t == sim.joint_revolute and not c then
             if sp == 0 then
                 if inputConfig[i] - math.pi * 2 >= interv[1] or inputConfig[i] + math.pi * 2 <=
                     interv[1] + interv[2] then
@@ -697,11 +697,11 @@ function sim.changeEntityColor(...)
     }, ...)
     local colorData = {}
     local objs = {entityHandle}
-    if sim.isHandle(entityHandle, sim.appobj_collection_type) then
+    if sim.isHandle(entityHandle, sim.objecttype_collection) then
         objs = sim.getCollectionObjects(entityHandle)
     end
     for i = 1, #objs, 1 do
-        if sim.getObjectType(objs[i]) == sim.object_shape_type then
+        if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
             local visible = sim.getObjectInt32Param(objs[i], sim.objintparam_visible)
             if visible == 1 then
                 local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
@@ -716,7 +716,7 @@ end
 function sim.restoreEntityColor(...)
     local colorData = checkargs({{type = 'table'}, size = '1..*'}, ...)
     for i = 1, #colorData, 1 do
-        if sim.isHandle(colorData[i].handle, sim.appobj_object_type) then
+        if sim.isHandle(colorData[i].handle, sim.objecttype_sceneobject) then
             sim.setShapeColor(colorData[i].handle, '@compound', colorData[i].comp, colorData[i].data)
         end
     end
@@ -1271,7 +1271,7 @@ function sim.getScriptFunctions(...)
     if ok then
         -- args[1] is a object handle (either new script, or other object)
         assert(#args <= 2, 'too many args')
-        if objType ~= sim.object_script_type then
+        if objType ~= sim.sceneobject_script then
             scriptHandle = sim.getScript(args[2] or sim.scripttype_customization, args[1])
         else
             scriptHandle = args[1]
@@ -1353,7 +1353,7 @@ function sim.visitTree(...)
 end
 
 function sim.getShapeAppearance(handle, opts)
-    assert(sim.getObjectType(handle) == sim.object_shape_type, 'not a shape')
+    assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
     opts = opts or {}
     local r = {}
     if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
@@ -1379,7 +1379,7 @@ function sim.getShapeAppearance(handle, opts)
 end
 
 function sim.setShapeAppearance(handle, savedData, opts)
-    assert(sim.getObjectType(handle) == sim.object_shape_type, 'not a shape')
+    assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
     opts = opts or {}
     if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
         -- we need to temporarily detach all its children, then attach them again
@@ -1455,7 +1455,7 @@ end
 require = wrap(require, function(origRequire)
     return function (...)
         local arg = ({...})[1]
-        if math.type(arg) == 'integer' and sim.isHandle(arg) and sim.getObjectType(arg) == sim.object_script_type then
+        if math.type(arg) == 'integer' and sim.isHandle(arg) and sim.getObjectType(arg) == sim.sceneobject_script then
             local txt = sim.getObjectStringParam(arg, sim.scriptstringparam_text)
             return loadstring(tostring(txt))()
         end
@@ -1701,7 +1701,7 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
             else
                 if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
                     return origFunc(data) -- CoppeliaSim's pack format
-                elseif (string.byte(data, 1) == 128) or (string.byte(data, 1) == 128 + 32) or (string.byte(data, 1) == 128 + 31) or (string.byte(data, 1) == 128 + 31 + 32) then
+                elseif ((string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) then
                     local cbor = require 'org.conman.cbor'
                     return cbor.decode(data)
                 else

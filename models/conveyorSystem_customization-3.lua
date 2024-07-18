@@ -74,7 +74,7 @@ function _S.conveyorSystem.prepare()
         end
     end
 
-    local shapes = sim.getObjectsInTree(_S.conveyorSystem.model, sim.object_shape_type, 1 + 2)
+    local shapes = sim.getObjectsInTree(_S.conveyorSystem.model, sim.sceneobject_shape, 1 + 2)
     local oldPads = {}
     local oldRespondable
     local oldBorder
@@ -87,7 +87,7 @@ function _S.conveyorSystem.prepare()
         end
     end
 
-    local joints = sim.getObjectsInTree(_S.conveyorSystem.model, sim.object_joint_type, 1 + 2)
+    local joints = sim.getObjectsInTree(_S.conveyorSystem.model, sim.sceneobject_joint, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
         local dat = sim.readCustomStringData(joints[i], 'PATHROL')
@@ -225,7 +225,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
             sim.setShapeMass(cyl, 0.01)
 
             sim.setObjectInt32Param(cyl, sim.objintparam_visibility_layer, 1 + 256)
-            local jnt = sim.createJoint(sim.joint_revolute_subtype, sim.jointmode_kinematic, 0)
+            local jnt = sim.createJoint(sim.joint_revolute, sim.jointmode_kinematic, 0)
             _S.conveyorSystem.rolHandles[i] = jnt
             sim.setObjectParent(cyl, jnt, true)
             sim.setObjectAlias(jnt, 'jrol')

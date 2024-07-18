@@ -41,7 +41,7 @@ function sysCall_beforeSimulation()
 end
 
 function _S.animator.updateColor(col)
-    local h = sim.getObjectsInTree(_S.animator.self, sim.object_shape_type)
+    local h = sim.getObjectsInTree(_S.animator.self, sim.sceneobject_shape)
     for i = 1, #h, 1 do
         sim.setShapeColor(h[i], nil, sim.colorcomponent_ambient_diffuse, col)
         sim.setShapeColor(h[i], nil, sim.colorcomponent_specular, {0.1, 0.1, 0.1})

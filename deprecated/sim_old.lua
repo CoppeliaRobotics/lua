@@ -59,7 +59,7 @@ function sim.rmlMoveToJointPositions(...)
         currentConf[i] = sim.getJointPosition(jhandles[i])
         local c, interv = sim.getJointInterval(jhandles[i])
         local t = sim.getJointType(jhandles[i])
-        local isCyclic = (t == sim.joint_revolute_subtype and c)
+        local isCyclic = (t == sim.joint_revolute and c)
         cycl[i] = isCyclic
         if isCyclic and (direction[i] ~= 0) then
             cycl[i] = false
@@ -345,17 +345,17 @@ function sim.canScaleObjectNonIsometrically(objHandle, scaleAxisX, scaleAxisY, s
         return true -- iso scaling in this case
     end
     local t = sim.getObjectType(objHandle)
-    if t == sim.object_joint_type then return true end
-    if t == sim.object_dummy_type then return true end
-    if t == sim.object_camera_type then return true end
-    if t == sim.object_mirror_type then return true end
-    if t == sim.object_light_type then return true end
-    if t == sim.object_forcesensor_type then return true end
-    if t == sim.object_path_type then return true end
-    if t == sim.object_pointcloud_type then return false end
-    if t == sim.object_octree_type then return false end
-    if t == sim.object_graph_type then return false end
-    if t == sim.object_proximitysensor_type then
+    if t == sim.sceneobject_joint then return true end
+    if t == sim.sceneobject_dummy then return true end
+    if t == sim.sceneobject_camera then return true end
+    if t == sim.sceneobject_mirror then return true end
+    if t == sim.sceneobject_light then return true end
+    if t == sim.sceneobject_forcesensor then return true end
+    if t == sim.sceneobject_path then return true end
+    if t == sim.sceneobject_pointcloud then return false end
+    if t == sim.sceneobject_octree then return false end
+    if t == sim.sceneobject_graph then return false end
+    if t == sim.sceneobject_proximitysensor then
         local p = sim.getObjectInt32Param(objHandle, sim.proxintparam_volume_type)
         if p == sim.volume_cylinder then return xIsY end
         if p == sim.volume_disc then return xIsZ end
@@ -363,15 +363,15 @@ function sim.canScaleObjectNonIsometrically(objHandle, scaleAxisX, scaleAxisY, s
         if p == sim.volume_randomizedray then return false end
         return true
     end
-    if t == sim.object_mill_type then
+    if t == sim.sceneobject_mill then
         local p = sim.getObjectInt32Param(objHandle, sim.millintparam_volume_type)
         if p == sim.volume_cylinder then return xIsY end
         if p == sim.volume_disc then return xIsZ end
         if p == sim.volume_cone then return false end
         return true
     end
-    if t == sim.object_visionsensor_type then return xIsY end
-    if t == sim.object_shape_type then
+    if t == sim.sceneobject_visionsensor then return xIsY end
+    if t == sim.sceneobject_shape then
         local r, pt = sim.getShapeGeomInfo(objHandle)
         if sim.boolAnd32(r, 1) ~= 0 then
             return false -- compound
@@ -397,8 +397,8 @@ function sim.canScaleModelNonIsometrically(modelHandle, scaleAxisX, scaleAxisY, 
     local allDescendents = sim.getObjectsInTree(modelHandle, sim.handle_all, 1)
     -- First the model base:
     local t = sim.getObjectType(modelHandle)
-    if (t == sim.object_pointcloud_type) or (t == sim.object_pointcloud_type) or
-        (t == sim.object_pointcloud_type) then
+    if (t == sim.sceneobject_pointcloud) or (t == sim.sceneobject_pointcloud) or
+        (t == sim.sceneobject_pointcloud) then
         if not ignoreNonScalableItems then
             if not sim.canScaleObjectNonIsometrically(
                 modelHandle, scaleAxisX, scaleAxisY, scaleAxisZ
@@ -414,8 +414,8 @@ function sim.canScaleModelNonIsometrically(modelHandle, scaleAxisX, scaleAxisY, 
     for i = 1, #allDescendents, 1 do
         local h = allDescendents[i]
         t = sim.getObjectType(h)
-        if ((t ~= sim.object_pointcloud_type) and (t ~= sim.object_pointcloud_type) and
-            (t ~= sim.object_pointcloud_type)) or (not ignoreNonScalableItems) then
+        if ((t ~= sim.sceneobject_pointcloud) and (t ~= sim.sceneobject_pointcloud) and
+            (t ~= sim.sceneobject_pointcloud)) or (not ignoreNonScalableItems) then
             local m = sim.getObjectMatrix(h, modelHandle)
             local axesMapping = {-1, -1, -1} -- -1=no mapping
             local matchingAxesCnt = 0
@@ -448,8 +448,8 @@ function sim.canScaleModelNonIsometrically(modelHandle, scaleAxisX, scaleAxisY, 
                 -- the child frame is not aligned at all with the model frame. And scaling is not iso-scaling
                 -- Dummies, cameras, lights and force sensors do not mind:
                 local t = sim.getObjectType(h)
-                if (t ~= sim.object_dummy_type) and (t ~= sim.object_camera_type) and
-                    (t ~= sim.object_light_type) and (t ~= sim.object_forcesensor_type) then
+                if (t ~= sim.sceneobject_dummy) and (t ~= sim.sceneobject_camera) and
+                    (t ~= sim.sceneobject_light) and (t ~= sim.sceneobject_forcesensor) then
                     return false
                 end
             else

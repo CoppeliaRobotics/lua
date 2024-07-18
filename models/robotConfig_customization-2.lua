@@ -53,7 +53,7 @@ function createModelClone()
     for _, handle in ipairs(clonedObjects) do
         local parent = sim.getObjectParent(handle)
         local alias = sim.getObjectAlias(handle)
-        if sim.getObjectType(handle) == sim.object_script_type then
+        if sim.getObjectType(handle) == sim.sceneobject_script then
             if parent == clonedModel and alias == 'IK' then
                 table.insert(scriptsToInit, handle)
             else
@@ -64,7 +64,7 @@ function createModelClone()
                     sim.removeObjects{handle}
                 end
             end
-        elseif sim.getObjectType(handle) == sim.object_shape_type then
+        elseif sim.getObjectType(handle) == sim.sceneobject_shape then
             sim.setObjectProperty(handle, sim.objectproperty_selectinvisible)
             sim.setObjectInt32Param(handle, sim.shapeintparam_respondable, 0)
             sim.setObjectInt32Param(handle, sim.shapeintparam_static, 1)

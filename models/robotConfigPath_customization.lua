@@ -68,7 +68,7 @@ function sysCall_init()
                         state:setConfig(states[i])
                         sim.visitTree(
                             sim.getObject './State', function(h)
-                                if sim.getObjectType(h) ~= sim.object_shape_type then
+                                if sim.getObjectType(h) ~= sim.sceneobject_shape then
                                     return
                                 end
                                 local v = sim.getObjectInt32Param(

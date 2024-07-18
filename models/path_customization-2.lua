@@ -243,7 +243,7 @@ function _S.path.createNew(ctrlPts, onlyPosData, options, pointCount, smoothing,
     local tmp4 = sysCall_afterDelete
     sysCall_afterDelete = nil
 
-    local children = sim.getObjectsInTree(_S.path.model, sim.object_dummy_type, 1)
+    local children = sim.getObjectsInTree(_S.path.model, sim.sceneobject_dummy, 1)
     sim.removeObjects(children)
 
     local dof = 7
@@ -277,7 +277,7 @@ function _S.path.cleanup()
     _S.path.hideCtrlPtDlg()
     _S.path.closeUserConfigDlg()
     -- Untag path dummies that are not part of the control pts (e.g. from another path):
-    local d = sim.getObjectsInTree(_S.path.model, sim.object_dummy_type, 1)
+    local d = sim.getObjectsInTree(_S.path.model, sim.sceneobject_dummy, 1)
     for i = 1, #d, 1 do
         local h = d[i]
         local dat = sim.readCustomBufferData(h, _S.path.ctrlPtsTag)
@@ -320,7 +320,7 @@ function _S.path.nonSimulation()
     local s = sim.getObjectSel()
     local insert = #s > 1
     for i = 1, #s, 1 do
-        if sim.getObjectType(s[i]) ~= sim.object_dummy_type then
+        if sim.getObjectType(s[i]) ~= sim.sceneobject_dummy then
             insert = false
             break
         end
@@ -398,7 +398,7 @@ function _S.path.areFingerPrintSame(fp1, fp2)
 end
 
 function _S.path.setPathShape(shape)
-    local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
+    local shapes = sim.getObjectsInTree(_S.path.model, sim.sceneobject_shape, 1 + 2)
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomStringData(shapes[i], _S.path.shapeTag)
         if dat and #dat > 0 then sim.removeObjects({shapes[i]}) end
@@ -417,7 +417,7 @@ function _S.path.setPathShape(shape)
 end
 
 function _S.path.getPathShapeColor()
-    local shapes = sim.getObjectsInTree(_S.path.model, sim.object_shape_type, 1 + 2)
+    local shapes = sim.getObjectsInTree(_S.path.model, sim.sceneobject_shape, 1 + 2)
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomStringData(shapes[i], _S.path.shapeTag)
         if dat and #dat > 0 then
@@ -687,7 +687,7 @@ end
 function _S.path.getCtrlPts()
     local config = _S.path.readInfo()
     _S.path.fixCtrlPtOrder()
-    local d = sim.getObjectsInTree(_S.path.model, sim.object_dummy_type, 1)
+    local d = sim.getObjectsInTree(_S.path.model, sim.sceneobject_dummy, 1)
     local pts = {}
     local map = {}
     for i = 1, #d, 1 do

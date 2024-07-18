@@ -363,7 +363,7 @@ function sim.moveToPose_init(params)
             params.ik.joints = {}
         end
         for k, v in pairs(params.ik.simToIkMap) do
-            if sim.getObjectType(k) == sim.object_joint_type then
+            if sim.getObjectType(k) == sim.sceneobject_joint then
                 if hadJoints then
                     local found = false
                     for i = 1, #params.ik.joints do

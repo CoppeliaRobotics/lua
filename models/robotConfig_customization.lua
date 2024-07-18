@@ -66,7 +66,7 @@ function createModelClone()
                 end
             end
         end
-        if sim.getObjectType(handle) == sim.object_shape_type then
+        if sim.getObjectType(handle) == sim.sceneobject_shape then
             sim.setObjectProperty(handle, sim.objectproperty_selectinvisible)
             sim.setObjectInt32Param(handle, sim.shapeintparam_respondable, 0)
             sim.setObjectInt32Param(handle, sim.shapeintparam_static, 1)

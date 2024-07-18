@@ -88,14 +88,14 @@ function _S.conveyor.init(config)
                  (_S.conveyor.config.beltElementWidth + _S.conveyor.config.beltElementSpacing)
     _S.conveyor.padOffset = (_S.conveyor.totalLength / padCnt)
 
-    local shapes = sim.getObjectsInTree(_S.conveyor.model, sim.object_shape_type, 1 + 2)
+    local shapes = sim.getObjectsInTree(_S.conveyor.model, sim.sceneobject_shape, 1 + 2)
     local oldPads = {}
     for i = 1, #shapes, 1 do
         local dat = sim.readCustomStringData(shapes[i], 'PATHPAD')
         if dat and #dat > 0 then oldPads[#oldPads + 1] = shapes[i] end
     end
 
-    local joints = sim.getObjectsInTree(_S.conveyor.model, sim.object_joint_type, 1 + 2)
+    local joints = sim.getObjectsInTree(_S.conveyor.model, sim.sceneobject_joint, 1 + 2)
     local oldJoints = {}
     for i = 1, #joints, 1 do
         local dat = sim.readCustomStringData(joints[i], 'PATHROL')
@@ -127,7 +127,7 @@ function _S.conveyor.init(config)
                         _S.conveyor.config.width * 0.95,
                     }, 0.01
                             )
-                local jnt = sim.createJoint(sim.joint_revolute_subtype, sim.jointmode_kinematic, 0)
+                local jnt = sim.createJoint(sim.joint_revolute, sim.jointmode_kinematic, 0)
                 _S.conveyor.rolHandles[i] = jnt
                 sim.setObjectParent(cyl, jnt, true)
                 sim.setObjectAlias(jnt, 'jrol')
