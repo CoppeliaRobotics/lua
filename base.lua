@@ -318,17 +318,13 @@ function _S.numberToString(x, opts)
 
     opts = opts and table.clone(opts) or {}
     opts.numFloatDigits = math.max(0, opts.numFloatDigits or 6)
-    opts.stripTrailingZeros = opts.stripTrailingZeros == true
+    opts.stripTrailingZeros = opts.stripTrailingZeros ~= false
 
     local s = string.format('%.' .. opts.numFloatDigits .. 'f', x)
     if opts.stripTrailingZeros then
         local i, d = table.unpack(string.split(s, '%.'))
         d = string.gsub(d or '', '0*$', '')
-        if d ~= '' then
-            s = i .. '.' .. d
-        else
-            s = i
-        end
+        s = i .. '.' .. d
     end
     return s
 end
