@@ -304,9 +304,33 @@ function _S.anyToString(x, opts)
         end
     elseif t == 'string' then
         return _S.getShortString(x, opts)
+    elseif t == 'number' then
+        return _S.numberToString(x, opts)
     else
         return tostring(x)
     end
+end
+
+function _S.numberToString(x, opts)
+    if math.type(x) ~= 'float' then
+        return tostring(x)
+    end
+
+    opts = opts and table.clone(opts) or {}
+    opts.numFloatDigits = math.max(0, opts.numFloatDigits or 6)
+    opts.stripTrailingZeros = opts.stripTrailingZeros == true
+
+    local s = string.format('%.' .. opts.numFloatDigits .. 'f', x)
+    if opts.stripTrailingZeros then
+        local i, d = table.unpack(string.split(s, '%.'))
+        d = string.gsub(d or '', '0*$', '')
+        if d ~= '' then
+            s = i .. '.' .. d
+        else
+            s = i
+        end
+    end
+    return s
 end
 
 function _S.getShortString(x, opts)
