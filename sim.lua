@@ -34,7 +34,7 @@ function sim.setBufferSignal(sigName, data)
 end
 
 function sim.clearBufferSignal(sigName)
-    sim.setClearStringSignal(sigName)
+    sim.clearStringSignal(sigName)
 end
 
 function sim.setStepping(enable)
