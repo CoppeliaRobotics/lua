@@ -69,10 +69,9 @@ function textUtils.generateTextShape(txt, color, height, centered, alphabetModel
         local p = sim.getObjectPosition(s)
         sim.setObjectPosition(s, {p[1], p[2] + voff, p[3]})
         sim.setModelProperty(s, sim.modelproperty_not_model)
-        sim.reorientShapeBoundingBox(s, -1)
-        sim.setObjectProperty(
-            s, sim.objectproperty_selectable | sim.objectproperty_selectmodelbaseinstead
-        )
+        sim.alignShapeBB(s, {0, 0, 0, 0, 0, 0, 1})
+        sim.relocateShapeFrame(s, {0, 0, 0, 0, 0, 0, 0})
+        sim.setObjectProperty(s, sim.objectproperty_selectable | sim.objectproperty_selectmodelbaseinstead)
         sim.setObjectAlias(s, 'text')
         sim.scaleObjects({s}, scaling, true)
         sim.setShapeColor(s, nil, sim.colorcomponent_ambient_diffuse, color)
