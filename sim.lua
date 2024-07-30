@@ -311,6 +311,77 @@ function sim.throttle(t, func, ...)
     end
 end
 
+function _S.schedulerCallback()
+    local function fn(t, pq)
+        local item = pq:peek()
+        if item and item.timePoint <= t then
+            item.func(table.unpack(item.args or {}))
+            pq:pop()
+            fn(t, pq)
+        end
+    end
+
+    fn(sim.getSystemTime(), _S.scheduler.rtpq)
+    if sim.getSimulationState() == sim.simulation_advancing_running then
+        fn(sim.getSimulationTime(), _S.scheduler.simpq)
+    end
+
+    if _S.scheduler.simpq:isempty() and _S.scheduler.rtpq:isempty() then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', _S.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', _S.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', _S.schedulerCallback, true)
+        _S.scheduler.hook = false
+    end
+end
+
+function sim.scheduleExecution(func, args, timePoint, simTime)
+    if not _S.scheduler then
+        local priorityqueue = require 'priorityqueue'
+        _S.scheduler = {
+            simpq = priorityqueue(),
+            rtpq = priorityqueue(),
+            simTime = {},
+            nextId = 1,
+        }
+    end
+
+    local id = _S.scheduler.nextId
+    _S.scheduler.nextId = id + 1
+    local pq
+    if simTime then
+        pq = _S.scheduler.simpq
+        _S.scheduler.simTime[id] = true
+    else
+        pq = _S.scheduler.rtpq
+    end
+    pq:push(timePoint, {
+        id = id,
+        func = func,
+        args = args,
+        timePoint = timePoint,
+        simTime = simTime,
+    })
+    if not _S.scheduler.hook then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', _S.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', _S.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', _S.schedulerCallback, true)
+        _S.scheduler.hook = true
+    end
+    return id
+end
+
+function sim.cancelScheduledExecution(id)
+    if not _S.scheduler then return end
+    local pq = nil
+    if _S.scheduler.simTime[id] then
+        _S.scheduler.simTime[id] = nil
+        pq = _S.scheduler.simpq
+    else
+        pq = _S.scheduler.rtpq
+    end
+    return pq:cancel(function(item) return item.id == id end)
+end
+
 function sim.getAlternateConfigs(...)
     local jointHandles, inputConfig, tipHandle, lowLimits, ranges = checkargs({
         {type = 'table', item_type = 'int'},
