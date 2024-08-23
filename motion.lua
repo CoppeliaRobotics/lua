@@ -657,8 +657,8 @@ function sim.generateTimeOptimalTrajectory(...)
     local lb = sim.setStepping(true)
 
     local pM = Matrix(confCnt, dof, path)
-    local mmvM = Matrix(2, dof, minMaxVel)
-    local mmaM = Matrix(2, dof, minMaxAccel)
+    local mmvM = Matrix(dof, 2, minMaxVel)
+    local mmaM = Matrix(dof, 2, minMaxAccel)
 
     local code = [=[import toppra as ta
 import toppra.constraint as constraint
