@@ -638,7 +638,6 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    simZMQ = require 'simZMQ'
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -661,61 +660,65 @@ function sim.generateTimeOptimalTrajectory(...)
     local mmvM = Matrix(2, dof, minMaxVel)
     local mmaM = Matrix(2, dof, minMaxAccel)
 
-    sim.addLog(sim.verbosity_scriptinfos,
-        "Trying to connect via ZeroMQ to the 'toppra' service... " ..
-        "make sure the 'docker-image-zmq-toppra' container is running. " ..
-        "Details can be found at https://github.com/CoppeliaRobotics/docker-image-zmq-toppra"
-    )
-    local context = simZMQ.ctx_new()
-    local socket = simZMQ.socket(context, simZMQ.REQ)
-    simZMQ.setsockopt(socket, simZMQ.RCVTIMEO, sim.packInt32Table {1000 * timeout})
-    simZMQ.setsockopt(socket, simZMQ.LINGER, sim.packInt32Table {500})
-    local result = simZMQ.connect(socket, 'tcp://localhost:22505')
-    if result == -1 then
-        local err = simZMQ.errnum()
-        error('connect failed: ' .. err .. ': ' .. simZMQ.strerror(err))
-    end
-    local json = require 'dkjson'
-    local result = simZMQ.send(socket, json.encode {
+    local code = [=[import toppra as ta
+import toppra.constraint as constraint
+import toppra.algorithm as algo
+import numpy as np
+
+ta.setup_logging("INFO")
+
+def sysCall_init():
+    pass
+
+def sysCall_cleanup():
+    pass
+
+def cb(req):
+    try:
+        resp = cbb(req)
+        resp['success'] = True
+    except Exception as e:
+        resp = {'success': False, 'error': str(e)}
+    return resp
+
+def cbb(req):
+    coefficients = ta.SplineInterpolator(req['ss_waypoints'], req['waypoints'], req.get('bc_type', 'not-a-knot'))
+    pc_vel = constraint.JointVelocityConstraint(req['velocity_limits'])
+    pc_acc = constraint.JointAccelerationConstraint(req['acceleration_limits'], discretization_scheme=constraint.DiscretizationType.Interpolation)
+    instance = algo.TOPPRA([pc_vel, pc_acc], coefficients, solver_wrapper='seidel')
+    jnt_traj = instance.compute_trajectory(0, 0)
+    duration = jnt_traj.duration
+    #print("Found optimal trajectory with duration {:f} sec".format(duration))
+    n = coefficients.dof
+    resp = dict(qs=[[]]*n, qds=[[]]*n, qdds=[[]]*n)
+    ts = np.linspace(0, duration, req.get('samples', 100))
+    for i in range(n):
+        resp['qs'][i] = jnt_traj.eval(ts).tolist()
+        resp['qds'][i] = jnt_traj.evald(ts).tolist()
+        resp['qdds'][i] = jnt_traj.evaldd(ts).tolist()
+    resp['ts'] = ts.tolist()
+    return resp
+]=]
+
+    local script = sim.createScript(sim.scripttype_customization, code, 0, 'python')
+    sim.setObjectAlias(script, 'toppraPythonScript')
+    sim.initScript(script)
+    local toSend = {
         samples = trajPtSamples,
         ss_waypoints = pathLengths,
         waypoints = pM:totable(),
         velocity_limits = mmvM:totable(),
         acceleration_limits = mmaM:totable(),
         bc_type = boundaryCondition,
-    }, 0)
-    if result == -1 then
-        local err = simZMQ.errnum()
-        error('send failed: ' .. err .. ': ' .. simZMQ.strerror(err))
-    end
-    local msg = simZMQ.msg_new()
-    simZMQ.msg_init(msg)
-
-    local st = sim.getSystemTime()
-    result = -1
-    while sim.getSystemTime() - st < 2 do
-        local rc, revents = simZMQ.poll({socket}, {simZMQ.POLLIN}, 0)
-        if rc > 0 then
-            result = simZMQ.msg_recv(msg, socket, 0)
-            break
-        end
-    end
-    if result == -1 then
-        local err = simZMQ.errnum()
-        error('recv failed: ' .. err .. ': ' .. simZMQ.strerror(err))
-    end
-    local data = simZMQ.msg_data(msg)
-    simZMQ.msg_close(msg)
-    simZMQ.msg_destroy(msg)
-
-    if isbuffer(data) then
-        data = tostring(data)
-    end
-    local r = json.decode(data)
-    simZMQ.close(socket)
-    simZMQ.ctx_term(context)
-
+    }
+    local s, r = pcall(sim.callScriptFunction, 'cb', script, toSend)
+    sim.removeObjects({script})
     sim.setStepping(lb)
+    
+    if s ~= true then
+        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed.')
+    end
+
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
