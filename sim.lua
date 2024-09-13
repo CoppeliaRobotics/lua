@@ -1067,7 +1067,9 @@ function sim.getProperties(target, opts)
 
     local propertiesValues = {}
     for pname, _ in pairs(propertiesInfos) do
-        propertiesValues[pname] = sim.getProperty(target, pname)
+        if propertiesInfos[pname].flags & 2 == 0 then
+            propertiesValues[pname] = sim.getProperty(target, pname)
+        end
     end
 
     if opts.unflatten then
