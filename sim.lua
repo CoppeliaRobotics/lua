@@ -1153,9 +1153,8 @@ function sim.getObjectHandle(path, options)
     if options.noError then option = 1 end
     local h = sim._getObjectHandle(path, index, proxy, option)
     local c = string.sub(path, 1, 1)
-    if c ~= '.' and c ~= ':' and c ~= '/' and _S.getObjectHandleWarning == nil then
-        _S.getObjectHandleWarning = true
-        sim.addLog(sim.verbosity_scriptwarnings, "sim.getObjectHandle is deprecated. Use sim.getObject instead.")
+    if c ~= '.' and c ~= ':' and c ~= '/' then
+        sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, "sim.getObjectHandle is deprecated. Use sim.getObject instead.")
     end
     return h
 end
