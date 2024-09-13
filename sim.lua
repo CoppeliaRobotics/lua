@@ -1010,28 +1010,36 @@ function sim.getProperty(target, pname)
 end
 
 function sim.setProperty(target, pname, pvalue, ptype)
-    if type(ptype) == 'string' then
-        ptype = sim['propertytype_' .. ptype]
-        assert(ptype, 'invalid property type string')
-    end
-    if ptype == nil then
-        -- ptype not provided -> guess it
-        local ltype = type(pvalue)
-        if ltype == 'number' then
-            if math.type(pvalue) == 'integer' then
-                ptype = sim.propertytype_int
-            else
-                ptype = sim.propertytype_float
-            end
-        elseif ltype == 'string' then
-            ptype = sim.propertytype_string
-        elseif ltype == 'boolean' then
-            ptype = sim.propertytype_bool
-        elseif ltype == 'table' then
-            ptype = sim.propertytype_table
-        else
-            error('unsupported property type: ' .. ltype)
+    if string.startswith(pname, 'customData.') then
+        -- custom data properties need type (param `ptype`, can be string
+        -- e.g.: 'intvector', or can be int, e.g.: sim.propertytype_intvector)
+        -- if not specified, it will be inferred from lua's variable type
+        if type(ptype) == 'string' then
+            ptype = sim['propertytype_' .. ptype]
+            assert(ptype, 'invalid property type string')
         end
+        if ptype == nil then
+            -- ptype not provided -> guess it
+            local ltype = type(pvalue)
+            if ltype == 'number' then
+                if math.type(pvalue) == 'integer' then
+                    ptype = sim.propertytype_int
+                else
+                    ptype = sim.propertytype_float
+                end
+            elseif ltype == 'string' then
+                ptype = sim.propertytype_string
+            elseif ltype == 'boolean' then
+                ptype = sim.propertytype_bool
+            elseif ltype == 'table' then
+                ptype = sim.propertytype_table
+            else
+                error('unsupported property type: ' .. ltype)
+            end
+        end
+    else
+        assert(ptype == nil, 'cannot specify type for static properties')
+        ptype = sim.getPropertyInfo(target, pname)
     end
     local setPropertyFunc = 'set' .. string.capitalize(sim.getPropertyTypeString(ptype)) .. 'Property'
     assert(sim[setPropertyFunc], 'no such function: sim.' .. setPropertyFunc)
