@@ -999,12 +999,7 @@ end
 function sim.getProperty(target, pname)
     local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
     assert(ptype, 'no such property: ' .. pname)
-    ptype = sim.getPropertyTypeString(ptype)
-    ptype = string.capitalize(ptype)
-    for _, suffix in ipairs{'vector', 'array'} do
-        ptype = string.gsub(ptype, suffix .. '$', string.capitalize(suffix))
-    end
-    local getPropertyFunc = 'get' .. ptype .. 'Property'
+    local getPropertyFunc = 'get' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
     assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
     return sim[getPropertyFunc](target, pname)
 end
@@ -1041,12 +1036,12 @@ function sim.setProperty(target, pname, pvalue, ptype)
         assert(ptype == nil, 'cannot specify type for static properties')
         ptype = sim.getPropertyInfo(target, pname)
     end
-    local setPropertyFunc = 'set' .. string.capitalize(sim.getPropertyTypeString(ptype)) .. 'Property'
+    local setPropertyFunc = 'set' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
     assert(sim[setPropertyFunc], 'no such function: sim.' .. setPropertyFunc)
     return sim[setPropertyFunc](target, pname, pvalue)
 end
 
-function sim.getPropertyTypeString(ptype)
+function sim.getPropertyTypeString(ptype, forGetterSetter)
     if not _S.propertytypeToStringMap then
         _S.propertytypeToStringMap = {}
         for k, v in pairs(sim) do
@@ -1054,7 +1049,12 @@ function sim.getPropertyTypeString(ptype)
             if m then _S.propertytypeToStringMap[v] = m end
         end
     end
-    return _S.propertytypeToStringMap[ptype]
+    local ret = _S.propertytypeToStringMap[ptype]
+    if forGetterSetter then
+        if ret == 'intvector' then ret = 'intVector' end
+        ret = string.capitalize(ret)
+    end
+    return ret
 end
 
 function sim.getProperties(target, opts)
