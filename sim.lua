@@ -1057,6 +1057,17 @@ function sim.getPropertyTypeString(ptype, forGetterSetter)
     return ret
 end
 
+function sim.convertPropertyValue(value, fromType, toType)
+    if fromType == toType then
+        return value
+    elseif fromType == sim.propertytype_string then
+        return loadstring('return ' .. value)()
+    elseif toType == sim.propertytype_string then
+        return _S.anyToString(value)
+    end
+    error 'unsupported type of conversion'
+end
+
 function sim.getProperties(target, opts)
     opts = opts or {}
 
