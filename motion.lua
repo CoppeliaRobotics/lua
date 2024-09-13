@@ -681,6 +681,11 @@ def cb(req):
         resp = {'success': False, 'error': str(e)}
     return resp
 
+def rs(a):
+    flattened = [item for sublist in a for item in sublist]
+    reshaped_matrix = [flattened[i:i + 2] for i in range(0, len(flattened), 2)]
+    return reshaped_matrix
+
 def cbb(req):
     coefficients = ta.SplineInterpolator(req['ss_waypoints'], req['waypoints'], req.get('bc_type', 'not-a-knot'))
     pc_vel = constraint.JointVelocityConstraint(req['velocity_limits'])
