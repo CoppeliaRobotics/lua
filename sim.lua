@@ -1057,6 +1057,12 @@ function sim.getProperties(target, opts)
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
         local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
+        pflags = {
+            value = pflags,
+            readable = pflags & 2 == 0,
+            writable = pflags & 1 == 0,
+            removable = pflags & 4 > 0,
+        }
         propertiesInfos[pname] = {
             type = ptype,
             flags = pflags,
@@ -1067,7 +1073,7 @@ function sim.getProperties(target, opts)
 
     local propertiesValues = {}
     for pname, _ in pairs(propertiesInfos) do
-        if propertiesInfos[pname].flags & 2 == 0 then
+        if propertiesInfos[pname].flags.readable then
             propertiesValues[pname] = sim.getProperty(target, pname)
         end
     end
