@@ -1097,7 +1097,9 @@ function sim.getProperties(target, opts)
     local propertiesValues = {}
     for pname, _ in pairs(propertiesInfos) do
         if propertiesInfos[pname].flags.readable then
-            propertiesValues[pname] = sim.getProperty(target, pname)
+            if not opts.skipLarge or not propertiesInfos[pname].flags.large then
+                propertiesValues[pname] = sim.getProperty(target, pname)
+            end
         end
     end
 
