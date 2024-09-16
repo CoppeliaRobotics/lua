@@ -1084,6 +1084,7 @@ function sim.getProperties(target, opts)
             readable = pflags & 2 == 0,
             writable = pflags & 1 == 0,
             removable = pflags & 4 > 0,
+            large = pflags & 256 > 0,
         }
         propertiesInfos[pname] = {
             type = ptype,
