@@ -1061,7 +1061,10 @@ function sim.convertPropertyValue(value, fromType, toType)
     if fromType == toType then
         return value
     elseif fromType == sim.propertytype_string then
-        return loadstring('return ' .. value)()
+        local fn, err = loadstring('return ' .. value)
+        if not fn then return nil, err end
+        local ok, val = pcall(fn)
+        if ok then return val, nil else return nil, val end
     elseif toType == sim.propertytype_string then
         return _S.anyToString(value)
     end
