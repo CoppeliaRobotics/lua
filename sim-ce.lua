@@ -436,6 +436,10 @@ sim.propertytype_color
 sim.propertytype_vector
 sim.propertytype_intvector
 sim.propertytype_table
+sim.propertyinfo_notwritable
+sim.propertyinfo_notreadable
+sim.propertyinfo_removable
+sim.propertyinfo_largedata
 sim.objecttype_sceneobject
 sim.objecttype_texture
 sim.objecttype_mesh
