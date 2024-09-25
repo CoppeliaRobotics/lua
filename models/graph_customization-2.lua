@@ -247,6 +247,53 @@ function _S.graph.updateCurves(forceUpdate)
             _S.graph.remove3dCurves()
             _S.graph.createOrRemovePlotIfNeeded(sim.getSimulationState() ~= sim.simulation_stopped)
         end
+        
+        -- events ---
+        ---[[
+        local currentCurves = {}
+        for ct = 0, 2 do -- 0= time curves, 1= x/y curves, 2= 3D curves
+            local index = 0
+            while true do
+                local label, info, curveColor, dataA, dataB, minMaxT, id, width, uid = sim.getGraphCurve(_S.graph.model, ct, index)
+                index = index + 1
+                if label then
+                    currentCurves[uid] = true
+                    local eventName = 'objectAdded'
+                    if _S.graph.allIds_event[uid] then
+                        eventName = 'objectChanged'
+                    else
+                        _S.graph.allIds_event[uid] = label
+                        _S.graph.allCurves_event[#_S.graph.allCurves_event + 1] = uid
+                    end
+                    --[=[
+                    local data = {}
+                    data.objectType = 'graphCurve'
+                    data.graph = _S.graph.model
+                    data.label = label
+                    data.info = info
+                    data.color = curveColor
+                    data.dataA = dataA
+                    data.dataB = dataB
+                    data.minMax = minMax
+                    data.width = width
+                    --]=]
+                    local data = {info = 'curve data events disabled as of now. Enable in graph_customization-2.lua'}
+                    sim.pushUserEvent(eventName, uid, uid, data, 0)
+                else
+                    break
+                end
+            end
+            for i = 1, #_S.graph.allCurves_event do
+                local uid = _S.graph.allCurves_event[i]
+                if currentCurves[uid] == nil then
+                    _S.graph.allIds_event[uid] = nil
+                    sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
+                end
+            end
+        end
+        --]]
+        -------------
+        
         if _S.graph.plotUi then
             for pl = 1, #_S.graph.plots, 1 do
                 local minMax = nil
@@ -693,6 +740,8 @@ function _S.graph.init()
     if sim.getExplicitHandling(_S.graph.model) == 0 then
         sim.setExplicitHandling(_S.graph.model, 1)
     end
+    _S.graph.allCurves_event = {}
+    _S.graph.allIds_event = {}
     local c = _S.graph.readInfo()
     _S.graph.updateTick = _S.graph.getUpdateTick(c['updateFreq'])
     _S.graph.updateCnt = 0
@@ -703,6 +752,10 @@ end
 
 function _S.graph.cleanup()
     _S.graph.removePlot()
+    for i = 1, #_S.graph.allCurves_event do
+        local uid = _S.graph.allCurves_event[i]
+        sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
+    end
 end
 
 function _S.graph.beforeSimulation()
