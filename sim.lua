@@ -997,7 +997,7 @@ function sim.writeCustomTableData(...)
 end
 
 function sim.getProperty(target, pname)
-    local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
+    local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
     assert(ptype, 'no such property: ' .. pname)
     local getPropertyFunc = 'get' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
     assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
@@ -1078,7 +1078,7 @@ function sim.getProperties(target, opts)
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
-        local ptype, pflags, psize = sim.getPropertyInfo(target, pname)
+        local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
         pflags = {
             value = pflags,
             readable = pflags & 2 == 0,
@@ -1089,7 +1089,7 @@ function sim.getProperties(target, opts)
         propertiesInfos[pname] = {
             type = ptype,
             flags = pflags,
-            size = psize,
+            descr = descr,
             class = pclass,
         }
     end
