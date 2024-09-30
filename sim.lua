@@ -1052,6 +1052,7 @@ function sim.getPropertyTypeString(ptype, forGetterSetter)
     local ret = _S.propertytypeToStringMap[ptype]
     if forGetterSetter then
         if ret == 'intvector' then ret = 'intVector' end
+        if ret == 'intvector2' then ret = 'intVector2' end
         ret = string.capitalize(ret)
     end
     return ret
