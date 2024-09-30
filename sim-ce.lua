@@ -399,6 +399,10 @@ sim.setBufferProperty(int target, string pName, buffer pValue)
 buffer pValue = sim.getBufferProperty(int target, string pName)
 sim.setTableProperty(int target, string pName, map pValue, map options)
 map pValue = sim.getTableProperty(int target, string pName)
+sim.setIntVector2Property(int target, string pName, int[2] pValue)
+int[2] pValue = sim.getIntVector2Property(int target, string pName)
+sim.setVector2Property(int target, string pName, float[2] pValue)
+float[2] pValue = sim.getVector2Property(int target, string pName)
 sim.setVector3Property(int target, string pName, float[3] pValue)
 float[3] pValue = sim.getVector3Property(int target, string pName)
 sim.setQuaternionProperty(int target, string pName, float[4] pValue)
@@ -427,6 +431,8 @@ sim.propertytype_int
 sim.propertytype_float
 sim.propertytype_string
 sim.propertytype_buffer
+sim.propertytype_intvector2
+sim.propertytype_vector2
 sim.propertytype_vector3
 sim.propertytype_quaternion
 sim.propertytype_pose
