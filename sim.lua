@@ -1051,8 +1051,11 @@ function sim.getPropertyTypeString(ptype, forGetterSetter)
     end
     local ret = _S.propertytypeToStringMap[ptype]
     if forGetterSetter then
-        if ret == 'intvector' then ret = 'intVector' end
-        if ret == 'intvector2' then ret = 'intVector2' end
+        if ret == 'floatarray' then ret = 'floatArray' end
+        if ret == 'floatarray2' then ret = 'floatArray2' end
+        if ret == 'floatarray3' then ret = 'floatArray3' end
+        if ret == 'intarray' then ret = 'intArray' end
+        if ret == 'intarray2' then ret = 'intArray2' end
         ret = string.capitalize(ret)
     end
     return ret

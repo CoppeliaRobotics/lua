@@ -399,8 +399,8 @@ sim.setBufferProperty(int target, string pName, buffer pValue)
 buffer pValue = sim.getBufferProperty(int target, string pName)
 sim.setTableProperty(int target, string pName, map pValue, map options)
 map pValue = sim.getTableProperty(int target, string pName)
-sim.setIntVector2Property(int target, string pName, int[2] pValue)
-int[2] pValue = sim.getIntVector2Property(int target, string pName)
+sim.setIntArray2Property(int target, string pName, int[2] pValue)
+int[2] pValue = sim.getIntArray2Property(int target, string pName)
 sim.setVector2Property(int target, string pName, float[2] pValue)
 float[2] pValue = sim.getVector2Property(int target, string pName)
 sim.setVector3Property(int target, string pName, float[3] pValue)
@@ -409,16 +409,12 @@ sim.setQuaternionProperty(int target, string pName, float[4] pValue)
 float[4] pValue = sim.getQuaternionProperty(int target, string pName)
 sim.setPoseProperty(int target, string pName, float[7] pValue)
 float[7] pValue = sim.getPoseProperty(int target, string pName)
-sim.setMatrix3x3Property(int target, string pName, float[9] pValue)
-float[9] pValue = sim.getMatrix3x3Property(int target, string pName)
-sim.setMatrix4x4Property(int target, string pName, float[12] pValue)
-float[16] pValue = sim.getMatrix4x4Property(int target, string pName)
 sim.setColorProperty(int target, string pName, float[3] pValue)
 float[3] pValue = sim.getColorProperty(int target, string pName)
-sim.setVectorProperty(int target, string pName, float[] pValue)
-float[] pValue = sim.getVectorProperty(int target, string pName)
-sim.setIntVectorProperty(int target, string pName, int[] pValue)
-int[] pValue = sim.getIntVectorProperty(int target, string pName)
+sim.setFloatArrayProperty(int target, string pName, float[] pValue)
+float[] pValue = sim.getFloatArrayProperty(int target, string pName)
+sim.setIntArrayProperty(int target, string pName, int[] pValue)
+int[] pValue = sim.getIntArrayProperty(int target, string pName)
 sim.removeProperty(int target, string pName)
 string pName, string appartenance = sim.getPropertyName(int target, int index, map options={})
 int pType, int pFlags, string description = sim.getPropertyInfo(int target, string pName, map options={})
@@ -431,7 +427,7 @@ sim.propertytype_int
 sim.propertytype_float
 sim.propertytype_string
 sim.propertytype_buffer
-sim.propertytype_intvector2
+sim.propertytype_intarray2
 sim.propertytype_vector2
 sim.propertytype_vector3
 sim.propertytype_quaternion
@@ -439,8 +435,8 @@ sim.propertytype_pose
 sim.propertytype_matrix3x3
 sim.propertytype_matrix4x4
 sim.propertytype_color
-sim.propertytype_vector
-sim.propertytype_intvector
+sim.propertytype_floatarray
+sim.propertytype_intarray
 sim.propertytype_table
 sim.propertyinfo_notwritable
 sim.propertyinfo_notreadable
