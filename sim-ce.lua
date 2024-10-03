@@ -391,6 +391,8 @@ sim.setBoolProperty(int target, string pName, bool pValue)
 bool pValue = sim.getBoolProperty(int target, string pName)
 sim.setIntProperty(int target, string pName, int pValue)
 int pValue = sim.getIntProperty(int target, string pName)
+sim.setLongProperty(int target, string pName, int pValue)
+int pValue = sim.getLongProperty(int target, string pName)
 sim.setFloatProperty(int target, string pName, float pValue)
 float pValue = sim.getFloatProperty(int target, string pName)
 sim.setStringProperty(int target, string pName, string pValue)
@@ -424,6 +426,7 @@ string pTypeStr = sim.getPropertyTypeString(int pType)
 map values, map infos = sim.getProperties(int target, map opts={})
 sim.propertytype_bool
 sim.propertytype_int
+sim.propertytype_long
 sim.propertytype_float
 sim.propertytype_string
 sim.propertytype_buffer
