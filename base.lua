@@ -233,6 +233,8 @@ function _S.tableToString(tt, opts)
     opts.omitQuotes = false
     opts.longStringThreshold = 160
 
+    if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
+
     -- if type(tt) ~= 'table' then
     --    return _S.anyToString(tt, opts)
     -- end
@@ -297,6 +299,7 @@ function _S.anyToString(x, opts)
     if t == 'nil' then
         return tostring(nil)
     elseif t == 'table' then
+        if (getmetatable(x) or {}).__tostring then return tostring(x) end
         if isbuffer(x) then
             return string.format('[buffer (%s bytes)]', #x)
         else
