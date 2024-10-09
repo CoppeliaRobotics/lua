@@ -299,10 +299,10 @@ function _S.anyToString(x, opts)
     if t == 'nil' then
         return tostring(nil)
     elseif t == 'table' then
-        if (getmetatable(x) or {}).__tostring then return tostring(x) end
         if isbuffer(x) then
             return string.format('[buffer (%s bytes)]', #x)
         else
+            if (getmetatable(x) or {}).__tostring then return tostring(x) end
             return _S.tableToString(x, opts)
         end
     elseif t == 'string' then
