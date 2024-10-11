@@ -39,10 +39,6 @@ int result, float distance, float[3] detectedPoint, float[3] normalVector = sim.
 int result, float[] auxPacket1, float[] auxPacket2 = sim.checkVisionSensor(int sensorHandle, int entityHandle)
 float[] theBuffer = sim.checkVisionSensorEx(int sensorHandle, int entityHandle, bool returnImage)
 buffer theBuffer = sim.checkVisionSensorEx(int sensorHandle, int entityHandle, bool returnImage)
-sim.clearFloatSignal(string signalName)
-sim.clearInt32Signal(string signalName)
-sim.clearStringSignal(string signalName)
-sim.clearBufferSignal(string signalName)
 int result = sim.closeScene()
 buffer outImg = sim.combineRgbImages(buffer img1, int[2] img1Res, buffer img2, int[2] img2Res, int operation)
 int result = sim.computeMassAndInertia(int shapeHandle, float density)
@@ -78,26 +74,17 @@ float[] path, float[] times = sim.generateTimeOptimalTrajectory(float[] path, fl
 float[] configs = sim.getAlternateConfigs(int[] jointHandles, float[] inputConfig, int tipHandle=-1, float[] lowLimits=nil, float[] ranges=nil)
 string[] funcsAndVars = sim.getApiFunc(int scriptHandle, string apiWord)
 string info = sim.getApiInfo(int scriptHandle, string apiWord)
-float[3] arrayOfValues = sim.getArrayParam(int parameter)
-bool boolState = sim.getBoolParam(int parameter)
 float posAlongPath = sim.getClosestPosOnPath(float[] path, float[] pathLengths, float[3] absPt)
 int[] objectHandles = sim.getCollectionObjects(int collectionHandle)
 float distance = sim.getConfigDistance(float[] configA, float[] configB, float[] metric=nil, int[] types=nil)
 int[2] collidingObjects, float[3] collisionPoint, float[3] reactionForce, float[3] normalVector = sim.getContactInfo(int dynamicPass, int objectHandle, int index)
-bool boolParam = sim.getEngineBoolParam(int paramId, int objectHandle)
-float floatParam = sim.getEngineFloatParam(int paramId, int objectHandle)
-int int32Param = sim.getEngineInt32Param(int paramId, int objectHandle)
 float[3] eulerAngles = sim.getEulerAnglesFromMatrix(float[12] matrix)
 int explicitHandlingFlags = sim.getExplicitHandling(int objectHandle)
 string theString = sim.getExtensionString(int objectHandle, int index, string key=nil)
-float floatState = sim.getFloatParam(int parameter)
-float signalValue = sim.getFloatSignal(string signalName)
 map[] events = sim.getGenesisEvents()
 buffer events = sim.getGenesisEvents()
 string label, int attributes, float[3] curveColor, float[] xData, float[] yData, float[6] minMax, int curveId, int curveWidth = sim.getGraphCurve(int graphHandle, int graphType, int curveIndex)
 int bitCoded, float[3] bgColor, float[3] fgColor = sim.getGraphInfo(int graphHandle)
-int intState = sim.getInt32Param(int parameter)
-int signalValue = sim.getInt32Signal(string signalName)
 bool result = sim.getRealTimeSimulation()
 int result = sim.getIsRealTimeSimulation()
 int masterJointHandle, float offset, float multCoeff = sim.getJointDependency(int jointHandle)
@@ -114,10 +101,6 @@ int state, float[3] zero, float[3] diffusePart, float[3] specular = sim.getLight
 int linkDummyHandle = sim.getLinkDummy(int dummyHandle)
 float[12] matrix = sim.getMatrixInverse(float[12] matrix)
 int property = sim.getModelProperty(int objectHandle)
-bool value = sim.getNamedBoolParam(string name)
-float value = sim.getNamedFloatParam(string name)
-int value = sim.getNamedInt32Param(string name)
-buffer stringParam = sim.getNamedStringParam(string paramName)
 int navigationMode = sim.getNavigationMode()
 int objectHandle = sim.getObject(string path, map options={})
 string objectAlias = sim.getObjectAlias(int objectHandle, int options=-1)
@@ -125,10 +108,7 @@ string alias = sim.getObjectAliasRelative(int handle, int baseHandle, int option
 int childObjectHandle = sim.getObjectChild(int objectHandle, int index)
 float[7] pose = sim.getObjectChildPose(int objectHandle)
 float[3] rgbData = sim.getObjectColor(int objectHandle, int index, int colorComponent)
-float[] params = sim.getObjectFloatArrayParam(int objectHandle, int parameterID)
-float parameter = sim.getObjectFloatParam(int objectHandle, int parameterID)
 sim.getObjectFromUid(int uid, map options={})
-int parameter = sim.getObjectInt32Param(int objectHandle, int parameterID)
 float[12] matrix = sim.getObjectMatrix(int objectHandle, int relativeToObjectHandle=sim.handle_world)
 float[3] eulerAngles = sim.getObjectOrientation(int objectHandle, int relativeToObjectHandle=sim.handle_world)
 int parentObjectHandle = sim.getObjectParent(int objectHandle)
@@ -139,7 +119,6 @@ float[4] quaternion = sim.getObjectQuaternion(int objectHandle, int relativeToOb
 int[] objectHandles = sim.getObjectSel()
 float sizeFactor = sim.getObjectSizeFactor(int ObjectHandle)
 int property = sim.getObjectSpecialProperty(int objectHandle)
-buffer parameter = sim.getObjectStringParam(int objectHandle, int parameterID)
 int objectType = sim.getObjectType(int objectHandle)
 int uid = sim.getObjectUid(int objectHandle)
 float[3] linearVelocity, float[3] angularVelocity = sim.getObjectVelocity(int objectHandle)
@@ -160,10 +139,6 @@ float[3] axis, float angle = sim.getRotationAxis(float[7] poseStart, float[7] po
 buffer imageOut, int[2] effectiveResolutionOut = sim.getScaledImage(buffer imageIn, int[2] resolutionIn, int[2] desiredResolutionOut, int options)
 int scriptHandle = sim.getScript(int scriptType, string scriptName='')
 map wrapper = sim.getScriptFunctions(int scriptHandle)
-bool value = sim.getSettingBool(string key)
-float value = sim.getSettingFloat(string key)
-int value = sim.getSettingInt32(string key)
-string value = sim.getSettingString(string key)
 float[3] size, float[7] pose = sim.getShapeBB(int shapeHandle)
 int result, float[] rgbData = sim.getShapeColor(int shapeHandle, string colorName, int colorComponent)
 int result, int pureType, float[4] dimensions = sim.getShapeGeomInfo(int shapeHandle)
@@ -178,9 +153,6 @@ float simulationTime = sim.getSimulationTime()
 float timeStep = sim.getSimulationTimeStep()
 int messageID, int[4] auxiliaryData, int[1..*] auxiliaryData2 = sim.getSimulatorMessage()
 string stacktraceback = sim.getStackTraceback(int scriptHandle=sim.handle_self)
-string stringState = sim.getStringParam(int parameter)
-string signalValue = sim.getStringSignal(string signalName)
-buffer signalValue = sim.getBufferSignal(string signalName)
 float time = sim.getSystemTime()
 int textureId, int[2] resolution = sim.getTextureId(string textureName)
 bool stopping = sim.getSimulationStopping()
@@ -253,10 +225,6 @@ sim.pauseSimulation()
 float[12] matrix = sim.poseToMatrix(float[7] pose)
 sim.pushUserEvent(string event, int handle, int uid, map eventData, int options=0)
 sim.quitSimulator()
-string data = sim.readCustomStringData(int objectHandle, string tagName)
-buffer data = sim.readCustomBufferData(int objectHandle, string tagName)
-map data = sim.readCustomTableData(int handle, string tagName, map options={})
-string[] tags = sim.readCustomDataTags(int objectHandle)
 int result, float[3] forceVector, float[3] torqueVector = sim.readForceSensor(int objectHandle)
 int result, float distance, float[3] detectedPoint, int detectedObjectHandle, float[3] normalVector = sim.readProximitySensor(int sensorHandle)
 buffer textureData = sim.readTexture(int textureId, int options, int posX=0, int posY=0, int sizeX=0, int sizeY=0)
@@ -295,14 +263,7 @@ sim.serialClose(int portHandle)
 int portHandle = sim.serialOpen(string portString, int baudrate)
 buffer data = sim.serialRead(int portHandle, int dataLengthToRead, bool blockingOperation, buffer closingString='', float timeout=0)
 int charsSent = sim.serialSend(int portHandle, buffer data)
-sim.setArrayParam(int parameter, float[3] arrayOfValues)
-sim.setBoolParam(int parameter, bool boolState)
-sim.setEngineBoolParam(int paramId, int objectHandle, bool boolParam)
-sim.setEngineFloatParam(int paramId, int objectHandle, float floatParam)
-sim.setEngineInt32Param(int paramId, int objectHandle, int int32Param)
 sim.setExplicitHandling(int objectHandle, int explicitHandlingFlags)
-sim.setFloatParam(int parameter, float floatState)
-sim.setFloatSignal(string signalName, float signalValue)
 sim.setGraphStreamTransformation(int graphHandle, int streamId, int trType, float mult=1.0, float off=0.0, int movAvgPeriod=1)
 sim.setGraphStreamValue(int graphHandle, int streamId, float value)
 sim.setInt32Param(int parameter, int intState)
@@ -314,25 +275,16 @@ sim.setJointPosition(int objectHandle, float position)
 sim.setJointTargetForce(int objectHandle, float forceOrTorque, bool signedValue=true)
 sim.setJointTargetPosition(int objectHandle, float targetPosition, float[] motionParams={})
 sim.setJointTargetVelocity(int objectHandle, float targetVelocity, float[] motionParams={})
-sim.setLightParameters(int lightHandle, int state, float[3] reserved, float[3] diffusePart, float[3] specularPart)
 sim.setLinkDummy(int dummyHandle, int linkDummyHandle)
 sim.setModelProperty(int objectHandle, int property)
 string pluginName = sim.getPluginName(int index)
 string info = sim.getPluginInfo(string pluginName, int infoType)
-number info = sim.getPluginInfo(string pluginName, int infoType)
 sim.setPluginInfo(string pluginName, int infoType, string info)
 sim.setPluginInfo(string pluginName, int infoType, number info)
-sim.setNamedBoolParam(string name, bool value)
-sim.setNamedFloatParam(string name, float value)
-sim.setNamedInt32Param(string name, int value)
-sim.setNamedStringParam(string paramName, buffer stringParam)
 sim.setNavigationMode(int navigationMode)
 sim.setObjectAlias(int objectHandle, string objectAlias)
 sim.setObjectChildPose(int objectHandle, float[7] pose)
 bool result = sim.setObjectColor(int objectHandle, int index, int colorComponent, float[3] rgbData)
-sim.setObjectFloatArrayParam(int objectHandle, int parameterID, float[] params)
-sim.setObjectFloatParam(int objectHandle, int parameterID, float parameter)
-sim.setObjectInt32Param(int objectHandle, int parameterID, int parameter)
 sim.setObjectMatrix(int objectHandle, float[12] matrix, int relativeToObjectHandle = sim.handle_world)
 sim.setObjectOrientation(int objectHandle, float[3] eulerAngles, int relativeToObjectHandle = sim.handle_world)
 sim.setObjectParent(int objectHandle, int parentObjectHandle, bool keepInPlace=true)
@@ -342,7 +294,6 @@ sim.setObjectProperty(int objectHandle, int property)
 sim.setObjectQuaternion(int objectHandle, float[4] quaternion, int relativeToObjectHandle = sim.handle_world)
 sim.setObjectSel(int[] objectHandles)
 sim.setObjectSpecialProperty(int objectHandle, int property)
-sim.setObjectStringParam(int objectHandle, int parameterID, buffer parameter)
 sim.setPage(int pageIndex)
 sim.setPointCloudOptions(int pointCloudHandle, float maxVoxelSize, int maxPtCntPerVoxel, int options, float pointSize)
 sim.setReferencedHandles(int objectHandle, int[] referencedHandles, string tag='')
@@ -352,9 +303,6 @@ sim.setShapeInertia(int shapeHandle, float[9] inertiaMatrix, float[12] comMatrix
 sim.setShapeMass(int shapeHandle, float mass)
 sim.setShapeMaterial(int shapeHandle, int materialIdOrShapeHandle)
 sim.setShapeTexture(int shapeHandle, int textureId, int mappingMode, int options, float[2] uvScaling, float[3] position=nil, float[3] orientation=nil)
-sim.setStringParam(int parameter, string stringState)
-sim.setStringSignal(string signalName, string signalValue)
-sim.setBufferSignal(string signalName, buffer signalValue)
 sim.setVisionSensorImg(int sensorHandle, buffer image, int options=0, int[2] pos={0, 0}, int[2] size={0, 0})
 sim.startSimulation()
 sim.stopSimulation(bool wait=false)
@@ -378,10 +326,6 @@ int[] uint32Numbers = sim.unpackUInt32Table(buffer data, int startUint32Index=0,
 int[] uint8Numbers = sim.unpackUInt8Table(buffer data, int startUint8Index=0, int uint8count=0)
 sim.visitTree(int rootHandle, func visitorFunc, map options={})
 float timeLeft = sim.wait(float dt, bool simulationTime=true)
-any sigVal = sim.waitForSignal(string sigName)
-sim.writeCustomStringData(int objectHandle, string tagName, string data)
-sim.writeCustomBufferData(int objectHandle, string tagName, buffer data)
-sim.writeCustomTableData(int handle, string tagName, map theTable, map options={})\n\nPass options {dataType="cbor"} to encode using CBOR
 sim.writeTexture(int textureId, int options, buffer textureData, int posX=0, int posY=0, int sizeX=0, int sizeY=0, float interpol=0.0)
 float alphaAngle, float betaAngle, float gammaAngle = sim.yawPitchRollToAlphaBetaGamma(float yawAngle, float pitchAngle, float rollAngle)
 int ret = sim.testCB(int a, func cb, int b)
@@ -425,6 +369,7 @@ any pValue = sim.getProperty(int target, string pName)
 sim.setProperty(int target, string pName, any pValue, int pType=nil)
 string pTypeStr = sim.getPropertyTypeString(int pType)
 map values, map infos = sim.getProperties(int target, map opts={})
+
 sim.propertytype_bool
 sim.propertytype_int
 sim.propertytype_long
@@ -446,55 +391,11 @@ sim.propertyinfo_notwritable
 sim.propertyinfo_notreadable
 sim.propertyinfo_removable
 sim.propertyinfo_largedata
+
 sim.objecttype_sceneobject
 sim.objecttype_texture
 sim.objecttype_mesh
-sim.arrayparam_ambient_light
-sim.arrayparam_background_color1
-sim.arrayparam_background_color2
-sim.arrayparam_fog
-sim.arrayparam_fog_color
-sim.arrayparam_gravity
-sim.arrayparam_random_euler
-sim.arrayparam_raydirection
-sim.arrayparam_rayorigin
-sim.boolparam_aux_clip_planes_enabled
-sim.boolparam_browser_toolbarbutton_enabled
-sim.boolparam_browser_visible
-sim.boolparam_calcmodules_toolbarbutton_enabled
-sim.boolparam_console_visible
-sim.boolparam_display_enabled
-sim.boolparam_dynamics_handling_enabled
-sim.boolparam_exit_request
-sim.boolparam_fog_enabled
-sim.boolparam_force_calcstruct_all
-sim.boolparam_force_calcstruct_all_visible
-sim.boolparam_full_model_copy_from_api
-sim.boolparam_fullscreen
-sim.boolparam_headless
-sim.boolparam_cansave
-sim.boolparam_hierarchy_toolbarbutton_enabled
-sim.boolparam_hierarchy_visible
-sim.boolparam_infotext_visible
-sim.boolparam_mirrors_enabled
-sim.boolparam_objectrotate_toolbarbutton_enabled
-sim.boolparam_objectshift_toolbarbutton_enabled
-sim.boolparam_objproperties_toolbarbutton_enabled
-sim.boolparam_pause_toolbarbutton_enabled
-sim.boolparam_play_toolbarbutton_enabled
-sim.boolparam_rayvalid
-sim.boolparam_realtime_simulation
-sim.boolparam_rosinterface_donotrunmainscript
-sim.boolparam_scene_and_model_load_messages
-sim.boolparam_scene_closing
-sim.boolparam_shape_textures_are_visible
-sim.boolparam_statustext_open
-sim.boolparam_stop_toolbarbutton_enabled
-sim.boolparam_use_glfinish_cmd
-sim.boolparam_video_recording_triggered
-sim.boolparam_waiting_for_trigger
-sim.boolparam_execunsafe
-sim.boolparam_execunsafeext
+
 sim.buffer_base64
 sim.buffer_clamp
 sim.buffer_double
@@ -539,21 +440,7 @@ sim.bullet_joint_pospid2
 sim.bullet_joint_pospid3
 sim.bullet_joint_stopcfm
 sim.bullet_joint_stoperp
-sim.camerafarrayparam_viewfrustum
-sim.camerafloatparam_far_clipping
-sim.camerafloatparam_near_clipping
-sim.camerafloatparam_ortho_size
-sim.camerafloatparam_perspective_angle
-sim.camerafloatparam_pov_aperture
-sim.camerafloatparam_pov_blur_distance
-sim.cameraintparam_disabled_light_components
-sim.cameraintparam_perspective_operation
-sim.cameraintparam_pov_blur_samples
-sim.cameraintparam_pov_focal_blur
-sim.cameraintparam_remotecameramode
-sim.cameraintparam_rendering_attributes
-sim.cameraintparam_trackedobject
-sim.octreefloatparam_voxelsize
+
 sim.colorcomponent_ambient
 sim.colorcomponent_ambient_diffuse
 sim.colorcomponent_auxiliary
@@ -561,6 +448,7 @@ sim.colorcomponent_diffuse
 sim.colorcomponent_emission
 sim.colorcomponent_specular
 sim.colorcomponent_transparency
+
 sim.displayattribute_colorcoded
 sim.displayattribute_colorcodedpickpass
 sim.displayattribute_colorcodedtriangles
@@ -586,6 +474,7 @@ sim.displayattribute_selected
 sim.displayattribute_thickEdges
 sim.displayattribute_trianglewireframe
 sim.displayattribute_useauxcomponent
+
 sim.drawing_cubepts
 sim.drawing_cyclic
 sim.drawing_discpts
@@ -599,78 +488,12 @@ sim.drawing_quadpts
 sim.drawing_spherepts
 sim.drawing_trianglepts
 sim.drawing_triangles
-sim.dummyfloatparam_size
-sim.dummyintparam_dummytype
-sim.dummystringparam_assemblytag
+
 sim.dummytype_dynloopclosure
 sim.dummytype_dyntendon
 sim.dummytype_default
 sim.dummytype_assembly
-sim.dynmat_default
-sim.dynmat_floor
-sim.dynmat_foot
-sim.dynmat_gripper
-sim.dynmat_highfriction
-sim.dynmat_lowfriction
-sim.dynmat_nofriction
-sim.dynmat_reststackgrasp
-sim.dynmat_wheel
-sim.filtercomponent_3x3filter
-sim.filtercomponent_5x5filter
-sim.filtercomponent_addbuffer1
-sim.filtercomponent_addtobuffer1
-sim.filtercomponent_binary
-sim.filtercomponent_blobextraction
-sim.filtercomponent_circularcut
-sim.filtercomponent_colorsegmentation
-sim.filtercomponent_correlationwithbuffer1
-sim.filtercomponent_customized
-sim.filtercomponent_edge
-sim.filtercomponent_frombuffer1
-sim.filtercomponent_frombuffer2
-sim.filtercomponent_horizontalflip
-sim.filtercomponent_imagetocoord
-sim.filtercomponent_intensityscale
-sim.filtercomponent_keeporremovecolors
-sim.filtercomponent_multiplywithbuffer1
-sim.filtercomponent_normalize
-sim.filtercomponent_originaldepth
-sim.filtercomponent_originalimage
-sim.filtercomponent_pixelchange
-sim.filtercomponent_rectangularcut
-sim.filtercomponent_resize
-sim.filtercomponent_rotate
-sim.filtercomponent_scaleandoffsetcolors
-sim.filtercomponent_sharpen
-sim.filtercomponent_shift
-sim.filtercomponent_subtractbuffer1
-sim.filtercomponent_subtractfrombuffer1
-sim.filtercomponent_swapbuffers
-sim.filtercomponent_swapwithbuffer1
-sim.filtercomponent_tobuffer1
-sim.filtercomponent_tobuffer2
-sim.filtercomponent_todepthoutput
-sim.filtercomponent_tooutput
-sim.filtercomponent_uniformimage
-sim.filtercomponent_velodyne
-sim.filtercomponent_verticalflip
-sim.floatparam_dynamic_step_size
-sim.floatparam_maxtrisizeabs
-sim.floatparam_mintrisizerel
-sim.floatparam_mouse_wheel_zoom_factor
-sim.floatparam_physicstimestep
-sim.floatparam_rand
-sim.floatparam_simulation_time_step
-sim.floatparam_stereo_distance
-sim.forcefloatparam_error_a
-sim.forcefloatparam_error_angle
-sim.forcefloatparam_error_b
-sim.forcefloatparam_error_g
-sim.forcefloatparam_error_pos
-sim.forcefloatparam_error_x
-sim.forcefloatparam_error_y
-sim.forcefloatparam_error_z
-sim.graphintparam_needs_refresh
+
 sim.handle_all
 sim.handle_all_except_explicit
 sim.handle_all_except_self
@@ -689,6 +512,7 @@ sim.handle_world
 sim.handle_sceneobject
 sim.handle_sandbox
 sim.handle_mesh
+
 sim.handleflag_abscoords
 sim.handleflag_addmultiple
 sim.handleflag_altname
@@ -710,229 +534,40 @@ sim.handleflag_resettorque
 sim.handleflag_silenterror
 sim.handleflag_togglevisibility
 sim.handleflag_wxyzquat
+
 sim.imgcomb_horizontal
 sim.imgcomb_vertical
-sim.intparam_compilation_version
-sim.intparam_core_count
-sim.intparam_current_page
-sim.intparam_dlgverbosity
-sim.intparam_dynamic_engine
-sim.intparam_dynamic_iteration_count
-sim.intparam_dynamic_step_divider
-sim.intparam_dynamic_warning_disabled_mask
-sim.intparam_notifydeprecated
-sim.intparam_processid
-sim.intparam_processcnt
-sim.intparam_edit_mode_type
-sim.intparam_error_report_mode
-sim.intparam_exitcode
-sim.intparam_flymode_camera_handle
-sim.intparam_hierarchychangecounter
-sim.intparam_idle_fps
-sim.intparam_infotext_style
-sim.intparam_motionplanning_seed
-sim.intparam_mouse_buttons
-sim.intparam_mouse_x
-sim.intparam_mouse_y
-sim.intparam_mouseclickcounterdown
-sim.intparam_mouseclickcounterup
-sim.intparam_objectcreationcounter
-sim.intparam_objectdestructioncounter
-sim.intparam_platform
-sim.intparam_program_full_version
-sim.intparam_program_revision
-sim.intparam_program_version
-sim.intparam_prox_sensor_select_down
-sim.intparam_prox_sensor_select_up
-sim.intparam_qt_version
-sim.intparam_scene_index
-sim.intparam_scene_unique_id
-sim.intparam_server_port_next
-sim.intparam_server_port_range
-sim.intparam_server_port_start
-sim.intparam_settings
-sim.intparam_speedmodifier
-sim.intparam_statusbarverbosity
-sim.intparam_stop_request_counter
-sim.intparam_verbosity
-sim.intparam_videoencoderindex
-sim.intparam_visible_layers
-sim.intparam_work_thread_calc_time_ms
-sim.intparam_work_thread_count
+
 sim.joint_prismatic
 sim.joint_revolute
 sim.joint_spherical
+
 sim.jointdynctrl_callback
 sim.jointdynctrl_force
 sim.jointdynctrl_free
 sim.jointdynctrl_position
 sim.jointdynctrl_spring
 sim.jointdynctrl_velocity
-sim.jointfloatparam_error_a
-sim.jointfloatparam_error_angle
-sim.jointfloatparam_error_b
-sim.jointfloatparam_error_g
-sim.jointfloatparam_error_pos
-sim.jointfloatparam_error_x
-sim.jointfloatparam_error_y
-sim.jointfloatparam_error_z
-sim.jointfloatparam_intrinsic_qw
-sim.jointfloatparam_intrinsic_qx
-sim.jointfloatparam_intrinsic_qy
-sim.jointfloatparam_intrinsic_qz
-sim.jointfloatparam_intrinsic_x
-sim.jointfloatparam_intrinsic_y
-sim.jointfloatparam_intrinsic_z
-sim.jointfloatparam_kc_c
-sim.jointfloatparam_kc_k
-sim.jointfloatparam_maxaccel
-sim.jointfloatparam_maxjerk
-sim.jointfloatparam_maxvel
-sim.jointfloatparam_screwlead
-sim.jointfloatparam_spherical_qw
-sim.jointfloatparam_spherical_qx
-sim.jointfloatparam_spherical_qy
-sim.jointfloatparam_spherical_qz
-sim.jointfloatparam_velocity
-sim.jointfloatparam_vortex_dep_multiplication
-sim.jointfloatparam_vortex_dep_offset
-sim.jointintparam_ctrl_enabled
-sim.jointintparam_dynctrlmode
-sim.jointintparam_dynposctrltype
-sim.jointintparam_dynvelctrltype
-sim.jointintparam_motor_enabled
-sim.jointintparam_velocity_lock
-sim.jointintparam_vortex_dep_handle
+
 sim.jointmode_dependent
 sim.jointmode_dynamic
 sim.jointmode_kinematic
+
 sim.light_directional
 sim.light_omnidirectional
 sim.light_spot
-sim.lightfloatparam_const_attenuation
-sim.lightfloatparam_lin_attenuation
-sim.lightfloatparam_quad_attenuation
-sim.lightfloatparam_spot_cutoff
-sim.lightfloatparam_spot_exponent
-sim.lightintparam_pov_casts_shadows
+
 sim.message_keypress
 sim.message_model_loaded
 sim.message_object_selection_changed
 sim.message_scene_loaded
-sim.millintparam_volume_type
-sim.mirrorfloatparam_height
-sim.mirrorfloatparam_reflectance
-sim.mirrorfloatparam_width
-sim.mirrorintparam_enable
-sim.modelproperty_not_collidable
-sim.modelproperty_not_detectable
-sim.modelproperty_not_dynamic
-sim.modelproperty_not_measurable
-sim.modelproperty_not_model
-sim.modelproperty_not_reset
-sim.modelproperty_not_respondable
-sim.modelproperty_not_showasinsidemodel
-sim.modelproperty_not_visible
-sim.modelproperty_scripts_inactive
+
 sim.plugininfo_builddatestr
 sim.plugininfo_extversionint
 sim.plugininfo_extversionstr
 sim.plugininfo_statusbarverbosity
 sim.plugininfo_verbosity
-sim.mujoco_body_condim
-sim.mujoco_body_friction1
-sim.mujoco_body_friction2
-sim.mujoco_body_friction3
-sim.mujoco_body_margin
-sim.mujoco_body_priority
-sim.mujoco_body_solimp1
-sim.mujoco_body_solimp2
-sim.mujoco_body_solimp3
-sim.mujoco_body_solimp4
-sim.mujoco_body_solimp5
-sim.mujoco_body_solmix
-sim.mujoco_body_solref1
-sim.mujoco_body_solref2
-sim.mujoco_dummy_bitcoded
-sim.mujoco_dummy_damping
-sim.mujoco_dummy_limited
-sim.mujoco_dummy_margin
-sim.mujoco_dummy_proxyjointid
-sim.mujoco_dummy_range1
-sim.mujoco_dummy_range2
-sim.mujoco_dummy_solimplimit1
-sim.mujoco_dummy_solimplimit2
-sim.mujoco_dummy_solimplimit3
-sim.mujoco_dummy_solimplimit4
-sim.mujoco_dummy_solimplimit5
-sim.mujoco_dummy_solreflimit1
-sim.mujoco_dummy_solreflimit2
-sim.mujoco_dummy_springlength
-sim.mujoco_dummy_stiffness
-sim.mujoco_global_balanceinertias
-sim.mujoco_global_bitcoded
-sim.mujoco_global_boundinertia
-sim.mujoco_global_boundmass
-sim.mujoco_global_computeinertias
-sim.mujoco_global_cone
-sim.mujoco_global_density
-sim.mujoco_global_impratio
-sim.mujoco_global_integrator
-sim.mujoco_global_iterations
-sim.mujoco_global_kininertia
-sim.mujoco_global_kinmass
-sim.mujoco_global_multiccd
-sim.mujoco_global_multithreaded
-sim.mujoco_global_nconmax
-sim.mujoco_global_njmax
-sim.mujoco_global_nstack
-sim.mujoco_global_overridecontacts
-sim.mujoco_global_overridekin
-sim.mujoco_global_overridemargin
-sim.mujoco_global_overridesolimp1
-sim.mujoco_global_overridesolimp2
-sim.mujoco_global_overridesolimp3
-sim.mujoco_global_overridesolimp4
-sim.mujoco_global_overridesolimp5
-sim.mujoco_global_overridesolref1
-sim.mujoco_global_overridesolref2
-sim.mujoco_global_rebuildtrigger
-sim.mujoco_global_solver
-sim.mujoco_global_viscosity
-sim.mujoco_global_wind1
-sim.mujoco_global_wind2
-sim.mujoco_global_wind3
-sim.mujoco_joint_armature
-sim.mujoco_joint_damping
-sim.mujoco_joint_dependentobjectid
-sim.mujoco_joint_frictionloss
-sim.mujoco_joint_margin
-sim.mujoco_joint_polycoef1
-sim.mujoco_joint_polycoef2
-sim.mujoco_joint_polycoef3
-sim.mujoco_joint_polycoef4
-sim.mujoco_joint_polycoef5
-sim.mujoco_joint_pospid1
-sim.mujoco_joint_pospid2
-sim.mujoco_joint_pospid3
-sim.mujoco_joint_solimpfriction1
-sim.mujoco_joint_solimpfriction2
-sim.mujoco_joint_solimpfriction3
-sim.mujoco_joint_solimpfriction4
-sim.mujoco_joint_solimpfriction5
-sim.mujoco_joint_solimplimit1
-sim.mujoco_joint_solimplimit2
-sim.mujoco_joint_solimplimit3
-sim.mujoco_joint_solimplimit4
-sim.mujoco_joint_solimplimit5
-sim.mujoco_joint_solreffriction1
-sim.mujoco_joint_solreffriction2
-sim.mujoco_joint_solreflimit1
-sim.mujoco_joint_solreflimit2
-sim.mujoco_joint_springdamper1
-sim.mujoco_joint_springdamper2
-sim.mujoco_joint_springref
-sim.mujoco_joint_stiffness
+
 sim.navigation_cameraangle
 sim.navigation_camerarotate
 sim.navigation_camerarotatemiddlebutton
@@ -947,27 +582,7 @@ sim.navigation_objectrotate
 sim.navigation_objectshift
 sim.navigation_passive
 sim.navigation_shiftselection
-sim.newton_body_angulardrag
-sim.newton_body_bitcoded
-sim.newton_body_fastmoving
-sim.newton_body_kineticfriction
-sim.newton_body_lineardrag
-sim.newton_body_restitution
-sim.newton_body_staticfriction
-sim.newton_global_bitcoded
-sim.newton_global_computeinertias
-sim.newton_global_constraintsolvingiterations
-sim.newton_global_contactmergetolerance
-sim.newton_global_exactsolver
-sim.newton_global_highjointaccuracy
-sim.newton_global_multithreading
-sim.newton_joint_dependencyfactor
-sim.newton_joint_dependencyoffset
-sim.newton_joint_dependentobjectid
-sim.newton_joint_objectid
-sim.newton_joint_pospid1
-sim.newton_joint_pospid2
-sim.newton_joint_pospid3
+
 sim.sceneobject_camera
 sim.sceneobject_dummy
 sim.sceneobject_script
@@ -981,6 +596,191 @@ sim.sceneobject_proximitysensor
 sim.sceneobject_renderingsensor
 sim.sceneobject_shape
 sim.sceneobject_visionsensor
+
+sim.particle_cyclic
+sim.particle_emissioncolor
+sim.particle_ignoresgravity
+sim.particle_invisible
+sim.particle_itemcolors
+sim.particle_itemdensities
+sim.particle_itemsizes
+sim.particle_painttag
+sim.particle_particlerespondable
+sim.particle_points1
+sim.particle_points2
+sim.particle_points4
+sim.particle_respondable1to4
+sim.particle_respondable5to8
+sim.particle_roughspheres
+sim.particle_spheres
+sim.particle_water
+
+sim.physics_bullet
+sim.physics_mujoco
+sim.physics_newton
+sim.physics_ode
+sim.physics_physx
+sim.physics_vortex
+
+sim.primitiveshape_capsule
+sim.primitiveshape_cone
+sim.primitiveshape_cuboid
+sim.primitiveshape_cylinder
+sim.primitiveshape_disc
+sim.primitiveshape_heightfield
+sim.primitiveshape_none
+sim.primitiveshape_plane
+sim.primitiveshape_spheroid
+
+sim.proximitysensor_cone
+sim.proximitysensor_cylinder
+sim.proximitysensor_disc
+sim.proximitysensor_pyramid
+sim.proximitysensor_ray
+
+sim.ruckig_minaccel
+sim.ruckig_minvel
+sim.ruckig_nosync
+sim.ruckig_phasesync
+sim.ruckig_timesync
+
+sim.scriptexecorder_first
+sim.scriptexecorder_last
+sim.scriptexecorder_normal
+
+sim.lang_undefined
+sim.lang_lua
+sim.lang_python
+
+sim.scripttype_addon
+sim.scripttype_simulation
+sim.scripttype_customization
+sim.scripttype_main
+sim.scripttype_sandbox
+sim.scripttype_passive
+
+sim.shape_compound
+sim.shape_simple
+
+sim.simulation_advancing
+sim.simulation_advancing_abouttostop
+sim.simulation_advancing_firstafterpause
+sim.simulation_advancing_firstafterstop
+sim.simulation_advancing_lastbeforepause
+sim.simulation_advancing_lastbeforestop
+sim.simulation_advancing_running
+sim.simulation_paused
+sim.simulation_stopped
+
+sim.stream_transf_cumulative
+sim.stream_transf_derivative
+sim.stream_transf_integral
+sim.stream_transf_raw
+
+sim.texturemap_cube
+sim.texturemap_cylinder
+sim.texturemap_plane
+sim.texturemap_sphere
+
+sim.verbosity_debug
+sim.verbosity_default
+sim.verbosity_errors
+sim.verbosity_infos
+sim.verbosity_loadinfos
+sim.verbosity_msgs
+sim.verbosity_none
+sim.verbosity_onlyterminal
+sim.verbosity_questions
+sim.verbosity_scripterrors
+sim.verbosity_scriptinfos
+sim.verbosity_scriptwarnings
+sim.verbosity_trace
+sim.verbosity_traceall
+sim.verbosity_tracelua
+sim.verbosity_undecorated
+sim.verbosity_useglobal
+sim.verbosity_warnings
+
+sim.volume_cone
+sim.volume_cylinder
+sim.volume_disc
+sim.volume_pyramid
+sim.volume_randomizedray
+sim.volume_ray
+]]
+
+
+local toDeprecateSoon = [[
+sim.clearFloatSignal(string signalName)
+sim.clearInt32Signal(string signalName)
+sim.clearStringSignal(string signalName)
+sim.clearBufferSignal(string signalName)
+float[3] arrayOfValues = sim.getArrayParam(int parameter)
+bool boolState = sim.getBoolParam(int parameter)
+bool boolParam = sim.getEngineBoolParam(int paramId, int objectHandle)
+float floatParam = sim.getEngineFloatParam(int paramId, int objectHandle)
+int int32Param = sim.getEngineInt32Param(int paramId, int objectHandle)
+float floatState = sim.getFloatParam(int parameter)
+float signalValue = sim.getFloatSignal(string signalName)
+int intState = sim.getInt32Param(int parameter)
+int signalValue = sim.getInt32Signal(string signalName)
+bool value = sim.getNamedBoolParam(string name)
+float value = sim.getNamedFloatParam(string name)
+int value = sim.getNamedInt32Param(string name)
+buffer stringParam = sim.getNamedStringParam(string paramName)
+float[] params = sim.getObjectFloatArrayParam(int objectHandle, int parameterID)
+float parameter = sim.getObjectFloatParam(int objectHandle, int parameterID)
+int parameter = sim.getObjectInt32Param(int objectHandle, int parameterID)
+buffer parameter = sim.getObjectStringParam(int objectHandle, int parameterID)
+bool value = sim.getSettingBool(string key)
+float value = sim.getSettingFloat(string key)
+int value = sim.getSettingInt32(string key)
+string value = sim.getSettingString(string key)
+string stringState = sim.getStringParam(int parameter)
+string signalValue = sim.getStringSignal(string signalName)
+buffer signalValue = sim.getBufferSignal(string signalName)
+string data = sim.readCustomStringData(int objectHandle, string tagName)
+buffer data = sim.readCustomBufferData(int objectHandle, string tagName)
+map data = sim.readCustomTableData(int handle, string tagName, map options={})
+string[] tags = sim.readCustomDataTags(int objectHandle)
+sim.setArrayParam(int parameter, float[3] arrayOfValues)
+sim.setBoolParam(int parameter, bool boolState)
+sim.setEngineBoolParam(int paramId, int objectHandle, bool boolParam)
+sim.setEngineFloatParam(int paramId, int objectHandle, float floatParam)
+sim.setEngineInt32Param(int paramId, int objectHandle, int int32Param)
+sim.setFloatParam(int parameter, float floatState)
+sim.setFloatSignal(string signalName, float signalValue)
+sim.setLightParameters(int lightHandle, int state, float[3] reserved, float[3] diffusePart, float[3] specularPart)
+sim.setNamedBoolParam(string name, bool value)
+sim.setNamedFloatParam(string name, float value)
+sim.setNamedInt32Param(string name, int value)
+sim.setNamedStringParam(string paramName, buffer stringParam)
+sim.setObjectFloatArrayParam(int objectHandle, int parameterID, float[] params)
+sim.setObjectFloatParam(int objectHandle, int parameterID, float parameter)
+sim.setObjectInt32Param(int objectHandle, int parameterID, int parameter)
+sim.setObjectStringParam(int objectHandle, int parameterID, buffer parameter)
+sim.setStringParam(int parameter, string stringState)
+sim.setStringSignal(string signalName, string signalValue)
+sim.setBufferSignal(string signalName, buffer signalValue)
+any sigVal = sim.waitForSignal(string sigName)
+sim.writeCustomStringData(int objectHandle, string tagName, string data)
+sim.writeCustomBufferData(int objectHandle, string tagName, buffer data)
+sim.writeCustomTableData(int handle, string tagName, map theTable, map options={})
+
+
+sim.objectspecialproperty_collidable
+sim.objectspecialproperty_detectable
+sim.objectspecialproperty_measurable
+sim.modelproperty_not_collidable
+sim.modelproperty_not_detectable
+sim.modelproperty_not_dynamic
+sim.modelproperty_not_measurable
+sim.modelproperty_not_model
+sim.modelproperty_not_reset
+sim.modelproperty_not_respondable
+sim.modelproperty_not_showasinsidemodel
+sim.modelproperty_not_visible
+sim.modelproperty_scripts_inactive
 sim.objectproperty_cannotdelete
 sim.objectproperty_cannotdeleteduringsim
 sim.objectproperty_collapsed
@@ -991,9 +791,6 @@ sim.objectproperty_selectable
 sim.objectproperty_selectinvisible
 sim.objectproperty_selectmodelbaseinstead
 sim.objectproperty_hiddenforsimulation
-sim.objectspecialproperty_collidable
-sim.objectspecialproperty_detectable
-sim.objectspecialproperty_measurable
 sim.objfloatparam_abs_rot_velocity
 sim.objfloatparam_abs_x_velocity
 sim.objfloatparam_abs_y_velocity
@@ -1046,57 +843,9 @@ sim.ode_joint_pospid2
 sim.ode_joint_pospid3
 sim.ode_joint_stopcfm
 sim.ode_joint_stoperp
-sim.particle_cyclic
-sim.particle_emissioncolor
-sim.particle_ignoresgravity
-sim.particle_invisible
-sim.particle_itemcolors
-sim.particle_itemdensities
-sim.particle_itemsizes
-sim.particle_painttag
-sim.particle_particlerespondable
-sim.particle_points1
-sim.particle_points2
-sim.particle_points4
-sim.particle_respondable1to4
-sim.particle_respondable5to8
-sim.particle_roughspheres
-sim.particle_spheres
-sim.particle_water
-sim.physics_bullet
-sim.physics_mujoco
-sim.physics_newton
-sim.physics_ode
-sim.physics_physx
-sim.physics_vortex
-sim.primitiveshape_capsule
-sim.primitiveshape_cone
-sim.primitiveshape_cuboid
-sim.primitiveshape_cylinder
-sim.primitiveshape_disc
-sim.primitiveshape_heightfield
-sim.primitiveshape_none
-sim.primitiveshape_plane
-sim.primitiveshape_spheroid
-sim.proximitysensor_cone
-sim.proximitysensor_cylinder
-sim.proximitysensor_disc
-sim.proximitysensor_pyramid
-sim.proximitysensor_ray
 sim.proxintparam_entity_to_detect
 sim.proxintparam_ray_invisibility
 sim.proxintparam_volume_type
-sim.ruckig_minaccel
-sim.ruckig_minvel
-sim.ruckig_nosync
-sim.ruckig_phasesync
-sim.ruckig_timesync
-sim.scriptexecorder_first
-sim.scriptexecorder_last
-sim.scriptexecorder_normal
-sim.lang_undefined
-sim.lang_lua
-sim.lang_python
 sim.scriptintparam_enabled
 sim.scriptintparam_execcount
 sim.scriptintparam_execorder
@@ -1106,14 +855,6 @@ sim.scriptstringparam_description
 sim.scriptstringparam_name
 sim.scriptstringparam_nameext
 sim.scriptstringparam_text
-sim.scripttype_addon
-sim.scripttype_simulation
-sim.scripttype_customization
-sim.scripttype_main
-sim.scripttype_sandbox
-sim.scripttype_passive
-sim.shape_compound
-sim.shape_simple
 sim.shapefloatparam_edge_angle
 sim.shapefloatparam_init_ang_velocity_x
 sim.shapefloatparam_init_ang_velocity_y
@@ -1146,19 +887,6 @@ sim.shapeintparam_sleepmodestart
 sim.shapeintparam_static
 sim.shapeintparam_wireframe
 sim.shapestringparam_colorname
-sim.simulation_advancing
-sim.simulation_advancing_abouttostop
-sim.simulation_advancing_firstafterpause
-sim.simulation_advancing_firstafterstop
-sim.simulation_advancing_lastbeforepause
-sim.simulation_advancing_lastbeforestop
-sim.simulation_advancing_running
-sim.simulation_paused
-sim.simulation_stopped
-sim.stream_transf_cumulative
-sim.stream_transf_derivative
-sim.stream_transf_integral
-sim.stream_transf_raw
 sim.stringparam_additionalpythonpath
 sim.stringparam_addonpath
 sim.stringparam_app_arg1
@@ -1199,28 +927,6 @@ sim.stringparam_verbosity
 sim.stringparam_video_filename
 sim.stringparam_addondir
 sim.stringparam_sandboxlang
-sim.texturemap_cube
-sim.texturemap_cylinder
-sim.texturemap_plane
-sim.texturemap_sphere
-sim.verbosity_debug
-sim.verbosity_default
-sim.verbosity_errors
-sim.verbosity_infos
-sim.verbosity_loadinfos
-sim.verbosity_msgs
-sim.verbosity_none
-sim.verbosity_onlyterminal
-sim.verbosity_questions
-sim.verbosity_scripterrors
-sim.verbosity_scriptinfos
-sim.verbosity_scriptwarnings
-sim.verbosity_trace
-sim.verbosity_traceall
-sim.verbosity_tracelua
-sim.verbosity_undecorated
-sim.verbosity_useglobal
-sim.verbosity_warnings
 sim.visionfarrayparam_viewfrustum
 sim.visionfloatparam_far_clipping
 sim.visionfloatparam_near_clipping
@@ -1243,12 +949,6 @@ sim.visionintparam_windowed_size_x
 sim.visionintparam_windowed_size_y
 sim.visionintparam_depthignored
 sim.visionintparam_rgbignored
-sim.volume_cone
-sim.volume_cylinder
-sim.volume_disc
-sim.volume_pyramid
-sim.volume_randomizedray
-sim.volume_ray
 sim.vortex_body_adhesiveforce
 sim.vortex_body_angularvelocitydamping
 sim.vortex_body_autoangulardamping
@@ -1381,5 +1081,343 @@ sim.vortex_joint_upperlimitdamping
 sim.vortex_joint_upperlimitmaxforce
 sim.vortex_joint_upperlimitrestitution
 sim.vortex_joint_upperlimitstiffness
+sim.arrayparam_ambient_light
+sim.arrayparam_background_color1
+sim.arrayparam_background_color2
+sim.arrayparam_fog
+sim.arrayparam_fog_color
+sim.arrayparam_gravity
+sim.arrayparam_random_euler
+sim.arrayparam_raydirection
+sim.arrayparam_rayorigin
+sim.boolparam_aux_clip_planes_enabled
+sim.boolparam_browser_toolbarbutton_enabled
+sim.boolparam_browser_visible
+sim.boolparam_calcmodules_toolbarbutton_enabled
+sim.boolparam_console_visible
+sim.boolparam_display_enabled
+sim.boolparam_dynamics_handling_enabled
+sim.boolparam_exit_request
+sim.boolparam_fog_enabled
+sim.boolparam_force_calcstruct_all
+sim.boolparam_force_calcstruct_all_visible
+sim.boolparam_full_model_copy_from_api
+sim.boolparam_fullscreen
+sim.boolparam_headless
+sim.boolparam_cansave
+sim.boolparam_hierarchy_toolbarbutton_enabled
+sim.boolparam_hierarchy_visible
+sim.boolparam_infotext_visible
+sim.boolparam_mirrors_enabled
+sim.boolparam_objectrotate_toolbarbutton_enabled
+sim.boolparam_objectshift_toolbarbutton_enabled
+sim.boolparam_objproperties_toolbarbutton_enabled
+sim.boolparam_pause_toolbarbutton_enabled
+sim.boolparam_play_toolbarbutton_enabled
+sim.boolparam_rayvalid
+sim.boolparam_realtime_simulation
+sim.boolparam_rosinterface_donotrunmainscript
+sim.boolparam_scene_and_model_load_messages
+sim.boolparam_scene_closing
+sim.boolparam_shape_textures_are_visible
+sim.boolparam_statustext_open
+sim.boolparam_stop_toolbarbutton_enabled
+sim.boolparam_use_glfinish_cmd
+sim.boolparam_video_recording_triggered
+sim.boolparam_waiting_for_trigger
+sim.boolparam_execunsafe
+sim.boolparam_execunsafeext
+sim.camerafarrayparam_viewfrustum
+sim.camerafloatparam_far_clipping
+sim.camerafloatparam_near_clipping
+sim.camerafloatparam_ortho_size
+sim.camerafloatparam_perspective_angle
+sim.camerafloatparam_pov_aperture
+sim.camerafloatparam_pov_blur_distance
+sim.cameraintparam_disabled_light_components
+sim.cameraintparam_perspective_operation
+sim.cameraintparam_pov_blur_samples
+sim.cameraintparam_pov_focal_blur
+sim.cameraintparam_remotecameramode
+sim.cameraintparam_rendering_attributes
+sim.cameraintparam_trackedobject
+sim.octreefloatparam_voxelsize
+sim.dummyfloatparam_size
+sim.dummyintparam_dummytype
+sim.dummystringparam_assemblytag
+sim.dynmat_default
+sim.dynmat_floor
+sim.dynmat_foot
+sim.dynmat_gripper
+sim.dynmat_highfriction
+sim.dynmat_lowfriction
+sim.dynmat_nofriction
+sim.dynmat_reststackgrasp
+sim.dynmat_wheel
+sim.filtercomponent_3x3filter
+sim.filtercomponent_5x5filter
+sim.filtercomponent_addbuffer1
+sim.filtercomponent_addtobuffer1
+sim.filtercomponent_binary
+sim.filtercomponent_blobextraction
+sim.filtercomponent_circularcut
+sim.filtercomponent_colorsegmentation
+sim.filtercomponent_correlationwithbuffer1
+sim.filtercomponent_customized
+sim.filtercomponent_edge
+sim.filtercomponent_frombuffer1
+sim.filtercomponent_frombuffer2
+sim.filtercomponent_horizontalflip
+sim.filtercomponent_imagetocoord
+sim.filtercomponent_intensityscale
+sim.filtercomponent_keeporremovecolors
+sim.filtercomponent_multiplywithbuffer1
+sim.filtercomponent_normalize
+sim.filtercomponent_originaldepth
+sim.filtercomponent_originalimage
+sim.filtercomponent_pixelchange
+sim.filtercomponent_rectangularcut
+sim.filtercomponent_resize
+sim.filtercomponent_rotate
+sim.filtercomponent_scaleandoffsetcolors
+sim.filtercomponent_sharpen
+sim.filtercomponent_shift
+sim.filtercomponent_subtractbuffer1
+sim.filtercomponent_subtractfrombuffer1
+sim.filtercomponent_swapbuffers
+sim.filtercomponent_swapwithbuffer1
+sim.filtercomponent_tobuffer1
+sim.filtercomponent_tobuffer2
+sim.filtercomponent_todepthoutput
+sim.filtercomponent_tooutput
+sim.filtercomponent_uniformimage
+sim.filtercomponent_velodyne
+sim.filtercomponent_verticalflip
+sim.floatparam_dynamic_step_size
+sim.floatparam_maxtrisizeabs
+sim.floatparam_mintrisizerel
+sim.floatparam_mouse_wheel_zoom_factor
+sim.floatparam_physicstimestep
+sim.floatparam_rand
+sim.floatparam_simulation_time_step
+sim.floatparam_stereo_distance
+sim.forcefloatparam_error_a
+sim.forcefloatparam_error_angle
+sim.forcefloatparam_error_b
+sim.forcefloatparam_error_g
+sim.forcefloatparam_error_pos
+sim.forcefloatparam_error_x
+sim.forcefloatparam_error_y
+sim.forcefloatparam_error_z
+sim.graphintparam_needs_refresh
+sim.intparam_compilation_version
+sim.intparam_core_count
+sim.intparam_current_page
+sim.intparam_dlgverbosity
+sim.intparam_dynamic_engine
+sim.intparam_dynamic_iteration_count
+sim.intparam_dynamic_step_divider
+sim.intparam_dynamic_warning_disabled_mask
+sim.intparam_notifydeprecated
+sim.intparam_processid
+sim.intparam_processcnt
+sim.intparam_edit_mode_type
+sim.intparam_error_report_mode
+sim.intparam_exitcode
+sim.intparam_flymode_camera_handle
+sim.intparam_hierarchychangecounter
+sim.intparam_idle_fps
+sim.intparam_infotext_style
+sim.intparam_motionplanning_seed
+sim.intparam_mouse_buttons
+sim.intparam_mouse_x
+sim.intparam_mouse_y
+sim.intparam_mouseclickcounterdown
+sim.intparam_mouseclickcounterup
+sim.intparam_objectcreationcounter
+sim.intparam_objectdestructioncounter
+sim.intparam_platform
+sim.intparam_program_full_version
+sim.intparam_program_revision
+sim.intparam_program_version
+sim.intparam_prox_sensor_select_down
+sim.intparam_prox_sensor_select_up
+sim.intparam_qt_version
+sim.intparam_scene_index
+sim.intparam_scene_unique_id
+sim.intparam_server_port_next
+sim.intparam_server_port_range
+sim.intparam_server_port_start
+sim.intparam_settings
+sim.intparam_speedmodifier
+sim.intparam_statusbarverbosity
+sim.intparam_stop_request_counter
+sim.intparam_verbosity
+sim.intparam_videoencoderindex
+sim.intparam_visible_layers
+sim.intparam_work_thread_calc_time_ms
+sim.intparam_work_thread_count
+sim.jointfloatparam_error_a
+sim.jointfloatparam_error_angle
+sim.jointfloatparam_error_b
+sim.jointfloatparam_error_g
+sim.jointfloatparam_error_pos
+sim.jointfloatparam_error_x
+sim.jointfloatparam_error_y
+sim.jointfloatparam_error_z
+sim.jointfloatparam_intrinsic_qw
+sim.jointfloatparam_intrinsic_qx
+sim.jointfloatparam_intrinsic_qy
+sim.jointfloatparam_intrinsic_qz
+sim.jointfloatparam_intrinsic_x
+sim.jointfloatparam_intrinsic_y
+sim.jointfloatparam_intrinsic_z
+sim.jointfloatparam_kc_c
+sim.jointfloatparam_kc_k
+sim.jointfloatparam_maxaccel
+sim.jointfloatparam_maxjerk
+sim.jointfloatparam_maxvel
+sim.jointfloatparam_screwlead
+sim.jointfloatparam_spherical_qw
+sim.jointfloatparam_spherical_qx
+sim.jointfloatparam_spherical_qy
+sim.jointfloatparam_spherical_qz
+sim.jointfloatparam_velocity
+sim.jointfloatparam_vortex_dep_multiplication
+sim.jointfloatparam_vortex_dep_offset
+sim.jointintparam_ctrl_enabled
+sim.jointintparam_dynctrlmode
+sim.jointintparam_dynposctrltype
+sim.jointintparam_dynvelctrltype
+sim.jointintparam_motor_enabled
+sim.jointintparam_velocity_lock
+sim.jointintparam_vortex_dep_handle
+sim.lightfloatparam_const_attenuation
+sim.lightfloatparam_lin_attenuation
+sim.lightfloatparam_quad_attenuation
+sim.lightfloatparam_spot_cutoff
+sim.lightfloatparam_spot_exponent
+sim.lightintparam_pov_casts_shadows
+sim.millintparam_volume_type
+sim.mirrorfloatparam_height
+sim.mirrorfloatparam_reflectance
+sim.mirrorfloatparam_width
+sim.mirrorintparam_enable
+sim.mujoco_body_condim
+sim.mujoco_body_friction1
+sim.mujoco_body_friction2
+sim.mujoco_body_friction3
+sim.mujoco_body_margin
+sim.mujoco_body_priority
+sim.mujoco_body_solimp1
+sim.mujoco_body_solimp2
+sim.mujoco_body_solimp3
+sim.mujoco_body_solimp4
+sim.mujoco_body_solimp5
+sim.mujoco_body_solmix
+sim.mujoco_body_solref1
+sim.mujoco_body_solref2
+sim.mujoco_dummy_bitcoded
+sim.mujoco_dummy_damping
+sim.mujoco_dummy_limited
+sim.mujoco_dummy_margin
+sim.mujoco_dummy_proxyjointid
+sim.mujoco_dummy_range1
+sim.mujoco_dummy_range2
+sim.mujoco_dummy_solimplimit1
+sim.mujoco_dummy_solimplimit2
+sim.mujoco_dummy_solimplimit3
+sim.mujoco_dummy_solimplimit4
+sim.mujoco_dummy_solimplimit5
+sim.mujoco_dummy_solreflimit1
+sim.mujoco_dummy_solreflimit2
+sim.mujoco_dummy_springlength
+sim.mujoco_dummy_stiffness
+sim.mujoco_global_balanceinertias
+sim.mujoco_global_bitcoded
+sim.mujoco_global_boundinertia
+sim.mujoco_global_boundmass
+sim.mujoco_global_computeinertias
+sim.mujoco_global_cone
+sim.mujoco_global_density
+sim.mujoco_global_impratio
+sim.mujoco_global_integrator
+sim.mujoco_global_iterations
+sim.mujoco_global_kininertia
+sim.mujoco_global_kinmass
+sim.mujoco_global_multiccd
+sim.mujoco_global_multithreaded
+sim.mujoco_global_nconmax
+sim.mujoco_global_njmax
+sim.mujoco_global_nstack
+sim.mujoco_global_overridecontacts
+sim.mujoco_global_overridekin
+sim.mujoco_global_overridemargin
+sim.mujoco_global_overridesolimp1
+sim.mujoco_global_overridesolimp2
+sim.mujoco_global_overridesolimp3
+sim.mujoco_global_overridesolimp4
+sim.mujoco_global_overridesolimp5
+sim.mujoco_global_overridesolref1
+sim.mujoco_global_overridesolref2
+sim.mujoco_global_rebuildtrigger
+sim.mujoco_global_solver
+sim.mujoco_global_viscosity
+sim.mujoco_global_wind1
+sim.mujoco_global_wind2
+sim.mujoco_global_wind3
+sim.mujoco_joint_armature
+sim.mujoco_joint_damping
+sim.mujoco_joint_dependentobjectid
+sim.mujoco_joint_frictionloss
+sim.mujoco_joint_margin
+sim.mujoco_joint_polycoef1
+sim.mujoco_joint_polycoef2
+sim.mujoco_joint_polycoef3
+sim.mujoco_joint_polycoef4
+sim.mujoco_joint_polycoef5
+sim.mujoco_joint_pospid1
+sim.mujoco_joint_pospid2
+sim.mujoco_joint_pospid3
+sim.mujoco_joint_solimpfriction1
+sim.mujoco_joint_solimpfriction2
+sim.mujoco_joint_solimpfriction3
+sim.mujoco_joint_solimpfriction4
+sim.mujoco_joint_solimpfriction5
+sim.mujoco_joint_solimplimit1
+sim.mujoco_joint_solimplimit2
+sim.mujoco_joint_solimplimit3
+sim.mujoco_joint_solimplimit4
+sim.mujoco_joint_solimplimit5
+sim.mujoco_joint_solreffriction1
+sim.mujoco_joint_solreffriction2
+sim.mujoco_joint_solreflimit1
+sim.mujoco_joint_solreflimit2
+sim.mujoco_joint_springdamper1
+sim.mujoco_joint_springdamper2
+sim.mujoco_joint_springref
+sim.mujoco_joint_stiffness
+sim.newton_body_angulardrag
+sim.newton_body_bitcoded
+sim.newton_body_fastmoving
+sim.newton_body_kineticfriction
+sim.newton_body_lineardrag
+sim.newton_body_restitution
+sim.newton_body_staticfriction
+sim.newton_global_bitcoded
+sim.newton_global_computeinertias
+sim.newton_global_constraintsolvingiterations
+sim.newton_global_contactmergetolerance
+sim.newton_global_exactsolver
+sim.newton_global_highjointaccuracy
+sim.newton_global_multithreading
+sim.newton_joint_dependencyfactor
+sim.newton_joint_dependencyoffset
+sim.newton_joint_dependentobjectid
+sim.newton_joint_objectid
+sim.newton_joint_pospid1
+sim.newton_joint_pospid2
+sim.newton_joint_pospid3
 ]]
-registerCodeEditorInfos("sim", codeEditorInfos)
+
+registerCodeEditorInfos("sim", codeEditorInfos .. toDeprecateSoon)
