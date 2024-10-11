@@ -420,6 +420,7 @@ int[] pValue = sim.getIntArrayProperty(int target, string pName)
 sim.removeProperty(int target, string pName)
 string pName, string appartenance = sim.getPropertyName(int target, int index, map options={})
 int pType, int pFlags, string description = sim.getPropertyInfo(int target, string pName, map options={})
+sim.setEventFilters(map filters={})
 any pValue = sim.getProperty(int target, string pName)
 sim.setProperty(int target, string pName, any pValue, int pType=nil)
 string pTypeStr = sim.getPropertyTypeString(int pType)
@@ -678,13 +679,16 @@ sim.handle_appstorage
 sim.handle_chain
 sim.handle_default
 sim.handle_inverse
-sim.handle_main_script
+sim.handle_mainscript
 sim.handle_parent
 sim.handle_scene
 sim.handle_self
 sim.handle_single
 sim.handle_tree
 sim.handle_world
+sim.handle_sceneobject
+sim.handle_sandbox
+sim.handle_mesh
 sim.handleflag_abscoords
 sim.handleflag_addmultiple
 sim.handleflag_altname
