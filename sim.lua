@@ -1035,6 +1035,7 @@ function sim.setProperty(target, pname, pvalue, ptype)
     else
         assert(ptype == nil, 'cannot specify type for static properties')
         ptype = sim.getPropertyInfo(target, pname)
+        assert(ptype ~= nil, 'no such property: ' .. pname)
     end
     local setPropertyFunc = 'set' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
     assert(sim[setPropertyFunc], 'no such function: sim.' .. setPropertyFunc)
