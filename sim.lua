@@ -1084,6 +1084,7 @@ function sim.getProperties(target, opts)
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
         local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
+        local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
         pflags = {
             value = pflags,
             readable = pflags & 2 == 0,
@@ -1094,6 +1095,7 @@ function sim.getProperties(target, opts)
         propertiesInfos[pname] = {
             type = ptype,
             flags = pflags,
+            label = label,
             descr = descr,
             class = pclass,
         }
