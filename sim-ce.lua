@@ -362,7 +362,9 @@ sim.setEventFilters(map filters={})
 any pValue = sim.getProperty(int target, string pName)
 sim.setProperty(int target, string pName, any pValue, int pType=nil)
 string pTypeStr = sim.getPropertyTypeString(int pType)
-map values, map infos = sim.getProperties(int target, map opts={})
+map values = sim.getProperties(int target, map opts={})
+sim.setProperties(int target, map props)
+map infos = sim.getPropertiesInfos(int target, map opts={})
 
 sim.propertytype_bool
 sim.propertytype_int

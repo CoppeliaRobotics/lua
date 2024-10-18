@@ -1079,6 +1079,27 @@ end
 function sim.getProperties(target, opts)
     opts = opts or {}
 
+    local propertiesValues = {}
+    for pname, pinfos in pairs(sim.getPropertiesInfos(target, opts)) do
+        if pinfos.flags.readable then
+            if not opts.skipLarge or not pinfos.flags.large then
+                propertiesValues[pname] = sim.getProperty(target, pname)
+            end
+        end
+    end
+
+    return propertiesValues
+end
+
+function sim.setProperties(target, props)
+    for k, v in pairs(props) do
+        sim.setProperty(target, k, v)
+    end
+end
+
+function sim.getPropertiesInfos(target, opts)
+    opts = opts or {}
+
     local propertiesInfos = {}
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i)
@@ -1101,21 +1122,7 @@ function sim.getProperties(target, opts)
         }
     end
 
-    local propertiesValues = {}
-    for pname, _ in pairs(propertiesInfos) do
-        if propertiesInfos[pname].flags.readable then
-            if not opts.skipLarge or not propertiesInfos[pname].flags.large then
-                propertiesValues[pname] = sim.getProperty(target, pname)
-            end
-        end
-    end
-
-    if opts.unflatten then
-        propertiesValues = table.unflatten(propertiesValues)
-        propertiesInfos = table.unflatten(propertiesInfos)
-    end
-
-    return propertiesValues, propertiesInfos
+    return propertiesInfos
 end
 
 function sim.getTableProperty(...)
