@@ -812,8 +812,7 @@ function sim.waitForSignal(...)
     local sigName = checkargs({{type = 'string'}}, ...)
     local retVal
     while true do
-        retVal = sim.getInt32Signal(sigName) or sim.getFloatSignal(sigName) or
-                     sim.getStringSignal(sigName)
+        retVal = sim.getProperty(sim.handle_scene, 'signal.' .. sigName, {noError = true})
         if retVal then break end
         sim.step()
     end
@@ -996,12 +995,21 @@ function sim.writeCustomTableData(...)
     end
 end
 
-function sim.getProperty(target, pname)
-    local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
-    assert(ptype, 'no such property: ' .. pname)
-    local getPropertyFunc = 'get' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
-    assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
-    return sim[getPropertyFunc](target, pname)
+function sim.getProperty(target, pname, opts)
+    local retVal
+    local noError = opts and opts.noError
+    local ptype, pflags, descr = sim.getPropertyInfo(target, pname, opts)
+    if not noError then
+        assert(ptype, 'no such property: ' .. pname)
+    end
+    if ptype then
+        local getPropertyFunc = 'get' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
+        if not noError then
+            assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
+        end
+        retVal = sim[getPropertyFunc]
+    end
+    return retVal
 end
 
 function sim.setProperty(target, pname, pvalue, ptype)
