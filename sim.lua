@@ -1007,7 +1007,7 @@ function sim.getProperty(target, pname, opts)
         if not noError then
             assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
         end
-        retVal = sim[getPropertyFunc]
+        retVal = sim[getPropertyFunc](target, pname)
     end
     return retVal
 end

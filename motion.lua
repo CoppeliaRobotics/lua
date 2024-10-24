@@ -638,7 +638,7 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout =
+    local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -647,6 +647,7 @@ function sim.generateTimeOptimalTrajectory(...)
             {type = 'int', default = 1000},
             {type = 'string', default = 'not-a-knot'},
             {type = 'float', default = 5},
+            {type = 'int', default = NIL, nullable = true},
     }, ...)
 
     local confCnt = #pathLengths
@@ -705,9 +706,15 @@ def cbb(req):
     return resp
 ]=]
 
-    local script = sim.createScript(sim.scripttype_customization, code, 0, 'python')
-    sim.setObjectAlias(script, 'toppraPythonScript')
-    sim.initScript(script)
+    local removeScript = true
+    if script then
+        removeScript = false
+    end
+    if script == nil or script == -1 then
+        script = sim.createScript(sim.scripttype_customization, code, 0, 'python')
+        sim.setObjectAlias(script, 'toppraPythonScript_tmp')
+        sim.initScript(script)
+    end
     local toSend = {
         samples = trajPtSamples,
         ss_waypoints = pathLengths,
@@ -717,7 +724,10 @@ def cbb(req):
         bc_type = boundaryCondition,
     }
     local s, r = pcall(sim.callScriptFunction, 'cb', script, toSend)
-    sim.removeObjects({script})
+    if removeScript then
+        sim.removeObjects({script})
+        script = nil
+    end
     sim.setStepping(lb)
     
     if s ~= true then
@@ -727,7 +737,7 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return Matrix:fromtable(r.qs[1]):data(), r.ts
+    return Matrix:fromtable(r.qs[1]):data(), r.ts, script
 end
 
 end -- end of motion.extend
