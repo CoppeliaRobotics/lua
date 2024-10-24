@@ -84,7 +84,7 @@ function createModelClone()
     local ikObj = ObjectProxy('./IK', clonedModel)
     if ikObj then
         local target = ikObj:getTarget()
-        sim.setObjectSelection {target}
+        sim.setObjectSel {target}
     end
 end
 
