@@ -11,7 +11,7 @@ function sysCall_init()
 end
 
 function sysCall_cleanup()
-    removeModelClone()
+    removeModelClone(true)
 end
 
 function sysCall_userConfig()
@@ -26,10 +26,10 @@ function hasModelClone()
     return not not clonedModel
 end
 
-function removeModelClone()
+function removeModelClone(delayedRemoval)
     saveConfig()
     saveIkTarget()
-    sim.removeReferencedObjects(self, nil, true)
+    sim.removeReferencedObjects(self, nil, delayedRemoval)
     clonedModel = nil
 end
 
