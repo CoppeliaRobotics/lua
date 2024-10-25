@@ -66,16 +66,19 @@ function createModelClone()
             end
         elseif sim.getObjectType(handle) == sim.sceneobject_shape then
             sim.setObjectProperty(handle, sim.objectproperty_selectinvisible)
-            sim.setObjectInt32Param(handle, sim.shapeintparam_respondable, 0)
-            sim.setObjectInt32Param(handle, sim.shapeintparam_static, 1)
             sim.setObjectInt32Param(handle, sim.shapeintparam_culling, 1)
             sim.setShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse, color)
             sim.setShapeColor(handle, nil, sim.colorcomponent_transparency, {transparency})
         end
     end
     sim.setObjectParent(clonedModel, self, true)
-    sim.setModelProperty(
-        clonedModel, sim.getModelProperty(clonedModel) & ~sim.modelproperty_not_model
+    sim.setModelProperty(clonedModel, sim.getModelProperty(clonedModel)
+        & ~sim.modelproperty_not_model
+        | sim.modelproperty_not_collidable
+        | sim.modelproperty_not_measurable
+        | sim.modelproperty_not_detectable
+        | sim.modelproperty_not_dynamic
+        | sim.modelproperty_not_respondable
     )
     sim.setObjectProperty(self, sim.objectproperty_collapsed)
     for _, scriptHandle in ipairs(scriptsToInit) do sim.initScript(scriptHandle) end
