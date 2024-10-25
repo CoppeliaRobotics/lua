@@ -103,3 +103,19 @@ function isMoveToConfigRunning()
     if not ruckig then return false end
     return not not ruckig.run
 end
+
+function followPath(path, params)
+    local code = [[require 'models.followPath_simulation'
+sim = require 'sim'
+path = sim.getObject ']] .. sim.getObjectAliasRelative(path, self, 1) .. [['
+jointGroup = sim.getObjectParent(sim.getObject '.')
+]]
+    if params then
+        code = code .. 'params = ' .. _S.anyToString(params) .. '\n'
+    end
+    local script = sim.createScript(sim.scripttype_simulation, code, 0, 'lua')
+    sim.setObjectParent(script, self)
+    sim.setObjectAlias(script, 'followPathScript_tmp')
+    sim.initScript(script)
+    return script
+end

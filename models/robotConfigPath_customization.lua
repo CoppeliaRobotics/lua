@@ -148,6 +148,10 @@ function sysCall_init()
     )
 end
 
+function getPath()
+    return states
+end
+
 -- for some reason, this is required to make configUi function normally:
 function sysCall_nonSimulation()
 end
