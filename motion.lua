@@ -666,7 +666,7 @@ import toppra.constraint as constraint
 import toppra.algorithm as algo
 import numpy as np
 
-ta.setup_logging("INFO")
+ta.setup_logging("WARNING")
 
 def sysCall_init():
     pass
