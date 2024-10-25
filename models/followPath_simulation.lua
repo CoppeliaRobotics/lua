@@ -1,6 +1,9 @@
 sim = require 'sim'
 
 function sysCall_init()
+    self = sim.getObject '.'
+    path = sim.getReferencedHandle(self, 'path')
+    jointGroup = sim.getReferencedHandle(path, 'jointGroup')
     path = sim.getScriptFunctions(path)
     jointGroup = sim.getScriptFunctions(jointGroup)
     P = Matrix:fromtable(path:getPath())
