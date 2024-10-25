@@ -856,6 +856,11 @@ function Matrix:__ipairs()
     end
 end
 
+function Matrix:__tocbor(sref, stref)
+    local _cbor = cbor or require 'org.conman.cbor'
+    return _cbor.TYPE.ARRAY(self:totable(), sref, stref)
+end
+
 function Matrix:totable(format)
     if type(format) == 'table' and #format == 0 then
         local d = {}
