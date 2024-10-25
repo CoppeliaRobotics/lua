@@ -1419,6 +1419,13 @@ function sim.getScriptFunctions(...)
     })
 end
 
+function sim.getReferencedHandle(...)
+    local handles = sim.getReferencedHandles(...)
+    assert(#handles > 0, 'no handle found')
+    assert(#handles == 1, 'more than one handle found')
+    return handles[1]
+end
+
 function sim.addReferencedHandle(objectHandle, referencedHandle, tag, options)
     -- backwards compatibility: arg 'tag' was added at a later point
     if type(tag) == 'table' and options == nil then
