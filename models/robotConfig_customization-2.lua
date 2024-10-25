@@ -29,7 +29,7 @@ end
 function removeModelClone()
     saveConfig()
     saveIkTarget()
-    sim.removeReferencedObjects(self)
+    sim.removeReferencedObjects(self, nil, true)
     clonedModel = nil
 end
 

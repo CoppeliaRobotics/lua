@@ -1440,7 +1440,7 @@ function sim.addReferencedHandle(objectHandle, referencedHandle, tag, options)
     sim.setReferencedHandles(objectHandle, refHandles, tag)
 end
 
-function sim.removeReferencedObjects(objectHandle, tag)
+function sim.removeReferencedObjects(objectHandle, tag, delayedRemoval)
     tag = tag or ''
     local refHandles = sim.getReferencedHandles(objectHandle, tag)
     local toRemove = {}
@@ -1448,14 +1448,14 @@ function sim.removeReferencedObjects(objectHandle, tag)
     for _, h in ipairs(refHandles) do
         if sim.isHandle(h) then
             if sim.getModelProperty(h) & sim.modelproperty_not_model == 0 then
-                sim.removeModel(h)
+                sim.removeModel(h, delayedRemoval)
             else
                 table.insert(toRemove, h)
             end
         end
     end
     if #toRemove > 0 then
-        sim.removeObjects(toRemove)
+        sim.removeObjects(toRemove, delayedRemoval)
     end
     sim.setReferencedHandles(objectHandle, {}, tag)
 end
