@@ -546,7 +546,12 @@ function handleRequest(req)
                     -- depth 1
                     if args[i]:sub(-5) == "@func" then
                         local nm = args[i]:sub(1, -6)
-                        args[i] = function(...) return callRemoteFunction(nm, {...}, false, true) end
+                        local fff = function(...) return callRemoteFunction(nm, {...}, false, true) end
+                        args[i] = fff
+                        if not _S.pythonCallbacks then
+                            _S.pythonCallbacks = {}
+                        end
+                        _S.pythonCallbacks[fff] = true -- so that we can identify a Python callback
                     end
                 else
                     if type(args[i]) == 'table' then
@@ -556,6 +561,10 @@ function handleRequest(req)
                             if type(v) == 'string' and v:sub(-5) == "@func" then
                                 local nm = v:sub(1, -6)
                                 v = function(...) return callRemoteFunction(nm, {...}, false, true) end
+                                if not _S.pythonCallbacks then
+                                    _S.pythonCallbacks = {}
+                                end
+                                _S.pythonCallbacks[v] = true -- so that we can identify a Python callback
                                 args[i][k] = v
                             end
                             cnt = cnt + 1
