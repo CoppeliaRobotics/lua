@@ -991,7 +991,7 @@ function initPython(prog)
             )
             local st = sim.getSystemTime()
             local r, rep
-            while sim.getSystemTime() - st < startTimeout or simSubprocess.isRunning(subprocess) do
+            while sim.getSystemTime() - st < startTimeout and simSubprocess.isRunning(subprocess) do
                 simSubprocess.wait(subprocess, 0.1)
                 r, rep = simZMQ.__noError.recv(pySocket, simZMQ.DONTWAIT)
                 if r >= 0 then break end
