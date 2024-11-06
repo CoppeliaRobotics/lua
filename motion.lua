@@ -661,15 +661,14 @@ function sim.generateTimeOptimalTrajectory(...)
     local mmvM = Matrix(dof, 2, minMaxVel)
     local mmaM = Matrix(dof, 2, minMaxAccel)
 
-    local code = [=[import toppra as ta
-import toppra.constraint as constraint
-import toppra.algorithm as algo
-import numpy as np
-
-ta.setup_logging("WARNING")
-
+    local code = [=[
 def sysCall_init():
-    pass
+    global ta, constraint, algo, np
+    import toppra as ta
+    import toppra.constraint as constraint
+    import toppra.algorithm as algo
+    import numpy as np
+    ta.setup_logging("WARNING")
 
 def sysCall_cleanup():
     pass
@@ -723,6 +722,7 @@ def cbb(req):
         acceleration_limits = mmaM:totable(),
         bc_type = boundaryCondition,
     }
+
     local s, r = pcall(sim.callScriptFunction, 'cb', script, toSend)
     if removeScript then
         sim.removeObjects({script})

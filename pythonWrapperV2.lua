@@ -1,4 +1,4 @@
-startTimeout = 2
+startTimeout = 10
 sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
 simZMQ = require('simZMQ')
 simSubprocess = require('simSubprocess')
@@ -175,6 +175,17 @@ function sysCall_init(...)
     if additionalPaths then
         for i = 1, #additionalPaths, 1 do
             tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '")\n'
+        end
+    end
+    local additionalPythonPaths = {
+        sim.getStringParam(sim.stringparam_application_path),
+        sim.getStringParam(sim.stringparam_application_path) .. '/python',
+        sim.getStringParam(sim.stringparam_scene_path),
+        sim.getStringParam(sim.stringparam_additionalpythonpath)
+        }
+    for i = 1, #additionalPythonPaths, 1 do
+        if additionalPythonPaths[i] ~= '' then
+            tmp = tmp .. 'sys.path.append("' .. additionalPythonPaths[i] .. '")\n'
         end
     end
     prog = prog:gsub("XXXadditionalPathsXXX", tmp)
