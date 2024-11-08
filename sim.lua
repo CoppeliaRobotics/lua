@@ -808,13 +808,23 @@ function sim.wait(...)
     return retVal
 end
 
-function sim.waitForSignal(...)
-    local sigName = checkargs({{type = 'string'}}, ...)
+function sim.waitForSignal(target, sigName)
     local retVal
-    while true do
-        retVal = sim.getProperty(sim.handle_scene, 'signal.' .. sigName, {noError = true})
-        if retVal then break end
-        sim.step()
+    if type(target) == 'number' then
+        -- Signals via properties
+        while true do
+            retVal = sim.getProperty(target, 'signal.' .. sigName, {noError = true})
+            if retVal then break end
+            sim.step()
+        end
+    else
+        -- Legacy signals
+        sigName = target
+        while true do
+            retVal = sim.getInt32Signal(sigName) or sim.getFloatSignal(sigName) or sim.getStringSignal(sigName)
+            if retVal then break end
+            sim.step()
+        end
     end
     return retVal
 end
