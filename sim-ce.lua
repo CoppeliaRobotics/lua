@@ -277,7 +277,7 @@ sim.setLinkDummy(int dummyHandle, int linkDummyHandle)
 string pluginName = sim.getPluginName(int index)
 string info = sim.getPluginInfo(string pluginName, int infoType)
 sim.setPluginInfo(string pluginName, int infoType, string info)
-sim.setPluginInfo(string pluginName, int infoType, number info)
+sim.setPluginInfo(string pluginName, int infoType, int info)
 sim.setNavigationMode(int navigationMode)
 sim.setObjectAlias(int objectHandle, string objectAlias)
 sim.setObjectChildPose(int objectHandle, float[7] pose)
@@ -338,7 +338,7 @@ sim.setStringProperty(int target, string pName, string pValue, map options={})
 string pValue = sim.getStringProperty(int target, string pName, map options={})
 sim.setBufferProperty(int target, string pName, buffer pValue, map options={})
 buffer pValue = sim.getBufferProperty(int target, string pName, map options={})
-sim.setTableProperty(int target, string pName, map pValue, map options, map options={})
+sim.setTableProperty(int target, string pName, map pValue, map options={})
 map pValue = sim.getTableProperty(int target, string pName, map options={})
 sim.setIntArray2Property(int target, string pName, int[2] pValue, map options={})
 int[2] pValue = sim.getIntArray2Property(int target, string pName, map options={})
@@ -706,7 +706,7 @@ sim.volume_randomizedray
 sim.volume_ray
 ]]
 
-
+-- When removing following, do not forget to add it to zmqRemoteApi/clients/cpp/sim-deprecated.* for backward compatibility!
 local toDeprecateSoon = [[
 sim.clearFloatSignal(string signalName)
 sim.clearInt32Signal(string signalName)
@@ -759,7 +759,7 @@ sim.setObjectStringParam(int objectHandle, int parameterID, buffer parameter)
 sim.setStringParam(int parameter, string stringState)
 sim.setStringSignal(string signalName, string signalValue)
 sim.setBufferSignal(string signalName, buffer signalValue)
-any sigVal = sim.waitForSignal(number target, string sigName)
+any sigVal = sim.waitForSignal(int target, string sigName)
 sim.writeCustomStringData(int objectHandle, string tagName, string data)
 sim.writeCustomBufferData(int objectHandle, string tagName, buffer data)
 sim.writeCustomTableData(int handle, string tagName, map theTable, map options={})
