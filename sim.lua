@@ -1144,15 +1144,18 @@ function sim.getPropertiesInfos(target, opts)
 end
 
 function sim.getTableProperty(...)
-    local handle, tagName = checkargs({
+    local handle, tagName, options = checkargs({
         {type = 'int'},
         {type = 'string'},
+        {type = 'table', default = {}},
     }, ...)
     local retVal = {}
     if string.sub(tagName, 1, 11) == 'customData.' then
         tagName = 'customData.&tbl&.' .. string.sub(tagName, 11 + 1)
-        local data = sim.getBufferProperty(handle, tagName)
-        if #data > 0 then
+        local data = sim.getBufferProperty(handle, tagName, options)
+        if data == nil then
+            return nil
+        elseif #data > 0 then
             retVal = sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
         end
     else
