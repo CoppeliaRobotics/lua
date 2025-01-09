@@ -1151,8 +1151,12 @@ function sim.getTableProperty(...)
     }, ...)
     local retVal = {}
     if string.sub(tagName, 1, 11) == 'customData.' then
-        tagName = 'customData.&tbl&.' .. string.sub(tagName, 11 + 1)
-        local data = sim.getBufferProperty(handle, tagName, options)
+        local tagNameTbl = 'customData.&tbl&.' .. string.sub(tagName, 11 + 1)
+        -- [FF, 2025-01-09]: in case of table data block, we want to be able to read it with this function too!
+        if sim.getPropertyInfo(handle, tagName) == sim.propertytype_buffer and not sim.getPropertyInfo(handle, tagNameTbl) then
+            return sim.unpackTable(sim.getBufferProperty(handle, tagName, options))
+        end
+        local data = sim.getBufferProperty(handle, tagNameTbl, options)
         if data == nil then
             return nil
         elseif #data > 0 then
