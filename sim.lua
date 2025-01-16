@@ -1143,58 +1143,30 @@ function sim.getPropertiesInfos(target, opts)
     return propertiesInfos
 end
 
-function sim.getTableProperty(...)
-    local handle, tagName, options = checkargs({
-        {type = 'int'},
-        {type = 'string'},
-        {type = 'table', default = {}},
-    }, ...)
-    for _, ns in ipairs {'customData', 'signal'} do
-        if string.startswith(tagName, ns .. '.') then
-            local tagNameTbl = ns .. '.&tbl&.' .. string.sub(tagName, 1 + #ns + 1)
-            -- [FF, 2025-01-09]: in case of table data block, we want to be able to read it with this function too!
-            if sim.getPropertyInfo(handle, tagName) == sim.propertytype_buffer and not sim.getPropertyInfo(handle, tagNameTbl) then
-                return sim.unpackTable(sim.getBufferProperty(handle, tagName, options))
-            end
-            local data = sim.getBufferProperty(handle, tagNameTbl, options)
-            if data == nil then
-                return nil
-            elseif #data > 0 then
-                return sim.unpackTable(data) -- will appropriately decode from cbor or CoppeliaSim pack format
-            else
-                return {}
-            end
-        end
+sim.getTableProperty = wrap(sim.getTableProperty, function(origFunc)
+    return function(...)
+        local handle, tagName, options = checkargs({
+            {type = 'int'},
+            {type = 'string'},
+            {type = 'table', default = {}},
+        }, ...)
+        local buf = origFunc(handle, tagName, options)
+        if buf then return sim.unpackTable(buf) end
     end
-    error('unknown property "' .. tagName .. '" (for the specified type and target).')
-end
+end)
 
-function sim.setTableProperty(...)
-    local handle, tagName, theTable, options = checkargs({
-        {type = 'int'},
-        {type = 'string'},
-        {type = 'table'},
-        {type = 'table', default = {}},
-    }, ...)
-    for _, ns in ipairs {'customData', 'signal'} do
-        if string.startswith(tagName, ns .. '.') then
-            local tagNameTbl = ns .. '.&tbl&.' .. string.sub(tagName, 1 + #ns + 1)
-            if next(theTable) == nil then
-                sim.setBufferProperty(handle, tagNameTbl, tobuffer(''))
-            else
-                if options.dataType == 'cbor' then
-                    local cbor = require 'org.conman.cbor'
-                    theTable = cbor.encode(theTable)
-                else
-                    theTable = sim.packTable(theTable)
-                end
-                sim.setBufferProperty(handle, tagNameTbl, theTable)
-            end
-            return
-        end
+sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
+    return function(...)
+        local handle, tagName, theTable, options = checkargs({
+            {type = 'int'},
+            {type = 'string'},
+            {type = 'table'},
+            {type = 'table', default = {}},
+        }, ...)
+        local buf = sim.packTable(theTable)
+        return origFunc(handle, tagName, buf, options)
     end
-    error('unknown property "' .. tagName .. '" (for the specified type and target).')
-end
+end)
 
 function sim.getObject(path, options)
     options = options or {}
