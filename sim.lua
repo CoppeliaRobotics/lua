@@ -1163,7 +1163,13 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
             {type = 'table'},
             {type = 'table', default = {}},
         }, ...)
-        local buf = sim.packTable(theTable)
+        local buf
+        if options.dataType == 'cbor' then
+            local cbor = require 'org.conman.cbor'
+            buf = cbor.encode(theTable)
+        else
+            buf = sim.packTable(theTable)
+        end
         return origFunc(handle, tagName, buf, options)
     end
 end)
