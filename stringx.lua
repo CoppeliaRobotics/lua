@@ -267,6 +267,12 @@ function string.stripmarkdown(s, opts)
     return s
 end
 
+function string.stripprefix(s, prefix)
+    if string.startswith(s, prefix) then
+        return s:sub(#prefix + 1)
+    end
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     require 'tablex'
     assert(table.eq(string.split('a%b%c', '%', true), {'a', 'b', 'c'}))
