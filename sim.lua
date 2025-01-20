@@ -1151,7 +1151,10 @@ sim.getTableProperty = wrap(sim.getTableProperty, function(origFunc)
             {type = 'table', default = {}},
         }, ...)
         local buf = origFunc(handle, tagName, options)
-        if buf then return sim.unpackTable(buf) end
+        if buf then
+            local table = sim.unpackTable(buf)
+            return table
+        end
     end
 end)
 
@@ -1163,6 +1166,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
             {type = 'table'},
             {type = 'table', default = {}},
         }, ...)
+        options.dataType = options.dataType or 'cbor'
         local buf
         if options.dataType == 'cbor' then
             local cbor = require 'org.conman.cbor'
@@ -1831,7 +1835,8 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
                     return origFunc(data) -- CoppeliaSim's pack format
                 elseif ((string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) then
                     local cbor = require 'org.conman.cbor'
-                    return cbor.decode(data)
+                    local table = cbor.decode(data)
+                    return table
                 else
                     error('invalid input data.')
                 end
