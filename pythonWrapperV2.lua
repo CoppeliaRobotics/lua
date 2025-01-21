@@ -169,12 +169,12 @@ function sysCall_init(...)
     local tmp = ''
     if _additionalPaths then
         for i = 1, #_additionalPaths, 1 do
-            tmp = tmp .. 'sys.path.append("' .. _additionalPaths[i] .. '")\n'
+            tmp = tmp .. 'sys.path.append("' .. _additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
         end
     end
     if additionalPaths then
         for i = 1, #additionalPaths, 1 do
-            tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '")\n'
+            tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
         end
     end
     local additionalPythonPaths = {
@@ -185,7 +185,7 @@ function sysCall_init(...)
         }
     for i = 1, #additionalPythonPaths, 1 do
         if additionalPythonPaths[i] ~= '' then
-            tmp = tmp .. 'sys.path.append("' .. additionalPythonPaths[i] .. '")\n'
+            tmp = tmp .. 'sys.path.append("' .. additionalPythonPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
         end
     end
     prog = prog:gsub("XXXadditionalPathsXXX", tmp)
@@ -1112,6 +1112,8 @@ function getCleanErrorMsg(inMsg)
         end
         local _, boilerplateLines = string.gsub(pythonBoilerplate, '\n', '')
         local _, userCodeLines = string.gsub(pythonUserCode, '\n', '')
+        -- print("boilerplateLines", boilerplateLines)
+        -- print("userCodeLines", userCodeLines)
         userCodeLines = userCodeLines + 1
         local p1 = 0, p2, p3
         local tstr = '@_script_@'
@@ -1125,6 +1127,7 @@ function getCleanErrorMsg(inMsg)
             if p2 then
                 local sn, en = string.find(msg, '%d+', p2)
                 local lineNb = tonumber(string.sub(msg, sn, en))
+                -- print("lineNb", lineNb)
                 if lineNb <= boilerplateLines then
                     -- Relates to boiler plate lines
                     msg = string.sub(msg, 1, p2 - 1) .. string.sub(msg, p3 + 1)
