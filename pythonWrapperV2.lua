@@ -250,6 +250,9 @@ end
 function sysCall_cleanup(...)
     if subprocess ~= nil then
         inCleanup = true
+        if receiveIsNext then -- condition added on 22.01.2025 to fix Python's sysCall_cleanup randomly not getting called
+            receive()
+        end
         callRemoteFunction("sysCall_cleanup", {...})
     end
 
