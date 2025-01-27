@@ -180,7 +180,7 @@ int detectionCount, float[] auxPacket1, float[] auxPacket2 = sim.handleVisionSen
 float[1..*] vertices, int[1..*] indices = sim.importMesh(int fileformat, string pathAndFilename, int options, float identicalVerticeTolerance, float scalingFactor)
 int shapeHandle = sim.importShape(int fileformat, string pathAndFilename, int options, float identicalVerticeTolerance, float scalingFactor)
 sim.initScript(int scriptHandle)
-int result = sim.registerScriptFuncHook(string funcToHook, function userFunc, bool execBefore)
+int result = sim.registerScriptFuncHook(string funcToHook, func userFunc, bool execBefore)
 int totalVoxelCnt = sim.insertObjectIntoOctree(int octreeHandle, int objectHandle, int options, float[] color=nil, int tag=0)
 int totalPointCnt = sim.insertObjectIntoPointCloud(int pointCloudHandle, int objectHandle, int options, float gridSize, float[] color=nil, float duplicateTolerance=nil)
 int totalPointCnt = sim.insertPointsIntoPointCloud(int pointCloudHandle, int options, float[] points, float[] color=nil, float duplicateTolerance=nil)
