@@ -2,6 +2,7 @@ dkjson.lua
 messagePack.lua
 cbor.lua
 configUi-2.lua
+configUi-3.lua
 actionServer*.lua
 actions/
 sim*.lua
