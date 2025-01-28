@@ -177,7 +177,13 @@ end
 
 function printf(fmt, ...)
     local a = table.pack(...)
-    for i = 1, a.n do a[i] = _S.anyToString(a[i]) end
+    for i = 1, a.n do
+        if type(a[i]) == 'table' then
+            a[i] = _S.anyToString(a[i])
+        elseif a[i] == nil then
+            a[i] = 'nil'
+        end
+    end
     print(string.format(fmt, table.unpack(a, 1, a.n)))
 end
 
