@@ -367,6 +367,8 @@ string pTypeStr = sim.getPropertyTypeString(int pType)
 map values = sim.getProperties(int target, map opts={})
 sim.setProperties(int target, map props)
 map infos = sim.getPropertiesInfos(int target, map opts={})
+map object = sim.Object(int handle)
+map object = sim.Object(string path)
 
 sim.propertytype_bool
 sim.propertytype_int

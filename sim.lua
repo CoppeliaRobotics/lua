@@ -1557,6 +1557,131 @@ function sim.setShapeAppearance(handle, savedData, opts)
     end
 end
 
+sim.PropertyGroup = setmetatable(
+    {
+        __index = function(self, k)
+            local p = rawget(self, '__nsPrefix')
+            return sim.getProperty(self.__handle, p .. '.' .. k)
+        end,
+        __newindex = function(self, k, v)
+            local p = rawget(self, '__nsPrefix')
+            sim.setProperty(self.__handle, p .. '.' .. k, v)
+        end,
+    },
+    {
+        __call = function(self, handle, nsPrefix)
+            opts = opts or {}
+            local obj = {__handle = handle, __nsPrefix = nsPrefix}
+            return setmetatable(obj, sim.PropertyGroup)
+        end,
+    }
+)
+
+sim.Object = setmetatable(
+    {
+        __index = function(self, k)
+            -- int indexing for accessing siblings:
+            if math.type(k) == 'integer' then
+                assert(self.__query)
+                return sim.Object(self.__query, {index = k})
+            end
+
+            -- string indexing accesses properties:
+            local p = rawget(self, '__nsPrefix')
+            return sim.getProperty(self.__handle, (p and p .. '.' or '') .. k)
+        end,
+        __newindex = function(self, k, v)
+            local p = rawget(self, '__nsPrefix')
+            sim.setProperty(self.__handle, (p and p .. '.' or '') .. k, v)
+        end,
+        __len = function(self)
+            return self.__handle
+        end,
+        __tostring = function(self)
+            local p = rawget(self, '__nsPrefix')
+            return 'sim.Object(' .. self.__handle .. ')' .. (p and '.' .. p or '')
+        end,
+        __pairs = function(self)
+            local props = sim.getProperties(self.__handle)
+            local p = rawget(self, '__nsPrefix')
+            if p then
+                p = p .. '.'
+                local props2 = {}
+                for k, v in pairs(props) do
+                    if k:startswith(p) then
+                        local k2 = k:sub(#p + 1)
+                        props2[k2] = v
+                    end
+                end
+                props = props2
+            end
+            local function stateless_iter(self, k)
+                local v
+                k, v = next(props, k)
+                if v ~= nil then return k, v end
+            end
+            return stateless_iter, self, nil
+        end,
+        __ipairs = function(self)
+            local function stateless_iter(self, i)
+                i = i + 1
+                local pname = sim.getPropertyName(self.__handle, i)
+                if pname then return i, pname end
+            end
+            return stateless_iter, self, 0
+        end,
+        __div = function(self, path)
+            assert(self.__handle ~= sim.handle_app)
+            if path:sub(1, 2) ~= './' then path = './' .. path end
+            local opts = {}
+            if self.__handle ~= sim.handle_scene then
+                opts.proxy = self.__handle
+            end
+            return sim.Object(path, opts)
+        end,
+    },
+    {
+        __call = function(self, handle, opts)
+            opts = opts or {}
+
+            local obj = {__handle = handle,}
+
+            if type(handle) == 'string' then -- sim.getObject shortcut:
+                obj.__handle = sim.getObject(handle, opts)
+                obj.__query = handle
+            else
+                if handle ~= sim.handle_scene and handle ~= sim.handle_app then
+                    obj.__query = sim.getObjectAlias(handle)
+                end
+            end
+
+            for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
+                obj[namespace] = sim.PropertyGroup(obj.__handle, namespace)
+            end
+
+            for k, v in pairs(sim.getProperties(obj.__handle)) do
+                local p = k:split '%.'
+                for i = 1, #p - 1 do
+                    obj[p[i]] = sim.PropertyGroup(obj.__handle, table.join(table.slice(p, 1, i), '.'))
+                end
+            end
+            return setmetatable(obj, sim.Object)
+        end,
+        __div = function(self, path)
+            if path:sub(1, 1) ~= '/' then path = '/' .. path end
+            return sim.Object(path)
+        end,
+    }
+)
+
+function sim.Scene()
+    return sim.Object(sim.handle_scene)
+end
+
+function sim.App()
+    return sim.Object(sim.handle_app)
+end
+
 function apropos(what)
     local mods = {sim = sim}
     for i, n in ipairs(sim.getLoadedPlugins()) do
