@@ -1560,26 +1560,26 @@ end
 sim.PropertyGroup = setmetatable(
     {
         __index = function(self, k)
-            local prefix = rawget(self, '__nsPrefix')
+            local prefix = rawget(self, '__prefix')
             if prefix ~= '' then k = prefix .. '.' .. k end
             if sim.getPropertyInfo(self.__handle, k) then
                 return sim.getProperty(self.__handle, k)
             end
             if sim.getPropertyName(self.__handle, 0, {prefix = k .. '.'}) then
-                return sim.PropertyGroup(self.__handle, k)
+                return sim.PropertyGroup(self.__handle, {prefix = k})
             end
         end,
         __newindex = function(self, k, v)
-            local prefix = rawget(self, '__nsPrefix')
+            local prefix = rawget(self, '__prefix')
             if prefix ~= '' then k = prefix .. '.' .. k end
             sim.setProperty(self.__handle, k, v)
         end,
         __tostring = function(self)
-            local prefix = rawget(self, '__nsPrefix')
-            return 'sim.PropertyGroup(' .. self.__handle .. ', ' .. prefix .. ')'
+            local prefix = rawget(self, '__prefix')
+            return 'sim.PropertyGroup(' .. self.__handle .. ', {prefix = ' .. _S.anyToString(prefix) .. '})'
         end,
         __pairs = function(self)
-            local prefix = rawget(self, '__nsPrefix')
+            local prefix = rawget(self, '__prefix')
             if prefix ~= '' then prefix = prefix .. '.' end
             local props = {}
             local i = 0
@@ -1595,9 +1595,12 @@ sim.PropertyGroup = setmetatable(
                         props[pname2] = sim.getProperty(self.__handle, prefix .. pname)
                     end
                 elseif props[pname2] == nil then
-                    props[pname2] = sim.PropertyGroup(self.__handle, prefix .. pname)
+                    props[pname2] = sim.PropertyGroup(self.__handle, {prefix = prefix .. pname})
                 end
                 i = i + 1
+            end
+            if self.__obj then
+                props.children = self.__obj.children
             end
             local function stateless_iter(self, k)
                 local v
@@ -1608,8 +1611,9 @@ sim.PropertyGroup = setmetatable(
         end,
     },
     {
-        __call = function(self, handle, nsPrefix)
-            local obj = {__handle = handle, __nsPrefix = nsPrefix or ''}
+        __call = function(self, handle, opts)
+            opts = opts or {}
+            local obj = {__handle = handle, __prefix = opts.prefix or '', __obj = opts.obj}
             return setmetatable(obj, sim.PropertyGroup)
         end,
     }
@@ -1672,9 +1676,26 @@ sim.Object = setmetatable(
                 end
             end
 
-            obj.__default = sim.PropertyGroup(obj.__handle)
+            obj.__default = sim.PropertyGroup(obj.__handle, {obj = obj})
+            obj.children = setmetatable({}, {
+                __index = function(self, k)
+                    return obj / k
+                end,
+                __pairs = function(self)
+                    local r = {}
+                    for i, h in ipairs(sim.getObjectsInTree(obj.__handle, sim.handle_all, 3)) do
+                        r[sim.getObjectAlias(h)] = sim.Object(h)
+                    end
+                    local function stateless_iter(self, k)
+                        local v
+                        k, v = next(r, k)
+                        if v ~= nil then return k, v end
+                    end
+                    return stateless_iter, self, nil
+                end,
+            })
             for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
-                obj[namespace] = sim.PropertyGroup(obj.__handle, namespace)
+                obj[namespace] = sim.PropertyGroup(obj.__handle, {prefix = namespace})
             end
 
             return setmetatable(obj, sim.Object)
