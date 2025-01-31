@@ -1661,6 +1661,9 @@ sim.Object = setmetatable(
     },
     {
         __call = function(self, handle, opts)
+            if handle == '/' then return sim.Object(sim.handle_scene) end
+            if handle == '@' then return sim.Object(sim.handle_app) end
+
             opts = opts or {}
 
             local obj = {__handle = handle,}
@@ -1676,7 +1679,10 @@ sim.Object = setmetatable(
                 end
             end
 
+            -- this property group exposes object's top-level properties as self's table keys (via __index):
             obj.__default = sim.PropertyGroup(obj.__handle, {obj = obj})
+
+            -- 'children' property provides a way to access direct children by index or by name:
             obj.children = setmetatable({}, {
                 __index = function(self, k)
                     if type(k) == 'string' then
@@ -1706,6 +1712,8 @@ sim.Object = setmetatable(
                     return stateless_iter, self, -1
                 end,
             })
+
+            -- pre-assign user namespaces to property groups:
             for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
                 obj[namespace] = sim.PropertyGroup(obj.__handle, {prefix = namespace})
             end
