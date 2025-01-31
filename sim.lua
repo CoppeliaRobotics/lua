@@ -1122,7 +1122,6 @@ function sim.getPropertiesInfos(target, opts)
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
-        if opts.match and not string.match(pname, opts.match) then goto continue end
         local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
         local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
         pflags = {
@@ -1139,7 +1138,6 @@ function sim.getPropertiesInfos(target, opts)
             descr = descr,
             class = pclass,
         }
-        ::continue::
     end
 
     return propertiesInfos
@@ -1562,18 +1560,56 @@ end
 sim.PropertyGroup = setmetatable(
     {
         __index = function(self, k)
-            local p = rawget(self, '__nsPrefix')
-            return sim.getProperty(self.__handle, p .. '.' .. k)
+            local prefix = rawget(self, '__nsPrefix')
+            if prefix ~= '' then k = prefix .. '.' .. k end
+            if sim.getPropertyInfo(self.__handle, k) then
+                return sim.getProperty(self.__handle, k)
+            end
+            if sim.getPropertyName(self.__handle, 0, {prefix = k .. '.'}) then
+                return sim.PropertyGroup(self.__handle, k)
+            end
         end,
         __newindex = function(self, k, v)
-            local p = rawget(self, '__nsPrefix')
-            sim.setProperty(self.__handle, p .. '.' .. k, v)
+            local prefix = rawget(self, '__nsPrefix')
+            if prefix ~= '' then k = prefix .. '.' .. k end
+            sim.setProperty(self.__handle, k, v)
+        end,
+        __tostring = function(self)
+            local prefix = rawget(self, '__nsPrefix')
+            return 'sim.PropertyGroup(' .. self.__handle .. ', ' .. prefix .. ')'
+        end,
+        __pairs = function(self)
+            local prefix = rawget(self, '__nsPrefix')
+            if prefix ~= '' then prefix = prefix .. '.' end
+            local props = {}
+            local i = 0
+            while true do
+                local pname = sim.getPropertyName(self.__handle, i, {prefix = prefix})
+                if pname == nil then break end
+                pname = string.stripprefix(pname, prefix)
+                local pname2 = string.gsub(pname, '%..*$', '')
+                if pname == pname2 then
+                    local ptype, pflags, descr = sim.getPropertyInfo(self.__handle, prefix .. pname)
+                    local readable = pflags & 2 == 0
+                    if readable then
+                        props[pname2] = sim.getProperty(self.__handle, prefix .. pname)
+                    end
+                elseif props[pname2] == nil then
+                    props[pname2] = sim.PropertyGroup(self.__handle, prefix .. pname)
+                end
+                i = i + 1
+            end
+            local function stateless_iter(self, k)
+                local v
+                k, v = next(props, k)
+                if v ~= nil then return k, v end
+            end
+            return stateless_iter, self, nil
         end,
     },
     {
         __call = function(self, handle, nsPrefix)
-            opts = opts or {}
-            local obj = {__handle = handle, __nsPrefix = nsPrefix}
+            local obj = {__handle = handle, __nsPrefix = nsPrefix or ''}
             return setmetatable(obj, sim.PropertyGroup)
         end,
     }
@@ -1588,55 +1624,32 @@ sim.Object = setmetatable(
                 return sim.Object(self.__query, {index = k})
             end
 
-            -- string indexing accesses properties:
-            local p = rawget(self, '__nsPrefix')
-            return sim.getProperty(self.__handle, (p and p .. '.' or '') .. k)
+            -- lookup existing properties first:
+            local v = rawget(self, k)
+            if v then return v end
+
+            -- redirect to default property group otherwise:
+            return self.__default[k]
         end,
         __newindex = function(self, k, v)
-            local p = rawget(self, '__nsPrefix')
-            sim.setProperty(self.__handle, (p and p .. '.' or '') .. k, v)
+            self.__default[k] = v
         end,
         __len = function(self)
             return self.__handle
         end,
         __tostring = function(self)
-            local p = rawget(self, '__nsPrefix')
-            return 'sim.Object(' .. self.__handle .. ')' .. (p and '.' .. p or '')
+            return 'sim.Object(' .. self.__handle .. ')'
         end,
         __pairs = function(self)
-            local props = sim.getProperties(self.__handle)
-            local p = rawget(self, '__nsPrefix')
-            if p then
-                p = p .. '.'
-                local props2 = {}
-                for k, v in pairs(props) do
-                    if k:startswith(p) then
-                        local k2 = k:sub(#p + 1)
-                        props2[k2] = v
-                    end
-                end
-                props = props2
-            end
-            local function stateless_iter(self, k)
-                local v
-                k, v = next(props, k)
-                if v ~= nil then return k, v end
-            end
-            return stateless_iter, self, nil
-        end,
-        __ipairs = function(self)
-            local function stateless_iter(self, i)
-                i = i + 1
-                local pname = sim.getPropertyName(self.__handle, i)
-                if pname then return i, pname end
-            end
-            return stateless_iter, self, 0
+            return pairs(self.__default)
         end,
         __div = function(self, path)
             assert(self.__handle ~= sim.handle_app)
-            if path:sub(1, 2) ~= './' then path = './' .. path end
             local opts = {}
-            if self.__handle ~= sim.handle_scene then
+            if self.__handle == sim.handle_scene then
+                if path:sub(1, 1) ~= '/' then path = '/' .. path end
+            else
+                if path:sub(1, 2) ~= './' then path = './' .. path end
                 opts.proxy = self.__handle
             end
             return sim.Object(path, opts)
@@ -1652,26 +1665,19 @@ sim.Object = setmetatable(
                 obj.__handle = sim.getObject(handle, opts)
                 obj.__query = handle
             else
-                if handle ~= sim.handle_scene and handle ~= sim.handle_app then
+                assert(math.type(handle) == 'integer', 'invalid type for handle')
+                assert(sim.isHandle(handle) or table.find({sim.handle_app, sim.handle_scene}, handle), 'invalid handle')
+                if sim.isHandle(handle) then
                     obj.__query = sim.getObjectAlias(handle)
                 end
             end
 
+            obj.__default = sim.PropertyGroup(obj.__handle)
             for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
                 obj[namespace] = sim.PropertyGroup(obj.__handle, namespace)
             end
 
-            for k, v in pairs(sim.getProperties(obj.__handle)) do
-                local p = k:split '%.'
-                for i = 1, #p - 1 do
-                    obj[p[i]] = sim.PropertyGroup(obj.__handle, table.join(table.slice(p, 1, i), '.'))
-                end
-            end
             return setmetatable(obj, sim.Object)
-        end,
-        __div = function(self, path)
-            if path:sub(1, 1) ~= '/' then path = '/' .. path end
-            return sim.Object(path)
         end,
     }
 )
