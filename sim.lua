@@ -1122,6 +1122,7 @@ function sim.getPropertiesInfos(target, opts)
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
+        if opts.match and not string.match(pname, opts.match) then goto continue end
         local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
         local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
         pflags = {
@@ -1138,6 +1139,7 @@ function sim.getPropertiesInfos(target, opts)
             descr = descr,
             class = pclass,
         }
+        ::continue::
     end
 
     return propertiesInfos
