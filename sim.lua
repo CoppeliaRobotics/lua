@@ -1679,7 +1679,11 @@ sim.Object = setmetatable(
             obj.__default = sim.PropertyGroup(obj.__handle, {obj = obj})
             obj.children = setmetatable({}, {
                 __index = function(self, k)
-                    return obj / k
+                    if type(k) == 'string' then
+                        return obj / k
+                    elseif math.type(k) == 'integer' then
+                        return sim.Object(sim.getObjectChild(obj.__handle, k))
+                    end
                 end,
                 __pairs = function(self)
                     local r = {}
@@ -1692,6 +1696,14 @@ sim.Object = setmetatable(
                         if v ~= nil then return k, v end
                     end
                     return stateless_iter, self, nil
+                end,
+                __ipairs = function(self)
+                    local function stateless_iter(self, i)
+                        i = i + 1
+                        local h = sim.getObjectChild(obj.__handle, i)
+                        if h ~= -1 then return i, sim.Object(h) end
+                    end
+                    return stateless_iter, self, -1
                 end,
             })
             for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
