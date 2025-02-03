@@ -166,12 +166,7 @@ return {
             }
         )
 
-        sim.Scene = function()
-            return sim.Object(sim.handle_scene)
-        end
-
-        sim.App = function()
-            return sim.Object(sim.handle_app)
-        end
+        sim.Scene = sim.Object(sim.handle_scene)
+        sim.App = sim.Object(sim.handle_app)
     end
 }
