@@ -7,4 +7,6 @@ sim.getPropertyInfo = wrap(sim.getPropertyInfo, function(origFunc)
     end
 end)
 
+require('sim.Object').extend(sim)
+
 return sim
