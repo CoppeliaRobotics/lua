@@ -88,8 +88,9 @@ return {
                     return 'sim.Object(' .. self.__handle .. ')'
                 end,
                 __pairs = function(self)
-                    local itertools = require 'itertools'
-                    return itertools.chain(self.__properties, self.__methods)
+                    --local itertools = require 'itertools'
+                    --return itertools.chain(self.__properties, self.__methods)
+                    return pairs(self.__properties)
                 end,
                 __div = function(self, path)
                     assert(self.__handle ~= sim.handle_app)

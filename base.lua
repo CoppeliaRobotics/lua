@@ -544,17 +544,25 @@ end
 function _getCompletion(input, pos)
     local ret = {}
     if pos == #input then
-        local what = input:match('[_%a][_%w%.]*$')
+        local what = input:match('[_%a][_%w%.:]*$')
         if what then
-            local base, ext = what:match('^(.-)%.([^.]+)$')
+            local base, sep, ext = what:match('^(.-)([.:])([^.:]+)$')
             if base then
                 base = getvar(base)
             else
                 base, ext = _G, what
             end
+
             if base then
-                for k in pairs(base) do
-                    if k:startswith(ext) and #k > #ext then table.insert(ret, k:sub(#ext + 1)) end
+                local lookupTable = base
+                if sep == ":" and type(base) == "table" and type(base.__methods) == "table" then
+                    lookupTable = base.__methods
+                end
+
+                for k in pairs(lookupTable) do
+                    if k:startswith(ext) and #k > #ext then
+                        table.insert(ret, k:sub(#ext + 1))
+                    end
                 end
             end
         end
