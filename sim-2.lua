@@ -1,4 +1,4 @@
-local sim = table.update({}, require 'sim', {__version = 2})
+local sim = table.update({}, require 'sim')
 
 require('sim.Object').extend(sim)
 
