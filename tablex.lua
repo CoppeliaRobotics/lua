@@ -283,6 +283,16 @@ function table.unflatten(tbl, opts)
     return ret
 end
 
+function table.update(t, ...)
+    local ar = {...}
+    for i = 1, #ar do
+        for k, v in pairs(ar[i]) do
+            t[k] = v
+        end
+    end
+    return t
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
