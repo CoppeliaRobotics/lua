@@ -1558,6 +1558,7 @@ function sim.setShapeAppearance(handle, savedData, opts)
 end
 
 function apropos(what)
+    what = what:lower()
     local mods = {sim = sim}
     for i, n in ipairs(sim.getLoadedPlugins()) do
         pcall(function() mods[n] = require(n) end)
