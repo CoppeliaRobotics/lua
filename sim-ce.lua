@@ -393,8 +393,11 @@ sim.propertyinfo_removable
 sim.propertyinfo_largedata
 
 sim.objecttype_sceneobject
+sim.objecttype_collection
+sim.objecttype_script
 sim.objecttype_texture
 sim.objecttype_mesh
+sim.objecttype_interfacestack
 
 sim.buffer_base64
 sim.buffer_clamp
