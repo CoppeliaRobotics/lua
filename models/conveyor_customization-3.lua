@@ -173,6 +173,7 @@ function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
                                         )
             if _S.conveyor.config.respondable then
                 sim.setObjectInt32Param(_S.conveyor.padHandles[i], sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(_S.conveyor.padHandles[i], 'kinematic', true)
             end
             sim.setShapeMass(_S.conveyor.padHandles[i], 0.01)
 

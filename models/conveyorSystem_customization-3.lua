@@ -219,6 +219,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                     _S.conveyorSystem.config.width * 0.95,
                 }
                         )
+            sim.setBoolProperty(cyl, 'kinematic', true)
             if _S.conveyorSystem.config.respondable then
                 sim.setObjectInt32Param(cyl, sim.shapeintparam_respondable, 1)
             end
@@ -264,6 +265,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                 sim.setObjectInt32Param(
                     _S.conveyorSystem.padHandles[i], sim.shapeintparam_respondable, 1
                 )
+                sim.setBoolProperty(_S.conveyorSystem.padHandles[i], 'kinematic', true)
             end
             sim.setShapeMass(_S.conveyorSystem.padHandles[i], 0.01)
 
@@ -296,6 +298,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                     }
                         )
                 sim.setObjectInt32Param(el[i], sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(el[i], 'kinematic', true)
                 sim.setShapeMass(el[i], 0.01)
 
                 local pos = sim.getPathInterpolatedConfig(
@@ -316,6 +319,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                             sim.primitiveshape_cuboid, {0.05, _S.conveyorSystem.config.width, 0.02}
                         )
                 sim.setObjectInt32Param(el[i], sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(el[i], 'kinematic', true)
                 sim.setShapeMass(el[i], 0.01)
 
                 local pos = sim.getPathInterpolatedConfig(

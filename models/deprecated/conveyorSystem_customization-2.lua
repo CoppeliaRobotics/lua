@@ -221,6 +221,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                         )
             if _S.conveyorSystem.config.respondable then
                 sim.setObjectInt32Param(cyl, sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(cyl, 'kinematic', true)
             end
             sim.setShapeMass(cyl, 0.01)
 
@@ -264,6 +265,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                 sim.setObjectInt32Param(
                     _S.conveyorSystem.padHandles[i], sim.shapeintparam_respondable, 1
                 )
+                sim.setBoolProperty(_S.conveyorSystem.padHandles[i], 'kinematic', true)
             end
             sim.setShapeMass(_S.conveyorSystem.padHandles[i], 0.01)
 
@@ -296,6 +298,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                     }
                         )
                 sim.setObjectInt32Param(el[i], sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(el[i], 'kinematic', true)
                 sim.setShapeMass(el[i], 0.01)
 
                 local pos = sim.getPathInterpolatedConfig(
@@ -316,6 +319,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                             sim.primitiveshape_cuboid, {0.05, _S.conveyorSystem.config.width, 0.02}
                         )
                 sim.setObjectInt32Param(el[i], sim.shapeintparam_respondable, 1)
+                sim.setBoolProperty(el[i], 'kinematic', true)
                 sim.setShapeMass(el[i], 0.01)
 
                 local pos = sim.getPathInterpolatedConfig(
@@ -356,6 +360,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                 _S.conveyorSystem.config.borderElementHeight,
             })
             sim.setObjectInt32Param(pa, sim.shapeintparam_respondable, 1)
+            sim.setBoolProperty(pa, 'kinematic', true)
             sim.setShapeMass(pa, 0.01)
 
             sim.setShapeColor(pa, nil, sim.colorcomponent_ambient_diffuse, _S.conveyorSystem.config.frameColor)
@@ -366,6 +371,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                 _S.conveyorSystem.config.borderElementHeight,
             })
             sim.setObjectInt32Param(pb, sim.shapeintparam_respondable, 1)
+            sim.setBoolProperty(pb, 'kinematic', true)
             sim.setShapeMass(pb, 0.01)
 
             sim.setShapeColor(pb, nil, sim.colorcomponent_ambient_diffuse, _S.conveyorSystem.config.frameColor)

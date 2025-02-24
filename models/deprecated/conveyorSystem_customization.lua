@@ -149,6 +149,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                         _S.conveyorSystem.config.rollerSize[2] * 0.95,
                     }, 0.01
                             )
+                sim.setBoolProperty(cyl, 'kinematic', true)
                 sim.setObjectInt32Param(cyl, sim.objintparam_visibility_layer, 1 + 256)
                 local jnt = sim.createJoint(sim.joint_revolute, sim.jointmode_kinematic, 0)
                 _S.conveyorSystem.rolHandles[i] = jnt
@@ -187,6 +188,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                         _S.conveyorSystem.config.padSize[3],
                     }, 0.01
                                                   )
+                sim.setBoolProperty(_S.conveyorSystem.padHandles[i], 'kinematic', true)
                 sim.setObjectAlias(_S.conveyorSystem.padHandles[i], 'pad')
                 sim.setShapeColor(
                     _S.conveyorSystem.padHandles[i], nil, sim.colorcomponent_ambient_diffuse,
@@ -217,6 +219,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                             _S.conveyorSystem.config.rollerSize[1] / 2,
                         }, 0.01
                             )
+                    sim.setBoolProperty(el[i], 'kinematic', true)
                     local pos = sim.getPathInterpolatedConfig(
                                     _S.conveyorSystem.pathPositions, _S.conveyorSystem.pathLengths,
                                     p
@@ -238,6 +241,7 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                             _S.conveyorSystem.config.padSize[2], 0.02,
                         }, 0.01
                             )
+                    sim.setBoolProperty(el[i], 'kinematic', true)
                     local pos = sim.getPathInterpolatedConfig(
                                     _S.conveyorSystem.pathPositions, _S.conveyorSystem.pathLengths,
                                     p

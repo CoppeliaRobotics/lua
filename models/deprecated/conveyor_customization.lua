@@ -155,6 +155,9 @@ function _S.conveyor.init(config)
                         _S.conveyor.config.beltElementThickness,
                     }, 0.01
                                             )
+                if _S.conveyor.config.respondable then
+                    sim.setBoolProperty(_S.conveyor.padHandles[i], 'kinematic', true)
+                end
                 sim.setObjectAlias(_S.conveyor.padHandles[i], 'pad')
                 sim.setShapeColor(
                     _S.conveyor.padHandles[i], nil, sim.colorcomponent_ambient_diffuse,
