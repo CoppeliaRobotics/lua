@@ -43,12 +43,22 @@ function Matrix:offset(i, j)
 end
 
 function Matrix:get(i, j)
+    sim.addLog(sim.verbosity_warnings | sim.verbosity_once, 'm:get(i, j) is deprecated. use m:item(i, j) instead')
+    return self:item(i, j)
+end
+
+function Matrix:item(i, j)
     local offset = self:offset(i, j)
     if not offset then return end
     return self._data[offset]
 end
 
 function Matrix:set(i, j, value)
+    sim.addLog(sim.verbosity_warnings | sim.verbosity_once, 'm:set(i, j, val) is deprecated. use m:setitem(i, j, val) instead')
+    return self:setitem(i, j, value)
+end
+
+function Matrix:setitem(i, j, value)
     local offset = self:offset(i, j)
     if offset then
         if self._copyonwrite then
