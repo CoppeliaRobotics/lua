@@ -56,7 +56,11 @@ function parserx.getCompoundId(ast)
     if ast.tag == 'Id' then return ast[1] end
     if ast.tag == 'String' then return ast[1] end
     if ast.tag == 'Index' and ast[3] == nil then
-        return parserx.getCompoundId(ast[1]) .. '.' .. parserx.getCompoundId(ast[2])
+        local id1 = parserx.getCompoundId(ast[1])
+        local id2 = parserx.getCompoundId(ast[2])
+        if id1 and id2 then
+            return id1 .. '.' .. id2
+        end
     end
 end
 
@@ -64,7 +68,7 @@ function parserx.findCallsAtPosition(ast, pos, results)
     results = results or {}
     if type(ast) ~= 'table' then return end
     local fn = ''
-    if ast.tag == 'Call' then fn = parserx.getCompoundId(ast[1]) end
+    if ast.tag == 'Call' then fn = parserx.getCompoundId(ast[1]) or '' end
     for i, t in ipairs(ast) do
         if type(t) == 'table' then
             if type(t) == 'table' and ast.tag == 'Call' and t.pos <= pos and pos <= t.end_pos then
