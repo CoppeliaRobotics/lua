@@ -789,15 +789,53 @@ function Matrix:__concat(m)
     end
 end
 
-function Matrix:__tostring()
-    s = 'Matrix(' .. self:rows() .. ',' .. self:cols() .. ',{'
-    for i = 1, self:rows() do
-        for j = 1, self:cols() do
-            s = s .. (i == 1 and j == 1 and '' or ',') .. tostring(self:get(i, j))
+function Matrix:__tostring(forDisplay, numToString)
+    local out = ''
+
+    if forDisplay or __tostring_for_display then
+        if __tostring_for_display then -- set by _evalExec (base.lua) for rendering in statusbar
+            __tostring_for_display.add_nl = true -- signal we need a newline after comma
+            if not __tostring_for_display.first_of_line then
+                out = out .. '\n\n' -- keep at start of line
+            end
         end
+
+        -- grid format:
+        numToString = numToString or function(x) return _S.anyToString(x) end
+        local s = {}
+        local colwi, colwd = {}, {}
+        for i = 1, self:rows() do
+            s[i] = self:row(i):data()
+            for j = 1, #s[i] do
+                local ns = numToString(s[i][j])
+                local ns = string.split(ns .. '.', '%.')
+                ns = {ns[1], ns[2]}
+                if math.type(s[i][j]) == 'float' then ns[2] = '.' .. ns[2] end
+                s[i][j] = ns
+                colwi[j] = math.max(colwi[j] or 0, #s[i][j][1])
+                colwd[j] = math.max(colwd[j] or 0, #s[i][j][2])
+            end
+        end
+        for i = 1, self:rows() do
+            out = out .. (i > 1 and '\n' or '')
+            for j = 1, #s[i] do
+                out = out .. (j > 1 and '  ' or '')
+                out = out .. string.format('%' .. colwi[j] .. 's', s[i][j][1])
+                out = out .. string.format('%-' .. colwd[j] .. 's', s[i][j][2])
+            end
+        end
+    else
+        -- compact format:
+        out = out .. 'Matrix(' .. self:rows() .. ', ' .. self:cols() .. ', {'
+        local data = self:data()
+        for i = 1, self:rows() do
+            for j = 1, self:cols() do
+                out = out .. (i == 1 and j == 1 and '' or ', ') .. tostring(self:get(i, j))
+            end
+        end
+        out = out .. '})'
     end
-    s = s .. '})'
-    return s
+    return out
 end
 
 function Matrix:__len()
