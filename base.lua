@@ -341,25 +341,20 @@ end
 function _S.getShortString(x, opts)
     opts = opts or {}
     opts.omitQuotes = opts.omitQuotes or false
+    opts.allowBinary = opts.allowBinary or false
+    opts.allowBinary = true
 
     if type(x) == 'string' then
-        if string.find(x, "\0") then
+        if not string.isprintable(x) and not opts.allowBinary then
             return string.format('[binary string (%s bytes)]', #x)
+        end
+        if opts.longStringThreshold and #x > opts.longStringThreshold then
+            return string.format('[long string (%s bytes)]', #x)
+        end
+        if opts.omitQuotes then
+            return string.format('%s', x)
         else
-            local a, b = string.gsub(x, "[%a%d%p%s]", "@")
-            if b ~= #x then
-                return string.format('[binary string (%s bytes)]', #x)
-            else
-                if opts.longStringThreshold and #x > opts.longStringThreshold then
-                    return string.format('[long string (%s bytes)]', #x)
-                else
-                    if opts.omitQuotes then
-                        return string.format('%s', x)
-                    else
-                        return string.format("'%s'", x)
-                    end
-                end
-            end
+            return string.format("'%s'", x)
         end
     end
     return "[not a string]"
@@ -388,7 +383,7 @@ function getAsString(...)
     for i = 1, a.n do
         if i > 1 then s = s .. ((__tostring_for_display or {}).add_nl and ' ,\n\n' or ', ') end
         (__tostring_for_display or {}).add_nl = nil
-        s = s .. _S.anyToString(a[i])
+        s = s .. _S.anyToString(a[i], {allowBinary = not not __tostring_for_display})
         ;(__tostring_for_display or {}).first_of_line = (__tostring_for_display or {}).add_nl
     end
     setAutoYield(lb)
