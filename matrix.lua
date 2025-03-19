@@ -75,7 +75,7 @@ end
 function Matrix:row(i)
     if i < 1 or i > self:rows() then return Matrix(0, 0) end
     local r = Matrix(1, self:cols())
-    for j = 1, self:cols() do r:set(1, j, self:get(i, j)) end
+    for j = 1, self:cols() do r:setitem(1, j, self:item(i, j)) end
     return r
 end
 
@@ -84,13 +84,13 @@ function Matrix:rowref(i)
     local data = {}
     setmetatable(data, {
         __index = function(t, j)
-            return self:get(i, j)
+            return self:item(i, j)
         end,
         __len = function(t)
             return self:cols()
         end,
         __newindex = function(t, j, v)
-            self:set(i, j, v)
+            self:setitem(i, j, v)
         end,
     })
     return Matrix(1, self:cols(), {ref = data})
@@ -101,9 +101,9 @@ function Matrix:setrow(i, m)
     if getmetatable(m) == Matrix then
         assert(m:rows() == 1, 'bad shape')
         assert(m:cols() == self:cols(), 'mismatching column count')
-        for j = 1, self:cols() do self:set(i, j, m:get(1, j)) end
+        for j = 1, self:cols() do self:setitem(i, j, m:item(1, j)) end
     elseif type(m) == 'table' then
-        for j = 1, self:cols() do self:set(i, j, m[j] or 0) end
+        for j = 1, self:cols() do self:setitem(i, j, m[j] or 0) end
     else
         error('bad type')
     end
@@ -113,7 +113,7 @@ end
 function Matrix:col(j)
     if j < 1 or j > self:cols() then return Matrix(0, 0) end
     local r = Matrix(self:rows(), 1)
-    for i = 1, self:rows() do r:set(i, 1, self:get(i, j)) end
+    for i = 1, self:rows() do r:setitem(i, 1, self:item(i, j)) end
     return r
 end
 
@@ -122,9 +122,9 @@ function Matrix:setcol(j, m)
     if getmetatable(m) == Matrix then
         assert(m:cols() == 1, 'bad shape')
         assert(m:rows() == self:rows(), 'mismatching row count')
-        for i = 1, self:rows() do self:set(i, j, m:get(i, 1)) end
+        for i = 1, self:rows() do self:setitem(i, j, m:item(i, 1)) end
     elseif type(m) == 'table' then
-        for i = 1, self:rows() do self:set(i, j, m[i] or 0) end
+        for i = 1, self:rows() do self:setitem(i, j, m[i] or 0) end
     else
         error('bad type')
     end
@@ -135,7 +135,7 @@ function Matrix:slice(fromrow, fromcol, torow, tocol)
     local m = Matrix(math.max(0, 1 + torow - fromrow), math.max(0, 1 + tocol - fromcol))
     for i = fromrow, torow do
         for j = fromcol, tocol do
-            m:set(i - fromrow + 1, j - fromcol + 1, self:get(i, j) or 0)
+            m:setitem(i - fromrow + 1, j - fromcol + 1, self:item(i, j) or 0)
         end
     end
     return m
@@ -145,11 +145,11 @@ function Matrix:flip(dim)
     dim = dim or 1
     if dim == 1 then
         return Matrix(self:rows(), self:cols(), function(i, j)
-            return self:get(self:rows() - i + 1, j)
+            return self:item(self:rows() - i + 1, j)
         end)
     elseif dim == 2 then
         return Matrix(self:rows(), self:cols(), function(i, j)
-            return self:get(i, self:cols() - j + 1)
+            return self:item(i, self:cols() - j + 1)
         end)
     else
         error('invalid dimension')
@@ -184,7 +184,7 @@ end
 
 function Matrix:at(rowidx, colidx)
     assert(getmetatable(rowidx) == Matrix and getmetatable(colidx) == Matrix, 'bad type')
-    return rowidx:applyfunc2(colidx, function(i, j) return self:get(i, j) end)
+    return rowidx:applyfunc2(colidx, function(i, j) return self:item(i, j) end)
 end
 
 function Matrix:horzcat(...)
@@ -227,7 +227,7 @@ end
 
 function Matrix:assign(startrow, startcol, m)
     for i = 1, m:rows() do
-        for j = 1, m:cols() do self:set(i + startrow - 1, j + startcol - 1, m:get(i, j) or 0) end
+        for j = 1, m:cols() do self:setitem(i + startrow - 1, j + startcol - 1, m:item(i, j) or 0) end
     end
     return self
 end
@@ -238,13 +238,13 @@ function Matrix:repmat(n, m)
         return (x - 1) % n + 1
     end
     return Matrix(self:rows() * n, self:cols() * m, function(i, j)
-        return self:get(mod1(i, self:rows()), mod1(j, self:cols()))
+        return self:item(mod1(i, self:rows()), mod1(j, self:cols()))
     end)
 end
 
 function Matrix:applyfuncidx(f)
     return Matrix(self:rows(), self:cols(), function(i, j)
-        return f(i, j, self:get(i, j))
+        return f(i, j, self:item(i, j))
     end)
 end
 
@@ -254,7 +254,7 @@ end
 
 function Matrix:applyfunc2(m2, f)
     assert(self:sameshape(m2), 'shape mismatch')
-    return self:applyfuncidx(function(i, j, x) return f(x, m2:get(i, j)) end)
+    return self:applyfuncidx(function(i, j, x) return f(x, m2:item(i, j)) end)
 end
 
 function Matrix:binop(m, op)
@@ -360,7 +360,7 @@ end
 
 function Matrix:data()
     local data = {}
-    for i = 1, self:count() do table.insert(data, self:get(i)) end
+    for i = 1, self:count() do table.insert(data, self:item(i)) end
     return data
 end
 
@@ -368,7 +368,7 @@ function Matrix:dataref()
     local data = {}
     setmetatable(data, {
         __index = function(t, i)
-            return self:get(i)
+            return self:item(i)
         end,
         __len = function(t)
             return self:rows() * self:cols()
@@ -383,7 +383,7 @@ function Matrix:_minmax(dim, cmp, what)
         local mv, mi, mj = self._data[1], 1, 1
         for i = 1, self:rows() do
             for j = 1, self:cols() do
-                local v = self:get(i, j)
+                local v = self:item(i, j)
                 if cmp(v, mv) then mv, mi, mj = v, i, j end
             end
         end
@@ -392,14 +392,14 @@ function Matrix:_minmax(dim, cmp, what)
         local m = Matrix(1, self:cols())
         for j = 1, self:cols() do
             local col = self:col(j)
-            m:set(1, j, col[what](col))
+            m:setitem(1, j, col[what](col))
         end
         return m
     elseif dim == 2 then
         local m = Matrix(self:rows(), 1)
         for i = 1, self:rows() do
             local row = self:row(i)
-            m:set(i, 1, row[what](row))
+            m:setitem(i, 1, row[what](row))
         end
         return m
     else
@@ -426,15 +426,15 @@ end
 function Matrix:fold(dim, start, op)
     if dim == nil then
         local s = start
-        for i = 1, self:rows() do for j = 1, self:cols() do s = op(s, self:get(i, j)) end end
+        for i = 1, self:rows() do for j = 1, self:cols() do s = op(s, self:item(i, j)) end end
         return s
     elseif dim == 1 then
         local m = Matrix(1, self:cols())
-        for j = 1, self:cols() do m:set(1, j, self:col(j):fold(nil, start, op)) end
+        for j = 1, self:cols() do m:setitem(1, j, self:col(j):fold(nil, start, op)) end
         return m
     elseif dim == 2 then
         local m = Matrix(self:rows(), 1)
-        for i = 1, self:rows() do m:set(i, 1, self:row(i):fold(nil, start, op)) end
+        for i = 1, self:rows() do m:setitem(i, 1, self:row(i):fold(nil, start, op)) end
         return m
     else
         error('invalid dimension')
@@ -480,7 +480,7 @@ function Matrix:mul(m)
         for i = 1, self:rows() do
             for j = 1, m:cols() do
                 local s = 0
-                for k = 1, self:cols() do s = s + self:get(i, k) * m:get(k, j) end
+                for k = 1, self:cols() do s = s + self:item(i, k) * m:item(k, j) end
                 table.insert(data, s)
             end
         end
@@ -563,7 +563,7 @@ end
 function Matrix:all(f)
     f = f or function(x) return x ~= 0 end
     for i = 1, self:rows() do
-        for j = 1, self:cols() do if not f(self:get(i, j)) then return false end end
+        for j = 1, self:cols() do if not f(self:item(i, j)) then return false end end
     end
     return true
 end
@@ -571,7 +571,7 @@ end
 function Matrix:any(f)
     f = f or function(x) return x ~= 0 end
     for i = 1, self:rows() do
-        for j = 1, self:cols() do if f(self:get(i, j)) then return true end end
+        for j = 1, self:cols() do if f(self:item(i, j)) then return true end end
     end
     return false
 end
@@ -583,7 +583,7 @@ end
 function Matrix:nonzero()
     local r = {}
     for i = 1, self:rows() do
-        for j = 1, self:cols() do if self:get(i, j) ~= 0 then table.insert(r, {i, j}) end end
+        for j = 1, self:cols() do if self:item(i, j) ~= 0 then table.insert(r, {i, j}) end end
     end
     return Matrix:fromtable(r)
 end
@@ -602,7 +602,7 @@ function Matrix:dot(m)
     if self:rows() == 1 then return self:t():dot(m:t()) end
     assert(self:cols() == 1, 'supported only on vectors')
     assert(self:sameshape(m), 'shape mismatch')
-    return (self:t() * m):get(1, 1)
+    return (self:t() * m):item(1, 1)
 end
 
 function Matrix:cross(m)
@@ -611,9 +611,9 @@ function Matrix:cross(m)
     assert(self:sameshape(m), 'shape mismatch')
     return Matrix(3, 1, {
         ref = {
-            self:get(2, 1) * m:get(3, 1) - self:get(3, 1) * m:get(2, 1),
-            self:get(3, 1) * m:get(1, 1) - self:get(1, 1) * m:get(3, 1),
-            self:get(1, 1) * m:get(2, 1) - self:get(2, 1) * m:get(1, 1),
+            self:item(2, 1) * m:item(3, 1) - self:item(3, 1) * m:item(2, 1),
+            self:item(3, 1) * m:item(1, 1) - self:item(1, 1) * m:item(3, 1),
+            self:item(1, 1) * m:item(2, 1) - self:item(2, 1) * m:item(1, 1),
         },
     })
 end
@@ -622,7 +622,7 @@ function Matrix:kron(m)
     local r = Matrix(self:rows() * m:rows(), self:cols() * m:cols())
     for i = 1, self:rows() do
         for j = 1, self:cols() do
-            r:assign(m:rows() * (i - 1) + 1, m:cols() * (j - 1) + 1, self:get(i, j) * m)
+            r:assign(m:rows() * (i - 1) + 1, m:cols() * (j - 1) + 1, self:item(i, j) * m)
         end
     end
     return r
@@ -638,7 +638,7 @@ end
 
 function Matrix:nonhom()
     if self:rows() == 4 then
-        return self:slice(1, 1, 3, self:cols()):applyfuncidx(function(i, j, x) return x / self:get(4, j) end)
+        return self:slice(1, 1, 3, self:cols()):applyfuncidx(function(i, j, x) return x / self:item(4, j) end)
     else
         error('invalid shape')
     end
@@ -660,7 +660,7 @@ function Matrix:diag(t)
             return Matrix:diag(t:data())
         elseif type(t) == 'table' then
             local r = Matrix(#t, #t)
-            for i, x in ipairs(t) do r:set(i, i, x) end
+            for i, x in ipairs(t) do r:setitem(i, i, x) end
             return r
         else
             error('bad argument type')
@@ -668,7 +668,7 @@ function Matrix:diag(t)
     else
         -- called as matrix method, returns the main diagonal
         local r = Matrix(math.min(self:rows(), self:cols()), 1)
-        for ij = 1, r:rows() do r:set(ij, 1, self:get(ij, ij)) end
+        for ij = 1, r:rows() do r:setitem(ij, 1, self:item(ij, ij)) end
         return r
     end
 end
@@ -698,22 +698,22 @@ function Matrix:gauss(jordan)
         r:setrow(i1, r:row(i1) + k * r:row(i2))
     end
     for j = 1, r:rows() do
-        local pivotvalue, pivotindex = r:get(j, j), j
+        local pivotvalue, pivotindex = r:item(j, j), j
         for i = j, n do
-            if math.abs(r:get(i, j)) > math.abs(pivotvalue) then
-                pivotvalue, pivotindex = r:get(i, j), i
+            if math.abs(r:item(i, j)) > math.abs(pivotvalue) then
+                pivotvalue, pivotindex = r:item(i, j), i
             end
         end
         if pivotvalue ~= 0 then
-            if math.abs(pivotvalue) > math.abs(r:get(j, j)) then swaprows(j, pivotindex) end
-            multrow(j, 1 / r:get(j, j))
+            if math.abs(pivotvalue) > math.abs(r:item(j, j)) then swaprows(j, pivotindex) end
+            multrow(j, 1 / r:item(j, j))
             for i = j + 1, r:rows() do
-                if r:get(i, j) ~= 0 then addrow(i, -r:get(i, j) / r:get(j, j), j) end
+                if r:item(i, j) ~= 0 then addrow(i, -r:item(i, j) / r:item(j, j), j) end
             end
         end
     end
     if jordan then
-        for j = r:rows(), 2, -1 do for i = j - 1, 1, -1 do addrow(i, -r:get(i, j), j) end end
+        for j = r:rows(), 2, -1 do for i = j - 1, 1, -1 do addrow(i, -r:item(i, j), j) end end
     end
     det = det * r:diag():prod() -- in case some element on the diagonal is zero
     return r, det
@@ -723,7 +723,7 @@ function Matrix:det()
     assert(self:rows() == self:cols(), 'only defined on square matrices')
     local n = self:rows()
     if n == 1 then
-        return self:get(1, 1)
+        return self:item(1, 1)
     elseif n == 2 then
         local a, b, c, d = table.unpack(self:data())
         return a * d - b * c
@@ -732,7 +732,7 @@ function Matrix:det()
         return a * e * i + b * f * g + c * d * h - c * e * g - a * f * h - b * d * i
     elseif false then -- very slow method
         local d, r1 = 0, self:slice(2, 1, n, n)
-        for j = 1, n do d = d + (-1) ^ (1 + j) * self:get(1, j) * r1:dropcol(j):det() end
+        for j = 1, n do d = d + (-1) ^ (1 + j) * self:item(1, j) * r1:dropcol(j):det() end
         return d
     else
         local _, d = self:gauss()
@@ -840,7 +840,7 @@ function Matrix:__tostring(forDisplay, numToString)
         local data = self:data()
         for i = 1, self:rows() do
             for j = 1, self:cols() do
-                out = out .. (i == 1 and j == 1 and '' or ', ') .. tostring(self:get(i, j))
+                out = out .. (i == 1 and j == 1 and '' or ', ') .. tostring(self:item(i, j))
             end
         end
         out = out .. '})'
@@ -859,9 +859,9 @@ end
 function Matrix:__index(k)
     if type(k) == 'number' then
         if self:rows() == 1 then
-            return self:get(1, k)
+            return self:item(1, k)
         elseif self:cols() == 1 then
-            return self:get(k, 1)
+            return self:item(k, 1)
         else
             return self:rowref(k)
         end
@@ -873,9 +873,9 @@ end
 function Matrix:__newindex(k, v)
     if type(k) == 'number' then
         if self:rows() == 1 then
-            return self:set(1, k, v)
+            return self:setitem(1, k, v)
         elseif self:cols() == 1 then
-            return self:set(k, 1, v)
+            return self:setitem(k, 1, v)
         else
             return self:setrow(k, v)
         end
@@ -893,7 +893,7 @@ function Matrix:__ipairs()
         local j, cols = 0, self:cols()
         return function()
             j = j + 1
-            if j <= cols then return j, self:get(1, j) end
+            if j <= cols then return j, self:item(1, j) end
         end
     else
         local i, rows = 0, self:rows()
@@ -913,14 +913,14 @@ function Matrix:totable(format)
     if type(format) == 'table' and #format == 0 then
         local d = {}
         for i = 1, self:rows() do
-            for j = 1, self:cols() do table.insert(d, self:get(i, j)) end
+            for j = 1, self:cols() do table.insert(d, self:item(i, j)) end
         end
         return {dims = {self:rows(), self:cols()}, data = d}
     elseif format == nil then
         local t = {}
         for i = 1, self:rows() do
             local row = {}
-            for j = 1, self:cols() do table.insert(row, self:get(i, j)) end
+            for j = 1, self:cols() do table.insert(row, self:item(i, j)) end
             table.insert(t, row)
         end
         return t
@@ -973,7 +973,7 @@ function Matrix:print(name, opts)
         elemwidth = {}
         for j = 1, self:cols() do
             for i = 1, self:rows() do
-                elemwidth[j] = math.max(elemwidth[j] or 0, #tostring(self:get(i, j)))
+                elemwidth[j] = math.max(elemwidth[j] or 0, #tostring(self:item(i, j)))
             end
         end
     elseif type(elemwidth) == 'number' then
@@ -982,7 +982,7 @@ function Matrix:print(name, opts)
     for i = 1, self:rows() do
         local row = i == 1 and (prefix0 .. 'Matrix{{') or (string.rep(' ', #prefix0) .. '       {')
         for j = 1, self:cols() do
-            row = row ..  string.format('%' .. tostring(elemwidth[j]) .. 's', tostring(self:get(i, j)))
+            row = row ..  string.format('%' .. tostring(elemwidth[j]) .. 's', tostring(self:item(i, j)))
             if j < self:cols() then row = row .. ', ' end
         end
         row = row .. (i == self:rows() and '}}' or '},')
@@ -1073,7 +1073,7 @@ function Vector:print(name, opts)
     opts = opts or {}
     assert(self:cols() == 1, 'not a vector')
     local s = (name and string.format('%s = ', name) or '') .. 'Vector{'
-    for i = 1, self:rows() do s = s .. (i > 1 and ', ' or '') .. self:get(i, 1) end
+    for i = 1, self:rows() do s = s .. (i > 1 and ', ' or '') .. self:item(i, 1) end
     s = s .. '}'
     print(s)
 end
@@ -1122,7 +1122,7 @@ Vector3 = {}
 function Vector3:hom(v)
     if getmetatable(v) == Matrix then
         assert(v:sameshape{3, 1}, 'must be Vector3')
-        return v:slice(1, 1, 4, 1):set(4, 1, 1)
+        return v:slice(1, 1, 4, 1):setitem(4, 1, 1)
     elseif type(v) == 'table' then
         assert(#v == 3, 'must have 3 elements')
         return Vector4 {v[1], v[2], v[3], 1.0}
@@ -1157,7 +1157,7 @@ Vector4 = {}
 function Vector4:hom(v)
     if getmetatable(v) == Matrix then
         assert(v:sameshape{4, 1}, 'must be Vector4')
-        return v / v:get(4, 1)
+        return v / v:item(4, 1)
     elseif type(v) == 'table' then
         assert(#v == 4, 'must have 4 elements')
         return Vector4 {v[1] / v[4], v[2] / v[4], v[3] / v[4], 1.0}
@@ -1291,9 +1291,9 @@ function Matrix3x3:toeuler(m, t)
     assert(getmetatable(m) == Matrix, 'not a matrix')
     assert(m:sameshape{3, 3}, 'incorrect shape')
     local e = {
-        math.atan2(m:get(3, 2), m:get(3, 3)),
-        math.atan2(-m:get(3, 1), math.sqrt(m:get(3, 2) * m:get(3, 2) + m:get(3, 3) * m:get(3, 3))),
-        math.atan2(m:get(2, 1), m:get(1, 1)),
+        math.atan2(m:item(3, 2), m:item(3, 3)),
+        math.atan2(-m:item(3, 1), math.sqrt(m:item(3, 2) * m:item(3, 2) + m:item(3, 3) * m:item(3, 3))),
+        math.atan2(m:item(2, 1), m:item(1, 1)),
     }
     if t == Matrix then return Vector3 {ref = e} end
     return e
@@ -1331,7 +1331,7 @@ function Matrix4x4:fromrotation(m)
     assert(getmetatable(m) == Matrix, 'not a matrix')
     assert(m:sameshape{3, 3}, 'not a 3x3 matrix')
     local r = Matrix:eye(4)
-    for i = 1, 3 do for j = 1, 3 do r:set(i, j, m:get(i, j)) end end
+    for i = 1, 3 do for j = 1, 3 do r:setitem(i, j, m:item(i, j)) end end
     return r
 end
 
@@ -1347,7 +1347,7 @@ end
 
 function Matrix4x4:fromposition(v)
     local r = Matrix:eye(4)
-    for i = 1, 3 do r:set(i, 4, v[i]) end
+    for i = 1, 3 do r:setitem(i, 4, v[i]) end
     return r
 end
 
@@ -1357,15 +1357,15 @@ function Matrix4x4:fromrt(r, t)
     local m = Matrix(4, 4)
     m:assign(1, 1, r)
     m:assign(1, 4, t)
-    m:set(4, 4, 1)
+    m:setitem(4, 4, 1)
     return m
 end
 
 function Matrix4x4:frompose(p)
     local m = Matrix4x4:fromquaternion{p[4], p[5], p[6], p[7]}
-    m:set(1, 4, p[1])
-    m:set(2, 4, p[2])
-    m:set(3, 4, p[3])
+    m:setitem(1, 4, p[1])
+    m:setitem(2, 4, p[2])
+    m:setitem(3, 4, p[3])
     return m
 end
 
@@ -1373,7 +1373,7 @@ function Matrix4x4:torotation(m)
     assert(getmetatable(m) == Matrix, 'not a matrix')
     assert(m:sameshape{4, 4}, 'not a 4x4 matrix')
     local r = Matrix3x3()
-    for i = 1, 3 do for j = 1, 3 do r:set(i, j, m:get(i, j)) end end
+    for i = 1, 3 do for j = 1, 3 do r:setitem(i, j, m:item(i, j)) end end
     return r
 end
 
@@ -1394,7 +1394,7 @@ end
 function Matrix4x4:toposition(m, t)
     assert(getmetatable(m) == Matrix, 'not a matrix')
     assert(m:sameshape{4, 4}, 'not a 4x4 matrix')
-    local d = {m:get(1, 4), m:get(2, 4), m:get(3, 4)}
+    local d = {m:item(1, 4), m:item(2, 4), m:item(3, 4)}
     if t == Matrix then return Vector3 {ref = d} end
     return d
 end
@@ -1449,8 +1449,8 @@ if arg and #arg == 1 and arg[1] == 'test' then
     end
     for j = 1, 4 do assert(m:col(j) == Matrix(3, 1, {10 + j, 20 + j, 30 + j})) end
     assert(m:row(2) == m[2])
-    for i = 1, 3 do for j = 1, 4 do assert(m:get(i, j) == i * 10 + j) end end
-    assert(m:get(2, 3) == m[2][3])
+    for i = 1, 3 do for j = 1, 4 do assert(m:item(i, j) == i * 10 + j) end end
+    assert(m:item(2, 3) == m[2][3])
     assert(m[2][3] == m:row(2)[3])
     assert(m:t():col(2):t() == m:row(2))
     assert(m * Matrix(4, 1, {1, 0, 0, 1}) == Matrix(3, 1, {25, 45, 65}))
@@ -1505,9 +1505,9 @@ if arg and #arg == 1 and arg[1] == 'test' then
     i:setrow(2, Matrix(1, 3, {2, 0, 2}))
     i:setrow(3, Matrix(1, 3, {3, 3, 0}))
     assert(i == Matrix(3, 3, {0, 1, 1, 2, 0, 2, 3, 3, 0}))
-    i:set(1, 1, 9)
-    i:set(2, 2, 9)
-    i:set(3, 3, 9)
+    i:setitem(1, 1, 9)
+    i:setitem(2, 2, 9)
+    i:setitem(3, 3, 9)
     assert(i == Matrix(3, 3, {9, 1, 1, 2, 9, 2, 3, 3, 9}))
     local s = Matrix(3, 3, {1, 2, 3, 4, 5, 6, 7, 8, 9})
     local temp = s:row(1)
@@ -1516,12 +1516,12 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(s == Matrix(3, 3, {4, 5, 6, 1, 2, 3, 7, 8, 9}))
     local m1 = Matrix(2, 2, {1, 0, 0, 1})
     local m2 = m1
-    m2:set(1, 1, 6)
-    assert(m1:get(1, 1) == 6)
+    m2:setitem(1, 1, 6)
+    assert(m1:item(1, 1) == 6)
     local m3 = m1:copy()
-    m3:set(1, 1, 9)
-    assert(m3:get(1, 1) == 9)
-    assert(m1:get(1, 1) == 6)
+    m3:setitem(1, 1, 9)
+    assert(m3:item(1, 1) == 9)
+    assert(m1:item(1, 1) == 6)
     -- data should be copied, not referenced:
     local d = {100, 200, 300}
     m4 = Matrix(3, 1, d)
@@ -1556,15 +1556,15 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(b[1][1] == 10)
     assert(a[2][2] == 40)
     assert(b[2][2] == 44)
-    -- repeat the above test using :set / :get
+    -- repeat the above test using :setitem / :item
     a = Matrix(2, 2, {10, 20, 30, 40})
     b = a:t():t()
-    a:set(1, 1, 11)
-    b:set(2, 2, 44)
-    assert(a:get(1, 1) == 11)
-    assert(b:get(1, 1) == 10)
-    assert(a:get(2, 2) == 40)
-    assert(b:get(2, 2) == 44)
+    a:setitem(1, 1, 11)
+    b:setitem(2, 2, 44)
+    assert(a:item(1, 1) == 11)
+    assert(b:item(1, 1) == 10)
+    assert(a:item(2, 2) == 40)
+    assert(b:item(2, 2) == 44)
     m = Matrix(4, 4, {11, 12, 13, 14, 21, 22, 23, 24, 31, 32, 33, 34, 41, 42, 43, 44})
     assert(m:slice(2, 2, 3, 3) == Matrix(2, 2, {22, 23, 32, 33}))
     assert(m:slice(1, 4, 2, 5) == Matrix(2, 2, {14, 0, 24, 0}))
