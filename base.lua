@@ -385,8 +385,21 @@ function getAsString(...)
     local lb = setAutoYield(false)
     local a = table.pack(...)
     local s = ''
-    for i = 1, a.n do s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i]) end
+    for i = 1, a.n do
+        if i > 1 then s = s .. ((__tostring_for_display or {}).add_nl and ' ,\n\n' or ', ') end
+        (__tostring_for_display or {}).add_nl = nil
+        s = s .. _S.anyToString(a[i])
+        ;(__tostring_for_display or {}).first_of_line = (__tostring_for_display or {}).add_nl
+    end
     setAutoYield(lb)
+    return s
+end
+
+function getAsDisplayString(...)
+    -- for simCmd statusbar output etc...
+    __tostring_for_display = {first_of_line = true}
+    local s = getAsString(...)
+    __tostring_for_display = nil
     return s
 end
 
@@ -491,7 +504,7 @@ function _evalExec(inputStr)
             local success, err = pcall(function() ret = table.pack(func()) end)
             if success then
                 if ret.n > 0 and rr then
-                    print(getAsString(table.unpack(ret, 1, ret.n)))
+                    print(getAsDisplayString(table.unpack(ret, 1, ret.n)))
                 end
             else
                 addLog(420 | 0x0f000, err)
