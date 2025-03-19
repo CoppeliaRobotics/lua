@@ -193,8 +193,21 @@ function string.isprintable(s)
         s = tostring(s)
     end
     if #s == 0 then return true end
-    local b = string.byte(s)
-    return b >= 32 and b < 127 and string.isprintable(s:sub(2))
+
+    --local b = string.byte(s)
+    --return b >= 32 and b < 127 and string.isprintable(s:sub(2))
+
+    -- Check if the string is valid UTF-8
+    if not s:match("^[\x00-\x7F\xC2-\xF4][\x80-\xBF]*$") then
+        return false  -- Invalid UTF-8 sequence
+    end
+
+    -- Check for non-printable ASCII control characters (0-31, 127)
+    if s:match("[%c]") then
+        return false  -- Contains control characters
+    end
+
+    return true  -- String is valid UTF-8 and contains only printable characters
 end
 
 function string.isspace(s)
