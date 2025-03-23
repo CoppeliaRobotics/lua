@@ -354,7 +354,7 @@ function _S.getShortString(x, opts)
         if opts.omitQuotes then
             return string.format('%s', x)
         else
-            return string.format("'%s'", x)
+            return string.format("'%s'", string.escapequotes(x, '\''))
         end
     end
     return "[not a string]"
