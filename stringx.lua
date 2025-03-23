@@ -296,6 +296,78 @@ function string.stripprefix(s, prefix)
     end
 end
 
+function string.utf8sub(s, i, j)
+    local start_byte = utf8.offset(s, i) or (#s + 1)
+    local end_byte = j and (utf8.offset(s, j + 1) or (#s + 1)) - 1 or #s
+    return s:sub(start_byte, end_byte)
+end
+
+function string.pad(s, width, clip)
+    if clip then
+        s = string.utf8sub(s, 1, math.abs(width))
+    end
+    local p = string.rep(' ', math.abs(width) - utf8.len(s))
+    if width < 0 then
+        return p .. s
+    elseif width > 0 then
+        return s .. p
+    else
+        return ''
+    end
+end
+
+function string.blocksize(s)
+    local lines = string.split(s, '\n')
+    local width, height = 0, #lines
+    for i = 1, #lines do
+        width = math.max(width, utf8.len(lines[i]))
+    end
+    return width, height
+end
+
+function string.blockpad(s, width, height, clip)
+    if width == nil and height == nil then
+        width, height = string.blocksize(s)
+    end
+    local lines = string.split(s, '\n')
+    if clip then
+        lines = table.slice(lines, 1, math.abs(height))
+    end
+    for i = 1, math.max(math.abs(height) - #lines, 0) do
+        if height < 0 then
+            table.insert(lines, 1, '')
+        elseif height > 0 then
+            table.insert(lines, '')
+        end
+    end
+    for i = 1, #lines do
+        lines[i] = string.pad(lines[i], width, clip)
+    end
+    return table.join(lines, '\n')
+end
+
+function string.blockhstack(blocks, spacing)
+    spacing = spacing or 1
+    local sz = map(function(x) return {string.blocksize(x)} end, blocks)
+    local h = 0
+    for i = 1, #sz do
+        h = math.max(h, sz[i][2])
+    end
+    local paddedblocks, lines = {}, {}
+    for i = 1, #blocks do
+        paddedblocks[i] = string.blockpad(blocks[i], sz[i][1], -h, true)
+        lines[i] = string.split(paddedblocks[i], '\n')
+    end
+    local r, spc = {}, string.rep(' ', spacing)
+    for j = 1, h do
+        r[j] = ''
+        for i = 1, #paddedblocks do
+            r[j] = r[j] .. (i > 1 and spc or '') .. lines[i][j]
+        end
+    end
+    return table.join(r, '\n')
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     -- fix for "attempt to call a nil value (global 'isbuffer')"
     function isbuffer(x) return false end
@@ -347,5 +419,6 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(string.escapequotes('a = \'b\'', '\"') == 'a = \'b\'')
     assert(string.escapequotes('a = "b"', '\'') == 'a = "b"')
     assert(string.escapequotes('a = "b"', '"') == 'a = \\"b\\"')
+    assert(string.padlines('a\naa\naaa', 4) == 'a   \naa  \naaa ')
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
