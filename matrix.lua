@@ -802,12 +802,6 @@ end
 function Matrix:__todisplay(opts)
     opts = opts or {}
     local out = ''
-
-    -- XXX:
-    if not opts.first_of_line then
-        out = out .. '\n\n' -- keep at start of line
-    end
-
     opts.numToString = opts.numToString or function(x) return _S.anyToString(x) end
     local s = {}
     local colwi, colwd = {}, {}
@@ -831,7 +825,7 @@ function Matrix:__todisplay(opts)
             out = out .. string.format('%-' .. colwd[j] .. 's', s[i][j][2])
         end
     end
-    return out, {add_nl = true}
+    return out
 end
 
 function Matrix:__tostring()
