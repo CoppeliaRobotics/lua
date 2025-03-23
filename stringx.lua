@@ -284,6 +284,9 @@ function string.stripprefix(s, prefix)
 end
 
 if arg and #arg == 1 and arg[1] == 'test' then
+    -- fix for "attempt to call a nil value (global 'isbuffer')"
+    function isbuffer(x) return false end
+
     require 'tablex'
     assert(table.eq(string.split('a%b%c', '%', true), {'a', 'b', 'c'}))
     assert(table.eq(string.split('a', '%', true), {'a'}))
