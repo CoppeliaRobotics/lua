@@ -194,11 +194,8 @@ function string.isprintable(s)
     end
     if #s == 0 then return true end
 
-    --local b = string.byte(s)
-    --return b >= 32 and b < 127 and string.isprintable(s:sub(2))
-
     -- Check if the string is valid UTF-8
-    if not s:match("^[\x00-\x7F\xC2-\xF4][\x80-\xBF]*$") then
+    if not pcall(utf8.len, s) then
         return false  -- Invalid UTF-8 sequence
     end
 
