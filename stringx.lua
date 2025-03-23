@@ -228,6 +228,19 @@ function string.capitalize(s)
     return s:sub(1, 1):upper() .. s:sub(2)
 end
 
+function string.escapequotes(s, context)
+    context = context or '\''
+    if context ~= "'" and context ~= '"' then
+        error("Invalid context. Use '\'' for single quotes or '\"' for double quotes.")
+    end
+    -- Escape backslashes first to avoid double escaping
+    s = s:gsub('\\', '\\\\')
+    -- Escape the appropriate quote type
+    local pattern = context == "'" and "'" or '"'
+    s = s:gsub(pattern, '\\' .. pattern)
+    return s
+end
+
 function string.escapehtml(s, opts)
     if isbuffer(s) then
         s = tostring(s)
@@ -329,5 +342,10 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(string.isupper 'ABC123')
     assert(not string.isupper 'abcABC123')
     assert(string.capitalize 'robot' == 'Robot')
+    assert(string.escapequotes('abc') == 'abc')
+    assert(string.escapequotes('a = \'b\'', '\'') == 'a = \\\'b\\\'')
+    assert(string.escapequotes('a = \'b\'', '\"') == 'a = \'b\'')
+    assert(string.escapequotes('a = "b"', '\'') == 'a = "b"')
+    assert(string.escapequotes('a = "b"', '"') == 'a = \\"b\\"')
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
