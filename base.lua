@@ -395,18 +395,13 @@ function getAsDisplayString(...)
     -- for simCmd statusbar output etc...
     local lb = setAutoYield(false)
     local a = table.pack(...)
-    local s = ''
-    local opts = {display = true, first_of_line = true}
+    local s = {}
     for i = 1, a.n do
-        if i > 1 then s = s .. (opts.add_nl and ' ,\n\n' or ', ') end
-        opts.add_nl = nil
-        local si, addopts = _S.anyToString(a[i], opts)
-        if addopts then opts = table.update(opts, addopts) end
-        s = s .. si
-        opts.first_of_line = opts.add_nl
+        if i > 1 then table.insert(s, ', ') end
+        table.insert(s, _S.anyToString(a[i], {display = true}))
     end
     setAutoYield(lb)
-    return s
+    return string.blockhstack(s, 0)
 end
 
 function moduleLazyLoader(name)
