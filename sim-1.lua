@@ -178,6 +178,10 @@ function sim.alphaBetaGammaToYawPitchRoll(...)
     return yawAngle, pitchAngle, rollAngle
 end
 
+function sim.getQuaternionInverse(q)
+    return {-q[1], -q[2], -q[3], q[4]}
+end
+
 function sim.getObjectsWithTag(tagName, justModels)
     local retObjs = {}
     local objs = sim.getObjectsInTree(sim.handle_scene)
