@@ -83,15 +83,14 @@ require('sim-deprecated').extend(sim)
 
 --require('matrix')
 --require('grid')
-function __Matrix_lazy_loader(cls)
-    return function(...)
-        sim.addLog(sim.verbosity_warnings, 'implicitly loading "matrix" module. add require("matrix") to silence this warning')
-        require('matrix')
-        return _G[cls](...)
-    end
-end
-for _, n in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
-    _G[n] = __Matrix_lazy_loader(n)
+for _, cls in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
+    _G[cls] = setmetatable({__lazyLoader = true}, {
+        __call = function(self, ...)
+            sim.addLog(sim.verbosity_warnings, 'implicitly loading "matrix" module. add require("matrix") to silence this warning')
+            require('matrix')
+            return _G[cls](...)
+        end
+    })
 end
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
