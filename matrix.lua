@@ -1,3 +1,5 @@
+sim.addLog(sim.verbosity_warnings, '"matrix" module is deprecated. please use simEigen')
+
 Matrix = {}
 
 function Matrix:rows()
