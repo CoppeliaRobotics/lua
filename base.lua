@@ -102,17 +102,30 @@ function require(...)
 end
 
 function import(moduleName, ...)
+    assert(type(moduleName) == 'string', 'invalid argument type')
+    local opts = {}
     local mod = require(moduleName)
     local names = {...}
+
+    -- allow to pass opts as: import(moduleName, ..., {opt1=val1, ...})
+    if type(names[#names]) == 'table' then
+        opts = table.remove(names)
+    end
+
     if #names == 0 then
         -- TODO: strip version suffix from moduleName...
         _G[moduleName] = mod
     elseif #names == 1 and names[1] == '*' then
-        for k, v in pairs(mod) do
-            _G[k] = v
+        local allNames = mod.__all or table.keys(mod)
+        for _, name in ipairs(allNames) do
+            if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
+                addLog(300, 'overwriting global variable "' .. name .. '"')
+            end
+            _G[name] = mod[name]
         end
     else
         for _, name in ipairs(names) do
+            assert(type(name) == 'string', 'invalid argument type')
             assert(name ~= '*', 'name "*" must be the only one')
             assert(mod[name] ~= nil, string.format('name "%s" not found in module "%s"', name, moduleName))
             _G[name] = mod[name]
