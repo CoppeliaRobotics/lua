@@ -101,6 +101,25 @@ function require(...)
     return table.unpack(retVals)
 end
 
+function import(moduleName, ...)
+    local mod = require(moduleName)
+    local names = {...}
+    if #names == 0 then
+        -- TODO: strip version suffix from moduleName...
+        _G[moduleName] = mod
+    elseif #names == 1 and names[1] == '*' then
+        for k, v in pairs(mod) do
+            _G[k] = v
+        end
+    else
+        for _, name in ipairs(names) do
+            assert(name ~= '*', 'name "*" must be the only one')
+            assert(mod[name] ~= nil, string.format('name "%s" not found in module "%s"', name, moduleName))
+            _G[name] = mod[name]
+        end
+    end
+end
+
 function rerequire(name)
     local searchPaths = string.split(package.path, package.config:sub(3, 3))
     local nameWithSlashes = name:gsub('%.', '/')
