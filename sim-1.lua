@@ -86,7 +86,7 @@ require('sim-deprecated').extend(sim)
 for _, cls in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
     _G[cls] = setmetatable({__lazyLoader = true}, {
         __call = function(self, ...)
-            sim.addLog(sim.verbosity_warnings, 'implicitly loading "matrix" module. add require("matrix") to silence this warning')
+            sim.addLog(sim.verbosity_warnings, 'module \'matrix\' was implicitly loaded.')
             require('matrix')
             return _G[cls](...)
         end
