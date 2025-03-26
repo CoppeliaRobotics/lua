@@ -113,7 +113,9 @@ function import(moduleName, ...)
     end
 
     if #names == 0 then
-        -- TODO: strip version suffix from moduleName...
+        if not opts.keepVersionSuffix then
+            moduleName = moduleName:gsub('[-%d]+$', '')
+        end
         _G[moduleName] = mod
     elseif #names == 1 and names[1] == '*' then
         local allNames = mod.__all or table.keys(mod)
