@@ -81,8 +81,27 @@ end
 require('buffer')
 
 _S.require = require
+_S.requiredModules = {}
 function require(...)
     local requiredName = table.unpack {...}
+
+    if requiredName:sub(1, 3) == 'sim' then
+        local numberSuffix = requiredName:match("-([%d]+)")
+        local namePrefix = requiredName:match("^(.-)-") or requiredName
+        if (requiredName:match("-") == nil) or numberSuffix then
+            -- ignore items like sim-ce, etc.
+            if numberSuffix == nil then
+                numberSuffix = '1'
+            end
+            if _S.requiredModules[namePrefix] then
+                if _S.requiredModules[namePrefix].ver ~= numberSuffix then
+                    addLog(430, requiredName .. ': the same module of a different version was already loaded.')
+                end
+                return table.unpack(_S.requiredModules[namePrefix].ret)
+            end
+        end
+    end
+
     for i, lazyModName in ipairs(__lazyLoadModules) do
         if lazyModName == requiredName then
             if not __inLazyLoader or __inLazyLoader == 0 then
@@ -94,10 +113,16 @@ function require(...)
             end
         end
     end
+
     local fl = setYieldAllowed(false) -- important when called from coroutine
     local retVals = {_S.require(...)}
     setYieldAllowed(fl)
     auxFunc('usedmodule', requiredName)
+
+    if namePrefix then
+        _S.requiredModules[namePrefix] = {ver = numberSuffix, ret = retVals}
+    end
+
     return table.unpack(retVals)
 end
 
