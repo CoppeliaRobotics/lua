@@ -49,8 +49,8 @@ table.getn = table.getn or function(a)
     return #a
 end
 
-if _VERSION ~= 'Lua 5.1' then 
-    loadstring = load 
+if _VERSION ~= 'Lua 5.1' then
+    loadstring = load
 end
 
 if unpack then
@@ -80,51 +80,30 @@ end
 
 require('buffer')
 
-_S.require = require
-_S.requiredModules = {}
-function require(...)
-    local requiredName = table.unpack {...}
+require = wrap(require, function(origRequire)
+    return function(...)
+        local requiredName = table.unpack {...}
 
-    if requiredName:sub(1, 3) == 'sim' then
-        local numberSuffix = requiredName:match("-([%d]+)")
-        local namePrefix = requiredName:match("^(.-)-") or requiredName
-        if (requiredName:match("-") == nil) or numberSuffix then
-            -- ignore items like sim-ce, etc.
-            if numberSuffix == nil then
-                numberSuffix = '1'
-            end
-            if _S.requiredModules[namePrefix] then
-                if _S.requiredModules[namePrefix].ver ~= numberSuffix then
-                    addLog(430, requiredName .. ': the same module of a different version was already loaded.')
+        for i, lazyModName in ipairs(__lazyLoadModules) do
+            if lazyModName == requiredName then
+                if not __inLazyLoader or __inLazyLoader == 0 then
+                    if __usedLazyLoaders then
+                        addLog(430, "implicit loading of modules has been disabled because " ..
+                            "one known module (" ..  requiredName .. ") was loaded explicitly.")
+                    end
+                    removeLazyLoaders()
                 end
-                return table.unpack(_S.requiredModules[namePrefix].ret)
             end
         end
+
+        local fl = setYieldAllowed(false) -- important when called from coroutine
+        local retVals = {origRequire(...)}
+        setYieldAllowed(fl)
+        auxFunc('usedmodule', requiredName)
+
+        return table.unpack(retVals)
     end
-
-    for i, lazyModName in ipairs(__lazyLoadModules) do
-        if lazyModName == requiredName then
-            if not __inLazyLoader or __inLazyLoader == 0 then
-                if __usedLazyLoaders then
-                    addLog(430, "implicit loading of modules has been disabled because " ..
-                        "one known module (" ..  requiredName .. ") was loaded explicitly.")
-                end
-                removeLazyLoaders()
-            end
-        end
-    end
-
-    local fl = setYieldAllowed(false) -- important when called from coroutine
-    local retVals = {_S.require(...)}
-    setYieldAllowed(fl)
-    auxFunc('usedmodule', requiredName)
-
-    if namePrefix then
-        _S.requiredModules[namePrefix] = {ver = numberSuffix, ret = retVals}
-    end
-
-    return table.unpack(retVals)
-end
+end)
 
 function import(moduleName, ...)
     assert(type(moduleName) == 'string', 'invalid argument type')
@@ -192,21 +171,23 @@ function rerequire(name)
     end
 end
 
-_S.pcall = pcall
-function pcall(...)
-    local fl = setYieldAllowed(false) -- important when called from coroutine
-    local retVals = {_S.pcall(...)}
-    setYieldAllowed(fl)
-    return table.unpack(retVals)
-end
+pcall = wrap(pcall, function(origPcall)
+    return function(...)
+        local fl = setYieldAllowed(false) -- important when called from coroutine
+        local retVals = {origPcall(...)}
+        setYieldAllowed(fl)
+        return table.unpack(retVals)
+    end
+end)
 
-_S.unloadPlugin = unloadPlugin
-function unloadPlugin(name, options)
-    options = options or {}
-    local op = 0
-    if options.force then op = op | 1 end
-    _S.unloadPlugin(name, op)
-end
+unloadPlugin = wrap(unloadPlugin, function(origUnloadPlugin)
+    return function(name, options)
+        options = options or {}
+        local op = 0
+        if options.force then op = op | 1 end
+        origUnloadPlugin(name, op)
+    end
+end)
 
 quit = quitSimulator
 exit = quitSimulator
