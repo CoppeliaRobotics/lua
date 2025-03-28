@@ -255,6 +255,7 @@ function _S.funcToString(f)
 end
 
 function help(what)
+    local sim = require 'sim'
     if what == nil then
         simCmd = require 'simCmd'
         simCmd.help()
@@ -529,6 +530,7 @@ function _S.sysCallBase_actuation()
 end
 
 function _evalExec(inputStr)
+    local sim = require 'sim'
     function pfunc(theStr)
         if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
             H = sim.getObject
@@ -627,6 +629,7 @@ function _getCompletion(input, pos)
 end
 
 function _getCalltip(input, pos)
+    local sim = require 'sim'
     local parserx = require 'parserx'
     local cc = parserx.getCallContexts(input, pos)
     if cc and #cc > 0 then
