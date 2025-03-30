@@ -266,6 +266,32 @@ function table.flatten(tbl, opts, prefix, tbl1)
     return tbl1
 end
 
+function table.collapse(tbl, depth)
+    depth = depth or 1
+    if depth < 0 then
+        depth = 999
+    end
+    if depth == 0 then
+        return tbl
+    end
+    local retVal = {}
+    local cnt = 0
+    for _, sublist in ipairs(tbl) do
+        if table.isarray(sublist) then
+            cnt = cnt + 1
+            for _, item in ipairs(sublist) do
+                table.insert(retVal, item)
+            end
+        else
+            table.insert(retVal, sublist)
+        end
+    end
+    if cnt == 0 then
+        depth = 1
+    end
+    return table.collapse(retVal, depth - 1)
+end
+
 function table.unflatten(tbl, opts)
     opts = opts or {}
     local ret = {}
