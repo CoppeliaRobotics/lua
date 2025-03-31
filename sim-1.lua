@@ -756,12 +756,12 @@ function sim.getPathLengths(...)
         local d
         if cb then
             if type(cb) == 'string' then
-                d = _G[cb](pM[i]:data(), pM[i + 1]:data(), dof)
+                d = _G[cb](pM:row(i):data(), pM:row(i + 1):data(), dof)
             else
-                d = cb(pM[i]:data(), pM[i + 1]:data(), dof)
+                d = cb(pM:row(i):data(), pM:row(i + 1):data(), dof)
             end
         else
-            d = sim.getConfigDistance(pM[i]:data(), pM[i + 1]:data(), metric, tt)
+            d = sim.getConfigDistance(pM:row(i):data(), pM:row(i + 1):data(), metric, tt)
         end
         totDist = totDist + d
         distancesAlongPath[i + 1] = totDist
