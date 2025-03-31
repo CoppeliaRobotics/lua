@@ -71,12 +71,7 @@ function sim.step(wait)
     sim.yield()
 end
 
-require('mathx')
-require('stringx')
-require('tablex')
 require('checkargs')
-require('functional')
-require('var')
 require('motion').extend(sim)
 require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)

@@ -45,22 +45,8 @@ __oldModeConsts = {
     customizationscriptcall_aftercopy = true,
 }
 
-table.getn = table.getn or function(a)
-    return #a
-end
-
 if _VERSION ~= 'Lua 5.1' then
     loadstring = load
-end
-
-if unpack then
-    -- Lua5.1
-    table.pack = function(...)
-        return {n = select("#", ...), ...}
-    end
-    table.unpack = unpack
-else
-    unpack = table.unpack
 end
 
 function wrap(originalFunction, wrapperFunctionGenerator)
@@ -79,6 +65,11 @@ function wrap(originalFunction, wrapperFunctionGenerator)
 end
 
 require('buffer')
+require('mathx')
+require('stringx')
+require('tablex')
+require('functional')
+require('var')
 
 require = wrap(require, function(origRequire)
     return function(...)
@@ -268,8 +259,6 @@ function help(what)
     assert(type(what) == 'string', 'bad type')
     print(sim.getApiInfo(-1, what))
 end
-
-require 'tablex'
 
 function _S.tableToString(tt, opts)
     opts = opts and table.clone(opts) or {}
