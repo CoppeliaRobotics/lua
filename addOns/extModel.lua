@@ -185,7 +185,7 @@ end
 
 function extModel.modelHash(modelHandle)
     cbor = require 'org.conman.cbor'
-    sha1 = require 'sha1'
+    local simUI = require 'simUI'
 
     -- Lua table [non-integer] key order is random. convert to a stable datastruct:
     local function stableTable(t)
@@ -230,7 +230,7 @@ function extModel.modelHash(modelHandle)
     )
     local t1 = sim.getSystemTime()
     modelTreeData = cbor.encode(modelTreeData)
-    local hash = sha1.sha1(modelTreeData)
+    local hash = simUI.hash(modelTreeData, 'Sha1')
     local t2 = sim.getSystemTime()
     if extModel.getBoolProperty(sim.handle_app, 'traceHashing', {noError = true}) then
         sim.addLog(sim.verbosity_scriptinfos, string.format('Took %.3fs to extract model data and %.3f to compute encoded hash (blob length = %d bytes)', t1 - t0, t2 - t1, #modelTreeData))
