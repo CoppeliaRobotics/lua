@@ -6,12 +6,20 @@ function extModel.customPropertyName(pname)
     return 'customData.extModel.' .. pname
 end
 
+function extModel.getBoolProperty(handle, pname, opts)
+    return sim.getBoolProperty(handle, extModel.customPropertyName(pname), opts)
+end
+
 function extModel.getIntProperty(handle, pname, opts)
     return sim.getIntProperty(handle, extModel.customPropertyName(pname), opts)
 end
 
 function extModel.getStringProperty(handle, pname, opts)
     return sim.getStringProperty(handle, extModel.customPropertyName(pname), opts)
+end
+
+function extModel.setBoolProperty(handle, pname, pvalue, opts)
+    return sim.setBoolProperty(handle, extModel.customPropertyName(pname), pvalue, opts)
 end
 
 function extModel.setIntProperty(handle, pname, pvalue, opts)
@@ -187,42 +195,47 @@ function extModel.modelHash(modelHandle)
         return items
     end
 
-    return sha1.sha1(
-        cbor.encode(
-            map(
-                function(handle)
-                    local props = sim.getProperties(handle)
-                    props.selected = nil
-                    props.objectUid = nil
-                    props.parentUid = nil
-                    props.parentHandle = nil
-                    props[extModel.customPropertyName('modelHash')] = nil
-                    props[extModel.customPropertyName('sourceModelFile')] = nil
-                    props[extModel.customPropertyName('sourceModelFileLocation')] = nil
-                    props[extModel.customPropertyName('sourceModelFileModTime')] = nil
+    local t0 = sim.getSystemTime()
+    local modelTreeData = map(
+        function(handle)
+            local props = sim.getProperties(handle)
+            props.selected = nil
+            props.objectUid = nil
+            props.parentUid = nil
+            props.parentHandle = nil
+            props[extModel.customPropertyName('modelHash')] = nil
+            props[extModel.customPropertyName('sourceModelFile')] = nil
+            props[extModel.customPropertyName('sourceModelFileLocation')] = nil
+            props[extModel.customPropertyName('sourceModelFileModTime')] = nil
 
-                    if props.objectType == 'shape' then
-                        local meshes = {}
-                        for _, meshUid in ipairs(props.meshes) do
-                            local mesh = sim.getProperties(meshUid)
-                            mesh.shapeUid = nil
-                            table.insert(meshes, stableTable(mesh))
-                        end
-                        props.meshes = meshes
-                    end
+            if props.objectType == 'shape' then
+                local meshes = {}
+                for _, meshUid in ipairs(props.meshes) do
+                    local mesh = sim.getProperties(meshUid)
+                    mesh.shapeUid = nil
+                    table.insert(meshes, stableTable(mesh))
+                end
+                props.meshes = meshes
+            end
 
-                    if props.linkedDummyHandle ~= nil and props.linkedDummyHandle ~= -1 then
-                        props.linkedDummyHandle = sim.getStringProperty(props.linkedDummyHandle, 'persistentUid')
-                    end
+            if props.linkedDummyHandle ~= nil and props.linkedDummyHandle ~= -1 then
+                props.linkedDummyHandle = sim.getStringProperty(props.linkedDummyHandle, 'persistentUid')
+            end
 
-                    -- FIXME: probably forgot other properties referencing object handles
+            -- FIXME: probably forgot other properties referencing object handles
 
-                    return stableTable(props)
-                end,
-                sim.getObjectsInTree(modelHandle)
-            )
-        )
+            return stableTable(props)
+        end,
+        sim.getObjectsInTree(modelHandle)
     )
+    local t1 = sim.getSystemTime()
+    modelTreeData = cbor.encode(modelTreeData)
+    local hash = sha1.sha1(modelTreeData)
+    local t2 = sim.getSystemTime()
+    if extModel.getBoolProperty(sim.handle_app, 'traceHashing', {noError = true}) then
+        sim.addLog(sim.verbosity_scriptinfos, string.format('Took %.3fs to extract model data and %.3f to compute encoded hash (blob length = %d bytes)', t1 - t0, t2 - t1, #modelTreeData))
+    end
+    return hash
 end
 
 return extModel
