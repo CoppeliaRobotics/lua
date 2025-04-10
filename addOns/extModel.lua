@@ -2,7 +2,31 @@ local extModel = {}
 
 local sim = require 'sim'
 
-function extModel.modelFileDisplay(location, relPath)
+function extModel.customPropertyName(pname)
+    return 'customData.extModel.' .. pname
+end
+
+function extModel.getIntProperty(handle, pname, opts)
+    return sim.getIntProperty(handle, extModel.customPropertyName(pname), opts)
+end
+
+function extModel.getStringProperty(handle, pname, opts)
+    return sim.getStringProperty(handle, extModel.customPropertyName(pname), opts)
+end
+
+function extModel.setIntProperty(handle, pname, pvalue, opts)
+    return sim.setIntProperty(handle, extModel.customPropertyName(pname), pvalue, opts)
+end
+
+function extModel.setStringProperty(handle, pname, pvalue, opts)
+    return sim.setStringProperty(handle, extModel.customPropertyName(pname), pvalue, opts)
+end
+
+function extModel.removeProperty(handle, pname, opts)
+    sim.removeProperty(handle, extModel.customPropertyName(pname), opts)
+end
+
+function extModel.relativeModelPathDisplay(location, relPath)
     if location == 'absolute' then
         return relPath
     else
@@ -14,9 +38,9 @@ function extModel.scanForExtModelsToReload()
     for _, modelHandle in ipairs(extModel.getExternalModels()) do
         if extModel.isModelFileNewer(modelHandle) then
             local modelPath = sim.getObjectAlias(modelHandle, 2)
-            local relPath = sim.getStringProperty(modelHandle, 'customData.sourceModelFile')
-            local location = sim.getStringProperty(modelHandle, 'customData.sourceModelFileLocation')
-            if extModel.prompt('Model file %s (referenced by %s) is newer.\n\nDo you want to reload it?', extModel.modelFileDisplay(location, relPath), modelPath) then
+            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+            if extModel.prompt('Model file %s (referenced by %s) is newer.\n\nDo you want to reload it?', extModel.relativeModelPathDisplay(location, relPath), modelPath) then
                 extModel.loadModel(modelHandle, nil)
             end
         end
@@ -27,9 +51,9 @@ function extModel.scanForExtModelsToSave()
     for _, modelHandle in ipairs(extModel.getExternalModels()) do
         if extModel.hasModelBeenModified(modelHandle) then
             local modelPath = sim.getObjectAlias(modelHandle, 2)
-            local relPath = sim.getStringProperty(modelHandle, 'customData.sourceModelFile')
-            local location = sim.getStringProperty(modelHandle, 'customData.sourceModelFileLocation')
-            if extModel.prompt('Model %s has been modified since load.\n\nDo you want to save it back to %s?', modelPath, extModel.modelFileDisplay(location, relPath)) then
+            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+            if extModel.prompt('Model %s has been modified since load.\n\nDo you want to save it back to %s?', modelPath, extModel.relativeModelPathDisplay(location, relPath)) then
                 extModel.saveModel(modelHandle, nil)
             end
         end
@@ -85,8 +109,8 @@ function extModel.loadModel(modelHandle, modelFile)
         assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
     end
     if modelFile == nil then
-        local relPath = sim.getStringProperty(modelHandle, 'customData.sourceModelFile')
-        local location = sim.getStringProperty(modelHandle, 'customData.sourceModelFileLocation')
+        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         modelFile = extModel.getAbsoluteModelPath(location, relPath)
     end
     local newModelHandle = sim.loadModel(modelFile)
@@ -96,10 +120,10 @@ function extModel.loadModel(modelHandle, modelFile)
         sim.removeModel(modelHandle)
     end
     local location, relPath = extModel.getRelativeModelPath(modelFile)
-    sim.setStringProperty(newModelHandle, 'customData.sourceModelFile', relPath)
-    sim.setStringProperty(newModelHandle, 'customData.sourceModelFileLocation', location)
-    sim.setIntProperty(newModelHandle, 'customData.sourceModelFileModTime', extModel.getFileModTime(modelFile))
-    sim.setStringProperty(newModelHandle, 'customData.modelHash', extModel.modelHash(newModelHandle))
+    extModel.setStringProperty(newModelHandle, 'sourceModelFile', relPath)
+    extModel.setStringProperty(newModelHandle, 'sourceModelFileLocation', location)
+    extModel.setIntProperty(newModelHandle, 'sourceModelFileModTime', extModel.getFileModTime(modelFile))
+    extModel.setStringProperty(newModelHandle, 'modelHash', extModel.modelHash(newModelHandle))
     sim.addLog(sim.verbosity_scriptinfos, 'Model was loaded from ' .. modelFile)
     sim.announceSceneContentChange()
 end
@@ -108,41 +132,41 @@ function extModel.saveModel(modelHandle, modelFile)
     assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
     assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
     if modelFile == nil then
-        local relPath = sim.getStringProperty(modelHandle, 'customData.sourceModelFile')
-        local location = sim.getStringProperty(modelHandle, 'customData.sourceModelFileLocation')
+        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         modelFile = extModel.getAbsoluteModelPath(location, relPath)
     end
-    sim.removeProperty(modelHandle, 'customData.sourceModelFile', {noError = true})
-    sim.removeProperty(modelHandle, 'customData.sourceModelFileLocation', {noError = true})
-    sim.removeProperty(modelHandle, 'customData.sourceModelFileModTime', {noError = true})
-    sim.removeProperty(modelHandle, 'customData.modelHash', {noError = true})
+    extModel.removeProperty(modelHandle, 'sourceModelFile', {noError = true})
+    extModel.removeProperty(modelHandle, 'sourceModelFileLocation', {noError = true})
+    extModel.removeProperty(modelHandle, 'sourceModelFileModTime', {noError = true})
+    extModel.removeProperty(modelHandle, 'modelHash', {noError = true})
     sim.saveModel(modelHandle, modelFile)
     local location, relPath = extModel.getRelativeModelPath(modelFile)
-    sim.setStringProperty(modelHandle, 'customData.sourceModelFile', relPath)
-    sim.setStringProperty(modelHandle, 'customData.sourceModelFileLocation', location)
-    sim.setIntProperty(modelHandle, 'customData.sourceModelFileModTime', extModel.getFileModTime(modelFile))
-    sim.setStringProperty(modelHandle, 'customData.modelHash', extModel.modelHash(modelHandle))
+    extModel.setStringProperty(modelHandle, 'sourceModelFile', relPath)
+    extModel.setStringProperty(modelHandle, 'sourceModelFileLocation', location)
+    extModel.setIntProperty(modelHandle, 'sourceModelFileModTime', extModel.getFileModTime(modelFile))
+    extModel.setStringProperty(modelHandle, 'modelHash', extModel.modelHash(modelHandle))
     sim.addLog(sim.verbosity_scriptinfos, 'Model was saved to ' .. modelFile)
     sim.announceSceneContentChange()
 end
 
 function extModel.isModelFileNewer(modelHandle)
-    local relPath = sim.getStringProperty(modelHandle, 'customData.sourceModelFile')
-    local location = sim.getStringProperty(modelHandle, 'customData.sourceModelFileLocation')
+    local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+    local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
     local modelFile = extModel.getAbsoluteModelPath(location, relPath)
     local fmtime = extModel.getFileModTime(modelFile)
-    local mtime = sim.getIntProperty(modelHandle, 'customData.sourceModelFileModTime')
+    local mtime = extModel.getIntProperty(modelHandle, 'sourceModelFileModTime')
     return os.difftime(mtime, fmtime) < 0
 end
 
 function extModel.hasExternalModel(modelHandle)
-    return not not sim.getStringProperty(modelHandle, 'customData.sourceModelFile', {noError = true})
+    return not not extModel.getStringProperty(modelHandle, 'sourceModelFile', {noError = true})
 end
 
 function extModel.hasModelBeenModified(modelHandle)
     assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
     assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
-    local storedModelHash = sim.getStringProperty(modelHandle, 'customData.modelHash', {noError = true}) or ''
+    local storedModelHash = extModel.getStringProperty(modelHandle, 'modelHash', {noError = true}) or ''
     local computedModelHash = extModel.modelHash(modelHandle)
     return storedModelHash ~= computedModelHash
 end
@@ -172,10 +196,10 @@ function extModel.modelHash(modelHandle)
                     props.objectUid = nil
                     props.parentUid = nil
                     props.parentHandle = nil
-                    props['customData.modelHash'] = nil
-                    props['customData.sourceModelFile'] = nil
-                    props['customData.sourceModelFileLocation'] = nil
-                    props['customData.sourceModelFileModTime'] = nil
+                    props[extModel.customPropertyName('modelHash')] = nil
+                    props[extModel.customPropertyName('sourceModelFile')] = nil
+                    props[extModel.customPropertyName('sourceModelFileLocation')] = nil
+                    props[extModel.customPropertyName('sourceModelFileModTime')] = nil
 
                     if props.objectType == 'shape' then
                         local meshes = {}
