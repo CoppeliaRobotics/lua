@@ -154,6 +154,15 @@ end
 function extModel.modelHash(modelHandle)
     cbor = require 'org.conman.cbor'
     sha1 = require 'sha1'
+
+    -- Lua table [non-integer] key order is random. convert to a stable datastruct:
+    local function stableTable(t)
+        local items = {}
+        for k, v in pairs(t) do table.insert(items, {k, v}) end
+        table.sort(items, function(a, b) return a[1] < b[1] end)
+        return items
+    end
+
     return sha1.sha1(
         cbor.encode(
             map(
@@ -163,17 +172,28 @@ function extModel.modelHash(modelHandle)
                     props.objectUid = nil
                     props.parentUid = nil
                     props.parentHandle = nil
-                    props.persistentUid = nil
                     props['customData.modelHash'] = nil
                     props['customData.sourceModelFile'] = nil
                     props['customData.sourceModelFileLocation'] = nil
                     props['customData.sourceModelFileModTime'] = nil
-                    if props.linkedDummyHandle ~= -1 then props.linkedDummyHandle = 1 end
-                    -- convert to list for stable order:
-                    local items = {}
-                    for k, v in pairs(props) do table.insert(items, {k, v}) end
-                    table.sort(items, function(a, b) return a[1] < b[1] end)
-                    return items
+
+                    if props.objectType == 'shape' then
+                        local meshes = {}
+                        for _, meshUid in ipairs(props.meshes) do
+                            local mesh = sim.getProperties(meshUid)
+                            mesh.shapeUid = nil
+                            table.insert(meshes, stableTable(mesh))
+                        end
+                        props.meshes = meshes
+                    end
+
+                    if props.linkedDummyHandle ~= nil and props.linkedDummyHandle ~= -1 then
+                        props.linkedDummyHandle = sim.getStringProperty(props.linkedDummyHandle, 'persistentUid')
+                    end
+
+                    -- FIXME: probably forgot other properties referencing object handles
+
+                    return stableTable(props)
                 end,
                 sim.getObjectsInTree(modelHandle)
             )
