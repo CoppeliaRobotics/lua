@@ -108,7 +108,7 @@ end
 function extModel.getFileModTime(path)
     local lfs = require 'lfs'
     local attr = lfs.attributes(path)
-    return attr.modification
+    if attr then return attr.modification end
 end
 
 function extModel.loadModel(modelHandle, modelFile)
@@ -120,6 +120,10 @@ function extModel.loadModel(modelHandle, modelFile)
         local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         modelFile = extModel.getAbsoluteModelPath(location, relPath)
+        if not extModel.getFileModTime(modelFile) then
+            sim.addLog(sim.verbosity_errors, 'Model file ' .. modelFile .. ' not found')
+            return
+        end
     end
     local newModelHandle = sim.loadModel(modelFile)
     if modelHandle ~= nil then
@@ -163,6 +167,10 @@ function extModel.isModelFileNewer(modelHandle)
     local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
     local modelFile = extModel.getAbsoluteModelPath(location, relPath)
     local fmtime = extModel.getFileModTime(modelFile)
+    if fmtime == nil then
+        sim.addLog(sim.verbosity_warnings, 'Model file ' .. modelFile .. ' not found')
+        return false
+    end
     local mtime = extModel.getIntProperty(modelHandle, 'sourceModelFileModTime')
     return os.difftime(mtime, fmtime) < 0
 end
