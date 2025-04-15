@@ -76,15 +76,19 @@ end
 
 function extModel.getModelPathRules()
     local lfsx = require 'lfsx'
-    return {
-        {'scene', lfsx.dirname(sim.getStringProperty(sim.handle_scene, 'scenePath')) .. lfsx.pathsep()},
-        {'overlays', sim.getStringProperty(sim.handle_app, 'settingsPath') .. lfsx.pathsep() .. 'overlays' .. lfsx.pathsep()},
-        {'models', sim.getStringProperty(sim.handle_app, 'modelPath') .. lfsx.pathsep()},
-    }
+    local r = {}
+    local function addRule(name, path)
+        table.insert(r, {name, lfsx.pathsanitize(path)})
+    end
+    addRule('scene', lfsx.dirname(sim.getStringProperty(sim.handle_scene, 'scenePath')) .. lfsx.pathsep())
+    addRule('overlays', sim.getStringProperty(sim.handle_app, 'settingsPath') .. lfsx.pathsep() .. 'overlays' .. lfsx.pathsep())
+    addRule('models', sim.getStringProperty(sim.handle_app, 'modelPath') .. lfsx.pathsep())
+    return r
 end
 
 function extModel.getRelativeModelPath(absPath)
     local lfsx = require 'lfsx'
+    absPath = lfsx.pathsanitize(absPath)
     for _, rule in ipairs(extModel.getModelPathRules()) do
         local location, path = table.unpack(rule)
         if string.startswith(absPath, path) then
