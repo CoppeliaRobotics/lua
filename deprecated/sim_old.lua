@@ -121,7 +121,6 @@ function sim.rmlMoveToPosition(...)
                                   )
 
     local lb = sim.setStepping(true)
-
     local mStart = sim.getObjectMatrix(handle, rel)
     if targetPos == nil then targetPos = {mStart[4], mStart[8], mStart[12]} end
     if targetQuat == nil then targetQuat = sim.getObjectQuaternion(handle, rel) end

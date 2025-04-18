@@ -313,7 +313,7 @@ string text, int[2] pos, int[2] size, bool visible = sim.textEditorGetInfo(int h
 int handle = sim.textEditorOpen(string initText, string properties)
 sim.textEditorShow(int handle, bool showState)
 buffer outBuffer = sim.transformBuffer(buffer inBuffer, int inFormat, float multiplier, float offset, int outFormat)
-sim.transformImage(buffer image, int[2] resolution, int options)
+buffer newImage = sim.transformImage(buffer image, int[2] resolution, int options)
 int[] simpleShapeHandles = sim.ungroupShape(int shapeHandle)
 float[] doubleNumbers = sim.unpackDoubleTable(buffer data, int startDoubleIndex=0, int doubleCount=0, int additionalByteOffset=0)
 float[] floatNumbers = sim.unpackFloatTable(buffer data, int startFloatIndex=0, int floatCount=0, int additionalByteOffset=0)
