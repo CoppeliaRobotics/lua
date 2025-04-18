@@ -221,6 +221,7 @@ function extModel.loadModel(modelHandle, modelFile)
     if modelHandle ~= nil then
         sim.setObjectPose(newModelHandle, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}, modelHandle)
         sim.setObjectParent(newModelHandle, sim.getObjectParent(modelHandle))
+        sim.setObjectHierarchyOrder(newModelHandle, sim.getObjectHierarchyOrder(modelHandle))
         sim.removeModel(modelHandle)
     end
     local location, relPath = extModel.getRelativeModelPath(modelFile)
