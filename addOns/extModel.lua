@@ -42,16 +42,104 @@ function extModel.relativeModelPathDisplay(location, relPath)
     end
 end
 
-function extModel.scanForExtModelsToReload()
+function extModel.changedModelsBannerCreate(changedModels)
+    local simUI = require 'simUI'
+
+    extModel.changedModelsBannerDestroy()
+
+    local msg = '<b></b>Some external models ('
+    local n = math.min(3, #changedModels)
+    for i = 1, n do
+        local modelHandle = changedModels[i]
+        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+        local p = extModel.relativeModelPathDisplay(location, relPath)
+        msg = msg .. (i > 1 and ', ' or '') .. string.escapehtml(p)
+    end
+    if n < #changedModels then
+        msg = msg .. ' and ' .. (#changedModels - n) .. ' others'
+    end
+    msg = msg .. ') have been changed externally.<br/><a href=\'#reload\'>Click here</a> to decide which ones to reload.'
+
+    changedModelsBanner = simUI.create([[
+        <ui title="External models changed" resizable="false" closeable="false" activate="false" position="800,170" placement="absolute" size="450,80">
+            <label text="]] .. string.escapehtml(msg) .. [[" word-wrap="true" on-link-activated="onChangedModelsBannerReload" />
+        </ui>
+    ]])
+
+    function onChangedModelsBannerReload(ui, id, link)
+        extModel.changedModelsBannerDestroy()
+        extModel.changedModelsDialogCreate(changedModels)
+    end
+end
+
+function extModel.changedModelsBannerDestroy()
+    local simUI = require 'simUI'
+
+    if changedModelsBanner then
+        simUI.destroy(changedModelsBanner)
+        changedModelsBanner = nil
+    end
+end
+
+function extModel.changedModelsDialogCreate(changedModels)
+    local simUI = require 'simUI'
+
+    local xml = ''
+    for _, modelHandle in ipairs(changedModels) do
+        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+        local p = extModel.relativeModelPathDisplay(location, relPath)
+        xml = xml .. '<label text="' .. p .. '" />'
+        xml = xml .. '<button id="' .. (1000 + modelHandle) .. '" text="Reload" on-click="reloadModel" />'
+        xml = xml .. '<br/>'
+    end
+
+    function reloadModel(ui, id)
+        local modelHandle = id - 1000
+        extModel.loadModel(modelHandle, nil)
+        simUI.setEnabled(ui, id, false)
+    end
+
+    function changedModelsDialogClose()
+        extModel.changedModelsDialogDestroy()
+    end
+
+    changedModelsDialog = simUI.create([[
+        <ui title="Reload external models" resizable="false" closeable="true" placement="center" modal="true" on-close="changedModelsDialogClose">
+            <label text="The following models have been modified externally:" />
+            <group layout="grid">]] .. xml .. [[</group>
+        </ui>
+    ]])
+end
+
+function extModel.changedModelsDialogDestroy()
+    local simUI = require 'simUI'
+
+    if changedModelsDialog then
+        simUI.destroy(changedModelsDialog)
+        changedModelsDialog = nil
+    end
+end
+
+function extModel.scanForExtModelsToReload(immediatePrompt)
+    local changedModels = {}
     for _, modelHandle in ipairs(extModel.getExternalModels()) do
         if extModel.isModelFileNewer(modelHandle) then
-            local modelPath = sim.getObjectAlias(modelHandle, 2)
-            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-            if extModel.prompt('Model file %s (referenced by %s) is newer.\n\nDo you want to reload it?', extModel.relativeModelPathDisplay(location, relPath), modelPath) then
-                extModel.loadModel(modelHandle, nil)
+            if immediatePrompt then
+                local modelPath = sim.getObjectAlias(modelHandle, 2)
+                local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+                local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+                if extModel.prompt('Model file %s (referenced by %s) is newer.\n\nDo you want to reload it?', extModel.relativeModelPathDisplay(location, relPath), modelPath) then
+                    extModel.loadModel(modelHandle, nil)
+                end
+            else
+                table.insert(changedModels, modelHandle)
             end
         end
+    end
+    if not immediatePrompt and #changedModels > 0 and not changedModelsDialog then
+        extModel.changedModelsBannerCreate(changedModels)
     end
 end
 
