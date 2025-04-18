@@ -47,25 +47,29 @@ function extModel.changedModelsBannerCreate(changedModels)
 
     extModel.changedModelsBannerDestroy()
 
-    local msg = '<b></b>Some external models ('
-    local n = math.min(3, #changedModels)
-    for i = 1, n do
-        local modelHandle = changedModels[i]
+    local changedModelFiles = {}
+    for _, modelHandle in ipairs(changedModels) do
         local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         local p = extModel.relativeModelPathDisplay(location, relPath)
-        msg = msg .. (i > 1 and ', ' or '') .. string.escapehtml(p)
+        changedModelFiles[p] = true
     end
-    if n < #changedModels then
-        msg = msg .. ' and ' .. (#changedModels - n) .. ' others'
-    end
-    msg = msg .. ') have been changed externally.<br/><a href=\'#reload\'>Click here</a> to decide which ones to reload.'
+    changedModelFiles = table.keys(changedModelFiles)
+
+    local limit = 3
+    local others = math.max(0, #changedModelFiles - limit)
+    changedModelFiles = table.slice(changedModelFiles, 1, limit)
 
     changedModelsBanner = simUI.create([[
-        <ui title="External models changed" resizable="false" closeable="false" activate="false" position="800,170" placement="absolute" size="450,80">
-            <label text="]] .. string.escapehtml(msg) .. [[" word-wrap="true" on-link-activated="onChangedModelsBannerReload" />
+        <ui title="External models changed" resizable="false" closeable="true" activate="false" position="800,170" placement="absolute" layout="hbox" on-close="onChangedModelsBannerClose">
+            <label text="]] .. string.escapehtml('<small><b>Warning:</b> some external model files (' .. string.escapehtml(table.join(changedModelFiles, ', ')) .. (#changedModelFiles > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.</small>') .. [[" word-wrap="true" style="min-width: 700px;" />
+            <button text="Reload models..." on-click="onChangedModelsBannerReload" />
         </ui>
     ]])
+
+    function onChangedModelsBannerClose(ui)
+        extModel.changedModelsBannerDestroy()
+    end
 
     function onChangedModelsBannerReload(ui, id, link)
         extModel.changedModelsBannerDestroy()
@@ -89,8 +93,9 @@ function extModel.changedModelsDialogCreate(changedModels)
     for _, modelHandle in ipairs(changedModels) do
         local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        local p = extModel.relativeModelPathDisplay(location, relPath)
-        xml = xml .. '<label text="' .. p .. '" />'
+        local filePath = extModel.relativeModelPathDisplay(location, relPath)
+        local modelPath = sim.getObjectAlias(modelHandle, 2)
+        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(filePath) .. '</small>') .. '" />'
         xml = xml .. '<button id="' .. (1000 + modelHandle) .. '" text="Reload" on-click="reloadModel" />'
         xml = xml .. '<br/>'
     end
