@@ -96,7 +96,9 @@ function extModel.changedModelsDialogCreate(changedModels)
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         local displayPath = extModel.relativeModelPathDisplay(location, relPath)
         local modelPath = sim.getObjectAlias(modelHandle, 2)
-        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(displayPath) .. '</small>') .. '" />'
+        local absPath = extModel.getAbsoluteModelPath(location, relPath)
+        local modTime = extModel.getFileModTime(absPath)
+        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(displayPath) .. '</small><br/><small>Mod. date: ' .. os.date("%Y-%m-%d %H:%M:%S", modTime) .. '</small>') .. '" />'
         xml = xml .. '<button id="' .. (1000 + modelHandle) .. '" text="Reload" on-click="reloadModel" />'
         xml = xml .. '<br/>'
     end
@@ -154,8 +156,6 @@ function extModel.scanForExtModelsToReload(immediatePrompt)
             local modTime = extModel.getFileModTime(absPath)
             if not ignoreFiles or not ignoreFiles[absPath] or os.difftime(ignoreFiles[absPath], modTime) < 0 then
                 changedModelFiles[displayPath] = absPath
-            else
-                print('ignored:', absPath)
             end
         end
         if next(changedModelFiles) then
