@@ -23,12 +23,27 @@ function table.eq(a, b)
     if a == nil or b == nil then return false end
     if type(a) ~= 'table' or type(b) ~= 'table' then return false end
     if #a ~= #b then return false end
+    --[[
     for i = 1, #a do
         if type(a) ~= type(b) then return false end
         if type(a[i]) == 'table' then
             if not table.eq(a[i], b[i]) then return false end
         else
             if a[i] ~= b[i] then return false end
+        end
+    end
+    ]]
+    for ak, av in pairs(a) do
+        if b[ak] == nil then return false end
+    end
+    for bk, bv in pairs(b) do
+        local av = a[bk]
+        if av == nil then return false end
+        if type(av) ~= type(bv) then return false end
+        if type(av) == 'table' then
+            if not table.eq(ab, bv) then return false end
+        else
+            if av ~= bv then return false end
         end
     end
     return true
