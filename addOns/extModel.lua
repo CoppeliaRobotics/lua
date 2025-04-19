@@ -59,7 +59,7 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     changedModelsBanner = simUI.create([[
         <ui title="External models changed" placement="banner" layout="hbox" on-close="onChangedModelsBannerClose">
             <label text="]] .. string.escapehtml('<b>Warning:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" />
-            <button style="]] .. btnStyle .. [[" text="Reload models..." stretch="false" on-click="onChangedModelsBannerReload" />
+            <button style="]] .. btnStyle .. [[" text="Reload..." stretch="false" on-click="onChangedModelsBannerReload" />
             <button style="]] .. btnStyle .. [[" text="Dismiss" stretch="false" on-click="onChangedModelsBannerClose" />
         </ui>
     ]])
