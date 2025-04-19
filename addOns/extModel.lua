@@ -42,33 +42,33 @@ function extModel.relativeModelPathDisplay(location, relPath)
     end
 end
 
-function extModel.changedModelsBannerCreate(changedModels)
+function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     local simUI = require 'simUI'
+
+    if changedModelsBanner and table.eq(changedModelsBannerContent, changedModelFiles) then return end
 
     extModel.changedModelsBannerDestroy()
 
-    local changedModelFiles = {}
-    for _, modelHandle in ipairs(changedModels) do
-        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        local p = extModel.relativeModelPathDisplay(location, relPath)
-        changedModelFiles[p] = true
-    end
-    changedModelFiles = table.keys(changedModelFiles)
-
+    local changedModelFilesKeys = table.keys(changedModelFiles)
     local limit = 3
-    local others = math.max(0, #changedModelFiles - limit)
-    changedModelFiles = table.slice(changedModelFiles, 1, limit)
+    local others = math.max(0, #changedModelFilesKeys - limit)
+    changedModelFilesKeys = table.slice(changedModelFilesKeys, 1, limit)
 
     changedModelsBanner = simUI.create([[
         <ui title="External models changed" placement="banner" layout="hbox" on-close="onChangedModelsBannerClose">
-            <label text="]] .. string.escapehtml('<b>Warning:</b> some external model files (' .. string.escapehtml(table.join(changedModelFiles, ', ')) .. (#changedModelFiles > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" />
+            <label text="]] .. string.escapehtml('<b>Warning:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" />
             <button text="Reload models..." stretch="false" on-click="onChangedModelsBannerReload" />
+            <button text="Dismiss" stretch="false" on-click="onChangedModelsBannerClose" />
         </ui>
     ]])
+    changedModelsBannerContent = changedModelFiles
 
     function onChangedModelsBannerClose(ui)
         extModel.changedModelsBannerDestroy()
+        ignoreFiles = ignoreFiles or {}
+        for displayPath, absPath in pairs(changedModelFiles) do
+            ignoreFiles[absPath] = extModel.getFileModTime(absPath)
+        end
     end
 
     function onChangedModelsBannerReload(ui, id, link)
@@ -83,6 +83,7 @@ function extModel.changedModelsBannerDestroy()
     if changedModelsBanner then
         simUI.destroy(changedModelsBanner)
         changedModelsBanner = nil
+        changedModelsBannerContent = nil
     end
 end
 
@@ -93,9 +94,9 @@ function extModel.changedModelsDialogCreate(changedModels)
     for _, modelHandle in ipairs(changedModels) do
         local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        local filePath = extModel.relativeModelPathDisplay(location, relPath)
+        local displayPath = extModel.relativeModelPathDisplay(location, relPath)
         local modelPath = sim.getObjectAlias(modelHandle, 2)
-        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(filePath) .. '</small>') .. '" />'
+        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(displayPath) .. '</small>') .. '" />'
         xml = xml .. '<button id="' .. (1000 + modelHandle) .. '" text="Reload" on-click="reloadModel" />'
         xml = xml .. '<br/>'
     end
@@ -143,8 +144,23 @@ function extModel.scanForExtModelsToReload(immediatePrompt)
             end
         end
     end
-    if not immediatePrompt and #changedModels > 0 and not changedModelsDialog then
-        extModel.changedModelsBannerCreate(changedModels)
+    if not immediatePrompt and not changedModelsDialog then
+        local changedModelFiles = {}
+        for _, modelHandle in ipairs(changedModels) do
+            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
+            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
+            local displayPath = extModel.relativeModelPathDisplay(location, relPath)
+            local absPath = extModel.getAbsoluteModelPath(location, relPath)
+            local modTime = extModel.getFileModTime(absPath)
+            if not ignoreFiles or not ignoreFiles[absPath] or os.difftime(ignoreFiles[absPath], modTime) < 0 then
+                changedModelFiles[displayPath] = absPath
+            else
+                print('ignored:', absPath)
+            end
+        end
+        if next(changedModelFiles) then
+            extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
+        end
     end
 end
 
