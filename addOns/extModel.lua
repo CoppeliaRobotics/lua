@@ -311,6 +311,8 @@ function extModel.modelHash(modelHandle)
     cbor = require 'org.conman.cbor'
     local simUI = require 'simUI'
 
+    local ignoreLargeProperties = extModel.getBoolProperty(sim.handle_app, 'ignoreLargeProperties', {noError = true})
+
     -- Lua table [non-integer] key order is random. convert to a stable datastruct:
     local function stableTable(t)
         local items = {}
@@ -332,11 +334,28 @@ function extModel.modelHash(modelHandle)
             props[extModel.customPropertyName('sourceModelFileLocation')] = nil
             props[extModel.customPropertyName('sourceModelFileModTime')] = nil
 
+            if ignoreLargeProperties then
+                if props.objectType == 'ocTree' then
+                    props.voxels = nil
+                end
+                if props.objectType == 'pointCloud' then
+                    props.points = nil
+                end
+            end
+
             if props.objectType == 'shape' then
                 local meshes = {}
                 for _, meshUid in ipairs(props.meshes) do
                     local mesh = sim.getProperties(meshUid)
                     mesh.shapeUid = nil
+                    if ignoreLargeProperties then
+                        mesh.indices = nil
+                        mesh.normals = nil
+                        mesh.vertices = nil
+                        mesh.edges = nil
+                        mesh.rawTexture = nil
+                        mesh.textureCoordinates = nil
+                    end
                     table.insert(meshes, stableTable(mesh))
                 end
                 props.meshes = meshes
@@ -354,10 +373,11 @@ function extModel.modelHash(modelHandle)
     )
     local t1 = sim.getSystemTime()
     modelTreeData = cbor.encode(modelTreeData)
-    local hash = simUI.hash(modelTreeData, 'Sha1')
     local t2 = sim.getSystemTime()
+    local hash = simUI.hash(modelTreeData, 'Sha1')
+    local t3 = sim.getSystemTime()
     if extModel.getBoolProperty(sim.handle_app, 'traceHashing', {noError = true}) then
-        sim.addLog(sim.verbosity_scriptinfos, string.format('Took %.3fs to extract model data and %.3f to compute encoded hash (blob length = %d bytes)', t1 - t0, t2 - t1, #modelTreeData))
+        sim.addLog(sim.verbosity_scriptinfos, string.format('Took %.3fs to extract model data, %.3fs to encode data, and %.3fs to compute hash (blob length = %d bytes)', t1 - t0, t2 - t1, t3 - t2, #modelTreeData))
     end
     return hash
 end
