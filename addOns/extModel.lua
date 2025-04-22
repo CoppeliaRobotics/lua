@@ -58,7 +58,7 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
 
     changedModelsBanner = simUI.create([[
         <ui title="External models changed" placement="banner" layout="hbox" on-close="onChangedModelsBannerClose">
-            <label text="]] .. string.escapehtml('<b>Warning:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" />
+            <label text="]] .. string.escapehtml('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" />
             <button style="]] .. btnStyle .. [[" text="Reload..." stretch="false" on-click="onChangedModelsBannerReload" />
             <button style="]] .. btnStyle .. [[" text="Dismiss" stretch="false" on-click="onChangedModelsBannerClose" />
         </ui>
@@ -116,7 +116,7 @@ function extModel.changedModelsDialogCreate(changedModels)
     end
 
     changedModelsDialog = simUI.create([[
-        <ui title="Reload external models" resizable="false" closeable="true" placement="center" modal="true" on-close="changedModelsDialogClose">
+        <ui title="External model auto reload" resizable="false" closeable="true" placement="center" modal="true" on-close="changedModelsDialogClose">
             <label text="The following models have been modified externally:" />
             <group layout="grid">]] .. xml .. [[</group>
         </ui>
