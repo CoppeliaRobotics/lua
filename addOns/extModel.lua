@@ -308,78 +308,21 @@ function extModel.getExternalModels()
 end
 
 function extModel.modelHash(modelHandle)
-    cbor = require 'org.conman.cbor'
-    local simUI = require 'simUI'
-
-    local ignoreLargeProperties = extModel.getBoolProperty(sim.handle_app, 'ignoreLargeProperties', {noError = true})
-
-    -- Lua table [non-integer] key order is random. convert to a stable datastruct:
-    local function stableTable(t)
-        local items = {}
-        for k, v in pairs(t) do table.insert(items, {k, v}) end
-        table.sort(items, function(a, b) return a[1] < b[1] end)
-        return items
+    local ignoreProps = {
+        modelHash = '',
+        sourceModelFile = '',
+        sourceModelFileLocation = '',
+        sourceModelFileModTime = 0,
+    }
+    for prop, _ in pairs(ignoreProps) do
+        ignoreProps[prop] = sim.getProperty(modelHandle, extModel.customPropertyName(prop), {noError = true})
+        extModel.removeProperty(modelHandle, prop, {noError = true})
     end
-
-    local t0 = sim.getSystemTime()
-    local modelTreeData = map(
-        function(handle)
-            local props = sim.getProperties(handle)
-            props.selected = nil
-            props.objectUid = nil
-            props.parentUid = nil
-            props.parentHandle = nil
-            props[extModel.customPropertyName('modelHash')] = nil
-            props[extModel.customPropertyName('sourceModelFile')] = nil
-            props[extModel.customPropertyName('sourceModelFileLocation')] = nil
-            props[extModel.customPropertyName('sourceModelFileModTime')] = nil
-
-            if ignoreLargeProperties then
-                if props.objectType == 'ocTree' then
-                    props.voxels = nil
-                end
-                if props.objectType == 'pointCloud' then
-                    props.points = nil
-                end
-            end
-
-            if props.objectType == 'shape' then
-                local meshes = {}
-                for _, meshUid in ipairs(props.meshes) do
-                    local mesh = sim.getProperties(meshUid)
-                    mesh.shapeUid = nil
-                    if ignoreLargeProperties then
-                        mesh.indices = nil
-                        mesh.normals = nil
-                        mesh.vertices = nil
-                        mesh.edges = nil
-                        mesh.rawTexture = nil
-                        mesh.textureCoordinates = nil
-                    end
-                    table.insert(meshes, stableTable(mesh))
-                end
-                props.meshes = meshes
-            end
-
-            if props.linkedDummyHandle ~= nil and props.linkedDummyHandle ~= -1 then
-                props.linkedDummyHandle = sim.getStringProperty(props.linkedDummyHandle, 'persistentUid')
-            end
-
-            -- FIXME: probably forgot other properties referencing object handles
-
-            return stableTable(props)
-        end,
-        sim.getObjectsInTree(modelHandle)
-    )
-    local t1 = sim.getSystemTime()
-    modelTreeData = cbor.encode(modelTreeData)
-    local t2 = sim.getSystemTime()
-    local hash = simUI.hash(modelTreeData, 'Sha1')
-    local t3 = sim.getSystemTime()
-    if extModel.getBoolProperty(sim.handle_app, 'traceHashing', {noError = true}) then
-        sim.addLog(sim.verbosity_scriptinfos, string.format('Took %.3fs to extract model data, %.3fs to encode data, and %.3fs to compute hash (blob length = %d bytes)', t1 - t0, t2 - t1, t3 - t2, #modelTreeData))
+    local modelHash = sim.getStringProperty(modelHandle, 'modelHash')
+    for prop, val in pairs(ignoreProps) do
+        sim.setProperty(modelHandle, extModel.customPropertyName(prop), val)
     end
-    return hash
+    return modelHash
 end
 
 return extModel
