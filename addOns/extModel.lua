@@ -45,7 +45,7 @@ end
 function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     local simUI = require 'simUI'
 
-    if changedModelsBanner and table.eq(changedModelsBannerContent, changedModelFiles) then return end
+    if table.eq(changedModelsBannerContent, changedModelFiles) then return end
 
     extModel.changedModelsBannerDestroy()
 
@@ -54,39 +54,26 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     local others = math.max(0, #changedModelFilesKeys - limit)
     changedModelFilesKeys = table.slice(changedModelFilesKeys, 1, limit)
 
-    local btnStyle = 'QPushButton { font-size: 11px; }'
-
-    changedModelsBanner = simUI.create([[
-        <ui title="External models changed" placement="banner" layout="hbox" on-close="onChangedModelsBannerClose">
-            <label text="]] .. string.escapehtml('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.') .. [[" word-wrap="true" style="min-width: 400px;" stretch="1" />
-            <button style="]] .. btnStyle .. [[" text="Reload..." stretch="0" on-click="onChangedModelsBannerReload" />
-            <button style="]] .. btnStyle .. [[" text="Dismiss" stretch="0" on-click="onChangedModelsBannerClose" />
-        </ui>
-    ]])
+    simUI.bannerShow('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.', {'reload', 'dismiss'}, {'Reload...', 'Dismiss'}, 'onChangedModelsBannerButtonClick')
     changedModelsBannerContent = changedModelFiles
 
-    function onChangedModelsBannerClose(ui)
+    function onChangedModelsBannerButtonClick(k)
         extModel.changedModelsBannerDestroy()
-        ignoreFiles = ignoreFiles or {}
-        for displayPath, absPath in pairs(changedModelFiles) do
-            ignoreFiles[absPath] = extModel.getFileModTime(absPath)
+        if k == 'dismiss' then
+            ignoreFiles = ignoreFiles or {}
+            for displayPath, absPath in pairs(changedModelFiles) do
+                ignoreFiles[absPath] = extModel.getFileModTime(absPath)
+            end
+        elseif k == 'reload' then
+            extModel.changedModelsDialogCreate(changedModels)
         end
-    end
-
-    function onChangedModelsBannerReload(ui, id, link)
-        extModel.changedModelsBannerDestroy()
-        extModel.changedModelsDialogCreate(changedModels)
     end
 end
 
 function extModel.changedModelsBannerDestroy()
     local simUI = require 'simUI'
-
-    if changedModelsBanner then
-        simUI.destroy(changedModelsBanner)
-        changedModelsBanner = nil
-        changedModelsBannerContent = nil
-    end
+    simUI.bannerHide()
+    changedModelsBannerContent = nil
 end
 
 function extModel.changedModelsDialogCreate(changedModels)
