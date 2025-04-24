@@ -58,12 +58,12 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     changedModelsBannerContent = changedModelFiles
 
     function onChangedModelsBannerButtonClick(k)
-        extModel.changedModelsBannerDestroy()
         if k == 'dismiss' then
             ignoreFiles = ignoreFiles or {}
             for displayPath, absPath in pairs(changedModelFiles) do
                 ignoreFiles[absPath] = extModel.getFileModTime(absPath)
             end
+            extModel.changedModelsBannerDestroy()
         elseif k == 'reload' then
             extModel.changedModelsDialogCreate(changedModels)
         end
@@ -102,7 +102,9 @@ function extModel.changedModelsDialogCreate(changedModels)
     end
 
     function changedModelsDialogClose()
+        extModel.changedModelsBannerDestroy()
         extModel.changedModelsDialogDestroy()
+        extModel.scanForExtModelsToReload()
     end
 
     changedModelsDialog = simUI.create([[
