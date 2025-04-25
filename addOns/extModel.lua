@@ -169,6 +169,11 @@ function extModel.scanForExtModelsToSave()
     end
 end
 
+function extModel.alert(...)
+    local simUI = require 'simUI'
+    simUI.msgBox(simUI.msgbox_type.critical, simUI.msgbox_buttons.ok, '', string.format(...))
+end
+
 function extModel.prompt(...)
     local simUI = require 'simUI'
     local r = simUI.msgBox(simUI.msgbox_type.question, simUI.msgbox_buttons.yesno, '', string.format(...))
@@ -229,7 +234,7 @@ function extModel.isFileIgnored(absPath)
     return os.difftime(ignoreFiles[absPath], modTime) >= 0
 end
 
-function extModel.loadModel(modelHandle, modelFile)
+function extModel.loadModel(modelHandle, modelFile, interactive)
     if modelHandle ~= nil then
         assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
         assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
@@ -239,6 +244,10 @@ function extModel.loadModel(modelHandle, modelFile)
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         modelFile = extModel.getAbsoluteModelPath(location, relPath)
         if not extModel.getFileModTime(modelFile) then
+            if interactive then
+                extModel.alert('Model file %s is missing.\n\nUse the external model save function to relocate it.', extModel.relativeModelPathDisplay(location, relPath))
+                return
+            end
             if not extModel.isFileIgnored(modelFile) then
                 sim.addLog(sim.verbosity_errors, 'Model file ' .. modelFile .. ' not found')
                 extModel.ignoreFile(modelFile)
