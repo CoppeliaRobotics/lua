@@ -146,7 +146,6 @@ function extModel.scanForExtModelsToReload(immediatePrompt)
             local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
             local displayPath = extModel.relativeModelPathDisplay(location, relPath)
             local absPath = extModel.getAbsoluteModelPath(location, relPath)
-            local modTime = extModel.getFileModTime(absPath)
             if not extModel.isFileIgnored(absPath) then
                 changedModelFiles[displayPath] = absPath
             end
@@ -226,6 +225,7 @@ function extModel.isFileIgnored(absPath)
     if not ignoreFiles then return false end
     if not ignoreFiles[absPath] then return false end
     if ignoreFiles[absPath] == -1 then return true end
+    local modTime = extModel.getFileModTime(absPath)
     return os.difftime(ignoreFiles[absPath], modTime) >= 0
 end
 
