@@ -59,9 +59,8 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
 
     function onChangedModelsBannerButtonClick(k)
         if k == 'dismiss' then
-            ignoreFiles = ignoreFiles or {}
             for displayPath, absPath in pairs(changedModelFiles) do
-                ignoreFiles[absPath] = extModel.getFileModTime(absPath)
+                extModel.ignoreFile(absPath)
             end
             extModel.changedModelsBannerDestroy()
         elseif k == 'reload' then
@@ -148,7 +147,7 @@ function extModel.scanForExtModelsToReload(immediatePrompt)
             local displayPath = extModel.relativeModelPathDisplay(location, relPath)
             local absPath = extModel.getAbsoluteModelPath(location, relPath)
             local modTime = extModel.getFileModTime(absPath)
-            if not ignoreFiles or not ignoreFiles[absPath] or os.difftime(ignoreFiles[absPath], modTime) < 0 then
+            if not extModel.isFileIgnored(absPath) then
                 changedModelFiles[displayPath] = absPath
             end
         end
@@ -218,6 +217,18 @@ function extModel.getFileModTime(path)
     if attr then return attr.modification end
 end
 
+function extModel.ignoreFile(absPath)
+    ignoreFiles = ignoreFiles or {}
+    ignoreFiles[absPath] = extModel.getFileModTime(absPath) or -1
+end
+
+function extModel.isFileIgnored(absPath)
+    if not ignoreFiles then return false end
+    if not ignoreFiles[absPath] then return false end
+    if ignoreFiles[absPath] == -1 then return true end
+    return os.difftime(ignoreFiles[absPath], modTime) >= 0
+end
+
 function extModel.loadModel(modelHandle, modelFile)
     if modelHandle ~= nil then
         assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
@@ -228,7 +239,10 @@ function extModel.loadModel(modelHandle, modelFile)
         local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
         modelFile = extModel.getAbsoluteModelPath(location, relPath)
         if not extModel.getFileModTime(modelFile) then
-            sim.addLog(sim.verbosity_errors, 'Model file ' .. modelFile .. ' not found')
+            if not extModel.isFileIgnored(modelFile) then
+                sim.addLog(sim.verbosity_errors, 'Model file ' .. modelFile .. ' not found')
+                extModel.ignoreFile(modelFile)
+            end
             return
         end
     end
@@ -276,7 +290,10 @@ function extModel.isModelFileNewer(modelHandle)
     local modelFile = extModel.getAbsoluteModelPath(location, relPath)
     local fmtime = extModel.getFileModTime(modelFile)
     if fmtime == nil then
-        sim.addLog(sim.verbosity_warnings, 'Model file ' .. modelFile .. ' not found')
+        if not extModel.isFileIgnored(modelFile) then
+            sim.addLog(sim.verbosity_warnings, 'Model file ' .. modelFile .. ' not found')
+            extModel.ignoreFile(modelFile)
+        end
         return false
     end
     local mtime = extModel.getIntProperty(modelHandle, 'sourceModelFileModTime')
