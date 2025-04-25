@@ -34,12 +34,23 @@ function extModel.removeProperty(handle, pname, opts)
     sim.removeProperty(handle, extModel.customPropertyName(pname), opts)
 end
 
-function extModel.relativeModelPathDisplay(location, relPath)
-    if location == 'absolute' then
-        return relPath
+function extModel.getModelInfo(modelHandle)
+    assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle))
+    local info = {
+        relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile', {noError = true}),
+        location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation', {noError = true}),
+    }
+    if not info.relPath or not info.location then return nil end
+    if info.location == 'absolute' then
+        info.displayPath = info.relPath
     else
-        return string.format('<%s dir>/%s', location, relPath)
+        info.displayPath = string.format('<%s dir>/%s', info.location, info.relPath)
     end
+    info.absPath = extModel.getAbsoluteModelPath(info.location, info.relPath)
+    info.modTime = extModel.getFileModTime(info.absPath)
+    info.fileExists = not not info.modTime
+    info.isFileNewer = os.difftime(extModel.getIntProperty(modelHandle, 'sourceModelFileModTime', {noError = true}) or 0, info.modTime) < 0
+    return info
 end
 
 function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
@@ -83,20 +94,15 @@ function extModel.changedModelsDialogCreate(changedModels)
 
     local xml = ''
     for _, modelHandle in ipairs(changedModels) do
-        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        local displayPath = extModel.relativeModelPathDisplay(location, relPath)
-        local modelPath = sim.getObjectAlias(modelHandle, 2)
-        local absPath = extModel.getAbsoluteModelPath(location, relPath)
-        local modTime = extModel.getFileModTime(absPath)
-        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(modelPath) .. '</b><br/><small>File: ' .. string.escapehtml(displayPath) .. '</small><br/><small>Mod. date: ' .. os.date("%Y-%m-%d %H:%M:%S", modTime) .. '</small>') .. '" />'
+        local info = extModel.getModelInfo(modelHandle)
+        xml = xml .. '<label text="' .. string.escapehtml('Model: <b>' .. string.escapehtml(sim.getObjectAlias(modelHandle, 2)) .. '</b><br/><small>File: ' .. string.escapehtml(info.displayPath) .. '</small><br/><small>Mod. date: ' .. os.date("%Y-%m-%d %H:%M:%S", info.modTime) .. '</small>') .. '" />'
         xml = xml .. '<button id="' .. (1000 + modelHandle) .. '" text="Reload" on-click="reloadModel" />'
         xml = xml .. '<br/>'
     end
 
     function reloadModel(ui, id)
         local modelHandle = id - 1000
-        extModel.loadModel(modelHandle, nil)
+        extModel.reloadModelInteractive(modelHandle)
         simUI.setEnabled(ui, id, false)
     end
 
@@ -123,31 +129,20 @@ function extModel.changedModelsDialogDestroy()
     end
 end
 
-function extModel.scanForExtModelsToReload(immediatePrompt)
+function extModel.scanForExtModelsToReload()
     local changedModels = {}
     for _, modelHandle in ipairs(extModel.getExternalModels()) do
-        if extModel.isModelFileNewer(modelHandle) then
-            if immediatePrompt then
-                local modelPath = sim.getObjectAlias(modelHandle, 2)
-                local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-                local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-                if extModel.prompt('Model file %s (referenced by %s) is newer.\n\nDo you want to reload it?', extModel.relativeModelPathDisplay(location, relPath), modelPath) then
-                    extModel.loadModel(modelHandle, nil)
-                end
-            else
-                table.insert(changedModels, modelHandle)
-            end
+        local info = extModel.getModelInfo(modelHandle)
+        if info.isFileNewer then
+            table.insert(changedModels, modelHandle)
         end
     end
-    if not immediatePrompt and not changedModelsDialog then
+    if not changedModelsDialog then
         local changedModelFiles = {}
         for _, modelHandle in ipairs(changedModels) do
-            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-            local displayPath = extModel.relativeModelPathDisplay(location, relPath)
-            local absPath = extModel.getAbsoluteModelPath(location, relPath)
-            if not extModel.isFileIgnored(absPath) then
-                changedModelFiles[displayPath] = absPath
+            local info = extModel.getModelInfo(modelHandle)
+            if not extModel.isFileIgnored(info.absPath) then
+                changedModelFiles[info.displayPath] = info.absPath
             end
         end
         if next(changedModelFiles) then
@@ -159,10 +154,8 @@ end
 function extModel.scanForExtModelsToSave()
     for _, modelHandle in ipairs(extModel.getExternalModels()) do
         if extModel.hasModelBeenModified(modelHandle) then
-            local modelPath = sim.getObjectAlias(modelHandle, 2)
-            local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-            local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-            if extModel.prompt('Model %s has been modified since load.\n\nDo you want to save it back to %s?', modelPath, extModel.relativeModelPathDisplay(location, relPath)) then
+            local info = extModel.getModelInfo(modelHandle)
+            if extModel.prompt('Model %s has been modified since load.\n\nDo you want to save it back to %s?', sim.getObjectAlias(modelHandle, 2), info.displayPath) then
                 extModel.saveModel(modelHandle, nil)
             end
         end
@@ -234,26 +227,21 @@ function extModel.isFileIgnored(absPath)
     return os.difftime(ignoreFiles[absPath], modTime) >= 0
 end
 
-function extModel.loadModel(modelHandle, modelFile, interactive)
+function extModel.loadModel(modelHandle, modelFile)
     if modelHandle ~= nil then
         assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
         assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
     end
     if modelFile == nil then
-        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        modelFile = extModel.getAbsoluteModelPath(location, relPath)
-        if not extModel.getFileModTime(modelFile) then
-            if interactive then
-                extModel.alert('Model file %s is missing.\n\nUse the external model save function to relocate it.', extModel.relativeModelPathDisplay(location, relPath))
-                return
-            end
-            if not extModel.isFileIgnored(modelFile) then
-                sim.addLog(sim.verbosity_errors, 'Model file ' .. modelFile .. ' not found')
-                extModel.ignoreFile(modelFile)
+        local info = extModel.getModelInfo(modelHandle)
+        if not info.fileExists then
+            if not extModel.isFileIgnored(info.absPath) then
+                sim.addLog(sim.verbosity_errors, 'Model file ' .. info.absPath .. ' not found')
+                extModel.ignoreFile(info.absPath)
             end
             return
         end
+        modelFile = info.absPath
     end
     local newModelHandle = sim.loadModel(modelFile)
     if modelHandle ~= nil then
@@ -271,13 +259,28 @@ function extModel.loadModel(modelHandle, modelFile, interactive)
     sim.announceSceneContentChange()
 end
 
+function extModel.reloadModelInteractive(modelHandle)
+    local info = extModel.getModelInfo(modelHandle)
+
+    if not info then
+        extModel.alert('Object does not reference an external model')
+        return
+    end
+
+    if not info.fileExists then
+        extModel.alert('Model file %s is missing.\n\nUse the external model save function to relocate it.', info.displayPath)
+        return
+    end
+
+    return extModel.loadModel(modelHandle, info.absPath)
+end
+
 function extModel.saveModel(modelHandle, modelFile)
     assert(math.type(modelHandle) == 'integer' and sim.isHandle(modelHandle), 'invalid handle')
     assert(sim.getBoolProperty(modelHandle, 'modelBase'), 'not a model')
     if modelFile == nil then
-        local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-        local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-        modelFile = extModel.getAbsoluteModelPath(location, relPath)
+        local info = extModel.getModelInfo(modelHandle)
+        modelFile = info.absPath
     end
     extModel.removeProperty(modelHandle, 'sourceModelFile', {noError = true})
     extModel.removeProperty(modelHandle, 'sourceModelFileLocation', {noError = true})
@@ -293,24 +296,44 @@ function extModel.saveModel(modelHandle, modelFile)
     sim.announceSceneContentChange()
 end
 
-function extModel.isModelFileNewer(modelHandle)
-    local relPath = extModel.getStringProperty(modelHandle, 'sourceModelFile')
-    local location = extModel.getStringProperty(modelHandle, 'sourceModelFileLocation')
-    local modelFile = extModel.getAbsoluteModelPath(location, relPath)
-    local fmtime = extModel.getFileModTime(modelFile)
-    if fmtime == nil then
-        if not extModel.isFileIgnored(modelFile) then
-            sim.addLog(sim.verbosity_warnings, 'Model file ' .. modelFile .. ' not found')
-            extModel.ignoreFile(modelFile)
-        end
-        return false
-    end
-    local mtime = extModel.getIntProperty(modelHandle, 'sourceModelFileModTime')
-    return os.difftime(mtime, fmtime) < 0
-end
+function extModel.saveModelInteractive(modelHandle)
+    local info = extModel.getModelInfo(modelHandle)
 
-function extModel.hasExternalModel(modelHandle)
-    return not not extModel.getStringProperty(modelHandle, 'sourceModelFile', {noError = true})
+    if info then
+        if info.fileExists then
+            extModel.saveModel(modelHandle)
+            return true
+        else
+            if not extModel.prompt('File %s is missing. Do you want to manually locate it?', info.displayPath) then
+                return false
+            end
+        end
+    else
+        if not extModel.prompt('Object %s does not reference an external model.\n\nDo you want to choose one?', sim.getObjectAlias(modelHandle, 2)) then
+            return false
+        end
+    end
+
+    local simUI = require 'simUI'
+    local lfsx = require 'lfsx'
+    local initPath = lfsx.dirname(sim.getStringProperty(sim.handle_scene, 'scenePath'))
+    files = simUI.fileDialog(simUI.filedialog_type.save, 'Save model...', initPath, '', 'Model files', 'ttm;simmodel.xml')
+    if #files > 1 then
+        sim.addLog(sim.verbosity_errors, 'Please choose exactly one file')
+        return false
+    elseif #files == 1 then
+        local f = io.open(files[1], 'r')
+        local exists = false
+        if f then
+            f:close()
+            exists = true
+        end
+        if not exists or extModel.prompt('File %s already exists.\n\nDo you want to overwrite it?', files[1]) then
+            extModel.saveModel(modelHandle, files[1])
+            return true
+        end
+    end
+    return false
 end
 
 function extModel.hasModelBeenModified(modelHandle)
@@ -322,7 +345,7 @@ function extModel.hasModelBeenModified(modelHandle)
 end
 
 function extModel.getExternalModels()
-    return filter(extModel.hasExternalModel, sim.getObjectsInTree(sim.handle_scene))
+    return filter(function(h) return not not extModel.getModelInfo(h) end, sim.getObjectsInTree(sim.handle_scene))
 end
 
 function extModel.modelHash(modelHandle)
