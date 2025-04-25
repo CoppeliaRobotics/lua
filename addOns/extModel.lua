@@ -54,7 +54,7 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     local others = math.max(0, #changedModelFilesKeys - limit)
     changedModelFilesKeys = table.slice(changedModelFilesKeys, 1, limit)
 
-    bannerId = simUI.bannerShow('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.', {'reload', 'dismiss'}, {'Reload...', 'Dismiss'}, 'onChangedModelsBannerButtonClick')
+    bannerId = simUI.bannerCreate('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.', {'reload', 'dismiss'}, {'Reload...', 'Dismiss'}, 'onChangedModelsBannerButtonClick')
     changedModelsBannerContent = changedModelFiles
 
     function onChangedModelsBannerButtonClick(k)
@@ -72,7 +72,7 @@ end
 function extModel.changedModelsBannerDestroy()
     local simUI = require 'simUI'
     if bannerId then
-        simUI.bannerHide(bannerId)
+        simUI.bannerDestroy(bannerId)
         bannerId = nil
     end
     changedModelsBannerContent = nil
