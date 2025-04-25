@@ -57,7 +57,7 @@ function extModel.changedModelsBannerCreate(changedModels, changedModelFiles)
     bannerId = simUI.bannerCreate('<b>External model auto reload:</b> some external model files (' .. string.escapehtml(table.join(changedModelFilesKeys, ', ')) .. (#changedModelFilesKeys > limit and (' and ' .. others .. ' others') or '') .. ') have been changed externally.', {'reload', 'dismiss'}, {'Reload...', 'Dismiss'}, 'onChangedModelsBannerButtonClick')
     changedModelsBannerContent = changedModelFiles
 
-    function onChangedModelsBannerButtonClick(k)
+    function onChangedModelsBannerButtonClick(bannerId, k)
         if k == 'dismiss' then
             for displayPath, absPath in pairs(changedModelFiles) do
                 extModel.ignoreFile(absPath)
