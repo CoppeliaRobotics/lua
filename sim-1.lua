@@ -311,12 +311,28 @@ function sim.getMatchingPersistentDataTags(...)
 end
 
 function sim.throttle(t, func, ...)
-    if _S.lastExecTime == nil then _S.lastExecTime = {} end
+    _S.lastExecTime = _S.lastExecTime or {}
+    _S.throttleSched = _S.throttleSched or {}
+
     local h = string.dump(func)
     local now = sim.getSystemTime()
+
+    -- cancel any previous scheduled execution: (see sim.scheduleExecution below)
+    if _S.throttleSched[h] then
+        sim.cancelScheduledExecution(_S.throttleSched[h])
+        _S.throttleSched[h] = nil
+    end
+
     if _S.lastExecTime[h] == nil or _S.lastExecTime[h] + t < now then
         func(...)
         _S.lastExecTime[h] = now
+    else
+        -- if skipping the call (i.e. because it exceeds target rate)
+        -- schedule the last call in the future:
+        _S.throttleSched[h] = sim.scheduleExecution(function(...)
+            func(...)
+            _S.lastExecTime[h] = now
+        end, {...}, _S.lastExecTime[h] + t)
     end
 end
 
