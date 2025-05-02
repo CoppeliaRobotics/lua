@@ -118,7 +118,7 @@ function import(moduleName, ...)
         local allNames = mod.__all or table.keys(mod)
         for _, name in ipairs(allNames) do
             if _G[name] ~= nil and _G[name] ~= mod[name] and not _G[name].__lazyLoader and not opts.silent then
-                addLog(300, 'overwriting global variable "' .. name .. '"')
+                addLog(300, 'import: overwriting global variable "' .. name .. '"')
             end
             _G[name] = mod[name]
         end
