@@ -75,7 +75,7 @@ require = wrap(require, function(origRequire)
                         addLog(430, "implicit loading of modules has been disabled because " ..
                             "one known module (" ..  requiredName .. ") was loaded explicitly.")
                     end
-                    removeLazyLoaders()
+                    _removeLazyLoaders()
                 end
             end
         end
@@ -438,7 +438,7 @@ function getAsDisplayString(...)
     return string.blockhstack(s, 0)
 end
 
-function moduleLazyLoader(name)
+function _moduleLazyLoader(name)
     local proxy = {}
     local mt = {
         __moduleLazyLoader = {},
@@ -462,14 +462,14 @@ function moduleLazyLoader(name)
     return proxy
 end
 
-function setupLazyLoaders()
+function _setupLazyLoaders()
     __usedLazyLoaders = false
     for i, name in ipairs(__lazyLoadModules) do
-        if not _G[name] then _G[name] = moduleLazyLoader(name) end
+        if not _G[name] then _G[name] = _moduleLazyLoader(name) end
     end
 end
 
-function removeLazyLoaders()
+function _removeLazyLoaders()
     for i, name in ipairs(__lazyLoadModules) do
         if _G[name] then
             local mt = getmetatable(_G[name])
@@ -636,4 +636,4 @@ registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on 
 registerScriptFuncHook('sysCall_nonSimulation', '_S.sysCallBase_nonSimulation', true)
 registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 
-setupLazyLoaders()
+_setupLazyLoaders()

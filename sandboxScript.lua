@@ -10,7 +10,7 @@ require('base-ce')
 local l = auxFunc('getfiles', sim.getStringParam(sim.stringparam_luadir), '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
-setupLazyLoaders() -- because those were cleared out by our explicit requires
+_setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
     sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")

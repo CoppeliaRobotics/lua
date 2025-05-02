@@ -1,6 +1,6 @@
 local sim = table.update({}, require 'sim')
 
-removeLazyLoaders()
+_removeLazyLoaders()
 
 require('sim.Object').extend(sim)
 
