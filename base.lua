@@ -64,13 +64,6 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
-require('buffer')
-require('mathx')
-require('stringx')
-require('tablex')
-require('functional')
-require('var')
-
 require = wrap(require, function(origRequire)
     return function(...)
         local requiredName = table.unpack {...}
@@ -95,6 +88,15 @@ require = wrap(require, function(origRequire)
         return table.unpack(retVals)
     end
 end)
+
+-- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
+--            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
+require('buffer')
+require('mathx')
+require('stringx')
+require('tablex')
+require('functional')
+require('var')
 
 function import(moduleName, ...)
     assert(type(moduleName) == 'string', 'invalid argument type')
