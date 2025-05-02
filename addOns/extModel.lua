@@ -49,7 +49,9 @@ function extModel.getModelInfo(modelHandle)
     info.absPath = extModel.getAbsoluteModelPath(info.location, info.relPath)
     info.modTime = extModel.getFileModTime(info.absPath)
     info.fileExists = not not info.modTime
-    info.isFileNewer = os.difftime(extModel.getIntProperty(modelHandle, 'sourceModelFileModTime', {noError = true}) or 0, info.modTime) < 0
+    if info.fileExists then
+        info.isFileNewer = os.difftime(extModel.getIntProperty(modelHandle, 'sourceModelFileModTime', {noError = true}) or 0, info.modTime) < 0
+    end
     return info
 end
 
