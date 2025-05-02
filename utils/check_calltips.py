@@ -48,13 +48,14 @@ if __name__ == "__main__":
         module_name = sys.argv[3] if len(sys.argv) >= 4 else None
         check_calltips(calltip_file, lua_file, module_name, print_file_name=False)
     elif len(sys.argv) == 1:
+        check_calltips('base-ce.lua', 'base.lua')
         check_calltips('checkargs-ce.lua', 'checkargs.lua', 'checkarg')
         check_calltips('base16-ce.lua', 'base16.lua', 'base16')
         check_calltips('base64-ce.lua', 'base64.lua', 'base64')
         check_calltips('functional-ce.lua', 'functional.lua')
         check_calltips('itertools-ce.lua', 'itertools.lua', 'itertools')
         check_calltips('mathx-ce.lua', 'mathx.lua', 'math')
-        check_calltips('sim-ce.lua', 'sim-1.lua', 'sim')
+        check_calltips('sim-1-ce.lua', 'sim-1.lua', 'sim')
         check_calltips('stringx-ce.lua', 'stringx.lua', 'string')
         check_calltips('tablex-ce.lua', 'tablex.lua', 'table')
         check_calltips('var-ce.lua', 'var.lua')

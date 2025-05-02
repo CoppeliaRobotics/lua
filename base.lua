@@ -522,7 +522,7 @@ end
 
 function _evalExec(inputStr)
     local sim = require 'sim'
-    function pfunc(theStr)
+    local function pfunc(theStr)
         if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
             H = sim.getObject
             SEL = sim.getObjectSel()
@@ -565,7 +565,7 @@ end
 function _evalExecRet(inputStr)
     printToConsole("in base.lua, _evalExecRet: " .. inputStr)
     local reply = "_*empty*_"
-    function pfunc(theStr)
+    local function pfunc(theStr)
         local func, err = load('return ' .. theStr)
         local rr = true
         if not func then
