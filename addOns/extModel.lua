@@ -288,6 +288,8 @@ function extModel.saveModel(modelHandle, modelFile)
     extModel.removeProperty(modelHandle, 'sourceModelFileLocation', {noError = true})
     extModel.removeProperty(modelHandle, 'sourceModelFileModTime', {noError = true})
     extModel.removeProperty(modelHandle, 'modelHash', {noError = true})
+    local lfsx = require 'lfsx'
+    lfsx.makedirs(lfsx.dirname(modelFile), true) -- model in nested subdir & saving scene to a new location would result in error
     sim.saveModel(modelHandle, modelFile)
     local location, relPath = extModel.getRelativeModelPath(modelFile)
     extModel.setStringProperty(modelHandle, 'sourceModelFile', relPath)
