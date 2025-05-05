@@ -7,8 +7,7 @@ actionServer*.lua
 actions/
 sim*.lua
 !sim.lua
-!sim-[123456789]*.lua
-!sim-ce.lua
+!sim-*.lua
 !sim-deprecated.lua
 !sim_old.lua
 getCallContexts.lua
