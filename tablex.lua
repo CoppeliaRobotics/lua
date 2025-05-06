@@ -348,6 +348,19 @@ function table.update(t, ...)
     return t
 end
 
+function table.items(tbl, opts)
+    opts = opts or {}
+    opts.sort = opts.sort ~= false
+    local ret = {}
+    for k, v in pairs(tbl) do
+        table.insert(ret, {k, v})
+    end
+    if opts.sort then
+        table.sort(ret, function(a, b) return a[1] < b[1] end)
+    end
+    return ret
+end
+
 if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
@@ -367,5 +380,6 @@ if arg and #arg == 1 and arg[1] == 'test' then
     assert(table.tostring(table.batched({1, 2, 3, 4, 5, 6}, 2)) == '{{1, 2}, {3, 4}, {5, 6}}')
     assert(table.eq(table.flatten {a = {b = 1, c = 3}, x = {y = 10, z = 3}}, {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}))
     assert(table.eq(table.unflatten {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}, {a = {b = 1, c = 3}, x = {y = 10, z = 3}}))
+    assert(table.eq(table.items({a = 'A', b = 3, c = {'c', 'd'}}, {sort = true}), {{'a', 'A'}, {'b', 3}, {'c', {'c', 'd'}}}))
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
