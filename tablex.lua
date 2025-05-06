@@ -41,7 +41,7 @@ function table.eq(a, b)
         if av == nil then return false end
         if type(av) ~= type(bv) then return false end
         if type(av) == 'table' then
-            if not table.eq(ab, bv) then return false end
+            if not table.eq(av, bv) then return false end
         else
             if av ~= bv then return false end
         end
