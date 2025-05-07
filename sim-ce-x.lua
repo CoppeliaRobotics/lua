@@ -406,6 +406,8 @@ sim.propertyinfo_notwritable
 sim.propertyinfo_notreadable
 sim.propertyinfo_removable
 sim.propertyinfo_largedata
+sim.propertyinfo_deprecated
+sim.propertyinfo_modelhashexclude
 
 sim.objecttype_sceneobject
 sim.objecttype_collection
