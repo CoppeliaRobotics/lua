@@ -515,6 +515,24 @@ function sim.copyTable(t)
     return table.deepcopy(t)
 end
 
+function sim.closePath(...)
+    local path, times = checkargs({
+        {type = 'table', item_type = 'float', size = '2..*'},
+        {type = 'table', item_type = 'float', size = '2..*'},
+    }, ...)
+
+    local confCnt = #times
+    local dof = #path // confCnt
+
+    local firstCp = table.slice(path, 1, dof)
+    local lastCp = table.slice(path, #path - dof + 1, #path)
+    path = table.add(path, firstCp)
+    local nl = sim.getPathLengths(table.add(lastCp, firstCp), dof)
+    times = table.add(times, {times[#times] + nl[2]})
+    confCnt = confCnt + 1
+    return path, times
+end
+
 function sim.getPathInterpolatedConfig(...)
     local path, times, t, method, types = checkargs({
         {type = 'table', item_type = 'float', size = '2..*'},
@@ -524,8 +542,23 @@ function sim.getPathInterpolatedConfig(...)
         {type = 'table', item_type = 'int', size = '1..*', default = NIL, nullable = true},
     }, ...)
 
+    method = method or {}
+    local pathType = method.type or 'linear'
+    local forceOpen = method.forceOpen == true
+    local closed = method.closed == true
+    local strength = method.strength or 1.
+
+    -- "forceOpen" can be set if not passing "closed", otherwise it's opposite value
+    if method.closed ~= nil then
+        forceOpen = not closed
+    end
+
+    if closed then
+        path, times = sim.closePath(path, times)
+    end
+
     local confCnt = #times
-    local dof = math.floor(#path / confCnt)
+    local dof = #path // confCnt
 
     if (dof * confCnt ~= #path) or (types and dof ~= #types) then error("Bad table size.") end
 
@@ -553,18 +586,16 @@ function sim.getPathInterpolatedConfig(...)
     --    else
     --        if t>1 then t=1 end
     --    end
-    if method and method.type == 'quadraticBezier' then
-        local w = 1
-        if method.strength then w = method.strength end
-        if w < 0.05 then w = 0.05 end
-        local closed = true
+    closed = true -- if path is closed is determined a few lines below
+    if pathType == 'quadraticBezier' then
+        local w = math.max(0.05, strength)
         for i = 1, dof, 1 do
             if (path[i] ~= path[(confCnt - 1) * dof + i]) then
                 closed = false
                 break
             end
         end
-        if method.forceOpen then closed = false end
+        if forceOpen then closed = false end
         local i0, i1, i2
         if t < 0.5 then
             if li == 1 and not closed then
@@ -600,8 +631,7 @@ function sim.getPathInterpolatedConfig(...)
                 end
             end
         end
-    end
-    if not method or method.type == 'linear' then
+    elseif pathType == 'linear' then
         retVal = _S.linearInterpolate(_S.getConfig(path, dof, li), _S.getConfig(path, dof, hi), t, types)
     end
     return retVal
@@ -679,11 +709,21 @@ function sim.resamplePath(...)
         {type = 'table', item_type = 'int', size = '1..*', default = NIL, nullable = true},
     }, ...)
 
+    method = table.deepcopy(method) or {}
+    local closed = method.closed == true
+
     local confCnt = #pathLengths
     local dof = math.floor(#path / confCnt)
 
     if dof * confCnt ~= #path or (confCnt < 2) or (types and dof ~= #types) then
         error("Bad table size.")
+    end
+
+    if closed then
+        confCnt = confCnt + 1
+        path, pathLengths = sim.closePath(path, pathLengths)
+        method.closed = nil
+        method.forceOpen = false
     end
 
     local retVal = {}
