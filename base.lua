@@ -100,9 +100,15 @@ require('var')
 
 function import(moduleName, ...)
     assert(type(moduleName) == 'string', 'invalid argument type')
-    local opts = {}
-    local mod = require(moduleName)
     local names = {...}
+    local opts = {}
+
+    -- shortand for: import 'simFoo.*'
+    if moduleName:endswith '.*' and #names == 0 then
+        moduleName = moduleName:sub(1, #moduleName - 2)
+        return import(moduleName, '*')
+    end
+    local mod = require(moduleName)
 
     -- allow to pass opts as: import(moduleName, ..., {opt1=val1, ...})
     if type(names[#names]) == 'table' then
@@ -110,6 +116,8 @@ function import(moduleName, ...)
     end
 
     if #names == 0 then
+        print '#names == 0'
+
         if not opts.keepVersionSuffix then
             moduleName = moduleName:gsub('[-%d]+$', '')
         end
