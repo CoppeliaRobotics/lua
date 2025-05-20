@@ -116,8 +116,6 @@ function import(moduleName, ...)
     end
 
     if #names == 0 then
-        print '#names == 0'
-
         if not opts.keepVersionSuffix then
             moduleName = moduleName:gsub('[-%d]+$', '')
         end
