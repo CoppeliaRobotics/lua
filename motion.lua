@@ -202,8 +202,8 @@ function sim.moveToConfig(...)
             {type = 'table', item_type = 'float'},
             {type = 'table', item_type = 'float', nullable = true},
             {type = 'any'},
-            {type = 'any', default = NIL, nullable = true},
-            {type = 'table', item_type = 'bool', default = NIL, nullable = true},
+            {type = 'any', default_nil = true, nullable = true},
+            {type = 'table', item_type = 'bool', default_nil = true, nullable = true},
             {type = 'float', default = 0},
         }, ...)
         params.tolerantArgs = true
@@ -571,8 +571,8 @@ function sim.moveToPose(...)
             {type = 'table', item_type = 'float'},
             {type = 'table', size = '7..12'},
             {type = 'any'},
-            {type = 'any', default = NIL, nullable = true},
-            {type = 'table', size = 4, default = NIL, nullable = true},
+            {type = 'any', default_nil = true, nullable = true},
+            {type = 'table', size = 4, default_nil = true, nullable = true},
             {type = 'float', default = 0},
         }, ...)
         params.tolerantArgs = true
@@ -647,7 +647,7 @@ function sim.generateTimeOptimalTrajectory(...)
             {type = 'int', default = 1000},
             {type = 'string', default = 'not-a-knot'},
             {type = 'float', default = 5},
-            {type = 'int', default = NIL, nullable = true},
+            {type = 'int', default_nil = true, nullable = true},
     }, ...)
 
     local confCnt = #pathLengths

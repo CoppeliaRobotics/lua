@@ -412,8 +412,8 @@ function sim.getAlternateConfigs(...)
         {type = 'table', item_type = 'int'},
         {type = 'table', item_type = 'float'},
         {type = 'int', default = -1},
-        {type = 'table', item_type = 'float', default = NIL, nullable = true},
-        {type = 'table', item_type = 'float', default = NIL, nullable = true},
+        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
+        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
     }, ...)
 
     if #jointHandles < 1 or #jointHandles ~= #inputConfig or
@@ -539,7 +539,7 @@ function sim.getPathInterpolatedConfig(...)
         {type = 'table', item_type = 'float', size = '2..*'},
         {type = 'float'},
         {type = 'table', default = {type = 'linear', strength = 1.0, forceOpen = false}, nullable = true},
-        {type = 'table', item_type = 'int', size = '1..*', default = NIL, nullable = true},
+        {type = 'table', item_type = 'int', size = '1..*', default_nil = true, nullable = true},
     }, ...)
 
     method = method or {}
@@ -706,7 +706,7 @@ function sim.resamplePath(...)
         {type = 'table', item_type = 'float', size = '2..*'},
         {type = 'int'},
         {type = 'table', default = {type = 'linear', strength = 1.0, forceOpen = false}},
-        {type = 'table', item_type = 'int', size = '1..*', default = NIL, nullable = true},
+        {type = 'table', item_type = 'int', size = '1..*', default_nil = true, nullable = true},
     }, ...)
 
     method = table.deepcopy(method) or {}
@@ -741,8 +741,8 @@ function sim.getConfigDistance(...)
     local confA, confB, metric, types = checkargs({
         {type = 'table', item_type = 'float', size = '1..*'},
         {type = 'table', item_type = 'float', size = '1..*'},
-        {type = 'table', item_type = 'float', default = NIL, nullable = true},
-        {type = 'table', item_type = 'int', default = NIL, nullable = true},
+        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
+        {type = 'table', item_type = 'int', default_nil = true, nullable = true},
     }, ...)
 
     if (#confA ~= #confB) or (metric and #confA ~= #metric) or (types and #confA ~= #types) then
@@ -791,7 +791,7 @@ end
 function sim.getPathLengths(...)
     local path, dof, cb = checkargs({
         {type = 'table', item_type = 'float', size = '2..*'}, {type = 'int'},
-        {type = 'any', default = NIL, nullable = true},
+        {type = 'any', default_nil = true, nullable = true},
     }, ...)
     local confCnt = math.floor(#path / dof)
     if dof < 1 or (confCnt < 2) then error("Bad table size.") end
@@ -1368,10 +1368,10 @@ end
 function sim.generateTextShape(...)
     local txt, color, height, centered, alphabetModel = checkargs({
         {type = 'string'},
-        {type = 'table', item_type = 'float', size = 3, default = NIL, nullable = true},
-        {type = 'float', default = NIL, nullable = true},
-        {type = 'bool', default = NIL, nullable = true},
-        {type = 'string', default = NIL, nullable = true},
+        {type = 'table', item_type = 'float', size = 3, default_nil = true, nullable = true},
+        {type = 'float', default_nil = true, nullable = true},
+        {type = 'bool', default_nil = true, nullable = true},
+        {type = 'string', default_nil = true, nullable = true},
     }, ...)
     local textUtils = require('textUtils')
     return textUtils.generateTextShape(txt, color, height, centered, alphabetModel)

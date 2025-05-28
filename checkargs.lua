@@ -142,6 +142,7 @@ function checkargs.checkargsEx(opts, types, ...)
         local t = types[i]
         -- fill default value:
         if arg.n < i and t.default ~= nil then
+            if t.default_nil == true then t.default = checkargs.NIL end
             if t.default == checkargs.NIL then
                 arg[i] = nil
             else

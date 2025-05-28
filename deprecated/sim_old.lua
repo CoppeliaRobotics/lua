@@ -24,8 +24,8 @@ function sim.rmlMoveToJointPositions(...)
             {type = 'table', size = '1..*', item_type = 'float'},
             {type = 'table', size = '1..*', item_type = 'float'},
             {type = 'table', size = '1..*', item_type = 'float'},
-            {type = 'table', size = '1..*', item_type = 'float', default = NIL, nullable = true},
-            {type = 'table', item_type = 'float', size = '1..*', default = NIL, nullable = true},
+            {type = 'table', size = '1..*', item_type = 'float', default_nil = true, nullable = true},
+            {type = 'table', item_type = 'float', size = '1..*', default_nil = true, nullable = true},
         }, ...
                                  )
     local dof = #jhandles
@@ -115,8 +115,8 @@ function sim.rmlMoveToPosition(...)
             {type = 'table', size = 4, item_type = 'float'},
             {type = 'table', size = 4, item_type = 'float'},
             {type = 'table', size = 3, item_type = 'float', nullable = true},
-            {type = 'table', size = 4, item_type = 'float', default = NIL, nullable = true},
-            {type = 'table', item_type = 'float', size = 4, default = NIL, nullable = true},
+            {type = 'table', size = 4, item_type = 'float', default_nil = true, nullable = true},
+            {type = 'table', item_type = 'float', size = 4, default_nil = true, nullable = true},
         }, ...
                                   )
 
@@ -632,9 +632,9 @@ function sim.displayDialog(...)
                                                                   {
             {type = 'string'}, {type = 'string'}, {type = 'int'}, {type = 'bool'},
             {type = 'string', default = '', nullable = true},
-            {type = 'any', default = NIL, nillable = true},
-            {type = 'any', default = NIL, nillable = true},
-            {type = 'any', default = NIL, nillable = true},
+            {type = 'any', default_nil = true, nillable = true},
+            {type = 'any', default_nil = true, nillable = true},
+            {type = 'any', default_nil = true, nillable = true},
         }, ...
                                                               )
 
