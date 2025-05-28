@@ -121,7 +121,7 @@ function parserx.getCallContexts(s, pos)
     return rs
 end
 
-if arg and arg[1] == 'test' then
+function parserx.unittest()
     verbose = 1
     runAll = true
     numPassed, numTotal = 0, 0

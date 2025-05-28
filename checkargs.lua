@@ -1,40 +1,37 @@
-checkarg = {}
+local checkargs = {
+    checkarg = {},
+    NIL = {},
+}
 
-NIL = {}
-table.pack = table.pack or function(...)
-    return {n = select("#", ...), ...}
-end
-table.unpack = table.unpack or unpack
+--table.pack = table.pack or function(...)
+--    return {n = select("#", ...), ...}
+--end
+--table.unpack = table.unpack or unpack
 
-function unpackx(arg, n, i)
-    i = i or 1
-    if i <= n then return arg[i], unpackx(arg, n, i + 1) end
-end
-
-function checkarg.any(v, t)
+function checkargs.checkarg.any(v, t)
     return true
 end
 
-function checkarg.float(v, t)
+function checkargs.checkarg.float(v, t)
     return type(v) == 'number'
 end
 
-function checkarg.int(v, t)
+function checkargs.checkarg.int(v, t)
     return type(v) == 'number' and math.floor(v) == v, nil
 end
 
-function checkarg.string(v, t)
+function checkargs.checkarg.string(v, t)
     return type(v) == 'string'
 end
 
-function checkarg.bool(v, t)
+function checkargs.checkarg.bool(v, t)
     return type(v) == 'boolean'
 end
 
-function checkarg.table(v, t)
+function checkargs.checkarg.table(v, t)
     if type(v) ~= 'table' then return false, 'must be a table' end
     if #v > 0 and t.item_type ~= nil then
-        if not checkarg[t.item_type](v[1]) or not checkarg[t.item_type](v[#v]) then
+        if not checkargs.checkarg[t.item_type](v[1]) or not checkargs.checkarg[t.item_type](v[#v]) then
             return false, 'must be a table of elements of type ' .. t.item_type
         end
     end
@@ -67,11 +64,11 @@ function checkarg.table(v, t)
     return true, nil
 end
 
-function checkarg.func(v, t)
+function checkargs.checkarg.func(v, t)
     return type(v) == 'function'
 end
 
-function checkarg.handle(v, t)
+function checkargs.checkarg.handle(v, t)
     if type(v) ~= 'number' or math.type(v) ~= 'integer' then return false end
     -- this check requires coppeliaSim:
     if type(sim) == 'table' and type(sim.isHandle) == 'function' then
@@ -81,7 +78,7 @@ function checkarg.handle(v, t)
     end
 end
 
-function checkarg.object(v, t)
+function checkargs.checkarg.object(v, t)
     if type(v) ~= 'table' then return false, 'not a table' end
     if getmetatable(v) ~= t.class then
         local errmsg = 'should be an object'
@@ -91,7 +88,7 @@ function checkarg.object(v, t)
     return true, nil
 end
 
-function checkarg.union(v, t)
+function checkargs.checkarg.union(v, t)
     local allowedTypes, explanation, sep = '', '', ''
     for i, ti in ipairs(t.union) do
         allowedTypes = allowedTypes .. sep .. ti.type
@@ -107,7 +104,7 @@ function checkarg.union(v, t)
     return false, 'must be any of: ' .. allowedTypes .. '; but ' .. explanation
 end
 
-function checkargsEx(opts, types, ...)
+function checkargs.checkargsEx(opts, types, ...)
     -- level offset at which we should output the error:
     opts.level = opts.level or 0
 
@@ -154,11 +151,11 @@ function checkargsEx(opts, types, ...)
         -- nil is ok if field is nullable:
         if t.nullable and arg[i] == nil then
         else
-            -- do the type check, using one of the checkarg.type() functions
+            -- do the type check, using one of the checkargs.checkarg.type() functions
             if t.type == nil then t.type = infertype(t) end
-            local checkFunc = checkarg[t.type]
+            local checkFunc = checkargs.checkarg[t.type]
             if checkFunc == nil then
-                error(string.format('function checkarg.%s does not exist', t.type), errorLevel)
+                error(string.format('function checkargs.checkarg.%s does not exist', t.type), errorLevel)
             end
             local ok, err = checkFunc(arg[i], t)
             if not ok then
@@ -171,24 +168,26 @@ function checkargsEx(opts, types, ...)
             end
         end
     end
-    return unpackx(arg, #types)
+    return table.unpackx(arg, #types) -- from 'tablex' module
 end
 
-function checkargs(types, ...)
-    return checkargsEx({level = 1}, types, ...)
+function checkargs.checkargs(types, ...)
+    return checkargs.checkargsEx({level = 1}, types, ...)
 end
 
--- tests:
+setmetatable(checkargs, {
+    __call = function(self, ...)
+        return checkargs.checkargs(...)
+    end,
+})
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function checkargs.unittest()
     sim = sim or {}
 
     function f(...)
-        local i, s, ti = checkargs(
-                             {
-                {type = 'int'}, {type = 'string'}, {type = 'table', item_type = 'int', size = 3},
-            }, ...
-                         )
+        local i, s, ti = checkargs({
+            {type = 'int'}, {type = 'string'}, {type = 'table', item_type = 'int', size = 3},
+        }, ...)
     end
 
     function g(x)
@@ -324,3 +323,4 @@ if arg and #arg == 1 and arg[1] == 'test' then
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
+return checkargs

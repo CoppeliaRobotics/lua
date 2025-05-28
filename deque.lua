@@ -90,7 +90,7 @@ setmetatable(deque, {
     end,
 })
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function deque.unittest()
     local q = deque()
     q:append(40)
     q:append(80)

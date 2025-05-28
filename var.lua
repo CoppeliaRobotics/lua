@@ -1,10 +1,12 @@
+local var = {}
+
 require 'stringx'
 require 'tablex'
 
-function getvar(n, tblctx)
+function var.getvar(n, tblctx)
     tblctx = tblctx or _G
     local ns = string.split(n, '.', true)
-    if #ns > 1 then return getvar(table.join(table.slice(ns, 2), '.'), tblctx[ns[1]]) end
+    if #ns > 1 then return var.getvar(table.join(table.slice(ns, 2), '.'), tblctx[ns[1]]) end
     local is = string.split(n, '[', true)
     if #is == 1 then return tblctx[n] end
     assert(#is == 2, 'unsupported syntax')
@@ -16,12 +18,12 @@ function getvar(n, tblctx)
     return tblctx[is[1]][i]
 end
 
-function setvar(n, v, tblctx)
+function var.setvar(n, v, tblctx)
     tblctx = tblctx or _G
     local ns = string.split(n, '.', true)
     if #ns > 1 then
         if tblctx[ns[1]] == nil then tblctx[ns[1]] = {} end
-        setvar(table.join(table.slice(ns, 2), '.'), v, tblctx[ns[1]])
+        var.setvar(table.join(table.slice(ns, 2), '.'), v, tblctx[ns[1]])
         return
     end
     local is = string.split(n, '[', true)
@@ -38,7 +40,7 @@ function setvar(n, v, tblctx)
     tblctx[is[1]][i] = v
 end
 
-function getlocals(level)
+function var.getlocals(level)
     local ret = {}
     local i = 0
     while true do
@@ -50,7 +52,7 @@ function getlocals(level)
         else
             if not pcall(
                 function()
-                    ret[i] = getlocals(i)
+                    ret[i] = var.getlocals(i)
                 end
             ) then break end
             if not next(ret[i]) then break end
@@ -59,7 +61,7 @@ function getlocals(level)
     return ret
 end
 
-function f(str)
+function var.f(str)
     str = str:gsub(
         '{(.-)}',
         function(name0)
@@ -95,22 +97,24 @@ function f(str)
     return str
 end
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function var.unittest()
     a = 'x1'
-    assert(getvar 'a' == 'x1')
+    assert(var.getvar 'a' == 'x1')
     b = {c = 'x2'}
-    assert(getvar 'b.c' == 'x2')
+    assert(var.getvar 'b.c' == 'x2')
     d = {'x3', 'y3', 'z3'}
-    assert(getvar 'd[3]' == 'z3')
+    assert(var.getvar 'd[3]' == 'z3')
     e = {f = {'a', 'b'}}
-    assert(getvar 'e.f[1]' == 'a')
-    setvar('e.f[1]', 'A')
-    assert(getvar 'e.f[1]' == 'A')
-    setvar('g.h', 'x')
+    assert(var.getvar 'e.f[1]' == 'a')
+    var.setvar('e.f[1]', 'A')
+    assert(var.getvar 'e.f[1]' == 'A')
+    var.setvar('g.h', 'x')
     assert(g.h == 'x')
     local l1 = 'a'
     local l2 = 'b'
-    local L = getlocals(1)
+    local L = var.getlocals(1)
     assert(L.l1 == 'a' and L.l2 == 'b')
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
+
+return var

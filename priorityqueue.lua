@@ -137,7 +137,7 @@ setmetatable(priorityqueue, {
     end,
 })
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function priorityqueue.unittest()
     local pq = priorityqueue()
     pq:push(5, "Task 5")
     pq:push(1, "Task 1")

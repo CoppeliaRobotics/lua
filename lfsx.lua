@@ -169,7 +169,7 @@ function lfs.gettempdir()
     return temp
 end
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function lfs.unittest()
     require 'tablex'
     if lfs.pathsep() == '\\' then
         assert(lfs.pathsanitize('c:\\tmp\\foo.txt') == 'c:\\tmp\\foo.txt')

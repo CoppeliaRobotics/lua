@@ -12,6 +12,11 @@ else
     unpack = table.unpack
 end
 
+function table.unpackx(arg, n, i)
+    i = i or 1
+    if i <= n then return arg[i], table.unpackx(arg, n, i + 1) end
+end
+
 function table.index(t)
     return function(idx)
         return t[idx]
@@ -361,7 +366,7 @@ function table.items(tbl, opts)
     return ret
 end
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function table.unittest()
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
     assert(not table.eq({}, {1, 2, 3}))

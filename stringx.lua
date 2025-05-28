@@ -368,9 +368,9 @@ function string.blockhstack(blocks, spacing)
     return table.join(r, '\n')
 end
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function string.unittest()
     -- fix for "attempt to call a nil value (global 'isbuffer')"
-    function isbuffer(x) return false end
+    isbuffer = isbuffer or function(x) return false end
 
     require 'tablex'
     assert(table.eq(string.split('a%b%c', '%', true), {'a', 'b', 'c'}))

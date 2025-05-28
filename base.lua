@@ -89,15 +89,6 @@ require = wrap(require, function(origRequire)
     end
 end)
 
--- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
---            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
-require('buffer')
-require('mathx')
-require('stringx')
-require('tablex')
-require('functional')
-require('var')
-
 function import(moduleName, ...)
     assert(type(moduleName) == 'string', 'invalid argument type')
     local names = {...}
@@ -627,13 +618,14 @@ function _evalExecRet(inputStr)
 end
 
 function _getCompletion(input, pos)
+    local var = require 'var'
     local ret = {}
     if pos == #input then
         local what = input:match('[_%a][_%w%.:]*$')
         if what then
             local base, sep, ext = what:match('^(.-)([.:])([^.:]+)$')
             if base then
-                base = getvar(base)
+                base = var.getvar(base)
             else
                 base, ext = _G, what
             end
@@ -666,6 +658,15 @@ function _getCalltip(input, pos)
         return ''
     end
 end
+
+-- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
+--            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
+require('buffer')
+require('mathx')
+require('stringx')
+require('tablex')
+import('functional', '*')
+--import('var', '*')
 
 _S.coroutineAutoYields = {}
 registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on *before* init is incompatible with implicit module load...

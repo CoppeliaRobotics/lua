@@ -7,8 +7,8 @@ end
 function scriptClientBridge.call(b)
     cbor = require 'org.conman.cbor'
     i = cbor.decode(tostring(b))
-    require 'var'
-    f = getvar(i.func)
+    local var = require 'var'
+    f = var.getvar(i.func)
     local ok, r = pcall(function() return {f(table.unpack(i.args))} end)
     if ok then
         r = {success = true, result = r}

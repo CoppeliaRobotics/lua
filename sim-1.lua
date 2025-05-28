@@ -71,7 +71,7 @@ function sim.step(wait)
     sim.yield()
 end
 
-require('checkargs')
+import('checkargs')
 require('motion').extend(sim)
 require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)
@@ -663,7 +663,7 @@ function sim.createPath(...)
     sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
     return shape
 end]]
-        
+
         retVal = sim.createDummy(0.04, {0, 0.68, 0.47, 0, 0, 0, 0, 0, 0, 0, 0, 0})
         sim.setObjectAlias(retVal, "Path")
         local scriptHandle

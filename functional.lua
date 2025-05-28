@@ -1,4 +1,6 @@
-function range(from, to, step)
+local functional = {}
+
+function functional.range(from, to, step)
     assert(type(from) == 'number')
     step = step or 1
     if to == nil then from, to = 1, from end
@@ -9,7 +11,7 @@ function range(from, to, step)
     return ret
 end
 
-function map(f, ...)
+function functional.map(f, ...)
     assert(type(f) == 'function')
     local tbls, ret = {...}, {}
     local i = 1
@@ -26,7 +28,7 @@ function map(f, ...)
     return ret
 end
 
-function reduce(f, tbl, initial)
+function functional.reduce(f, tbl, initial)
     assert(type(f) == 'function')
     assert(type(tbl) == 'table')
     initial = initial or 0
@@ -35,7 +37,7 @@ function reduce(f, tbl, initial)
     return y
 end
 
-function filter(f, tbl)
+function functional.filter(f, tbl)
     assert(type(f) == 'function')
     assert(type(tbl) == 'table')
     local ret = {}
@@ -43,7 +45,7 @@ function filter(f, tbl)
     return ret
 end
 
-function foreach(f, ...)
+function functional.foreach(f, ...)
     assert(type(f) == 'function')
     local tbls = {...}
     local i = 1
@@ -59,21 +61,21 @@ function foreach(f, ...)
     end
 end
 
-function identity(...)
+function functional.identity(...)
     return ...
 end
 
-function zip(...)
+function functional.zip(...)
     return map(function(...) return {...} end, ...)
 end
 
-function negate(f)
+function functional.negate(f)
     return function(x)
         return not f(x)
     end
 end
 
-function apply(f, ...)
+function functional.apply(f, ...)
     local args = table.pack(...)
     local count = args.n
     local offset = count - 1
@@ -90,7 +92,7 @@ function apply(f, ...)
     return f(table.unpack(args, 1, count))
 end
 
-function partial(f, ...)
+function functional.partial(f, ...)
     assert(type(f) == 'function')
     local args = table.pack(...)
     return function(...)
@@ -100,7 +102,7 @@ function partial(f, ...)
     end
 end
 
-function any(f, tbl)
+function functional.any(f, tbl)
     f = f or function(x)
         return x
     end
@@ -110,7 +112,7 @@ function any(f, tbl)
     return false
 end
 
-function all(f, tbl)
+function functional.all(f, tbl)
     f = f or function(x)
         return x
     end
@@ -120,7 +122,7 @@ function all(f, tbl)
     return true
 end
 
-function iter(tbl)
+function functional.iter(tbl)
     local i = 0
     return function()
         i = i + 1
@@ -128,7 +130,7 @@ function iter(tbl)
     end
 end
 
-function reify(func, name)
+function functional.reify(func, name)
     name = name or ''
     _S = _S or {}
     _S.reifiedFunctions = _S.reifiedFunctions or {}
@@ -142,13 +144,14 @@ function reify(func, name)
     end
     if type(func) == 'string' then
         -- it is already string, but check that points to a function:
-        assert(type(getvar(func)) == 'function')
+        local var = require 'var'
+        assert(type(var.getvar(func)) == 'function')
         return func
     end
     error('unexpected type: ' .. type(func))
 end
 
-operator = {
+functional.operator = {
     add = function(a, b) return a + b end,
     sub = function(a, b) return a - b end,
     mul = function(a, b) return a * b end,
@@ -169,25 +172,27 @@ operator = {
     le = function(a, b) return a <= b end,
 }
 
-function sum(tbl)
+function functional.sum(tbl)
     return reduce(operator.add, tbl)
 end
 
-function prod(tbl)
+function functional.prod(tbl)
     return reduce(operator.mul, tbl)
 end
 
-if arg and #arg == 1 and arg[1] == 'test' then
+function functional.unittest()
     require 'tablex'
-    assert(table.eq(range(3), {1, 2, 3}))
-    assert(table.eq(map(operator.mul, {1, 2, 3}, {0, 1, 2}), {0, 2, 6}))
-    assert(reduce(operator.add, {1, 2, 3, 4}) == 10)
-    assert(table.eq(filter(function(x) return x % 2 == 0 end, {1, 2, 3, 4, 5}), {2, 4}))
-    gt0 = partial(operator.lt, 0)
-    assert(all(gt0, {1, 2, 3, 4}))
-    assert(not all(gt0, {0, 1, 2, 3, 4}))
-    assert(any(gt0, {-1, -2, 0, 1, -5}))
-    assert(not any(gt0, {-1, -2, 0, -11, -5}))
-    assert(table.eq(zip({1, 2, 3, 4}, {'a', 'b', 'c'}), {{1, 'a'}, {2, 'b'}, {3, 'c'}}))
+    assert(table.eq(functional.range(3), {1, 2, 3}))
+    assert(table.eq(functional.map(functional.operator.mul, {1, 2, 3}, {0, 1, 2}), {0, 2, 6}))
+    assert(functional.reduce(functional.operator.add, {1, 2, 3, 4}) == 10)
+    assert(table.eq(functional.filter(function(x) return x % 2 == 0 end, {1, 2, 3, 4, 5}), {2, 4}))
+    gt0 = functional.partial(functional.operator.lt, 0)
+    assert(functional.all(gt0, {1, 2, 3, 4}))
+    assert(not functional.all(gt0, {0, 1, 2, 3, 4}))
+    assert(functional.any(gt0, {-1, -2, 0, 1, -5}))
+    assert(not functional.any(gt0, {-1, -2, 0, -11, -5}))
+    assert(table.eq(functional.zip({1, 2, 3, 4}, {'a', 'b', 'c'}), {{1, 'a'}, {2, 'b'}, {3, 'c'}}))
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
+
+return functional
