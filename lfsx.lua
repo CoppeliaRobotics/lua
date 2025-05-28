@@ -27,17 +27,56 @@ function lfs.pathsep()
     return package.config:sub(1,1)
 end
 
-function lfs.pathjoin(parts)
-    return table.join(parts, lfs.pathsep())
+-- Returns the directory part and the file part, similar to Python's os.path.split
+function lfs.pathsplit(p)
+    local sep = lfs.pathsep()
+    -- Normalize trailing separator (unless it's root '/')
+    if #p > 1 and p:sub(-1) == sep then
+        p = p:sub(1, -2)
+    end
+    local head, tail = p:match("^(.*"..sep..")([^"..sep.."]+)$")
+    if not head then
+        return "", p
+    else
+        -- Remove trailing separator from head unless it's root
+        if #head > 1 and head:sub(-1) == sep then
+            head = head:sub(1, -2)
+        end
+        return head, tail
+    end
 end
 
-function lfs.pathsplit(p)
-    p = lfs.pathsanitize(p)
-    local parts = {}
-    for part in string.gmatch(p, '[^' .. lfs.pathsep() .. ']+') do
-        table.insert(parts, part)
+-- Joins paths, taking into account absolute paths
+function lfs.pathjoin(...)
+    local sep = lfs.pathsep()
+    local args = {...}
+    local result = ""
+    for i, part in ipairs(args) do
+        if part:sub(1, 1) == sep then
+            -- Absolute path resets the result
+            result = part
+        else
+            if result == "" or result:sub(-1) == sep then
+                result = result .. part
+            else
+                result = result .. sep .. part
+            end
+        end
     end
-    return parts
+    return result
+end
+
+-- similar to pathlib.Path(...).parts
+function lfs.pathparts(p)
+    local result = {}
+    local head, tail
+    head = p
+    while true do
+        if head == '' then break end
+        head, tail = lfs.pathsplit(head)
+        table.insert(result, 1, tail)
+    end
+    return result
 end
 
 function lfs.basename(path)
@@ -89,7 +128,7 @@ function lfs.makedirs(path, exist_ok)
     if lfs.ispathabsolute(path) then sep = lfs.pathsep() end
 
     local current = sep
-    for _, part in ipairs(lfs.pathsplit(path)) do
+    for _, part in ipairs(lfs.pathparts(path)) do
         if current == '' then
             current = part
         else
@@ -105,6 +144,35 @@ function lfs.makedirs(path, exist_ok)
             error('Path exists and is not a directory: ' .. current)
         end
     end
+end
+
+if arg and #arg == 1 and arg[1] == 'test' then
+    require 'tablex'
+    if lfs.pathsep() == '\\' then
+        assert(lfs.pathsanitize('c:\\tmp\\foo.txt') == 'c:\\tmp\\foo.txt')
+        assert(lfs.pathsanitize('c:/tmp/foo.txt') == 'c:\\tmp\\foo.txt')
+        assert(lfs.pathjoin('c:', 'tmp', 'foo') == 'c:\\tmp\\foo.txt')
+        require 'tablex'
+        assert(table.eq({lfs.pathsplit 'c:\\tmp\\foo.txt'}, {'c:\\tmp', 'foo.txt'}))
+        assert(table.eq(lfs.pathparts 'c:\\tmp\\foo.txt', {'c:', 'tmp', 'foo.txt'}))
+        assert(lfs.basename 'c:\\tmp\\foo.txt' == 'foo.txt')
+        assert(lfs.dirname 'c:\\tmp\\foo.txt' == 'c:\\tmp')
+        assert(lfs.dirname 'c:\\tmp1\\tmp2\\foo.txt' == 'c:\\tmp1\\tmp2')
+        assert(lfs.ispathabsolute 'c:\\tmp\\foo.txt')
+        assert(not lfs.ispathabsolute 'tmp\\foo.txt')
+        assert(lfs.pathsanitize 'c:/tmp/foo.txt', 'c:\\tmp\\foo.txt')
+    else
+        require 'tablex'
+        assert(table.eq({lfs.pathsplit '/usr/bin/foo'}, {'/usr/bin', 'foo'}))
+        assert(table.eq(lfs.pathparts '/usr/bin/foo', {'/', 'usr', 'bin', 'foo'}))
+        assert(lfs.pathjoin('/usr', 'bin', 'foo') == '/usr/bin/foo')
+        assert(lfs.basename '/usr/bin/foo' == 'foo')
+        assert(lfs.dirname '/usr/bin/foo' == '/usr/bin')
+        assert(lfs.ispathabsolute '/usr/bin/foo')
+        assert(not lfs.ispathabsolute 'bin/foo')
+        assert(lfs.pathsanitize '/usr/bin/foo', '/usr/bin/foo')
+    end
+    print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
 return lfs
