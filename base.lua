@@ -672,13 +672,22 @@ function _getCalltip(input, pos)
     end
 end
 
+function unittest(mod)
+    if mod.unittest == nil then
+        print('module does not define a unittest() function')
+        return
+    end
+    if type(mod.unittest) == 'function' then
+        mod.unittest()
+    end
+end
+
 -- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
 require('buffer')
 require('mathx')
 require('stringx')
 require('tablex')
-unittest = {} -- to trigger a warning in star imports
 import('functional', '*')
 import('var', '*')
 
