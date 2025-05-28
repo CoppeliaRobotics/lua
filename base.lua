@@ -126,7 +126,7 @@ function import(moduleName, ...)
         end
         for _, name in ipairs(allNames) do
             if not excludeNames[name] then
-                if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
+                if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent  and (type(_G[name]) ~= 'table' or not _G[name].__lazyLoader) then
                     addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. name .. '"')
                 end
                 _G[name] = mod[name]
