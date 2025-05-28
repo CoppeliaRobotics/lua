@@ -94,6 +94,8 @@ function import(moduleName, ...)
     local names = {...}
     local opts = {}
 
+    local origModuleName = moduleName
+
     -- shortand for: import 'simFoo.*'
     if moduleName:endswith '.*' and #names == 0 then
         moduleName = moduleName:sub(1, #moduleName - 2)
@@ -110,12 +112,15 @@ function import(moduleName, ...)
         if not opts.keepVersionSuffix then
             moduleName = moduleName:gsub('[-%d]+$', '')
         end
+        if _G[moduleName] ~= nil and _G[moduleName] ~= mod and not _G[moduleName].__lazyLoader and not opts.silent then
+            addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. moduleName .. '"')
+        end
         _G[moduleName] = mod
     elseif #names == 1 and names[1] == '*' then
         local allNames = mod.__all or table.keys(mod)
         for _, name in ipairs(allNames) do
-            if _G[name] ~= nil and _G[name] ~= mod[name] and not _G[name].__lazyLoader and not opts.silent then
-                addLog(300, 'import: overwriting global variable "' .. name .. '"')
+            if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
+                addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. name .. '"')
             end
             _G[name] = mod[name]
         end
@@ -665,8 +670,9 @@ require('buffer')
 require('mathx')
 require('stringx')
 require('tablex')
+unittest = {} -- to trigger a warning in star imports
 import('functional', '*')
---import('var', '*')
+import('var', '*')
 
 _S.coroutineAutoYields = {}
 registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on *before* init is incompatible with implicit module load...
