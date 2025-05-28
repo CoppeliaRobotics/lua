@@ -606,7 +606,7 @@ function handleRequest(req)
             doNotInterruptCommLevel = doNotInterruptCommLevel + 1
             local status, retvals = xpcall(
                 function()
-                    local pret = table.pack(func(unpack(args, 1, req.argsL)))
+                    local pret = table.pack(func(table.unpack(args, 1, req.argsL)))
                     local ret = {}
                     for i = 1, pret.n do
                         if pret[i] ~= nil then
@@ -615,8 +615,8 @@ function handleRequest(req)
                             ret[i] = tonil()
                         end
                     end
-                    --local ret = {func(unpack(args, 1, req.argsL))}
-                    
+                    --local ret = {func(table.unpack(args, 1, req.argsL))}
+
                     -- Try to assign correct types to text/buffers and arrays/maps:
                     local args = returnTypes[reqFunc]
                     if args then
