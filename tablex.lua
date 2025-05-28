@@ -2,15 +2,15 @@ table.getn = table.getn or function(a)
     return #a
 end
 
-if unpack then
-    -- Lua5.1
-    table.pack = function(...)
-        return {n = select("#", ...), ...}
-    end
-    table.unpack = unpack
-else
-    unpack = table.unpack
-end
+--if unpack then
+--    -- Lua5.1
+--    table.pack = function(...)
+--        return {n = select("#", ...), ...}
+--    end
+--    table.unpack = unpack
+--else
+--    unpack = table.unpack
+--end
 
 function table.unpackx(arg, n, i)
     i = i or 1

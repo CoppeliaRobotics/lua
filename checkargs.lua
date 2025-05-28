@@ -142,7 +142,7 @@ function checkargs.checkargsEx(opts, types, ...)
         local t = types[i]
         -- fill default value:
         if arg.n < i and t.default ~= nil then
-            if t.default == NIL then
+            if t.default == checkargs.NIL then
                 arg[i] = nil
             else
                 arg[i] = t.default
@@ -178,7 +178,6 @@ setmetatable(checkargs, {
 
 function checkargs.unittest()
     sim = sim or {}
-    local checkarg = checkargs.checkarg
 
     function f(...)
         local i, s, ti = checkargs({
@@ -209,7 +208,7 @@ function checkargs.unittest()
     end
 
     function w(...)
-        local i1, cb, i2 = checkargs({{type = 'int'}, {type = 'func', nullable = true, default = NIL}, {type = 'int', default = 0}}, ...)
+        local i1, cb, i2 = checkargs({{type = 'int'}, {type = 'func', nullable = true, default = checkargs.NIL}, {type = 'int', default = 0}}, ...)
     end
 
     function v(...)
@@ -270,7 +269,7 @@ function checkargs.unittest()
     function m(...)
         local a, b, c = checkargs({
             {type = 'int', default = 1},
-            {type = 'table', default = NIL, nullable = true},
+            {type = 'table', default = checkargs.NIL, nullable = true},
             {type = 'int', default = 2},
         }, ...)
         return a, b, c
