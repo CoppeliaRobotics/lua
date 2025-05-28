@@ -151,7 +151,7 @@ if arg and #arg == 1 and arg[1] == 'test' then
     if lfs.pathsep() == '\\' then
         assert(lfs.pathsanitize('c:\\tmp\\foo.txt') == 'c:\\tmp\\foo.txt')
         assert(lfs.pathsanitize('c:/tmp/foo.txt') == 'c:\\tmp\\foo.txt')
-        assert(lfs.pathjoin('c:', 'tmp', 'foo') == 'c:\\tmp\\foo.txt')
+        assert(lfs.pathjoin('c:', 'tmp', 'foo.txt') == 'c:\\tmp\\foo.txt')
         require 'tablex'
         assert(table.eq({lfs.pathsplit 'c:\\tmp\\foo.txt'}, {'c:\\tmp', 'foo.txt'}))
         assert(table.eq(lfs.pathparts 'c:\\tmp\\foo.txt', {'c:', 'tmp', 'foo.txt'}))
