@@ -92,7 +92,7 @@ function checkargs.checkarg.union(v, t)
     local allowedTypes, explanation, sep = '', '', ''
     for i, ti in ipairs(t.union) do
         allowedTypes = allowedTypes .. sep .. ti.type
-        local valid, err = checkarg[ti.type](v, ti)
+        local valid, err = checkargs.checkarg[ti.type](v, ti)
         if valid then
             return true, nil
         else
@@ -159,12 +159,7 @@ function checkargs.checkargsEx(opts, types, ...)
             end
             local ok, err = checkFunc(arg[i], t)
             if not ok then
-                error(
-                    fn ..
-                        string.format(
-                            'argument %d %s', i, err or string.format('must be a %s', t.type)
-                        ), errorLevel
-                )
+                error(fn .. string.format('argument %d %s', i, err or string.format('must be a %s', t.type)), errorLevel)
             end
         end
     end
@@ -183,6 +178,7 @@ setmetatable(checkargs, {
 
 function checkargs.unittest()
     sim = sim or {}
+    local checkarg = checkargs.checkarg
 
     function f(...)
         local i, s, ti = checkargs({
