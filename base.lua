@@ -117,12 +117,20 @@ function import(moduleName, ...)
         end
         _G[moduleName] = mod
     elseif #names == 1 and names[1] == '*' then
+        -- modules can optionally define a __all key and/or a __all_exclude key
+        -- to specify which names to [not] import when doing a star-import
         local allNames = mod.__all or table.keys(mod)
+        local excludeNames = {}
+        for _, name in ipairs(mod.__all_exclude or {'unittest'}) do
+            excludeNames[name] = true
+        end
         for _, name in ipairs(allNames) do
-            if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
-                addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. name .. '"')
+            if not excludeNames[name] then
+                if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
+                    addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. name .. '"')
+                end
+                _G[name] = mod[name]
             end
-            _G[name] = mod[name]
         end
     else
         for _, name in ipairs(names) do
