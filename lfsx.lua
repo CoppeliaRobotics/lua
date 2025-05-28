@@ -124,15 +124,26 @@ end
 function lfs.makedirs(path, exist_ok)
     exist_ok = exist_ok or false
 
-    local sep = ''
-    if lfs.ispathabsolute(path) then sep = lfs.pathsep() end
+    local sep = lfs.pathsep()
+    local parts = lfs.pathparts(path)
+    local current = ""
 
-    local current = sep
-    for _, part in ipairs(lfs.pathparts(path)) do
-        if current == '' then
-            current = part
+    -- Windows drive letters or UNC paths need special handling
+    if lfs.ispathabsolute(path) then
+        -- If the first part is a drive letter or UNC root, preserve it
+        if parts[1]:match("^[A-Za-z]:$") or parts[1]:match("^\\\\") then
+            current = parts[1]
+            table.remove(parts, 1)
+        elseif sep == "/" then
+            current = sep
+        end
+    end
+
+    for _, part in ipairs(parts) do
+        if current == "" or current:sub(-1) == sep then
+            current = current .. part
         else
-            current = current .. lfs.pathsep() .. part
+            current = current .. sep .. part
         end
 
         if not lfs.isdir(current) then
@@ -144,6 +155,18 @@ function lfs.makedirs(path, exist_ok)
             error('Path exists and is not a directory: ' .. current)
         end
     end
+end
+
+function lfs.gettempdir()
+    local temp = os.getenv("TMP") or os.getenv("TEMP") or os.getenv("TMPDIR")
+    if not temp and package.config:sub(1,1) == '/' then
+        -- On Unix, fallback to /tmp
+        temp = "/tmp"
+    elseif not temp then
+        -- On Windows, fallback to C:\Temp
+        temp = "C:\\Temp"
+    end
+    return temp
 end
 
 if arg and #arg == 1 and arg[1] == 'test' then
@@ -172,6 +195,17 @@ if arg and #arg == 1 and arg[1] == 'test' then
         assert(not lfs.ispathabsolute 'bin/foo')
         assert(lfs.pathsanitize '/usr/bin/foo', '/usr/bin/foo')
     end
+    local tmp1 = lfs.pathjoin(lfs.gettempdir(), 'foo')
+    local tmp = lfs.pathjoin(tmp1, 'bar', 'baz')
+    if lfs.isdir(tmp) then
+        print('warning: ' .. tmp .. ' already exists')
+        print('removing ' .. tmp1 .. ' first...')
+        lfs.rmdir_r(tmp1)
+    end
+    assert(not lfs.isdir(tmp))
+    lfs.makedirs(tmp)
+    assert(lfs.isdir(tmp))
+    lfs.rmdir_r(tmp1)
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
