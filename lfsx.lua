@@ -175,7 +175,6 @@ if arg and #arg == 1 and arg[1] == 'test' then
         assert(lfs.pathsanitize('c:\\tmp\\foo.txt') == 'c:\\tmp\\foo.txt')
         assert(lfs.pathsanitize('c:/tmp/foo.txt') == 'c:\\tmp\\foo.txt')
         assert(lfs.pathjoin('c:', 'tmp', 'foo.txt') == 'c:\\tmp\\foo.txt')
-        require 'tablex'
         assert(table.eq({lfs.pathsplit 'c:\\tmp\\foo.txt'}, {'c:\\tmp', 'foo.txt'}))
         assert(table.eq(lfs.pathparts 'c:\\tmp\\foo.txt', {'c:', 'tmp', 'foo.txt'}))
         assert(lfs.basename 'c:\\tmp\\foo.txt' == 'foo.txt')
@@ -185,7 +184,6 @@ if arg and #arg == 1 and arg[1] == 'test' then
         assert(not lfs.ispathabsolute 'tmp\\foo.txt')
         assert(lfs.pathsanitize 'c:/tmp/foo.txt', 'c:\\tmp\\foo.txt')
     else
-        require 'tablex'
         assert(table.eq({lfs.pathsplit '/usr/bin/foo'}, {'/usr/bin', 'foo'}))
         assert(table.eq(lfs.pathparts '/usr/bin/foo', {'/', 'usr', 'bin', 'foo'}))
         assert(lfs.pathjoin('/usr', 'bin', 'foo') == '/usr/bin/foo')
