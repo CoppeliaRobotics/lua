@@ -1,4 +1,4 @@
-local sim = table.update({}, require 'sim')
+local sim = table.update({}, require 'sim-1')
 
 _removeLazyLoaders()
 
