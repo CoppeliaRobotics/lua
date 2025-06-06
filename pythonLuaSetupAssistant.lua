@@ -1,7 +1,7 @@
 function setupForLang(lang)
-    sim.setNamedStringParam('simCmd.preferredSandboxLang', lang)
+    sim.setStringProperty(sim.handle_app, 'namedParam.simCmd.preferredSandboxLang', lang)
     simCmd.setSelectedScript(-1, lang)
-    sim.setStringParam(sim.stringparam_sandboxlang, lang)
+    sim.setStringProperty(sim.handle_app, 'sandboxLang', lang)
     simUI.destroy(ui)
     ui = nil
 end
@@ -15,7 +15,7 @@ function setupForPython()
 end
 
 local function main()
-    local prefLang = sim.getStringParam(sim.stringparam_sandboxlang)
+    local prefLang = sim.getStringProperty(sim.handle_app, 'sandboxLang')
     if prefLang ~= '' then
         -- already set
         return
@@ -25,13 +25,13 @@ local function main()
     simUI = require 'simUI'
     simCmd = require 'simCmd'
 
-    local resourcesDir = sim.getStringParam(sim.stringparam_resourcesdir)
+    local resourcesDir = sim.getStringProperty(sim.handle_app, 'resourcePath')
     local imagesDir = resourcesDir .. '/manual/en/images/usedByScripts/'
 
     local imgStyle =
         'background-color: white; border: 1px solid white; border-radius: 8px; padding-top: 100px;'
     local function imgSize(w, h)
-        local platform = sim.getInt32Param(sim.intparam_platform)
+        local platform = sim.getIntProperty(sim.handle_app, 'platform')
         if platform == 1 then
             return ''
         else
@@ -40,7 +40,7 @@ local function main()
         end
     end
 
-    local v = sim.getInt32Param(sim.intparam_program_full_version)
+    local v = sim.getIntProperty(sim.handle_app, 'productVersionNb')
     v = table.join({v // 1000000, v // 10000 % 100, v // 100 % 100}, '.')
     ui = simUI.create(
              [[<ui closeable="true" title="Welcome to CoppeliaSim ]] .. v .. [[" modal="true">
