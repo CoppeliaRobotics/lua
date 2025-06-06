@@ -2,8 +2,16 @@
 -- The very first API without namespace (e.g. simGetObjectHandle) is only
 -- included if 'supportOldApiNotation' is true in 'usrset.txt'
 
-local sim = _S.sim
-_S.sim = nil
+local sim = _S.internalApi.sim
+for k, v in pairs(_S.internalApi.sim1) do
+    sim[k] = v
+end
+if sim.getBoolProperty(sim.handle_app, 'supportOldApiNotation') and (sim.getIntProperty(sim.getScript(sim.handle_self), 'scriptType') ~= sim.scripttype_sandbox) then
+    for k, v in pairs(_S.internalApi.sim0) do
+        _G[k] = v
+    end
+end
+_S.internalApi = nil
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
