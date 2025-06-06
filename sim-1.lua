@@ -125,27 +125,12 @@ end
 _S.registerScriptFuncHookOrig = sim.registerScriptFuncHook
 sim.registerScriptFuncHook = _S.registerScriptFuncHook
 
-function math.random2(lower, upper)
-    -- same as math.random, but each script has its own generator
-    local r = sim.getRandom()
-    if lower then
-        local b = 1
-        local d
-        if upper then
-            b = lower
-            d = upper - b
-        else
-            d = lower - b
-        end
-        local e = d / (d + 1)
-        r = b + math.floor(r * d / e)
+function sim.getRandom(seed)
+    if seed then
+        auxfunc('randseed', seed)
+    else
+        return auxFunc('rand')
     end
-    return r
-end
-
-function math.randomseed2(seed)
-    -- same as math.randomseed, but each script has its own generator
-    sim.getRandom(seed)
 end
 
 function sim.yawPitchRollToAlphaBetaGamma(...)

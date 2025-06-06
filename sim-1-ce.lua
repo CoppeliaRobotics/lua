@@ -2,6 +2,12 @@ local codeEditorInfos = require('sim-ce-x')
 
 -- When removing following, do not forget to add it to zmqRemoteApi/clients/cpp/sim-deprecated.* for backward compatibility!
 local toDeprecateSoon = [[
+bool result = sim.getRealTimeSimulation()
+int result = sim.getIsRealTimeSimulation()
+float yawAngle, float pitchAngle, float rollAngle = sim.alphaBetaGammaToYawPitchRoll(float alphaAngle, float betaAngle, float gammaAngle)
+float alphaAngle, float betaAngle, float gammaAngle = sim.yawPitchRollToAlphaBetaGamma(float yawAngle, float pitchAngle, float rollAngle)
+string[] tags = sim.getMatchingPersistentDataTags(string pattern)
+float randomNumber = sim.getRandom(int seed=nil)
 sim.clearFloatSignal(string signalName)
 sim.clearInt32Signal(string signalName)
 sim.clearStringSignal(string signalName)

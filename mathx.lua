@@ -31,3 +31,26 @@ math.sign = math.sign or function(x)
         return -1
     end
 end
+
+function math.random2(lower, upper)
+    -- same as math.random, but each script has its own generator
+    local r = auxFunc('rand')
+    if lower then
+        local b = 1
+        local d
+        if upper then
+            b = lower
+            d = upper - b
+        else
+            d = lower - b
+        end
+        local e = d / (d + 1)
+        r = b + math.floor(r * d / e)
+    end
+    return r
+end
+
+function math.randomseed2(seed)
+    -- same as math.randomseed, but each script has its own generator
+    auxFunc('randseed', seed)
+end
