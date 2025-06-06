@@ -104,6 +104,11 @@ function checkargs.checkarg.union(v, t)
     return false, 'must be any of: ' .. allowedTypes .. '; but ' .. explanation
 end
 
+function checkargs.getdefault(t)
+    if t.default_nil == true then return checkargs.NIL end
+    return t.default
+end
+
 function checkargs.checkargsEx(opts, types, ...)
     -- level offset at which we should output the error:
     opts.level = opts.level or 0
@@ -123,11 +128,9 @@ function checkargs.checkargsEx(opts, types, ...)
     -- check how many arguments are required (default arguments must come last):
     local minArgs = 0
     for i = 1, #types do
-        if minArgs < (i - 1) and types[i].default == nil then
-            error(
-                'checkargs: bad types spec: non-default arg cannot follow a default arg', errorLevel
-            )
-        elseif types[i].default == nil then
+        if minArgs < (i - 1) and checkargs.getdefault(types[i]) == nil then
+            error('checkargs: bad types spec: non-default arg cannot follow a default arg', errorLevel)
+        elseif checkargs.getdefault(types[i]) == nil then
             minArgs = minArgs + 1
         end
     end
@@ -141,12 +144,11 @@ function checkargs.checkargsEx(opts, types, ...)
     for i = 1, #types do
         local t = types[i]
         -- fill default value:
-        if arg.n < i and t.default ~= nil then
-            if t.default_nil == true then t.default = checkargs.NIL end
-            if t.default == checkargs.NIL then
+        if arg.n < i and checkargs.getdefault(t) ~= nil then
+            if checkargs.getdefault(t) == checkargs.NIL then
                 arg[i] = nil
             else
-                arg[i] = t.default
+                arg[i] = checkargs.getdefault(t)
             end
         end
         -- nil is ok if field is nullable:
