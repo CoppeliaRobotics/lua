@@ -7,16 +7,20 @@ base64 = require('base64')
 
 require('base-ce')
 
-local l = auxFunc('getfiles', sim.getStringParam(sim.stringparam_luadir), '*-ce', 'lua')
+local l = auxFunc('getfiles', sim.getStringProperty(sim.handle_app, 'luaPath'), '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
 _setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
     sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")
-    if not sim.getBoolParam(sim.boolparam_headless) then
+    if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
         require('simURLDrop')
-        if not sim.getNamedBoolParam("pythonSandboxInitFailed") then
+        local p = sim.getStringProperty(sim.handle_app, 'namedParam.pythonSandboxInitFailed', {noError = true})
+        if p then
+            p = string.lower(p)
+        end
+        if p ~= 'true' then
             require('pythonLuaSetupAssistant')
         end
     end

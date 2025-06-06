@@ -1,7 +1,6 @@
 local sim = _S.internalApi.sim
-_S.internalApi = nil
 
-_removeLazyLoaders()
+--_removeLazyLoaders()
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator

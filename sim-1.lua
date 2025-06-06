@@ -11,7 +11,6 @@ if sim.getBoolProperty(sim.handle_app, 'supportOldApiNotation') and (sim.getIntP
         _G[k] = v
     end
 end
-_S.internalApi = nil
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
