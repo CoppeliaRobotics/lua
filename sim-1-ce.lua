@@ -2,6 +2,11 @@ local codeEditorInfos = require('sim-ce-x')
 
 -- When removing following, do not forget to add it to zmqRemoteApi/clients/cpp/sim-deprecated.* for backward compatibility!
 local toDeprecateSoon = [[
+any[] copy = sim.copyTable(any[] original)
+map copy = sim.copyTable(map original)
+float[] configs = sim.getAlternateConfigs(int[] jointHandles, float[] inputConfig, int tipHandle=-1, float[] lowLimits=nil, float[] ranges=nil)
+bool success, any value = sim.executeLuaCode(string theCode)
+int[] objs = sim.getObjectsWithTag(string tagName, bool justModels=false)
 bool result = sim.getRealTimeSimulation()
 int result = sim.getIsRealTimeSimulation()
 float yawAngle, float pitchAngle, float rollAngle = sim.alphaBetaGammaToYawPitchRoll(float alphaAngle, float betaAngle, float gammaAngle)

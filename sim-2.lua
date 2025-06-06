@@ -120,35 +120,8 @@ function sim.getQuaternionInverse(q)
     return {-q[1], -q[2], -q[3], q[4]}
 end
 
-function sim.getObjectsWithTag(tagName, justModels)
-    local retObjs = {}
-    local objs = sim.getObjectsInTree(sim.handle_scene)
-    for i = 1, #objs, 1 do
-        if (not justModels) or ((sim.getModelProperty(objs[i]) & sim.modelproperty_not_model) == 0) then
-            local dat = sim.readCustomDataTags(objs[i])
-            for j = 1, #dat, 1 do
-                if dat[j] == tagName then
-                    retObjs[#retObjs + 1] = objs[i]
-                    break
-                end
-            end
-        end
-    end
-    return retObjs
-end
-
-function sim.executeLuaCode(theCode)
-    local f = loadstring(theCode)
-    if f then
-        local a, b = pcall(f)
-        return a, b
-    else
-        return false, 'compilation error'
-    end
-end
-
 function sim.fastIdleLoop(enable)
-    local data = sim.readCustomStringData(sim.handle_app, '__IDLEFPSSTACKSIZE__')
+    local data = sim.getBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
     local stage = 0
     local defaultIdleFps
     if data and #data > 0 then
@@ -156,7 +129,7 @@ function sim.fastIdleLoop(enable)
         stage = data[1]
         defaultIdleFps = data[2]
     else
-        defaultIdleFps = sim.getInt32Param(sim.intparam_idle_fps)
+        defaultIdleFps = sim.getIntProperty(sim.handle_app, 'idleFps')
     end
     if enable then
         stage = stage + 1
@@ -164,13 +137,11 @@ function sim.fastIdleLoop(enable)
         if stage > 0 then stage = stage - 1 end
     end
     if stage > 0 then
-        sim.setInt32Param(sim.intparam_idle_fps, 0)
+        sim.setIntProperty(sim.handle_app, 'idleFps', 0)
     else
-        sim.setInt32Param(sim.intparam_idle_fps, defaultIdleFps)
+        sim.setIntProperty(sim.handle_app, 'idleFps', defaultIdleFps)
     end
-    sim.writeCustomStringData(
-        sim.handle_app, '__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps})
-    )
+    sim.setBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
 end
 
 function sim.getLoadedPlugins()
@@ -193,27 +164,10 @@ function sim.isPluginLoaded(pluginName)
     local moduleName = ''
     while moduleName do
         moduleName = sim.getPluginName(index)
-        if moduleName == pluginName then return (true) end
+        if moduleName == pluginName then return true end
         index = index + 1
     end
     return false
-end
-
-function sim.loadPlugin(name)
-    -- legacy plugins
-    local path = sim.getStringParam(sim.stringparam_application_path)
-    local plat = sim.getInt32Param(sim.intparam_platform)
-    local windows, mac, linux = 0, 1, 2
-    if plat == windows then
-        path = path .. '\\simExt' .. name .. '.dll'
-    elseif plat == mac then
-        path = path .. '/libsimExt' .. name .. '.dylib'
-    elseif plat == linux then
-        path = path .. '/libsimExt' .. name .. '.so'
-    else
-        error('unknown platform: ' .. plat)
-    end
-    return sim.loadModule(path, name)
 end
 
 function sim.getUserVariables()
@@ -232,15 +186,6 @@ function sim.getUserVariables()
     ng.H = nil
     ng.restart = nil
     return ng
-end
-
-function sim.getMatchingPersistentDataTags(...)
-    local pattern = checkargs({{type = 'string'}}, ...)
-    local result = {}
-    for index, value in ipairs(sim.getPersistentDataTags()) do
-        if value:match(pattern) then result[#result + 1] = value end
-    end
-    return result
 end
 
 function sim.throttle(t, func, ...)
@@ -338,114 +283,6 @@ function sim.cancelScheduledExecution(id)
         pq = _S.scheduler.rtpq
     end
     return pq:cancel(function(item) return item.id == id end)
-end
-
-function sim.getAlternateConfigs(...)
-    local jointHandles, inputConfig, tipHandle, lowLimits, ranges = checkargs({
-        {type = 'table', item_type = 'int'},
-        {type = 'table', item_type = 'float'},
-        {type = 'int', default = -1},
-        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
-        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
-    }, ...)
-
-    if #jointHandles < 1 or #jointHandles ~= #inputConfig or
-        (lowLimits and #jointHandles ~= #lowLimits) or (ranges and #jointHandles ~= #ranges) then
-        error("Bad table size.")
-    end
-
-    local lb = sim.setStepping(true)
-    local initConfig = {}
-    local x = {}
-    local confS = {}
-    local err = false
-    for i = 1, #jointHandles, 1 do
-        initConfig[i] = sim.getJointPosition(jointHandles[i])
-        local c, interv = sim.getJointInterval(jointHandles[i])
-        local t = sim.getJointType(jointHandles[i])
-        local sp = sim.getObjectFloatParam(jointHandles[i], sim.jointfloatparam_screw_pitch)
-        if t == sim.joint_revolute and not c then
-            if sp == 0 then
-                if inputConfig[i] - math.pi * 2 >= interv[1] or inputConfig[i] + math.pi * 2 <=
-                    interv[1] + interv[2] then
-                    -- We use the low and range values from the joint's settings
-                    local y = inputConfig[i]
-                    while y - math.pi * 2 >= interv[1] do y = y - math.pi * 2 end
-                    x[i] = {y, interv[1] + interv[2]}
-                end
-            end
-        end
-        if x[i] then
-            if lowLimits and ranges then
-                -- the user specified low and range values. Use those instead:
-                local l = lowLimits[i]
-                local r = ranges[i]
-                if r ~= 0 then
-                    if r > 0 then
-                        if l < interv[1] then
-                            -- correct for user bad input
-                            r = r - (interv[1] - l)
-                            l = interv[1]
-                        end
-                        if l > interv[1] + interv[2] then
-                            -- bad user input. No alternative position for this joint
-                            x[i] = {inputConfig[i], inputConfig[i]}
-                            err = true
-                        else
-                            if l + r > interv[1] + interv[2] then
-                                -- correct for user bad input
-                                r = interv[1] + interv[2] - l
-                            end
-                            if inputConfig[i] - math.pi * 2 >= l or inputConfig[i] + math.pi * 2 <=
-                                l + r then
-                                local y = inputConfig[i]
-                                while y < l do y = y + math.pi * 2 end
-                                while y - math.pi * 2 >= l do
-                                    y = y - math.pi * 2
-                                end
-                                x[i] = {y, l + r}
-                            else
-                                -- no alternative position for this joint
-                                x[i] = {inputConfig[i], inputConfig[i]}
-                                err = (inputConfig[i] < l) or (inputConfig[i] > l + r)
-                            end
-                        end
-                    else
-                        r = -r
-                        l = inputConfig[i] - r * 0.5
-                        if l < x[i][1] then l = x[i][1] end
-                        local u = inputConfig[i] + r * 0.5
-                        if u > x[i][2] then u = x[i][2] end
-                        x[i] = {l, u}
-                    end
-                end
-            end
-        else
-            -- there's no alternative position for this joint
-            x[i] = {inputConfig[i], inputConfig[i]}
-        end
-        confS[i] = x[i][1]
-    end
-    local configs = {}
-    if not err then
-        for i = 1, #jointHandles, 1 do sim.setJointPosition(jointHandles[i], inputConfig[i]) end
-        local desiredPose = 0
-        if tipHandle ~= -1 then desiredPose = sim.getObjectMatrix(tipHandle) end
-        configs =
-            _S.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, 1, tipHandle)
-    end
-
-    for i = 1, #jointHandles, 1 do sim.setJointPosition(jointHandles[i], initConfig[i]) end
-    if next(configs) ~= nil then
-        configs = Matrix:fromtable(configs)
-        configs = configs:data()
-    end
-    sim.setStepping(lb)
-    return configs
-end
-
-function sim.copyTable(t)
-    return table.deepcopy(t)
 end
 
 function sim.closePath(...)
@@ -599,38 +436,23 @@ end]]
 
         retVal = sim.createDummy(0.04, {0, 0.68, 0.47, 0, 0, 0, 0, 0, 0, 0, 0, 0})
         sim.setObjectAlias(retVal, "Path")
-        local scriptHandle
-        if sim.getBoolParam(sim.boolparam_usingscriptobjects) then
-            code = "path = require('models.path_customization-2')\n\n" .. code
-            scriptHandle = sim.createScript(sim.scripttype_customization, code)
-            sim.setObjectParent(scriptHandle, retVal)
-        else
-            scriptHandle = sim.addScript(sim.scripttype_customization)
-            code = "path = require('models.deprecated.path_customization')\n\n" .. code
-            sim.setScriptText(scriptHandle, code)
-            sim.associateScriptWithObject(scriptHandle, retVal)
-        end
-        local prop = sim.getModelProperty(retVal)
-        sim.setModelProperty(retVal, (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model) -- model
-        prop = sim.getObjectProperty(retVal)
-        sim.setObjectProperty(retVal, prop | sim.objectproperty_canupdatedna | sim.objectproperty_collapsed)
+        code = "path = require('models.path_customization-2')\n\n" .. code
+        local scriptHandle = sim.createScript(sim.scripttype_customization, code)
+        sim.setObjectParent(scriptHandle, retVal)
+        local prop = sim.getIntProperty(retVal, 'model.propertyFlags')
+        sim.setIntProperty(retVal, 'model.propertyFlags', (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model)
+        prop = sim.getIntProperty(retVal, 'objectPropertyFlags')
+        sim.setIntProperty(retVal, 'objectPropertyFlags', prop | sim.objectproperty_canupdatedna | sim.objectproperty_collapsed)
         local data = sim.packTable({ctrlPts, options, subdiv, smoothness, orientationMode, upVector})
-        sim.writeCustomStringData(retVal, "ABC_PATH_CREATION", data)
+        sim.setBufferProperty(retVal, "customData.ABC_PATH_CREATION", data)
         sim.initScript(scriptHandle)
         setYieldAllowed(fl)
     end
     return retVal
 end
 
-function sim.createCollection(arg1, arg2)
-    local retVal
-    if type(arg1) == 'string' then
-        retVal = sim._createCollection(arg1, arg2) -- for backward compatibility
-    else
-        if arg1 == nil then arg1 = 0 end
-        retVal = sim.createCollectionEx(arg1)
-    end
-    return retVal
+function sim.createCollection(arg)
+    return sim.createCollectionEx(arg or 0)
 end
 
 function sim.resamplePath(...)
@@ -771,7 +593,7 @@ function sim.changeEntityColor(...)
     end
     for i = 1, #objs, 1 do
         if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
-            local visible = sim.getObjectInt32Param(objs[i], sim.objintparam_visible)
+            local visible = sim.getBoolProperty(objs[i], 'visible')
             if visible == 1 then
                 local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
                 colorData[#colorData + 1] = {handle = objs[i], data = col, comp = colorComponent}
@@ -815,192 +637,14 @@ function sim.waitForSignal(target, sigName)
             if retVal then break end
             sim.step()
         end
-    else
-        -- Legacy signals
-        sigName = target
-        while true do
-            retVal = sim.getInt32Signal(sigName) or sim.getFloatSignal(sigName) or sim.getStringSignal(sigName)
-            if retVal then break end
-            sim.step()
-        end
     end
     return retVal
-end
-
-function sim.serialRead(...)
-    local portHandle, length, blocking, closingStr, timeout = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'bool', default = false},
-        {type = 'string', default = ''},
-        {type = 'float', default = 0},
-    }, ...)
-
-    local retVal
-    if blocking then
-        local st = sim.getSystemTime()
-        while true do
-            local data = _S.serialPortData[portHandle]
-            _S.serialPortData[portHandle] = ''
-            if #data < length then
-                local d = sim._serialRead(portHandle, length - #data)
-                if d then data = data .. d end
-            end
-            if #data >= length then
-                retVal = string.sub(data, 1, length)
-                if #data > length then
-                    data = string.sub(data, length + 1)
-                    _S.serialPortData[portHandle] = data
-                end
-                break
-            end
-            if closingStr ~= '' then
-                local s, e = string.find(data, closingStr, 1, true)
-                if e then
-                    retVal = string.sub(data, 1, e)
-                    if #data > e then
-                        data = string.sub(data, e + 1)
-                        _S.serialPortData[portHandle] = data
-                    end
-                    break
-                end
-            end
-            if sim.getSystemTime() - st >= timeout and timeout ~= 0 then
-                retVal = data
-                break
-            end
-            sim.step()
-            _S.serialPortData[portHandle] = data
-        end
-    else
-        local data = _S.serialPortData[portHandle]
-        _S.serialPortData[portHandle] = ''
-        if #data < length then
-            local d = sim._serialRead(portHandle, length - #data)
-            if d then data = data .. d end
-        end
-        if #data > length then
-            retVal = string.sub(data, 1, length)
-            data = string.sub(data, length + 1)
-            _S.serialPortData[portHandle] = data
-        else
-            retVal = data
-        end
-    end
-    return retVal
-end
-
-function sim.serialOpen(...)
-    local portString, baudRate = checkargs({{type = 'string'}, {type = 'int'}}, ...)
-
-    local retVal = sim._serialOpen(portString, baudRate)
-    if not _S.serialPortData then _S.serialPortData = {} end
-    _S.serialPortData[retVal] = ''
-    return retVal
-end
-
-function sim.serialClose(...)
-    local portHandle = checkargs({{type = 'int'}}, ...)
-
-    sim._serialClose(portHandle)
-    if _S.serialPortData then _S.serialPortData[portHandle] = nil end
 end
 
 function sim.setShapeBB(handle, size)
     local s = sim.getShapeBB(handle)
     for i = 1, 3, 1 do if math.abs(s[i]) > 0.00001 then s[i] = size[i] / s[i] end end
     sim.scaleObject(handle, s[1], s[2], s[3], 0)
-end
-
-function sim.getModelBB(handle)
-    -- Undocumented function (for now)
-    local s = {}
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_max_x)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_min_x)
-    s[1] = m - n
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_max_y)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_min_y)
-    s[2] = m - n
-    local m = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_max_z)
-    local n = sim.getObjectFloatParam(handle, sim.objfloatparam_modelbbox_min_z)
-    s[3] = m - n
-    return s
-end
-
-function sim.readCustomDataBlockEx(handle, tag, options)
-    -- Undocumented function (for now)
-    options = options or {}
-    local data = sim.readCustomStringData(handle, tag)
-    if tag == '__info__' then
-        return data, 'cbor'
-    else
-        local info = sim.readCustomTableData(handle, '__info__')
-        local tagInfo = info.blocks and info.blocks[tag] or {}
-        local dataType = tagInfo.type or options.dataType
-        return data, dataType
-    end
-end
-
-function sim.writeCustomDataBlockEx(handle, tag, data, options)
-    -- Undocumented function (for now)
-    options = options or {}
-    sim.writeCustomStringData(handle, tag, data)
-    if tag ~= '__info__' and options.dataType then
-        local info = sim.readCustomTableData(handle, '__info__')
-        info.blocks = info.blocks or {}
-        info.blocks[tag] = info.blocks[tag] or {}
-        info.blocks[tag].type = options.dataType
-        sim.writeCustomTableData(handle, '__info__', info, {dataType = 'cbor'})
-    end
-end
-
-function sim.readCustomTableData(...)
-    local handle, tagName, options = checkargs({
-        {type = 'int'},
-        {type = 'string'},
-        {type = 'table', default = {}},
-    }, ...)
-    local data, dataType = sim.readCustomDataBlockEx(handle, tagName)
-    if data == nil or #data == 0 then
-        data = {}
-    else
-        if isbuffer(data) then
-            data = tostring(data)
-        end
-        if dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
-            local data0 = data
-            data = cbor.decode(data0)
-            if type(data) ~= 'table' and tagName == '__info__' then
-                -- backward compat: old __info__ blocks were encoded with sim.packTable
-                data = sim.unpackTable(data0)
-            end
-        else
-            data = sim.unpackTable(data)
-        end
-    end
-    return data
-end
-
-function sim.writeCustomTableData(...)
-    local handle, tagName, theTable, options = checkargs({
-        {type = 'int'},
-        {type = 'string'},
-        {type = 'table'},
-        {type = 'table', default = {}},
-    }, ...)
-    if next(theTable) == nil then
-        sim.writeCustomDataBlockEx(handle, tagName, '', options)
-    else
-        if options.dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
-            theTable = cbor.encode(theTable)
-        else
-            options.dataType = options.dataType or 'table'
-            theTable = sim.packTable(theTable)
-        end
-        sim.writeCustomDataBlockEx(handle, tagName, theTable, options)
-    end
 end
 
 function sim.getProperty(target, pname, opts)
@@ -1194,22 +838,6 @@ function sim.getObjectFromUid(path, options)
     return sim._getObjectFromUid(path, option)
 end
 
-function sim.getObjectHandle(path, options)
-    options = options or {}
-    local proxy = -1
-    local index = -1
-    local option = 0
-    if options.proxy then proxy = options.proxy end
-    if options.index then index = options.index end
-    if options.noError then option = 1 end
-    local h = sim._getObjectHandle(path, index, proxy, option)
-    local c = string.sub(path, 1, 1)
-    if c ~= '.' and c ~= ':' and c ~= '/' then
-        sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, "sim.getObjectHandle is deprecated. Use sim.getObject instead.")
-    end
-    return h
-end
-
 function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
     if handle == baseHandle then return '.' end
 
@@ -1236,7 +864,7 @@ function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
     for i = 1, math.min(#path, #basePath) do
         if path[i] == basePath[i] then
             commonAncestor = path[i]
-            if sim.getModelProperty(path[i]) & sim.modelproperty_not_model == 0 then
+            if sim.getBoolProperty(path[i], 'modelBase') then
                 commonAncestorModel = path[i]
             end
         else
@@ -1262,7 +890,7 @@ function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
         local p = getPath(handle, baseHandle)
         p = filter(
                 function(h)
-                return sim.getModelProperty(h) & sim.modelproperty_not_model == 0 or h == p[#p]
+                return sim.getBoolProperty(h, 'modelBase') or h == p[#p]
             end, p
             )
         return (options.noDot and '' or './') .. table.join(map(sim.getObjectAlias, p), '/')
@@ -1284,16 +912,12 @@ function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
         end
     else
         local p_bh_cam = sim.getObjectAliasRelative(commonAncestorModel, baseHandle, aliasOptions)
-        local p_cam_h = sim.getObjectAliasRelative(
-                            handle, commonAncestorModel, aliasOptions, {noDot = true}
-                        )
+        local p_cam_h = sim.getObjectAliasRelative(handle, commonAncestorModel, aliasOptions, {noDot = true} )
         if commonAncestorModel ~= -1 and p_bh_cam and p_cam_h then
             return p_bh_cam .. '/' .. p_cam_h
         end
         local p_bh_ca = sim.getObjectAliasRelative(commonAncestor, baseHandle, aliasOptions)
-        local p_ca_h = sim.getObjectAliasRelative(
-                           handle, commonAncestor, aliasOptions, {noDot = true}
-                       )
+        local p_ca_h = sim.getObjectAliasRelative(handle, commonAncestor, aliasOptions, {noDot = true} )
         if p_bh_ca and p_ca_h then return p_bh_ca .. '/' .. p_ca_h end
     end
 end
@@ -1312,51 +936,14 @@ end
 
 function sim.getSimulationStopping()
     local s = sim.getSimulationState()
-    return s == sim.simulation_stopped or s == sim.simulation_advancing_abouttostop or s ==
-               sim.simulation_advancing_lastbeforestop
+    return s == sim.simulation_stopped or s == sim.simulation_advancing_abouttostop or s == sim.simulation_advancing_lastbeforestop
 end
 
-sim.getThreadExistRequest = sim.getSimulationStopping
-
-function sim.getNamedBoolParam(...)
-    local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(_S.parseBool, sim.getNamedStringParam(name))
-    if r then return v end
-end
-
-function sim.getNamedFloatParam(...)
-    local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(_S.parseFloat, sim.getNamedStringParam(name))
-    if r then return v end
-end
-
-function sim.getNamedInt32Param(...)
-    local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(_S.parseInt, sim.getNamedStringParam(name))
-    if r then return v end
-end
-
-function sim.setNamedBoolParam(...)
-    local name, value = checkargs({{type = 'string'}, {type = 'bool'}}, ...)
-    return sim.setNamedStringParam(name, _S.paramValueToString(value))
-end
-
-function sim.setNamedFloatParam(...)
-    local name, value = checkargs({{type = 'string'}, {type = 'float'}}, ...)
-    return sim.setNamedStringParam(name, _S.paramValueToString(value))
-end
-
-function sim.setNamedInt32Param(...)
-    local name, value = checkargs({{type = 'string'}, {type = 'int'}}, ...)
-    return sim.setNamedStringParam(name, _S.paramValueToString(value))
-end
-
-sim.getStringNamedParam = sim.getNamedStringParam
-sim.setStringNamedParam = sim.setNamedStringParam
+sim.getThreadExitRequest = sim.getSimulationStopping
 
 function sim.getSettingString(...)
     local key = checkargs({{type = 'string'}}, ...)
-    local r = sim.getNamedStringParam(key)
+    local r = sim.getStringProperty(sim.handle_app, 'namedParam.settings.' .. key, {noError = true}) --sim.getNamedStringParam(key)
     if r then return r end
     _S.systemSettings = _S.systemSettings or _S.readSystemSettings() or {}
     _S.userSettings = _S.userSettings or _S.readUserSettings() or {}
@@ -1400,10 +987,6 @@ function sim.getScriptFunctions(...)
             scriptHandle = args[1]
         end
         args[2] = nil
-    else
-        -- args[1] is a old script handle
-        scriptHandle = args[1]
-        assert(scriptHandle and pcall(sim.getScriptName, scriptHandle), 'invalid script handle')
     end
 
     -- at this point we have the script handle from every possible overload (scriptHandle)
@@ -1452,7 +1035,7 @@ function sim.removeReferencedObjects(objectHandle, tag, delayedRemoval)
     -- remove models with sim.removeModel, the rest with sim.removeObjects:
     for _, h in ipairs(refHandles) do
         if sim.isHandle(h) then
-            if sim.getModelProperty(h) & sim.modelproperty_not_model == 0 then
+            if sim.getBoolProperty(h, 'modelBase') then
                 sim.removeModel(h, delayedRemoval)
             else
                 table.insert(toRemove, h)
@@ -1486,7 +1069,7 @@ function sim.getShapeAppearance(handle, opts)
     assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
     opts = opts or {}
     local r = {}
-    if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
+    if sim.getBoolProperty(handle, 'compound') then
         r.subShapes = {}
         local subShapesCopy = sim.ungroupShape((sim.copyPasteObjects{handle})[1])
         for i, subShape in ipairs(subShapesCopy) do
@@ -1494,11 +1077,12 @@ function sim.getShapeAppearance(handle, opts)
         end
         sim.removeObjects(subShapesCopy)
     else
-        r.edges = sim.getObjectInt32Param(handle, sim.shapeintparam_edge_visibility)
-        r.wireframe = sim.getObjectInt32Param(handle, sim.shapeintparam_wireframe)
-        r.visibilityLayer = sim.getObjectInt32Param(handle, sim.objintparam_visibility_layer)
-        r.culling = sim.getObjectInt32Param(handle, sim.shapeintparam_culling)
-        r.shadingAngle = sim.getObjectFloatParam(handle, sim.shapefloatparam_shading_angle)
+        local mesh = sim.getIntArrayProperty(handle, 'meshes')[1]
+        r.edges = sim.getBoolProperty(mesh, 'showEdges')
+        r.wireframe = false
+        r.visibilityLayer = sim.getIntProperty(handle, 'layer')
+        r.culling = sim.getBoolProperty(mesh, 'culling')
+        r.shadingAngle = sim.getFloatProperty(mesh, 'shadingAngle')
         r.color = {}
         _, r.color.ambientDiffuse = sim.getShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse)
         _, r.color.specular = sim.getShapeColor(handle, nil, sim.colorcomponent_specular)
@@ -1511,7 +1095,7 @@ end
 function sim.setShapeAppearance(handle, savedData, opts)
     assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
     opts = opts or {}
-    if sim.getObjectInt32Param(handle, sim.shapeintparam_compound) > 0 then
+    if sim.getBoolProperty(handle, 'compound') then
         -- we need to temporarily detach all its children, then attach them again
         -- otherwise it will mess up poses of dynamic objects
         local tmp = sim.createDummy(0)
@@ -1541,12 +1125,12 @@ function sim.setShapeAppearance(handle, savedData, opts)
 
         return newHandle
     else
+        local mesh = sim.getIntArrayProperty(handle, 'meshes')[1]
         savedData = (savedData.subShapes or {})[1] or savedData
-        sim.setObjectInt32Param(handle, sim.shapeintparam_edge_visibility, savedData.edges)
-        sim.setObjectInt32Param(handle, sim.shapeintparam_wireframe, savedData.wireframe)
-        sim.setObjectInt32Param(handle, sim.objintparam_visibility_layer, savedData.visibilityLayer)
-        sim.setObjectInt32Param(handle, sim.shapeintparam_culling, savedData.culling)
-        sim.setObjectFloatParam(handle, sim.shapefloatparam_shading_angle, savedData.shadingAngle)
+        sim.setBoolProperty(mesh, 'showEdges', savedData.edges)
+        sim.setIntProperty(handle, 'layer', savedData.visibilityLayer)
+        sim.setBoolProperty(mesh, 'culling', savedData.culling)
+        sim.setFloatProperty(mesh, 'shadingAngle', savedData.shadingAngle)
         sim.setShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse, savedData.color.ambientDiffuse)
         sim.setShapeColor(handle, nil, sim.colorcomponent_specular, savedData.color.specular)
         sim.setShapeColor(handle, nil, sim.colorcomponent_emission, savedData.color.emission)
@@ -1587,7 +1171,7 @@ require = wrap(require, function(origRequire)
     return function (...)
         local arg = ({...})[1]
         if math.type(arg) == 'integer' and sim.isHandle(arg) and sim.getObjectType(arg) == sim.sceneobject_script then
-            local txt = sim.getObjectStringParam(arg, sim.scriptstringparam_text)
+            local txt = sim.getStringProperty(arg, 'code')
             return loadstring(tostring(txt))()
         end
         return origRequire(...)
@@ -1610,32 +1194,17 @@ function _S.readSettings(path)
 end
 
 function _S.readSystemSettings()
-    local sysDir = sim.getStringParam(sim.stringparam_systemdir)
+    local sysDir = sim.getStringProperty(sim.handle_app, 'systemPath')
     local psep = package.config:sub(1, 1)
     local usrSet = sysDir .. psep .. 'usrset.txt'
     return _S.readSettings(usrSet)
 end
 
 function _S.readUserSettings()
-    local plat = sim.getInt32Param(sim.intparam_platform)
+    local usrDir = sim.getStringProperty(sim.handle_app, 'settingsPath')
     local psep = package.config:sub(1, 1)
-    local usrSet = 'CoppeliaSim' .. psep .. 'usrset.txt'
-    local home = os.getenv('HOME')
-    if plat == 0 then -- windows
-        local appdata = os.getenv('appdata')
-        return _S.readSettings(appdata .. psep .. usrSet)
-    elseif plat == 1 then -- macos
-        return _S.readSettings(home .. psep .. '.' .. usrSet) or
-                   _S.readSettings(
-                       home .. psep .. 'Library' .. psep .. 'Preferences' .. psep .. usrSet
-                   )
-    elseif plat == 2 then -- linux
-        local xdghome = os.getenv('XDG_CONFIG_HOME') or home
-        return _S.readSettings(xdghome .. psep .. usrSet) or
-                   _S.readSettings(home .. psep .. '.' .. usrSet)
-    else
-        error('unsupported platform: ' .. plat)
-    end
+    local usrSet = usrDir .. psep .. 'usrset.txt'
+    return _S.readSettings(usrSet)
 end
 
 function _S.parseBool(v)
@@ -1703,37 +1272,6 @@ function _S.getConfig(path, dof, index)
     local retVal = {}
     for i = 1, dof, 1 do retVal[#retVal + 1] = path[(index - 1) * dof + i] end
     return retVal
-end
-
-function _S.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, index, tipHandle)
-    if index > #jointHandles then
-        if tipHandle == -1 then
-            return {table.deepcopy(confS)}
-        else
-            for i = 1, #jointHandles, 1 do
-                sim.setJointPosition(jointHandles[i], confS[i])
-            end
-            local p = sim.getObjectMatrix(tipHandle)
-            local axis, angle = sim.getRotationAxis(desiredPose, p)
-            if math.abs(angle) < 0.1 * 180 / math.pi then -- checking is needed in case some joints are dependent on others
-                return {table.deepcopy(confS)}
-            else
-                return {}
-            end
-        end
-    else
-        local c = {}
-        for i = 1, #jointHandles, 1 do c[i] = confS[i] end
-        local solutions = {}
-        while c[index] <= x[index][2] do
-            local s = _S.loopThroughAltConfigSolutions(
-                          jointHandles, desiredPose, c, x, index + 1, tipHandle
-                      )
-            for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
-            c[index] = c[index] + math.pi * 2
-        end
-        return solutions
-    end
 end
 
 function _S.comparableTables(t1, t2)
@@ -1850,7 +1388,6 @@ sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch', '_S.sysCallEx_beforeInstanceSwitch', false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScriptSuspend', false)
 ----------------------------------------------------------
-
 
 require('sim.Object').extend(sim)
 

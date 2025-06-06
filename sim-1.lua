@@ -675,7 +675,7 @@ end]]
         prop = sim.getObjectProperty(retVal)
         sim.setObjectProperty(retVal, prop | sim.objectproperty_canupdatedna | sim.objectproperty_collapsed)
         local data = sim.packTable({ctrlPts, options, subdiv, smoothness, orientationMode, upVector})
-        sim.writeCustomStringData(retVal, "ABC_PATH_CREATION", data)
+        sim.setBufferProperty(retVal, "customData.ABC_PATH_CREATION", data)
         sim.initScript(scriptHandle)
         setYieldAllowed(fl)
     end
