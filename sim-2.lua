@@ -543,6 +543,7 @@ function _S.getConfigDistance(confA, confB, metric, types)
 end
 
 function sim.getPathLengths(...)
+    local simEigen = require('simEigen')
     local path, dof, cb = checkargs({
         {type = 'table', item_type = 'float', size = '2..*'}, {type = 'int'},
         {type = 'any', default_nil = true, nullable = true},
@@ -551,7 +552,7 @@ function sim.getPathLengths(...)
     if dof < 1 or (confCnt < 2) then error("Bad table size.") end
     local distancesAlongPath = {0}
     local totDist = 0
-    local pM = Matrix(confCnt, dof, path)
+    local pM = simEigen.Matrix(confCnt, dof, path)
     local metric = {}
     local tt = {}
     for i = 1, dof, 1 do
@@ -638,6 +639,85 @@ function sim.waitForSignal(target, sigName)
         end
     end
     return retVal
+end
+
+function sim.serialRead(...)
+    local portHandle, length, blocking, closingStr, timeout = checkargs({
+        {type = 'int'},
+        {type = 'int'},
+        {type = 'bool', default = false},
+        {type = 'string', default = ''},
+        {type = 'float', default = 0},
+    }, ...)
+
+    local retVal
+    if blocking then
+        local st = sim.getSystemTime()
+        while true do
+            local data = _S.serialPortData[portHandle]
+            _S.serialPortData[portHandle] = ''
+            if #data < length then
+                local d = sim._serialRead(portHandle, length - #data)
+                if d then data = data .. d end
+            end
+            if #data >= length then
+                retVal = string.sub(data, 1, length)
+                if #data > length then
+                    data = string.sub(data, length + 1)
+                    _S.serialPortData[portHandle] = data
+                end
+                break
+            end
+            if closingStr ~= '' then
+                local s, e = string.find(data, closingStr, 1, true)
+                if e then
+                    retVal = string.sub(data, 1, e)
+                    if #data > e then
+                        data = string.sub(data, e + 1)
+                        _S.serialPortData[portHandle] = data
+                    end
+                    break
+                end
+            end
+            if sim.getSystemTime() - st >= timeout and timeout ~= 0 then
+                retVal = data
+                break
+            end
+            sim.step()
+            _S.serialPortData[portHandle] = data
+        end
+    else
+        local data = _S.serialPortData[portHandle]
+        _S.serialPortData[portHandle] = ''
+        if #data < length then
+            local d = sim._serialRead(portHandle, length - #data)
+            if d then data = data .. d end
+        end
+        if #data > length then
+            retVal = string.sub(data, 1, length)
+            data = string.sub(data, length + 1)
+            _S.serialPortData[portHandle] = data
+        else
+            retVal = data
+        end
+    end
+    return retVal
+end
+
+function sim.serialOpen(...)
+    local portString, baudRate = checkargs({{type = 'string'}, {type = 'int'}}, ...)
+
+    local retVal = sim._serialOpen(portString, baudRate)
+    if not _S.serialPortData then _S.serialPortData = {} end
+    _S.serialPortData[retVal] = ''
+    return retVal
+end
+
+function sim.serialClose(...)
+    local portHandle = checkargs({{type = 'int'}}, ...)
+
+    sim._serialClose(portHandle)
+    if _S.serialPortData then _S.serialPortData[portHandle] = nil end
 end
 
 function sim.setShapeBB(handle, size)
