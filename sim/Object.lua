@@ -184,11 +184,11 @@ return {
                     sim.getApiInfo = {type = 'script', }
                     sim.getExtensionString = {}
                     sim.getObject = {}
-                    sim.getObjectMatrix = {}
-                    sim.getObjectOrientation = {}
-                    sim.getObjectPose = {}
-                    sim.getObjectPosition = {}
-                    sim.getObjectQuaternion = {}
+                    sim.getObjectMatrix = {rename = 'getMatrix', }
+                    sim.getObjectOrientation = {rename = 'getOrientation', }
+                    sim.getObjectPose = {rename = 'getPose', }
+                    sim.getObjectPosition = {rename = 'getPosition', }
+                    sim.getObjectQuaternion = {rename = 'getQuaternion', }
                     sim.getObjectsInTree = {}
                     sim.getReferencedHandles = {}
                     sim.getReferencedHandle = {}
@@ -215,11 +215,11 @@ return {
                     sim.saveModel = {}
                     sim.saveScene = {type = 'scene', }
                     sim.scaleObject = {}
-                    sim.setObjectMatrix = {}
-                    sim.setObjectOrientation = {}
-                    sim.setObjectPose = {}
-                    sim.setObjectPosition = {}
-                    sim.setObjectQuaternion = {}
+                    sim.setObjectMatrix = {rename = 'setMatrix', }
+                    sim.setObjectOrientation = {rename = 'setOrientation', }
+                    sim.setObjectPose = {rename = 'setPose', }
+                    sim.setObjectPosition = {rename = 'setPosition', }
+                    sim.setObjectQuaternion = {rename = 'setQuaternion', }
                     sim.setReferencedHandles = {}
                     sim.setShapeBB = {}
                     sim.subtractObjectFromOctree = {type = 'ocTree', }
@@ -274,10 +274,11 @@ return {
                     if not t and obj.__handle == sim.handle_scene then t = 'scene' end
                     if not t and obj.__handle == sim.handle_app then t = 'app' end
                     obj.__methods = {}
-                    for method, info in pairs(methods) do
+                    for apiFunc, info in pairs(methods) do
                         if (info.type or t) == t then
+                            local method = info.rename or apiFunc
                             obj[method] = function(self, ...)
-                                return sim[method](self.__handle, ...)
+                                return sim[apiFunc](self.__handle, ...)
                             end
                             obj.__methods[method] = obj[method]
                         end
