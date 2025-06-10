@@ -958,22 +958,14 @@ function getFreePortStr()
 end
 
 function initPython(prog)
-    local pyth = sim.getStringParam(sim.stringparam_defaultpython)
-    local pyth2 = sim.getNamedStringParam("python")
+    local pyth = sim.getStringProperty(sim.handle_app, 'defaultPython')
+    local pyth2 = sim.getStringProperty(sim.handle_app, 'namedParam.python', {noError = true})
     if pyth2 then pyth = pyth2 end
-    if pyth == nil or #pyth == 0 then
-        local p = sim.getInt32Param(sim.intparam_platform)
-        if p == 0 then
-            pyth = 'py'
-        else
-            pyth = 'python3'
-        end
-    end
     local errMsg
     if pythonExecutable then
         pyth = pythonExecutable
     end
-    if pyth and #pyth > 0 then
+    if #pyth > 0 then
         subprocess, controlPort = startPythonClientSubprocess(pyth)
         if controlPort then
             pyContext = simZMQ.ctx_new()

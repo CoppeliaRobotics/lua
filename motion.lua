@@ -344,7 +344,7 @@ function sim.moveToPose_init(params)
     end
     
     if params.ik then
-        simIK = require('simIK')
+        local simIK = require('simIK')
         params.ik.breakFlags = params.ik.breakFlags or 0
         params.ik.base = params.ik.base or -1
         params.ik.method = params.ik.method or simIK.method_damped_least_squares
@@ -483,6 +483,7 @@ function sim.moveToPose_step(data)
                         sim.setObjectPose(data.object, data.pose, data.relObject)
                     end
                     if data.ik then
+                        local simIK = require('simIK')
                         local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                         if f & cmd.params.ik.breakFlags ~= 0 then
                             error('simIK.handleGroup in sim.moveToPose_step returned flags ' .. f)
@@ -534,6 +535,7 @@ function sim.moveToPose_step(data)
                     sim.setObjectPose(data.object, data.pose, data.relObject)
                 end
                 if data.ik then
+                    local simIK = require('simIK')
                     simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                 end
             end
@@ -550,6 +552,7 @@ function sim.moveToPose_cleanup(data)
         _S.simMoveToPose_callbacks[data] = nil
     end
     if data.ik then
+        local simIK = require('simIK')
         simIK.eraseEnvironment(data.ik.ikEnv)
         data.ik = nil
     end
@@ -729,7 +732,7 @@ def cbb(req):
         script = nil
     end
     sim.setStepping(lb)
-
+    
     if s ~= true then
         error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.getProperty(sim.handle_app, 'defaultPython') .. ' -m pip install pyzmq cbor2 numpy toppra.')
     end

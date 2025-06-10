@@ -1,4 +1,4 @@
-local sim = _S.internalApi.sim
+local sim = table.clone(_S.internalApi.sim)
 
 --_removeLazyLoaders()
 
@@ -25,8 +25,8 @@ end
 
 function sim.yield()
     if getYieldAllowed() then
-        if sim.isScriptRunningInThread() == 1 then
-            sim._switchThread() -- old, deprecated threads
+        if auxFunc('isScriptRunningInOldThread') == 1 then
+            auxFunc('switchOldThread'); -- old, deprecated threads
         else
             local thread, yieldForbidden = coroutine.running()
             if not yieldForbidden then coroutine.yield() end

@@ -2,7 +2,7 @@
 -- The very first API without namespace (e.g. simGetObjectHandle) is only
 -- included if 'supportOldApiNotation' is true in 'usrset.txt'
 
-local sim = _S.internalApi.sim
+local sim = table.clone(_S.internalApi.sim)
 for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
