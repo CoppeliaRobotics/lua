@@ -1035,17 +1035,17 @@ function initPython(prog)
             subprocess = nil
         end
     else
-        local usrSysLoc = sim.getStringParam(sim.stringparam_usersettingsdir)
+        local usrSysLoc = sim.getStringProperty(sim.handle_app, 'settingsPath')
         errMsg = "The Python interpreter was not set. Specify it in " .. usrSysLoc ..
                      "/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
+    
+    if sim.getIntProperty(sim.handle_self, 'scriptType') == sim.scripttype_sandbox then
+        sim.setBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', errMsg ~= nil)
+    end
+
     if errMsg then
-        if sim.getObjectInt32Param(sim.getScript(sim.handle_self), sim.scriptintparam_type) ==
-            sim.scripttype_sandbox then
-            sim.setNamedBoolParam("pythonSandboxInitFailed", true)
-        end
         if pythonFailWarnOnly then
-            sim.setNamedStringParam("pythonSandboxInitFailMsg", errMsg)
             sim.addLog(sim.verbosity_scripterrors, errMsg)
         else
             error('__[[__' .. errMsg .. '__]]__')

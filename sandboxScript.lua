@@ -1,4 +1,4 @@
-sim = require('sim')
+sim = require('sim-2')
 
 pythonFailWarnOnly = true -- error msg can be read via sim.getNamedBoolParam("pythonSandboxInitFailMsg")
 
@@ -10,17 +10,13 @@ require('base-ce')
 local l = auxFunc('getfiles', sim.getStringProperty(sim.handle_app, 'luaPath'), '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
-_setupLazyLoaders() -- because those were cleared out by our explicit requires
+--_setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
     sim.addLog(sim.verbosity_msgs, "Simulator launched, welcome! ")
     if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
         require('simURLDrop')
-        local p = sim.getStringProperty(sim.handle_app, 'namedParam.pythonSandboxInitFailed', {noError = true})
-        if p then
-            p = string.lower(p)
-        end
-        if p ~= 'true' then
+        if sim.getBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', {noError = true}) ~= true then
             require('pythonLuaSetupAssistant')
         end
     end
