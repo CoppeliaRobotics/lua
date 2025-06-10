@@ -40,7 +40,7 @@ function sim.step(wait)
     sim.yield()
 end
 
-import('checkargs')
+local checkargs = require('checkargs')
 require('motion').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
