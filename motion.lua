@@ -729,9 +729,9 @@ def cbb(req):
         script = nil
     end
     sim.setStepping(lb)
-    
+
     if s ~= true then
-        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: python -m pip install pyzmq cbor2 numpy toppra.')
+        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.getProperty(sim.handle_app, 'defaultPython') .. ' -m pip install pyzmq cbor2 numpy toppra.')
     end
 
     if not r.success then
