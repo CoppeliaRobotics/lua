@@ -29,7 +29,7 @@ return {
                     while true do
                         local pname = sim.getPropertyName(self.__handle, i, {prefix = prefix})
                         if pname == nil then break end
-                       pname = string.stripprefix(pname, prefix)
+                        pname = string.stripprefix(pname, prefix)
                         local pname2 = string.gsub(pname, '%..*$', '')
                         if pname == pname2 then
                             local ptype, pflags, descr = sim.getPropertyInfo(self.__handle, prefix .. pname)
@@ -163,11 +163,10 @@ return {
                         obj[namespace] = sim.PropertyGroup(obj.__handle, {prefix = namespace})
                     end
 
+                    -- add methods from sim.* API:
                     local sim_
                     sim, sim_ = {}, sim
-                    
                     sim.addItemToCollection = {type = 'collection', }
-                    
                     sim.addForce = {type = 'shape', }
                     sim.addForceAndTorque = {type = 'shape', }
                     sim.addReferencedHandle = {}
@@ -282,12 +281,12 @@ return {
                             obj.__methods[method] = obj[method]
                         end
                     end
-
                     return setmetatable(obj, sim.Object)
                 end,
             }
         )
 
+        -- definition of constants / static objects:
         sim.Scene = sim.Object(sim.handle_scene)
         sim.App = sim.Object(sim.handle_app)
     end
