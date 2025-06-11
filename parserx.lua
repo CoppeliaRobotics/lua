@@ -1,3 +1,4 @@
+local sim = require 'sim'
 local parser = require 'lua-parser.parser'
 local pp = require 'lua-parser.pp'
 
