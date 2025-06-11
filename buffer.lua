@@ -34,6 +34,7 @@ __buffmetatable__ = {
         return self.__buff__
     end,
     __tocbor = function(self)
+        local cbor = require('org.conman.cbor')
         return cbor.TYPE.BIN(self.__buff__)
     end,
     newobj = function(txt)

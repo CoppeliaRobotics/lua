@@ -1909,5 +1909,6 @@ sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch', '_S.sysCallEx_beforeInstanceSwitch', false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScriptSuspend', false)
 ----------------------------------------------------------
+sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded')
 
 return sim

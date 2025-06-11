@@ -1,8 +1,9 @@
-startTimeout = 10
-sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
-simZMQ = require('simZMQ')
-simSubprocess = require('simSubprocess')
-cbor = require('org.conman.cbor')
+local startTimeout = 10
+local sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
+sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
+local simZMQ = require('simZMQ')
+local simSubprocess = require('simSubprocess')
+local cbor = require('org.conman.cbor')
 _removeLazyLoaders()
 
 function sim.setThreadSwitchTiming(switchTiming)
@@ -469,6 +470,7 @@ function sim.testCB(a, cb, b, iterations)
 end
 
 function __require__(name)
+    print("in __require__ for ", name)
     _G[name] = require(name)
     parseFuncsReturnTypes(name)
 end

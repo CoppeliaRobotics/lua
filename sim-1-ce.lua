@@ -2,6 +2,9 @@ local codeEditorInfos = require('sim-ce-x')
 
 -- When removing following, do not forget to add it to zmqRemoteApi/clients/cpp/sim-deprecated.* for backward compatibility!
 local toDeprecateSoon = [[
+int result, float distance, float[3] detectedPoint, int detectedObjectHandle, float[3] normalVector = sim.checkProximitySensorEx(int sensorHandle, int entityHandle, int mode, float threshold, float maxAngle)
+int result, float distance, float[3] detectedPoint, float[3] normalVector = sim.checkProximitySensorEx2(int sensorHandle, float[3..*] vertices, int itemType, int itemCount, int mode, float threshold, float maxAngle)
+int segmentCount, float[6..*] segmentData = sim.checkCollisionEx(int entity1Handle, int entity2Handle)
 any[] copy = sim.copyTable(any[] original)
 map copy = sim.copyTable(map original)
 float[] configs = sim.getAlternateConfigs(int[] jointHandles, float[] inputConfig, int tipHandle=-1, float[] lowLimits=nil, float[] ranges=nil)

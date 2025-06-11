@@ -165,18 +165,17 @@ return {
 
                     local sim_
                     sim, sim_ = {}, sim
-                    sim.addForce = {}
-                    sim.addItemToCollection = {}
+                    
+                    sim.addItemToCollection = {type = 'collection', }
+                    
+                    sim.addForce = {type = 'shape', }
+                    sim.addForceAndTorque = {type = 'shape', }
                     sim.addReferencedHandle = {}
-                    sim.alignShapeBB = {}
+                    sim.alignShapeBB = {rename = 'alignBB', type = 'shape', }
                     sim.checkCollision = {}
-                    sim.checkCollisionEx = {}
-                    sim.checkCollisionEx = {}
-                    sim.checkOctreePointOccupancy = {type = 'ocTree', }
-                    sim.checkProximitySensor = {type = 'proximitySensor', }
-                    sim.checkProximitySensorEx = {type = 'proximitySensor', }
-                    sim.checkProximitySensorEx2 = {type = 'proximitySensor', }
-                    sim.checkVisionSensor = {type = 'visionSensor', }
+                    sim.checkOctreePointOccupancy = {rename = 'checkPointOccupancy', type = 'ocTree', }
+                    sim.checkProximitySensor = {rename = 'check', type = 'proximitySensor', }
+                    sim.checkVisionSensor = {rename = 'check', type = 'visionSensor', }
                     sim.checkVisionSensorEx = {type = 'visionSensor', }
                     sim.computeMassAndInertia = {}
                     sim.executeScriptString = {type = 'script', }
