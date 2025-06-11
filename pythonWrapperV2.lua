@@ -470,9 +470,14 @@ function sim.testCB(a, cb, b, iterations)
 end
 
 function __require__(name)
-    print("in __require__ for ", name)
-    _G[name] = require(name)
-    parseFuncsReturnTypes(name)
+    local vname = name
+    local pos = vname:find("-")
+    if pos then
+        vname = vname:sub(1, pos - 1)
+    end
+    print("in __require__ for ", name, vname)
+    _G[vname] = require(name)
+    parseFuncsReturnTypes(vname)
 end
 
 function setPythonFuncs(data)
@@ -1392,15 +1397,16 @@ class RemoteAPIClient:
         return ret
 
     def require(self, name):
-        if name in self.requiredItems:
-            ret = self.requiredItems[name]
+        vname = name.split('-')[0]
+        if vname in self.requiredItems:
+            ret = self.requiredItems[vname]
         else:
             self.call('__require__', [name])
-            ret = self.getObject(name)
-            allApiFuncs = self.call('__getApi__', [name])
+            ret = self.getObject(vname)
+            allApiFuncs = self.call('__getApi__', [vname])
             for a in allApiFuncs:
-                globals()[a] = self.getObject(name)
-            self.requiredItems[name] = ret
+                globals()[a] = self.getObject(vname)
+            self.requiredItems[vname] = ret
         return ret
 
     def getScriptFunctions(self, scriptHandle):
