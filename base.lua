@@ -49,6 +49,30 @@ if _VERSION ~= 'Lua 5.1' then
     loadstring = load
 end
 
+pcall(require, 'devmode')
+if _DEVMODE then addLog(430, "Developer Mode is active") end
+
+if _DEVMODE then
+    -- DEBUG: print each time global variable "sim" is about to be wrote to:
+    local mt = getmetatable(_G) or {}
+    local old_newindex = mt.__newindex
+    mt.__newindex = function(tbl, key, value)
+        if key == "sim" then
+            addLog(430, "write to global 'sim'!")
+        end
+        if old_newindex then
+            if type(old_newindex) == "function" then
+                return old_newindex(tbl, key, value)
+            else
+                rawset(old_newindex, key, value)
+                return
+            end
+        end
+        rawset(tbl, key, value)
+    end
+    setmetatable(_G, mt)
+end
+
 function wrap(originalFunction, wrapperFunctionGenerator)
     --[[
     e.g. a wrapper that print args before calling the original function:

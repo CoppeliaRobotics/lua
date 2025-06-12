@@ -1,6 +1,8 @@
 local startTimeout = 10
 local sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
---sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
+if _DEVMODE then
+    sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
+end
 local simZMQ = require('simZMQ')
 local simSubprocess = require('simSubprocess')
 local cbor = require('org.conman.cbor')

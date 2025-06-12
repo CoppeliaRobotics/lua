@@ -1470,6 +1470,8 @@ sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScri
 
 require('sim.Object').extend(sim)
 
-sim.addLog(sim.verbosity_warnings, 'sim-2 has been loaded')
+if _DEVMODE then
+    sim.addLog(sim.verbosity_warnings, 'sim-2 has been loaded')
+end
 
 return sim
