@@ -1,5 +1,5 @@
 local sim = table.clone(_S.internalApi.sim)
-
+sim.version = '2.0'
 --_removeLazyLoaders()
 
 sim.addLog = addLog

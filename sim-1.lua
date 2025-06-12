@@ -3,6 +3,7 @@
 -- included if 'supportOldApiNotation' is true in 'usrset.txt'
 
 local sim = table.clone(_S.internalApi.sim)
+sim.version = '1.0'
 for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
@@ -1909,6 +1910,5 @@ sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch', '_S.sysCallEx_beforeInstanceSwitch', false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScriptSuspend', false)
 ----------------------------------------------------------
-sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded')
 
 return sim
