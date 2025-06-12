@@ -1,5 +1,4 @@
-sim = require 'sim'
-simUI = require 'simUI'
+local sim = require 'sim'
 
 -- DEPRECATED. Do not use anymore if possible
 
@@ -200,6 +199,7 @@ function customUi_populateCombobox(ui, id, items_array, exceptItems_map, current
             break
         end
     end
+    local simUI = require 'simUI'
     simUI.setComboboxItems(ui, id, _itemsTxt, index, true)
     return tableToReturn, index
 end
@@ -555,6 +555,7 @@ function utils.createCustomUi(nakedXml, title, dlgPos, closeable, onCloseFunctio
         end
     end
     xml = xml .. nakedXml .. '</ui>'
+    local simUI = require 'simUI'
     local ui = simUI.create(xml)
     --[[
     if dlgSize then
@@ -573,12 +574,14 @@ end
 function utils.getSelectedEditWidget(ui)
     local ret = -1
     if sim.getInt32Param(sim.intparam_program_version) > 30302 then
+        local simUI = require 'simUI'
         ret = simUI.getCurrentEditWidget(ui)
     end
     return ret
 end
 
 function utils.setSelectedEditWidget(ui, id)
+    local simUI = require 'simUI'
     if id >= 0 then simUI.setCurrentEditWidget(ui, id) end
 end
 

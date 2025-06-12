@@ -1,5 +1,5 @@
-sim = require 'sim'
-simUI = require 'simUI'
+local sim = require 'sim'
+local simUI = require 'simUI'
 
 ConfigUI = {}
 

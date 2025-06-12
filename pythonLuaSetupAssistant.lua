@@ -1,3 +1,7 @@
+local sim = require 'sim'
+local simUI = require 'simUI'
+local simCmd = require 'simCmd'
+
 function setupForLang(lang)
     sim.setStringProperty(sim.handle_app, 'namedParam.simCmd.preferredSandboxLang', lang)
     simCmd.setSelectedScript(-1, lang)
@@ -20,10 +24,6 @@ local function main()
         -- already set
         return
     end
-
-    sim = require 'sim'
-    simUI = require 'simUI'
-    simCmd = require 'simCmd'
 
     local resourcesDir = sim.getStringProperty(sim.handle_app, 'resourcePath')
     local imagesDir = resourcesDir .. '/manual/en/images/usedByScripts/'
