@@ -1,3 +1,5 @@
+if _DEVMODE then addLog(430, "Developer Mode is active") end
+
 sim = require('sim-2')
 
 pythonFailWarnOnly = true -- error msg can be read via sim.getNamedBoolParam("pythonSandboxInitFailMsg")

@@ -1,10 +1,3 @@
-__lazyLoadModules = {
-    'sim', 'simIK', 'simUI', 'simGeom', 'simMujoco', 'simAssimp', 'simBubble', 'simCHAI3D',
-    'simMTB', 'simOMPL', 'simOpenMesh', 'simQHull', 'simRRS1', 'simSDF', 'simSubprocess',
-    'simSurfRec', 'simURDF', 'simVision', 'simWS', 'simZMQ', 'simIM', 'simEigen', 'simIGL',
-    'simICP', 'simROS', 'simROS2',
-}
-
 __oldModeConsts = {
     syscb_init = true,
     syscb_cleanup = true,
@@ -50,15 +43,17 @@ if _VERSION ~= 'Lua 5.1' then
 end
 
 pcall(require, 'devmode')
-if _DEVMODE then addLog(430, "Developer Mode is active") end
 
 if _DEVMODE then
     -- DEBUG: print each time global variable "sim" is about to be wrote to:
     local mt = getmetatable(_G) or {}
     local old_newindex = mt.__newindex
     mt.__newindex = function(tbl, key, value)
-        if key == "sim" then
-            addLog(430, "write to global 'sim'!")
+        if key == 'sim' or key == 'simIK' or key == 'simUI' or key == 'simGeom' or key == 'simMujoco' or key == 'simAssimp' or key == 'simBubble' or key == 'simCHAI3D' or key == 'simMTB' or key == 'simOMPL' or key == 'simOpenMesh' or key == 'simQHull' or key == 'simRRS1' or key == 'simSDF' or key == 'simSubprocess' or key == 'simSurfRec' or key == 'simURDF' or key == 'simVision' or key == 'simWS' or key == 'simZMQ' or key == 'simIM' or key == 'simEigen' or key == 'simIGL' or key == 'simICP' or key == 'simROS' or key == 'simROS2' or key == 'simEvent' then
+            local info = debug.getinfo(2, "nSl")
+            local sloc = info.short_src .. ':' .. info.currentline
+            if info.name then sloc = info.name .. ' in ' .. sloc end
+            addLog(430, sloc .. ": write to global '" .. key .. "'!")
         end
         if old_newindex then
             if type(old_newindex) == "function" then
@@ -91,24 +86,10 @@ end
 require = wrap(require, function(origRequire)
     return function(...)
         local requiredName = table.unpack {...}
-
-        for i, lazyModName in ipairs(__lazyLoadModules) do
-            if lazyModName == requiredName then
-                if not __inLazyLoader or __inLazyLoader == 0 then
-                    if __usedLazyLoaders then
-                        addLog(430, "implicit loading of modules has been disabled because " ..
-                            "one known module (" ..  requiredName .. ") was loaded explicitly.")
-                    end
-                    _removeLazyLoaders()
-                end
-            end
-        end
-
         local fl = setYieldAllowed(false) -- important when called from coroutine
         local retVals = {origRequire(...)}
         setYieldAllowed(fl)
         auxFunc('usedmodule', requiredName)
-
         return table.unpack(retVals)
     end
 end)
@@ -136,7 +117,7 @@ function import(moduleName, ...)
         if not opts.keepVersionSuffix then
             moduleName = moduleName:gsub('[-%d]+$', '')
         end
-        if _G[moduleName] ~= nil and _G[moduleName] ~= mod and not _G[moduleName].__lazyLoader and not opts.silent then
+        if _G[moduleName] ~= nil and _G[moduleName] ~= mod and not opts.silent then
             addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. moduleName .. '"')
         end
         _G[moduleName] = mod
@@ -150,7 +131,7 @@ function import(moduleName, ...)
         end
         for _, name in ipairs(allNames) do
             if not excludeNames[name] then
-                if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent  and (type(_G[name]) ~= 'table' or not _G[name].__lazyLoader) then
+                if _G[name] ~= nil and _G[name] ~= mod[name] and not opts.silent then
                     addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. name .. '"')
                 end
                 _G[name] = mod[name]
@@ -299,12 +280,9 @@ function _S.funcToString(f)
     for _, objName in ipairs(allModules) do
         local obj = _G[objName]
         if obj then
-            local mt = getmetatable(obj)
-            if not mt or not mt.__moduleLazyLoader then
-                for funcName, func in pairs(obj) do
-                    if type(func) == 'function' and func == f then
-                        return objName .. '.' .. funcName
-                    end
+            for funcName, func in pairs(obj) do
+                if type(func) == 'function' and func == f then
+                    return objName .. '.' .. funcName
                 end
             end
         end
@@ -502,47 +480,6 @@ function getAsDisplayString(...)
     return string.blockhstack(s, 0)
 end
 
-function _moduleLazyLoader(name)
-    local proxy = {}
-    local mt = {
-        __moduleLazyLoader = {},
-        __index = function(_, key)
-            if __oldModeConsts[key] then auxFunc('deprecatedScriptMode') end
-            if key == 'registerScriptFuncHook' then
-                return registerScriptFuncHook
-            else
-                if not __inLazyLoader then __inLazyLoader = 0 end
-                __inLazyLoader = __inLazyLoader + 1
-                _G[name] = require(name)
-                __inLazyLoader = __inLazyLoader - 1
-                addLog(430, "module '" .. name .. "' was implicitly loaded.")
-                __usedLazyLoaders = true
-                return _G[name][key]
-            end
-        end,
-    }
-    setmetatable(proxy, mt)
-    _G[name] = proxy
-    return proxy
-end
-
-function _setupLazyLoaders()
-    __usedLazyLoaders = false
-    for i, name in ipairs(__lazyLoadModules) do
-        if not _G[name] then _G[name] = _moduleLazyLoader(name) end
-    end
-end
-
-function _removeLazyLoaders()
-    for i, name in ipairs(__lazyLoadModules) do
-        if _G[name] then
-            local mt = getmetatable(_G[name])
-            if mt and mt.__moduleLazyLoader then _G[name] = nil end
-        end
-    end
-    __usedLazyLoaders = nil
-end
-
 function _S.sysCallBase_init()
     -- Hook function, registered further down
     if sysCall_thread then __coroutine__ = coroutine.create(sysCall_thread) end
@@ -720,4 +657,6 @@ registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on 
 registerScriptFuncHook('sysCall_nonSimulation', '_S.sysCallBase_nonSimulation', true)
 registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 
-_setupLazyLoaders()
+if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) then
+    require 'deprecated.lazyLoaders'
+end

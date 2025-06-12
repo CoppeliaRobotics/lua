@@ -84,18 +84,6 @@ require('motion').extend(sim)
 require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)
 
---require('matrix')
---require('grid')
-for _, cls in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
-    _G[cls] = setmetatable({__lazyLoader = true}, {
-        __call = function(self, ...)
-            sim.addLog(sim.verbosity_warnings, 'module \'matrix\' was implicitly loaded.')
-            require('matrix')
-            return _G[cls](...)
-        end
-    })
-end
-
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
         origFunc()
@@ -1910,8 +1898,5 @@ sim.registerScriptFuncHook('sysCall_cleanup', '_S.sysCallEx_cleanup', false)
 sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch', '_S.sysCallEx_beforeInstanceSwitch', false)
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScriptSuspend', false)
 ----------------------------------------------------------
-if _DEVMODE then
-    sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded')
-end
 
 return sim

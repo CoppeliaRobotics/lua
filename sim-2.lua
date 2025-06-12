@@ -1,6 +1,5 @@
 local sim = table.clone(_S.internalApi.sim)
 sim.version = '2.0'
---_removeLazyLoaders()
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
@@ -1469,9 +1468,5 @@ sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '_S.sysCallEx_addOnScri
 ----------------------------------------------------------
 
 require('sim.Object').extend(sim)
-
-if _DEVMODE then
-    sim.addLog(sim.verbosity_warnings, 'sim-2 has been loaded')
-end
 
 return sim

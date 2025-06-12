@@ -6,7 +6,7 @@ end
 local simZMQ = require('simZMQ')
 local simSubprocess = require('simSubprocess')
 local cbor = require('org.conman.cbor')
-_removeLazyLoaders()
+if _removeLazyLoaders then _removeLazyLoaders() end
 
 function sim.setThreadSwitchTiming(switchTiming)
     -- Shadow the original func
