@@ -1,10 +1,10 @@
-sim = require('sim')
-simUI = require('simUI')
+local sim = require('sim')
+local simUI = require('simUI')
 
 -- e.g. to record data constantly, i.e. also when simulation is not running:
 
 --[[
-graph = require('models.graph_customization-2')
+local graph = require('models.graph_customization-2')
 
 function sysCall_init()
     graphHandle = sim.getObject('..')

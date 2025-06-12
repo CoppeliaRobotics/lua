@@ -73,6 +73,7 @@ _setupLazyLoaders()
 for _, cls in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
     _G[cls] = setmetatable({__lazyLoader = true}, {
         __call = function(self, ...)
+            local sim = require 'sim'
             sim.addLog(sim.verbosity_warnings, 'module \'matrix\' was implicitly loaded.')
             require('matrix')
             return _G[cls](...)

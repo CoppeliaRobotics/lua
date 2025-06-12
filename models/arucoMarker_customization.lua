@@ -1,5 +1,5 @@
-sim = require 'sim'
-simIM = require 'simIM'
+local sim = require 'sim'
+local simIM = require 'simIM'
 require 'configUi'
 
 function sysCall_init()

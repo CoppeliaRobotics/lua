@@ -1,4 +1,4 @@
-sim = require 'sim'
+local sim = require 'sim'
 
 local robotConfigPath = {}
 

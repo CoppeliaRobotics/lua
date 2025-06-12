@@ -1,4 +1,4 @@
-sim = require 'sim'
+local sim = require 'sim'
 
 function sysCall_init()
     self = sim.getObject '.'
