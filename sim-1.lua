@@ -485,7 +485,8 @@ function sim.getAlternateConfigs(...)
 
     for i = 1, #jointHandles, 1 do sim.setJointPosition(jointHandles[i], initConfig[i]) end
     if next(configs) ~= nil then
-        configs = Matrix:fromtable(configs)
+        local matrix = require 'matrix-2'
+        configs = matrix.Matrix:fromtable(configs)
         configs = configs:data()
     end
     sim.setStepping(lb)
@@ -770,6 +771,7 @@ function _S.getConfigDistance(confA, confB, metric, types)
 end
 
 function sim.getPathLengths(...)
+    local matrix = require 'matrix-2'
     local path, dof, cb = checkargs({
         {type = 'table', item_type = 'float', size = '2..*'}, {type = 'int'},
         {type = 'any', default_nil = true, nullable = true},
@@ -778,7 +780,7 @@ function sim.getPathLengths(...)
     if dof < 1 or (confCnt < 2) then error("Bad table size.") end
     local distancesAlongPath = {0}
     local totDist = 0
-    local pM = Matrix(confCnt, dof, path)
+    local pM = matrix.Matrix(confCnt, dof, path)
     local metric = {}
     local tt = {}
     for i = 1, dof, 1 do
