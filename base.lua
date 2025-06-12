@@ -314,7 +314,7 @@ end
 function help(what)
     local sim = require 'sim'
     if what == nil then
-        simCmd = require 'simCmd'
+        local simCmd = require 'simCmd'
         simCmd.help()
         return
     end
