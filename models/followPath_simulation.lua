@@ -1,4 +1,5 @@
 local sim = require 'sim'
+local matrix = require 'matrix-2'
 
 function sysCall_init()
     self = sim.getObject '.'
@@ -6,7 +7,7 @@ function sysCall_init()
     jointGroup = sim.getReferencedHandle(path, 'jointGroup')
     path = sim.getScriptFunctions(path)
     jointGroup = sim.getScriptFunctions(jointGroup)
-    P = Matrix:fromtable(path:getPath())
+    P = matrix.Matrix:fromtable(path:getPath())
     params = params or {}
     params.fkMaxVel = params.fkMaxVel or table.rep(1, P:cols())
     params.fkMaxAccel = params.fkMaxAccel or table.rep(5, P:cols())

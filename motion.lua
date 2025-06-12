@@ -1,5 +1,7 @@
 local motion = {}
 
+local matrix = require 'matrix-2'
+
 function motion.extend(sim)
 
 function sim.moveToConfig_init(params)
@@ -660,9 +662,9 @@ function sim.generateTimeOptimalTrajectory(...)
         dof ~= #minMaxAccel / 2 then error("Bad table size.") end
     local lb = sim.setStepping(true)
 
-    local pM = Matrix(confCnt, dof, path)
-    local mmvM = Matrix(dof, 2, minMaxVel)
-    local mmaM = Matrix(dof, 2, minMaxAccel)
+    local pM = matrix.Matrix(confCnt, dof, path)
+    local mmvM = matrix.Matrix(dof, 2, minMaxVel)
+    local mmaM = matrix.Matrix(dof, 2, minMaxAccel)
 
     local code = [=[
 def sysCall_init():
@@ -732,7 +734,7 @@ def cbb(req):
         script = nil
     end
     sim.setStepping(lb)
-    
+
     if s ~= true then
         error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.getProperty(sim.handle_app, 'defaultPython') .. ' -m pip install pyzmq cbor2 numpy toppra.')
     end
@@ -740,7 +742,7 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return Matrix:fromtable(r.qs[1]):data(), r.ts, script
+    return matrix.Matrix:fromtable(r.qs[1]):data(), r.ts, script
 end
 
 end -- end of motion.extend

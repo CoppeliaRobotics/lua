@@ -1,6 +1,6 @@
 local sim = require 'sim'
-
 local path = require('models.path_customization-2')
+local matrix = require 'matrix-2'
 
 _S.conveyorSystem = {}
 
@@ -35,7 +35,7 @@ end
 
 function _S.conveyorSystem.prepare()
     local pathData = sim.unpackDoubleTable(sim.readCustomBufferData(path.model, 'PATH'))
-    local m = Matrix(math.floor(#pathData / 7), 7, pathData)
+    local m = matrix.Matrix(math.floor(#pathData / 7), 7, pathData)
     _S.conveyorSystem.pathPositions = m:slice(1, 1, m:rows(), 3):data()
     _S.conveyorSystem.pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
     _S.conveyorSystem.pathLengths, _S.conveyorSystem.totalLength = sim.getPathLengths(_S.conveyorSystem.pathPositions, 3)
@@ -247,10 +247,10 @@ function path.refreshTrigger(ctrlPts, pathData, config)
                              _S.conveyorSystem.pathQuaternions, _S.conveyorSystem.pathLengths, o,
                              nil, {2, 2, 2, 2}
                          )
-            local m = Matrix3x3:fromquaternion(quat)
-            m = m * Matrix3x3:rotx(-math.pi / 2)
+            local m = matrix.Matrix3x3:fromquaternion(quat)
+            m = m * matrix.Matrix3x3:rotx(-math.pi / 2)
             sim.setObjectPosition(jnt, pos, _S.conveyorSystem.model)
-            sim.setObjectQuaternion(jnt, Matrix3x3:toquaternion(m), _S.conveyorSystem.model)
+            sim.setObjectQuaternion(jnt, matrix.Matrix3x3:toquaternion(m), _S.conveyorSystem.model)
         end
     else
         for i = 1, padCnt, 1 do
