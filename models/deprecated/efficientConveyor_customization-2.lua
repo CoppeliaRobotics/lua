@@ -1,4 +1,4 @@
-local sim = require 'sim'
+sim = require 'sim'
 
 _S.conveyor = {}
 
