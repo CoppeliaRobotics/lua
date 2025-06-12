@@ -1,6 +1,6 @@
 local startTimeout = 10
 local sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
-sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
+--sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
 local simZMQ = require('simZMQ')
 local simSubprocess = require('simSubprocess')
 local cbor = require('org.conman.cbor')
@@ -475,7 +475,6 @@ function __require__(name)
     if pos then
         vname = vname:sub(1, pos - 1)
     end
-    print("in __require__ for ", name, vname)
     _G[vname] = require(name)
     parseFuncsReturnTypes(vname)
 end
@@ -683,7 +682,9 @@ function __info__(obj)
     local ret = {}
     for k, v in pairs(obj) do
         if type(v) == 'table' then
-            ret[k] = __info__(v)
+            if getmetatable(v) == nil or isbuffer(v) then -- other objects are not (yet) supported
+                ret[k] = __info__(v)
+            end
         elseif type(v) == 'function' then
             ret[k] = {func = {}}
         elseif type(v) ~= 'function' then
