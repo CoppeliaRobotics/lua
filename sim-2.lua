@@ -24,12 +24,8 @@ end
 
 function sim.yield()
     if getYieldAllowed() then
-        if auxFunc('isScriptRunningInOldThread') == 1 then
-            auxFunc('switchOldThread'); -- old, deprecated threads
-        else
-            local thread, yieldForbidden = coroutine.running()
-            if not yieldForbidden then coroutine.yield() end
-        end
+        local thread, yieldForbidden = coroutine.running()
+        if not yieldForbidden then coroutine.yield() end
     end
 end
 

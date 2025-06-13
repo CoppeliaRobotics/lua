@@ -7,11 +7,6 @@ sim.version = '1.0'
 for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
-if sim.getBoolProperty(sim.handle_app, 'supportOldApiNotation') and (sim.getIntProperty(sim.getScript(sim.handle_self), 'scriptType') ~= sim.scripttype_sandbox) then
-    for k, v in pairs(_S.internalApi.sim0) do
-        _G[k] = v
-    end
-end
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
@@ -64,12 +59,8 @@ end
 
 function sim.yield()
     if getYieldAllowed() then
-        if sim.isScriptRunningInThread() == 1 then
-            sim._switchThread() -- old, deprecated threads
-        else
-            local thread, yieldForbidden = coroutine.running()
-            if not yieldForbidden then coroutine.yield() end
-        end
+        local thread, yieldForbidden = coroutine.running()
+        if not yieldForbidden then coroutine.yield() end
     end
 end
 
