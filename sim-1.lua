@@ -1,6 +1,4 @@
 -- The is the first versioned sim-namespace
--- The very first API without namespace (e.g. simGetObjectHandle) is only
--- included if 'supportOldApiNotation' is true in 'usrset.txt'
 
 local sim = table.clone(_S.internalApi.sim)
 sim.version = '1.0'
