@@ -32,7 +32,7 @@ function _moduleLazyLoader(name)
     local mt = {
         __moduleLazyLoader = {},
         __index = function(_, key)
-            if __oldModeConsts[key] then auxFunc('deprecatedScriptMode') end
+            if __oldModeConsts[key] then error("The script does not comply with modern CoppeliaSim call manner (backward compatibility has been dropped as of CoppeliaSim V4.10.0 rev2 and later). Adapt this script.") end
             if key == 'registerScriptFuncHook' then
                 return registerScriptFuncHook
             else
