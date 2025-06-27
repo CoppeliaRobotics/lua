@@ -171,6 +171,7 @@ return {
                     sim.addForceAndTorque = {type = 'shape', }
                     sim.addReferencedHandle = {}
                     sim.alignShapeBB = {rename = 'alignBB', type = 'shape', }
+                    sim.callScriptFunction = {rename = 'callFunction', type = 'script', }
                     sim.checkCollision = {}
                     sim.checkOctreePointOccupancy = {rename = 'checkPointOccupancy', type = 'ocTree', }
                     sim.checkProximitySensor = {rename = 'check', type = 'proximitySensor', }
