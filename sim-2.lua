@@ -5,6 +5,17 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
+    return function(a, b, ...)
+        if type(a) ~= 'number' then
+            local tmp = a
+            a = b
+            b = tmp
+        end
+        return origFunc(a, b, ...)
+    end
+end)
+
 function sim.setStepping(enable)
     -- Convenience function, so that we have the same, more intuitive name also with external clients
     -- Needs to be overridden by Python wrapper and remote API server code
