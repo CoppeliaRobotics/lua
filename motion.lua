@@ -66,7 +66,23 @@ function sim.moveToConfig_init(params)
     params.vel = params.vel or table.rep(0.0, dim)
     params.accel = params.accel or table.rep(0.0, dim)
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+    if type(params.minVel) == 'number' then
+        params.minVel = table.rep(params.minVel, dim)
+    end
+    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
+        if not params.tolerantArgs or #params.minVel < dim then
+            error("missing or invalid 'minVel' field.")
+        end
+    end
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    if type(params.minAccel) == 'number' then
+        params.minAccel = table.rep(params.minAccel, dim)
+    end
+    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
+        if not params.tolerantArgs or #params.minAccel < dim then
+            error("missing or invalid 'minAccel' field.")
+        end
+    end
     params.targetVel = params.targetVel or table.rep(0.0, dim)
     params.timeStep = params.timeStep or 0
     if type(params.vel) ~= 'table' or #params.vel ~= dim then
@@ -77,16 +93,6 @@ function sim.moveToConfig_init(params)
     if type(params.accel) ~= 'table' or #params.accel ~= dim then
         if not params.tolerantArgs or #params.accel < dim then
             error("missing or invalid 'accel' field.")
-        end
-    end
-    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
-        if not params.tolerantArgs or #params.minVel < dim then
-            error("missing or invalid 'minVel' field.")
-        end
-    end
-    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
-        if not params.tolerantArgs or #params.minAccel < dim then
-            error("missing or invalid 'minAccel' field.")
         end
     end
     if type(params.targetVel) ~= 'table' or #params.targetVel ~= dim then
@@ -302,7 +308,7 @@ function sim.moveToPose_init(params)
     params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
     
     if type(params.maxVel) == 'number' then
-        params.maxVel = params.maxVel or table.rep(params.maxVel, dim)
+        params.maxVel = table.rep(params.maxVel, dim)
     end
     if type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
         if not params.tolerantArgs or #params.maxVel < dim then
@@ -310,7 +316,7 @@ function sim.moveToPose_init(params)
         end
     end
     if type(params.maxAccel) == 'number' then
-        params.maxAccel = params.maxAccel or table.rep(params.maxAccel, dim)
+        params.maxAccel = table.rep(params.maxAccel, dim)
     end
     if type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
         if not params.tolerantArgs or #params.maxAccel < dim then
@@ -318,7 +324,7 @@ function sim.moveToPose_init(params)
         end
     end
     if type(params.maxJerk) == 'number' then
-        params.maxJerk = params.maxJerk or table.rep(params.maxJerk, dim)
+        params.maxJerk = table.rep(params.maxJerk, dim)
     end
     if type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
         if not params.tolerantArgs or #params.maxJerk < dim then
@@ -329,16 +335,21 @@ function sim.moveToPose_init(params)
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
-
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
-    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    if type(params.minVel) == 'number' then
+        params.minVel = table.rep(params.minVel, dim)
+    end
     if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
         error("missing or invalid 'minVel' field.")
+    end
+    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    if type(params.minAccel) == 'number' then
+        params.minAccel = table.rep(params.minAccel, dim)
     end
     if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
         error("missing or invalid 'minAccel' field.")
     end
-    
+
     if params.ik then
         local simIK = require('simIK')
         params.ik.breakFlags = params.ik.breakFlags or 0
