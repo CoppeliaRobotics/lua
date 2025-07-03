@@ -44,26 +44,15 @@ function sim.moveToConfig_init(params)
             error("invalid 'maxJerk' field.")
         end
     end
-    if params.maxVel or params.maxAccel or params.maxJerk then
-        if params.maxVel == nil then
-            error("missing 'maxVel' field.")
-        end
-        if params.maxAccel == nil then
-            error("missing 'maxAccel' field.")
-        end
-        if params.maxJerk == nil then
-            error("missing 'maxJerk' field.")
-        end
-        params.flags = params.flags or -1
-        if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-        params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
-    else
-        params.maxVel = params.maxVel or table.rep(9999.0, dim)
-        params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
-        params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
-        params.flags = sim.ruckig_nosync | sim.ruckig_minvel | sim.ruckig_minaccel
-        params.timeStep = 10.0
-    end
+
+    params.maxVel = params.maxVel or table.rep(9999.0, dim)
+    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
+    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    
+    params.flags = params.flags or -1
+    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+
     params.vel = params.vel or table.rep(0.0, dim)
     params.accel = params.accel or table.rep(0.0, dim)
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
@@ -313,26 +302,14 @@ function sim.moveToPose_init(params)
             error("invalid 'maxJerk' field.")
         end
     end
-    if params.maxVel or params.maxAccel or params.maxJerk then
-        if params.maxVel == nil then
-            error("missing 'maxVel' field.")
-        end
-        if params.maxAccel == nil then
-            error("missing 'maxAccel' field.")
-        end
-        if params.maxJerk == nil then
-            error("missing 'maxJerk' field.")
-        end
-        params.flags = params.flags or -1
-        if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-        params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
-    else
-        params.maxVel = params.maxVel or table.rep(9999.0, dim)
-        params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
-        params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
-        params.flags = sim.ruckig_nosync | sim.ruckig_minvel | sim.ruckig_minaccel
-        params.timeStep = 10.0
-    end
+
+    params.maxVel = params.maxVel or table.rep(9999.0, dim)
+    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
+    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    
+    params.flags = params.flags or -1
+    if params.flags == -1 then params.flags = sim.ruckig_phasesync end
+    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
 
     params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
     params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
