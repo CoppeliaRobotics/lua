@@ -29,25 +29,35 @@ function sim.moveToConfig_init(params)
     if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= dim then
         error("missing or invalid 'targetPos' field.")
     end
-    if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
-        if not params.tolerantArgs or #params.maxVel < dim then
-            error("invalid 'maxVel' field.")
-        end
-    end
-    if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
-        if not params.tolerantArgs or #params.maxAccel < dim then
-            error("invalid 'maxAccel' field.")
-        end
-    end
-    if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
-        if not params.tolerantArgs or #params.maxJerk < dim then
-            error("invalid 'maxJerk' field.")
-        end
-    end
 
     params.maxVel = params.maxVel or table.rep(9999.0, dim)
     params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
     params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    
+    if type(params.maxVel) == 'number' then
+        params.maxvel = table.rep(params.maxvel, dim)
+    end
+    if type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
+        if not params.tolerantArgs or #params.maxVel < dim then
+            error("invalid 'maxVel' field.")
+        end
+    end
+    if type(params.maxAccel) == 'number' then
+        params.maxAccel = table.rep(params.maxAccel, dim)
+    end
+    if type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
+        if not params.tolerantArgs or #params.maxAccel < dim then
+            error("invalid 'maxAccel' field.")
+        end
+    end
+    if type(params.maxJerk) == 'number' then
+        params.maxJerk = table.rep(params.maxJerk, dim)
+    end
+    if type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
+        if not params.tolerantArgs or #params.maxJerk < dim then
+            error("invalid 'maxJerk' field.")
+        end
+    end
     
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
@@ -287,25 +297,34 @@ function sim.moveToPose_init(params)
         dim = 1
     end
 
-    if params.maxVel ~= nil and (type(params.maxVel) ~= 'table' or #params.maxVel ~= dim) then
+    params.maxVel = params.maxVel or table.rep(9999.0, dim)
+    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
+    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    
+    if type(params.maxVel) == 'number' then
+        params.maxVel = params.maxVel or table.rep(params.maxVel, dim)
+    end
+    if type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
         if not params.tolerantArgs or #params.maxVel < dim then
             error("invalid 'maxVel' field.")
         end
     end
-    if params.maxAccel ~= nil and (type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim) then
+    if type(params.maxAccel) == 'number' then
+        params.maxAccel = params.maxAccel or table.rep(params.maxAccel, dim)
+    end
+    if type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
         if not params.tolerantArgs or #params.maxAccel < dim then
             error("invalid 'maxAccel' field.")
         end
     end
-    if params.maxJerk ~= nil and (type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim) then
+    if type(params.maxJerk) == 'number' then
+        params.maxJerk = params.maxJerk or table.rep(params.maxJerk, dim)
+    end
+    if type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
         if not params.tolerantArgs or #params.maxJerk < dim then
             error("invalid 'maxJerk' field.")
         end
     end
-
-    params.maxVel = params.maxVel or table.rep(9999.0, dim)
-    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
-    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
     
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
