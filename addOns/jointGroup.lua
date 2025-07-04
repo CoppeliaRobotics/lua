@@ -1,6 +1,8 @@
 local sim = require 'sim'
 
-function getJointGroups(modelHandle)
+local jointGroup = {}
+
+function jointGroup.getJointGroups(modelHandle)
     local ret = {}
     sim.visitTree(
         modelHandle, function(h)
@@ -13,3 +15,5 @@ function getJointGroups(modelHandle)
     )
     return ret
 end
+
+return jointGroup
