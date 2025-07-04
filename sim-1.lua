@@ -662,7 +662,7 @@ end]]
         local prop = sim.getModelProperty(retVal)
         sim.setModelProperty(retVal, (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model) -- model
         prop = sim.getObjectProperty(retVal)
-        sim.setObjectProperty(retVal, prop | sim.objectproperty_canupdatedna | sim.objectproperty_collapsed)
+        sim.setObjectProperty(retVal, prop | sim.objectproperty_collapsed)
         local data = sim.packTable({ctrlPts, options, subdiv, smoothness, orientationMode, upVector})
         sim.setBufferProperty(retVal, "customData.ABC_PATH_CREATION", data)
         sim.initScript(scriptHandle)

@@ -502,15 +502,15 @@ function _S.path.setup()
         _S.path.displayLine(2)
         _S.path.refresh = false
         _S.path.lastRefreshTime = sim.getSystemTime()
+        if sim.getSimulationState() ~= sim.simulation_stopped then _S.path.beforeSimulation() end
+        return ctrlPtsHandles, _S.path.paths[2]
     else
         sysCall_afterDelete = nil
         sysCall_beforeCopy = nil
         sysCall_afterCopy = nil
         sysCall_afterCreate = nil
-        sim.removeModel(_S.path.model)
+        sim.removeModel(_S.path.model, true)
     end
-    if sim.getSimulationState() ~= sim.simulation_stopped then _S.path.beforeSimulation() end
-    return ctrlPtsHandles, _S.path.paths[2]
 end
 
 function _S.path.computePaths()
