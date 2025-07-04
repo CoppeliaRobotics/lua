@@ -1362,8 +1362,7 @@ end
 
 function sim.getSimulationStopping()
     local s = sim.getSimulationState()
-    return s == sim.simulation_stopped or s == sim.simulation_advancing_abouttostop or s ==
-               sim.simulation_advancing_lastbeforestop
+    return s == sim.simulation_stopped or s == sim.simulation_advancing_lastbeforestop
 end
 
 sim.getThreadExistRequest = sim.getSimulationStopping

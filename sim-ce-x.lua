@@ -671,10 +671,6 @@ sim.shape_compound
 sim.shape_simple
 
 sim.simulation_advancing
-sim.simulation_advancing_abouttostop
-sim.simulation_advancing_firstafterpause
-sim.simulation_advancing_firstafterstop
-sim.simulation_advancing_lastbeforepause
 sim.simulation_advancing_lastbeforestop
 sim.simulation_advancing_running
 sim.simulation_paused

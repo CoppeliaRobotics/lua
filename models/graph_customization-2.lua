@@ -779,8 +779,7 @@ function _S.graph.reset()
 end
 
 function _S.graph.handle(recordingTime)
-    if sim.getSimulationState() ~= sim.simulation_advancing_abouttostop and sim.getSimulationState() ~=
-        sim.simulation_advancing_lastbeforestop then
+    if sim.getSimulationState() ~= sim.simulation_advancing_lastbeforestop then
         if recordingTime == nil then
             recordingTime = sim.getSimulationTime() + sim.getSimulationTimeStep()
         end

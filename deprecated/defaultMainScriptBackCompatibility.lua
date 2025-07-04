@@ -6,12 +6,6 @@ function _S.mainScriptBackComp.handle(item)
         sim.openModule(sim.handle_all)
         sim.handleGraph(sim.handle_all_except_explicit, 0)
     end
-    if item == 1 then
-        sim.resumeThreads(sim.scriptthreadresume_default)
-        sim.resumeThreads(sim.scriptthreadresume_actuation_first)
-        sim.launchThreadedChildScripts()
-    end
-    if item == 2 then sim.resumeThreads(sim.scriptthreadresume_actuation_last) end
     if item == 3 then
         sim.handleModule(sim.handle_all, false)
         auxFunc('simHandleJoint', sim.handle_all_except_explicit, sim.getSimulationTimeStep())
@@ -22,13 +16,9 @@ function _S.mainScriptBackComp.handle(item)
         sim.handleCollision(sim.handle_all_except_explicit)
         sim.handleDistance(sim.handle_all_except_explicit)
     end
-    if item == 5 then sim.resumeThreads(sim.scriptthreadresume_sensing_first) end
-    if item == 6 then sim.resumeThreads(sim.scriptthreadresume_sensing_last) end
     if item == 7 then
         sim.handleModule(sim.handle_all, true)
-        sim.resumeThreads(sim.scriptthreadresume_allnotyetresumed)
-        if sim.getSimulationState() ~= sim.simulation_advancing_abouttostop and
-            sim.getSimulationState() ~= sim.simulation_advancing_lastbeforestop then
+        if sim.getSimulationState() ~= sim.simulation_advancing_lastbeforestop then
             sim.handleGraph(
                 sim.handle_all_except_explicit,
                 sim.getSimulationTime() + sim.getSimulationTimeStep()

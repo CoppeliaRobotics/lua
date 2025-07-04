@@ -4,6 +4,7 @@ cbor.lua
 configUi-2.lua
 configUi-3.lua
 actionServer*.lua
+behaviortree.lua
 actions/
 sim*.lua
 !sim.lua
