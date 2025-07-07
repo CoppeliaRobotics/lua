@@ -12,10 +12,15 @@ local type_tags = {}
 
 -- RFC8746 multi-dimensional array tag
 function type_tags.TAG_40(values)
-    local simEigen = require('simEigen')
+    local simEigen = require 'simEigen'
     local rows, cols = table.unpack(values[1])
     local data = values[2]
     return simEigen.Matrix(rows, cols, data)
+end
+
+function type_tags.TAG_4008(value)
+    local Color = require 'color'
+    return Color(value)
 end
 
 function simCBOR.decode(data)
