@@ -846,6 +846,23 @@ function Matrix:__tostring()
     return out
 end
 
+function Matrix:__ismatrix()
+    return rawequal(getmetatable(self), Matrix)
+end
+
+function Matrix:__tomatrix()
+    return self:data()
+end
+
+function Matrix:__isvector3()
+    return Matrix.__ismatrix(self) and self:sameshape{3, 1}
+end
+
+function Matrix:__tovector3()
+    assert(self:sameshape{3, 1})
+    return self:data()
+end
+
 function Matrix:__len()
     if self:rows() == 1 then
         return self:cols()
