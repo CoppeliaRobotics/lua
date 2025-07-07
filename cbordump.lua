@@ -1,4 +1,4 @@
-function cbordump(b)
+return function(b)
     local simSubprocess = require 'simSubprocess'
     local ec, out = simSubprocess.exec('cbor2pretty.rb', {}, b)
     if ec == 0 then
