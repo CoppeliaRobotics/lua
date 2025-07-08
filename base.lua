@@ -42,8 +42,6 @@ if _VERSION ~= 'Lua 5.1' then
     loadstring = load
 end
 
-require('types')
-
 pcall(require, 'devmode')
 
 if _DEVMODE then
