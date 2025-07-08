@@ -296,6 +296,12 @@ function string.stripprefix(s, prefix)
     end
 end
 
+function string.stripsuffix(s, suffix)
+    if string.endswith(s, suffix) then
+        return s:sub(1, #s - #suffix)
+    end
+end
+
 function string.utf8sub(s, i, j)
     local start_byte = utf8.offset(s, i) or (#s + 1)
     local end_byte = j and (utf8.offset(s, j + 1) or (#s + 1)) - 1 or #s
