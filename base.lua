@@ -85,6 +85,15 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
+function callmeta(o, mm, d)
+    local mt = getmetatable(o)
+    if mt and mt[mm] then
+        return mt[mm](o)
+    else
+        return d
+    end
+end
+
 require = wrap(require, function(origRequire)
     return function(...)
         local requiredName = table.unpack {...}
