@@ -580,7 +580,7 @@ require('stringx')
 require('tablex')
 import('functional', '*')
 import('var', '*')
-import('tools')
+import('utils')
 
 _S.coroutineAutoYields = {}
 registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on *before* init is incompatible with implicit module load...

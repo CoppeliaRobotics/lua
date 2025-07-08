@@ -4,10 +4,10 @@ return setmetatable(
     {},
     {
         __index = function(self, k)
-            return require('tools.' .. k)
+            return require('utils.' .. k)
         end,
         __todisplay = function()
-            return 'usage: tools.<toolname>(...)\n\ne.g.: tools.unittest(table)\n'
+            return 'usage: utils.<toolname>(...)\n\ne.g.: utils.unittest(table)\n'
         end,
     }
 )
