@@ -1,5 +1,6 @@
 -- Old stuff, mainly for backward compatibility:
 ----------------------------------------------------------
+local checkargs = require('checkargs')
 
 function simRMLMoveToJointPositions(...)
     require("sim_old")

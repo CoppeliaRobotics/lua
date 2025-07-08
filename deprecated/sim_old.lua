@@ -2,6 +2,8 @@
 -----------------------------------------
 -- Required for backward compatibility --
 -----------------------------------------
+local checkargs = require('checkargs')
+
 function simRMLMoveToJointPositions(jhandles, flags, currentVel, currentAccel, maxVel, maxAccel,
                                     maxJerk, targetPos, targetVel, direction)
     -- Deprecated function, for backward compatibility (02.10.2020)

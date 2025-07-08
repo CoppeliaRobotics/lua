@@ -1,4 +1,5 @@
 local motion = {}
+local checkargs = require('checkargs')
 
 function motion.extend(sim)
 

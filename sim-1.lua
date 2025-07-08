@@ -1872,22 +1872,26 @@ end
 
 sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
     return function(data, scheme)
-        if scheme == nil then
-            if isbuffer(data) then
-                data = tostring(data)
-            end
-            if #data == 0 then
-                return {} -- since 20.03.2024: empty buffer results in an empty table
-            else
-                if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
-                    return origFunc(data) -- CoppeliaSim's pack format
-                elseif ((string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) then
-                    local cbor = require 'org.conman.cbor'
-                    local table = cbor.decode(data)
-                    return table
-                else
-                    error('invalid input data.')
+        if isbuffer(data) then
+            data = tostring(data)
+        end
+        if #data == 0 then
+            return {} -- since 20.03.2024: empty buffer results in an empty table
+        else
+            if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
+                if scheme and scheme ~= 0 then
+                    error('decoding scheme mismatch.')
                 end
+                return origFunc(data) -- CoppeliaSim's pack format
+            elseif ((string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) then
+                if scheme and scheme ~= 1 and scheme ~= 2 then
+                    error('decoding scheme mismatch.')
+                end
+                local cbor = require 'org.conman.cbor'
+                local tbl = cbor.decode(data)
+                return tbl
+            else
+                error('invalid input data.')
             end
         end
     end
