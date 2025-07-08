@@ -302,11 +302,22 @@ function string.utf8sub(s, i, j)
     return s:sub(start_byte, end_byte)
 end
 
+function string._len(s)
+    -- undocumented
+    if s == '' then return 0 end
+    local l, o = utf8.len(s)
+    if l then
+        return l
+    else
+        return utf8.len(s:sub(1, o - 1)) + 1 + string._len(s:sub(o + 1))
+    end
+end
+
 function string.pad(s, width, clip)
     if clip then
         s = string.utf8sub(s, 1, math.abs(width))
     end
-    local p = string.rep(' ', math.abs(width) - utf8.len(s))
+    local p = string.rep(' ', math.abs(width) - string._len(s))
     if width < 0 then
         return p .. s
     elseif width > 0 then
@@ -320,7 +331,7 @@ function string.blocksize(s)
     local lines = string.split(s, '\n')
     local width, height = 0, #lines
     for i = 1, #lines do
-        width = math.max(width, utf8.len(lines[i]))
+        width = math.max(width, string._len(lines[i]))
     end
     return width, height
 end
