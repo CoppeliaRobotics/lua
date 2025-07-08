@@ -826,8 +826,12 @@ function Matrix:__todisplay(opts)
         out = out .. (i > 1 and '\n' or '')
         for j = 1, #s[i] do
             out = out .. (j > 1 and '  ' or '')
-            out = out .. string.format('%' .. colwi[j] .. 's', s[i][j][1])
-            out = out .. string.format('%-' .. colwd[j] .. 's', s[i][j][2])
+            if colwi[j] > 0 then
+                out = out .. string.format('%' .. colwi[j] .. 's', s[i][j][1])
+            end
+            if colwd[j] > 0 then
+                out = out .. string.format('%-' .. colwd[j] .. 's', s[i][j][2])
+            end
         end
     end
     return out
