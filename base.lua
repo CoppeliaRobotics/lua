@@ -156,38 +156,6 @@ function import(moduleName, ...)
     end
 end
 
-function rerequire(name)
-    local searchPaths = string.split(package.path, package.config:sub(3, 3))
-    local nameWithSlashes = name:gsub('%.', '/')
-    for _, searchPath in ipairs(searchPaths) do
-        local exists = false
-        local fileName = searchPath:gsub('?', nameWithSlashes)
-        local f = io.open(fileName, 'r')
-        if f ~= nil then
-            exists = true
-            io.close(f)
-        end
-        if exists then
-            local success, result = xpcall(
-                function(filename, env)
-                    local f = assert(loadfile(filename))
-                    return f()
-                end,
-                function(err)
-                    return debug.traceback(err)
-                end,
-                fileName
-            )
-            if success then
-                return result
-            else
-                addLog(420, result)
-                return
-            end
-        end
-    end
-end
-
 pcall = wrap(pcall, function(origPcall)
     return function(...)
         local fl = setYieldAllowed(false) -- important when called from coroutine
@@ -242,44 +210,6 @@ function printf(fmt, ...)
         end
     end
     print(string.format(fmt, table.unpack(a, 1, a.n)))
-end
-
-function printBytes(x)
-    local s = ''
-    for i = 1, #x do
-        s = s .. string.format('%s%02x', i > 1 and ' ' or '', string.byte(x:sub(i, i)))
-    end
-    print(s)
-end
-
-function hexdump(x, opts)
-    opts = opts or {}
-    opts.width = opts.width or 20
-    opts.offset = opts.offset ~= false
-    opts.printable = opts.printable ~= false
-    assert(isbuffer(x) or type(x) == 'string', 'works only on buffer and strings')
-    local s = ''
-    local sep = ''
-    local ow = #x > 0 and math.floor(math.log(#x, 16)) + 1 or 1
-    for i = 1, #x, opts.width do
-        if opts.offset then
-            s = s .. string.format(' %0' .. ow .. 'x |', i)
-        end
-        for j = i, i + opts.width do
-            local c = x:sub(j, j)
-            s = s .. (c == '' and '   ' or string.format(' %02x', string.byte(c)))
-        end
-        if opts.printable then
-            s = s .. ' |'
-            for j = i, math.min(#x, i + opts.width) do
-                local c = x:sub(j, j)
-                s = s .. ' ' .. (string.isprintable(c) and c or ' ')
-            end
-        end
-        s = s .. '\n'
-        sep = ' '
-    end
-    print(s)
 end
 
 function _S.funcToString(f)
@@ -642,16 +572,6 @@ function _getCalltip(input, pos)
     end
 end
 
-function unittest(mod)
-    if mod.unittest == nil then
-        print('module does not define a unittest() function')
-        return
-    end
-    if type(mod.unittest) == 'function' then
-        mod.unittest()
-    end
-end
-
 -- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
 require('buffer')
@@ -660,6 +580,7 @@ require('stringx')
 require('tablex')
 import('functional', '*')
 import('var', '*')
+import('tools')
 
 _S.coroutineAutoYields = {}
 registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on *before* init is incompatible with implicit module load...
