@@ -8,6 +8,17 @@ local simSubprocess = require('simSubprocess')
 local cbor = require('org.conman.cbor')
 if _removeLazyLoaders then _removeLazyLoaders() end
 
+sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
+    return function(...)
+        local retVal = table.pack(origFunc(...))
+        if #retVal == 0 then
+            return nil -- the remote API needs always at least a nil as return value
+        else
+            return table.unpack(retVal)
+        end
+    end
+end)
+
 function sim.setThreadSwitchTiming(switchTiming)
     -- Shadow the original func
     -- 0=disabled, otherwise switchTiming
