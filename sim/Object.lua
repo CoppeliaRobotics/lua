@@ -76,7 +76,15 @@ return {
                     if v then return v end
 
                     -- redirect to default property group otherwise:
-                    return self.__properties[k]
+                    local p = self.__properties[k]
+                    if p ~= nil then return p end
+
+                    -- otherwise as a function call:
+                    if self.callFunction then
+                        return function(self, ...)
+                            return self:callFunction(k, ...)
+                        end
+                    end
                 end,
                 __newindex = function(self, k, v)
                     self.__properties[k] = v
