@@ -386,6 +386,10 @@ sim.propertytype_quaternion
 sim.propertytype_pose
 sim.propertytype_matrix3x3
 sim.propertytype_matrix4x4
+sim.propertytype_matrix
+sim.propertytype_array
+sim.propertytype_map
+sim.propertytype_null
 sim.propertytype_color
 sim.propertytype_floatarray
 sim.propertytype_intarray
