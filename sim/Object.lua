@@ -5,21 +5,23 @@ return {
                 __index = function(self, k)
                     local prefix = rawget(self, '__prefix')
                     if prefix ~= '' then k = prefix .. '.' .. k end
-                    if sim.getPropertyInfo(self.__handle, k) then
-                        return sim.getProperty(self.__handle, k)
+                    if self.__object:getPropertyInfo(k) then
+                        local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
+                        return self.__object['get' .. t:capitalize() .. 'Property'](self.__object, k)
                     end
-                    if sim.getPropertyName(self.__handle, 0, {prefix = k .. '.'}) then
-                        return sim.PropertyGroup(self.__handle, {prefix = k})
+                    if self.__object:getPropertyName(0, {prefix = k .. '.'}) then
+                        return sim.PropertyGroup(self.__object, {prefix = k})
                     end
                 end,
                 __newindex = function(self, k, v)
                     local prefix = rawget(self, '__prefix')
                     if prefix ~= '' then k = prefix .. '.' .. k end
-                    sim.setProperty(self.__handle, k, v)
+                    local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
+                    self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
                 end,
                 __tostring = function(self)
                     local prefix = rawget(self, '__prefix')
-                    return 'sim.PropertyGroup(' .. self.__handle .. ', {prefix = ' .. _S.anyToString(prefix) .. '})'
+                    return 'sim.PropertyGroup(' .. self.__object .. ', {prefix = ' .. _S.anyToString(prefix) .. '})'
                 end,
                 __pairs = function(self)
                     local prefix = rawget(self, '__prefix')
@@ -27,24 +29,23 @@ return {
                     local props = {}
                     local i = 0
                     while true do
-                        local pname = sim.getPropertyName(self.__handle, i, {prefix = prefix})
+                        local pname = self.__object:getPropertyName(i, {prefix = prefix})
                         if pname == nil then break end
                         pname = string.stripprefix(pname, prefix)
                         local pname2 = string.gsub(pname, '%..*$', '')
                         if pname == pname2 then
-                            local ptype, pflags, descr = sim.getPropertyInfo(self.__handle, prefix .. pname)
+                            local ptype, pflags, descr = self.__object:getPropertyInfo(prefix .. pname)
                             local readable = pflags & 2 == 0
                             if readable then
-                                props[pname2] = sim.getProperty(self.__handle, prefix .. pname)
+                                local t = sim.getPropertyTypeString(ptype)
+                                props[pname2] = self.__object['get' .. t:capitalize() .. 'Property'](self.__object, prefix .. pname)
                             end
                         elseif props[pname2] == nil then
-                            props[pname2] = sim.PropertyGroup(self.__handle, {prefix = prefix .. pname})
+                            props[pname2] = sim.PropertyGroup(self.__object, {prefix = prefix .. pname})
                         end
                         i = i + 1
                     end
-                    if self.__obj then
-                        props.children = self.__obj.children
-                    end
+                    props.children = self.__object.children
                     local function stateless_iter(self, k)
                         local v
                         k, v = next(props, k)
@@ -54,9 +55,9 @@ return {
                 end,
             },
             {
-                __call = function(self, handle, opts)
+                __call = function(self, object, opts)
                     opts = opts or {}
-                    local obj = {__handle = handle, __prefix = opts.prefix or '', __obj = opts.obj}
+                    local obj = {__object = object, __prefix = opts.prefix or '', __obj = opts.obj}
                     return setmetatable(obj, sim.PropertyGroup)
                 end,
             }
@@ -94,6 +95,9 @@ return {
                 end,
                 __tostring = function(self)
                     return 'sim.Object(' .. self.__handle .. ')'
+                end,
+                __tohandle = function(self)
+                    return self.__handle
                 end,
                 __pairs = function(self)
                     --local itertools = require 'itertools'
@@ -133,7 +137,7 @@ return {
                     end
 
                     -- this property group exposes object's top-level properties as self's table keys (via __index):
-                    obj.__properties = sim.PropertyGroup(obj.__handle, {obj = obj})
+                    obj.__properties = sim.PropertyGroup(obj)
 
                     -- 'children' property provides a way to access direct children by index or by name:
                     obj.children = setmetatable({}, {
@@ -168,126 +172,432 @@ return {
 
                     -- pre-assign user namespaces to property groups:
                     for _, namespace in ipairs{'customData', 'signal', 'namedParam'} do
-                        obj[namespace] = sim.PropertyGroup(obj.__handle, {prefix = namespace})
+                        obj[namespace] = sim.PropertyGroup(obj, {prefix = namespace})
                     end
 
                     -- add methods from sim.* API:
-                    local sim_
-                    sim, sim_ = {}, sim
-                    sim.addItemToCollection = {type = 'collection', }
-                    sim.addForce = {type = 'shape', }
-                    sim.addForceAndTorque = {type = 'shape', }
-                    sim.addReferencedHandle = {}
-                    sim.alignShapeBB = {rename = 'alignBB', type = 'shape', }
-                    sim.callScriptFunction = {rename = 'callFunction', type = 'script', }
-                    sim.checkCollision = {}
-                    sim.checkOctreePointOccupancy = {rename = 'checkPointOccupancy', type = 'ocTree', }
-                    sim.checkProximitySensor = {rename = 'check', type = 'proximitySensor', }
-                    sim.checkVisionSensor = {rename = 'check', type = 'visionSensor', }
-                    sim.checkVisionSensorEx = {type = 'visionSensor', }
-                    sim.computeMassAndInertia = {}
-                    sim.executeScriptString = {type = 'script', }
-                    sim.getApiFunc = {type = 'script', }
-                    sim.getApiInfo = {type = 'script', }
-                    sim.getExtensionString = {}
-                    sim.getObject = {}
-                    sim.getObjectMatrix = {rename = 'getMatrix', }
-                    sim.getObjectOrientation = {rename = 'getOrientation', }
-                    sim.getObjectPose = {rename = 'getPose', }
-                    sim.getObjectPosition = {rename = 'getPosition', }
-                    sim.getObjectQuaternion = {rename = 'getQuaternion', }
-                    sim.getObjectsInTree = {}
-                    sim.getReferencedHandles = {}
-                    sim.getReferencedHandle = {}
-                    sim.getReferencedHandlesTags = {}
-                    sim.getScriptFunctions = {type = 'script', }
-                    sim.getStackTraceback = {type = 'script', }
-                    sim.initScript = {type = 'script', }
-                    sim.insertObjectIntoOctree = {type = 'ocTree', }
-                    sim.insertObjectIntoPointCloud = {type = 'pointCloud', }
-                    sim.insertPointsIntoPointCloud = {type = 'pointCloud', }
-                    sim.insertVoxelsIntoOctree = {type = 'ocTree', }
-                    sim.intersectPointsWithPointCloud = {type = 'pointCloud', }
-                    sim.loadScene = {type = 'scene', }
-                    sim.readVisionSensor = {type = 'visionSensor', }
-                    sim.relocateShapeFrame = {type = 'shape', }
-                    sim.removeModel = {}
-                    sim.removePointsFromPointCloud = {type = 'pointCloud', }
-                    sim.removeReferencedObjects = {}
-                    sim.removeVoxelsFromOctree = {type = 'ocTree', }
-                    sim.resetDynamicObject = {}
-                    sim.resetGraph = {type = 'graph', }
-                    sim.resetProximitySensor = {type = 'proximitySensor', }
-                    sim.resetVisionSensor = {type = 'visionSensor', }
-                    sim.saveModel = {}
-                    sim.saveScene = {type = 'scene', }
-                    sim.scaleObject = {}
-                    sim.setObjectMatrix = {rename = 'setMatrix', }
-                    sim.setObjectOrientation = {rename = 'setOrientation', }
-                    sim.setObjectPose = {rename = 'setPose', }
-                    sim.setObjectPosition = {rename = 'setPosition', }
-                    sim.setObjectQuaternion = {rename = 'setQuaternion', }
-                    sim.setReferencedHandles = {}
-                    sim.setShapeBB = {}
-                    sim.subtractObjectFromOctree = {type = 'ocTree', }
-                    sim.subtractObjectFromPointCloud = {type = 'pointCloud', }
-                    sim.ungroupShape = {type = 'shape', }
-                    sim.visitTree = {}
-                    sim.getShapeAppearance = {type = 'shape', }
-                    sim.setShapeAppearance = {type = 'shape', }
-                    sim.setBoolProperty = {}
-                    sim.getBoolProperty = {}
-                    sim.setIntProperty = {}
-                    sim.getIntProperty = {}
-                    sim.setLongProperty = {}
-                    sim.getLongProperty = {}
-                    sim.setFloatProperty = {}
-                    sim.getFloatProperty = {}
-                    sim.setStringProperty = {}
-                    sim.getStringProperty = {}
-                    sim.setBufferProperty = {}
-                    sim.getBufferProperty = {}
-                    sim.setTableProperty = {}
-                    sim.getTableProperty = {}
-                    sim.setIntArray2Property = {}
-                    sim.getIntArray2Property = {}
-                    sim.setVector2Property = {}
-                    sim.getVector2Property = {}
-                    sim.setVector3Property = {}
-                    sim.getVector3Property = {}
-                    sim.setQuaternionProperty = {}
-                    sim.getQuaternionProperty = {}
-                    sim.setPoseProperty = {}
-                    sim.getPoseProperty = {}
-                    sim.setColorProperty = {}
-                    sim.getColorProperty = {}
-                    sim.setFloatArrayProperty = {}
-                    sim.getFloatArrayProperty = {}
-                    sim.setIntArrayProperty = {}
-                    sim.getIntArrayProperty = {}
-                    sim.removeProperty = {}
-                    sim.getPropertyName = {}
-                    sim.getPropertyInfo = {}
-                    sim.setEventFilters = {}
-                    sim.getProperty = {}
-                    sim.setProperty = {}
-                    sim.getPropertyTypeString = {}
-                    sim.getProperties = {}
-                    sim.setProperties = {}
-                    sim.getPropertiesInfos = {}
-                    local methods = sim
-                    sim = sim_
-                    local t = sim.getStringProperty(obj.__handle, 'objectType', {noError = true})
-                    if not t and obj.__handle == sim.handle_scene then t = 'scene' end
-                    if not t and obj.__handle == sim.handle_app then t = 'app' end
-                    obj.__methods = {}
-                    for apiFunc, info in pairs(methods) do
-                        if (info.type or t) == t then
-                            local method = info.rename or apiFunc
-                            obj[method] = function(self, ...)
-                                return sim[apiFunc](self.__handle, ...)
+
+                    local function methodWrapper(kwargs)
+                        local apiFunc, info = kwargs[1], kwargs
+                        local t = sim.getStringProperty(obj.__handle, 'objectType', {noError = true})
+                        if not t and obj.__handle == sim.handle_scene then t = 'scene' end
+                        if not t and obj.__handle == sim.handle_app then t = 'app' end
+
+                        if (info.objType or t) == t then
+                            return function(...)
+                                local args = {...}
+                                local argType = table.add({}, info.argType)
+                                argType[1] = argType[1] or 'handle'
+                                for i = 1, #args do
+                                    local t = argType and argType[i]
+                                    if t then
+                                        local a = callmeta(args[i], '__to' .. t)
+                                        if a ~= nil then
+                                            args[i] = a
+                                        end
+                                    end
+                                end
+                                local ret = {apiFunc(table.unpack(args))}
+                                for i = 1, #ret do
+                                    local t = info.retType and info.retType[i]
+                                    if t then
+                                        local simEigen = require 'simEigen'
+                                        local Color = require 'color'
+                                        local cls = ({
+                                            handle = sim.Object,
+                                            vector3 = simEigen.Vector,
+                                            matrix = simEigen.Matrix,
+                                            quaternion = simEigen.Quaternion,
+                                            pose = simEigen.Pose,
+                                            color = Color
+                                        })[t]
+                                        if cls then
+                                            ret[i] = cls(ret[i])
+                                        end
+                                    end
+                                end
+                                return table.unpack(ret)
                             end
-                            obj.__methods[method] = obj[method]
+                        end
+                    end
+
+                    obj.__methods = {
+                        addItemToCollection = methodWrapper{
+                            sim.addItemToCollection,
+                            argType = {[3] = 'handle'},
+                            objType = 'collection',
+                        },
+                        addForce = methodWrapper{
+                            sim.addForce,
+                            argType = {'handle', 'vector3', 'vector3'},
+                            objType = 'shape',
+                        },
+                        addForceAndTorque = methodWrapper{
+                            sim.addForceAndTorque,
+                            argType = {'handle', 'vector3', 'vector3'},
+                            objType = 'shape',
+                        },
+                        addReferencedHandle = methodWrapper{
+                            sim.addReferencedHandle,
+                            argType = {'handle', 'handle'},
+                        },
+                        alignBB = methodWrapper{
+                            sim.alignShapeBB,
+                            argType = {'handle', 'pose'},
+                            objType = 'shape',
+                        },
+                        callFunction = methodWrapper{
+                            sim.callScriptFunction,
+                            objType = 'script',
+                        },
+                        checkCollision = methodWrapper{
+                            sim.checkCollision,
+                            argType = {'handle', 'handle'},
+                        },
+                        checkPointOccupancy = methodWrapper{
+                            sim.checkOctreePointOccupancy,
+                            objType = 'ocTree',
+                        },
+                        checkProximitySensor = methodWrapper{
+                            sim.checkProximitySensor,
+                            argType = {'handle', 'handle'},
+                            objType = 'proximitySensor',
+                        },
+                        checkVisionSensor = methodWrapper{
+                            sim.checkVisionSensor,
+                            argType = {'handle', 'handle'},
+                            objType = 'visionSensor',
+                        },
+                        checkVisionSensorEx = methodWrapper{
+                            sim.checkVisionSensorEx,
+                            argType = {'handle', 'handle'},
+                            objType = 'visionSensor',
+                        },
+                        computeMassAndInertia = methodWrapper{
+                            sim.computeMassAndInertia,
+                        },
+                        executeScriptString = methodWrapper{
+                            sim.executeScriptString,
+                            objType = 'script',
+                        },
+                        getApiFunc = methodWrapper{
+                            sim.getApiFunc,
+                            objType = 'script',
+                        },
+                        getApiInfo = methodWrapper{
+                            sim.getApiInfo,
+                            objType = 'script',
+                        },
+                        getExtensionString = methodWrapper{
+                            sim.getExtensionString,
+                        },
+                        getMatrix = methodWrapper{
+                            sim.getObjectMatrix,
+                            argType = {'handle', 'handle'},
+                            retType = {'matrix'},
+                        },
+                        getOrientation = methodWrapper{
+                            sim.getObjectOrientation,
+                            argType = {'handle', 'handle'},
+                            retType = {'vector3'},
+                        },
+                        getPose = methodWrapper{
+                            sim.getObjectPose,
+                            argType = {'handle', 'handle'},
+                            retType = {'pose'},
+                        },
+                        getPosition = methodWrapper{
+                            sim.getObjectPosition,
+                            argType = {'handle', 'handle'},
+                            retType = {'vector3'},
+                        },
+                        getQuaternion = methodWrapper{
+                            sim.getObjectQuaternion,
+                            argType = {'handle', 'handle'},
+                            retType = {'quaternion'},
+                        },
+                        getObjectsInTree = methodWrapper{
+                            sim.getObjectsInTree,
+                        },
+                        getReferencedHandles = methodWrapper{
+                            sim.getReferencedHandles,
+                        },
+                        getReferencedHandle = methodWrapper{
+                            sim.getReferencedHandle,
+                            retType = {'handle'},
+                        },
+                        getReferencedHandlesTags = methodWrapper{
+                            sim.getReferencedHandlesTags,
+                        },
+                        getStackTraceback = methodWrapper{
+                            sim.getStackTraceback,
+                            objType = 'script',
+                        },
+                        initScript = methodWrapper{
+                            sim.initScript,
+                            objType = 'script',
+                        },
+                        insertObjectIntoOctree = methodWrapper{
+                            sim.insertObjectIntoOctree,
+                            argType = {'handle', 'handle', nil, 'color', nil},
+                            objType = 'ocTree',
+                        },
+                        insertObjectIntoPointCloud = methodWrapper{
+                            sim.insertObjectIntoPointCloud,
+                            objType = 'pointCloud',
+                        },
+                        insertPointsIntoPointCloud = methodWrapper{
+                            sim.insertPointsIntoPointCloud,
+                            argType = {'handle', 'handle', nil, nil, 'color'},
+                            objType = 'pointCloud',
+                        },
+                        insertVoxelsIntoOctree = methodWrapper{
+                            sim.insertVoxelsIntoOctree,
+                            argType = {'handle', nil, nil, 'color'},
+                            objType = 'ocTree',
+                        },
+                        intersectPointsWithPointCloud = methodWrapper{
+                            sim.intersectPointsWithPointCloud,
+                            objType = 'pointCloud',
+                        },
+                        loadScene = methodWrapper{
+                            sim.loadScene,
+                            objType = 'scene',
+                        },
+                        readVisionSensor = methodWrapper{
+                            sim.readVisionSensor,
+                            objType = 'visionSensor',
+                        },
+                        relocateShapeFrame = methodWrapper{
+                            sim.relocateShapeFrame,
+                            argType = {'handle', 'pose'},
+                            objType = 'shape',
+                        },
+                        removeModel = methodWrapper{
+                            sim.removeModel,
+                        },
+                        removePointsFromPointCloud = methodWrapper{
+                            sim.removePointsFromPointCloud,
+                            objType = 'pointCloud',
+                        },
+                        removeReferencedObjects = methodWrapper{
+                            sim.removeReferencedObjects,
+                        },
+                        removeVoxelsFromOctree = methodWrapper{
+                            sim.removeVoxelsFromOctree,
+                            objType = 'ocTree',
+                        },
+                        resetDynamicObject = methodWrapper{
+                            sim.resetDynamicObject,
+                        },
+                        resetGraph = methodWrapper{
+                            sim.resetGraph,
+                            objType = 'graph',
+                        },
+                        resetProximitySensor = methodWrapper{
+                            sim.resetProximitySensor,
+                            objType = 'proximitySensor',
+                        },
+                        resetVisionSensor = methodWrapper{
+                            sim.resetVisionSensor,
+                            objType = 'visionSensor',
+                        },
+                        saveModel = methodWrapper{
+                            sim.saveModel,
+                        },
+                        saveScene = methodWrapper{
+                            sim.saveScene,
+                            objType = 'scene',
+                        },
+                        scaleObject = methodWrapper{
+                            sim.scaleObject,
+                        },
+                        setMatrix = methodWrapper{
+                            sim.setObjectMatrix,
+                            argType = {'handle', 'matrix', 'handle'},
+                        },
+                        setOrientation = methodWrapper{
+                            sim.setObjectOrientation,
+                            argType = {'handle', 'vector3', 'handle'},
+                        },
+                        setPose = methodWrapper{
+                            sim.setObjectPose,
+                            argType = {'handle', 'pose', 'handle'},
+                        },
+                        setPosition = methodWrapper{
+                            sim.setObjectPosition,
+                            argType = {'handle', 'vector3', 'handle'},
+                        },
+                        setQuaternion = methodWrapper{
+                            sim.setObjectQuaternion,
+                            argType = {'handle', 'quaternion', 'handle'},
+                        },
+                        setReferencedHandles = methodWrapper{
+                            sim.setReferencedHandles,
+                        },
+                        setShapeBB = methodWrapper{
+                            sim.setShapeBB,
+                            argType = {'handle', 'vector3'},
+                        },
+                        subtractObjectFromOctree = methodWrapper{
+                            sim.subtractObjectFromOctree,
+                            argType = {'handle', 'handle'},
+                            objType = 'ocTree',
+                        },
+                        subtractObjectFromPointCloud = methodWrapper{
+                            sim.subtractObjectFromPointCloud,
+                            argType = {'handle', 'handle'},
+                            objType = 'pointCloud',
+                        },
+                        ungroupShape = methodWrapper{
+                            sim.ungroupShape,
+                            objType = 'shape',
+                        },
+                        visitTree = methodWrapper{
+                            sim.visitTree,
+                        },
+                        getShapeAppearance = methodWrapper{
+                            sim.getShapeAppearance,
+                            objType = 'shape',
+                        },
+                        setShapeAppearance = methodWrapper{
+                            sim.setShapeAppearance,
+                            objType = 'shape',
+                        },
+                        setBoolProperty = methodWrapper{
+                            sim.setBoolProperty,
+                        },
+                        getBoolProperty = methodWrapper{
+                            sim.getBoolProperty,
+                        },
+                        setIntProperty = methodWrapper{
+                            sim.setIntProperty,
+                        },
+                        getIntProperty = methodWrapper{
+                            sim.getIntProperty,
+                        },
+                        setLongProperty = methodWrapper{
+                            sim.setLongProperty,
+                        },
+                        getLongProperty = methodWrapper{
+                            sim.getLongProperty,
+                        },
+                        setFloatProperty = methodWrapper{
+                            sim.setFloatProperty,
+                        },
+                        getFloatProperty = methodWrapper{
+                            sim.getFloatProperty,
+                        },
+                        setStringProperty = methodWrapper{
+                            sim.setStringProperty,
+                        },
+                        getStringProperty = methodWrapper{
+                            sim.getStringProperty,
+                        },
+                        setBufferProperty = methodWrapper{
+                            sim.setBufferProperty,
+                        },
+                        getBufferProperty = methodWrapper{
+                            sim.getBufferProperty,
+                        },
+                        setTableProperty = methodWrapper{
+                            sim.setTableProperty,
+                        },
+                        getTableProperty = methodWrapper{
+                            sim.getTableProperty,
+                        },
+                        setIntArray2Property = methodWrapper{
+                            sim.setIntArray2Property,
+                        },
+                        getIntArray2Property = methodWrapper{
+                            sim.getIntArray2Property,
+                        },
+                        setVector2Property = methodWrapper{
+                            sim.setVector2Property,
+                            argType = {'handle', nil, 'matrix'},
+                        },
+                        getVector2Property = methodWrapper{
+                            sim.getVector2Property,
+                            retType = {'matrix'},
+                        },
+                        setVector3Property = methodWrapper{
+                            sim.setVector3Property,
+                            argType = {'handle', nil, 'matrix'},
+                        },
+                        getVector3Property = methodWrapper{
+                            sim.getVector3Property,
+                            retType = {'matrix'},
+                        },
+                        setQuaternionProperty = methodWrapper{
+                            sim.setQuaternionProperty,
+                            argType = {'handle', nil, 'quaternion'},
+                        },
+                        getQuaternionProperty = methodWrapper{
+                            sim.getQuaternionProperty,
+                            retType = {'quaternion'},
+                        },
+                        setPoseProperty = methodWrapper{
+                            sim.setPoseProperty,
+                            argType = {'handle', nil, 'pose'},
+                        },
+                        getPoseProperty = methodWrapper{
+                            sim.getPoseProperty,
+                            retType = {'pose'},
+                        },
+                        setColorProperty = methodWrapper{
+                            sim.setColorProperty,
+                            argType = {'handle', nil, 'color'},
+                        },
+                        getColorProperty = methodWrapper{
+                            sim.getColorProperty,
+                            retType = {'color'},
+                        },
+                        setFloatArrayProperty = methodWrapper{
+                            sim.setFloatArrayProperty,
+                        },
+                        getFloatArrayProperty = methodWrapper{
+                            sim.getFloatArrayProperty,
+                        },
+                        setIntArrayProperty = methodWrapper{
+                            sim.setIntArrayProperty,
+                        },
+                        getIntArrayProperty = methodWrapper{
+                            sim.getIntArrayProperty,
+                        },
+                        removeProperty = methodWrapper{
+                            sim.removeProperty,
+                        },
+                        getPropertyName = methodWrapper{
+                            sim.getPropertyName,
+                        },
+                        getPropertyInfo = methodWrapper{
+                            sim.getPropertyInfo,
+                        },
+                        setEventFilters = methodWrapper{
+                            sim.setEventFilters,
+                        },
+                        getProperty = methodWrapper{
+                            sim.getProperty,
+                        },
+                        setProperty = methodWrapper{
+                            sim.setProperty,
+                        },
+                        getPropertyTypeString = methodWrapper{
+                            sim.getPropertyTypeString,
+                        },
+                        getProperties = methodWrapper{
+                            sim.getProperties,
+                        },
+                        setProperties = methodWrapper{
+                            sim.setProperties,
+                        },
+                        getPropertiesInfos = methodWrapper{
+                            sim.getPropertiesInfos,
+                        },
+                    }
+                    for name, wrapper in pairs(obj.__methods) do
+                        if obj[name] == nil then
+                            obj[name] = wrapper
                         end
                     end
                     return setmetatable(obj, sim.Object)
