@@ -1446,6 +1446,25 @@ function _S.sysCallEx_cleanup()
     _S.dlg.switch() -- remove all
 end
 
+sim.packTable = wrap(sim.packTable, function(origFunc)
+    return function(data, scheme)
+        if type(data) == 'table' then
+            scheme = scheme or 0
+            if scheme == 0 then
+                return origFunc(data, scheme) -- CoppeliaSim's pack format
+            elseif scheme == 1 or scheme == 2 then
+                local cbor = require 'org.conman.cbor'
+                local buff = tobuffer(cbor.encode(data))
+                return buff
+            else
+                error('invalid packing scheme.')
+            end
+        else
+            return tobuffer('')
+        end
+    end
+end)
+
 sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
     return function(data, scheme)
         if isbuffer(data) then
