@@ -27,8 +27,20 @@ function simCBOR.decode(data)
     return cbor.decode(data, 1, type_tags)
 end
 
-function simCBOR.encode(...)
-    return cbor.encode(...)
+for _, name in ipairs {
+    'encode',
+    'isfloat',
+    'isinteger',
+    'isnumber',
+    'pdecode',
+    'pencode',
+    '_VERSION',
+    'SIMPLE',
+    'TAG',
+    'TYPE',
+    '__ENCODE_MAP',
+} do
+    simCBOR[name] = cbor[name]
 end
 
 return simCBOR
