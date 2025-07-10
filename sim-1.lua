@@ -1018,7 +1018,7 @@ function sim.readCustomTableData(...)
             data = tostring(data)
         end
         if dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
+            local cbor = require 'simCBOR'
             local data0 = data
             data = cbor.decode(data0)
             if type(data) ~= 'table' and tagName == '__info__' then
@@ -1043,7 +1043,7 @@ function sim.writeCustomTableData(...)
         sim.writeCustomDataBlockEx(handle, tagName, '', options)
     else
         if options.dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
+            local cbor = require 'simCBOR'
             theTable = cbor.encode(theTable)
         else
             options.dataType = options.dataType or 'table'
@@ -1217,7 +1217,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
         options.dataType = options.dataType or 'cbor'
         local buf
         if options.dataType == 'cbor' then
-            local cbor = require 'org.conman.cbor'
+            local cbor = require 'simCBOR'
             buf = cbor.encode(theTable)
         else
             buf = sim.packTable(theTable)
@@ -1877,7 +1877,7 @@ sim.packTable = wrap(sim.packTable, function(origFunc)
             if scheme == 0 then
                 return origFunc(data, scheme) -- CoppeliaSim's pack format
             elseif scheme == 1 or scheme == 2 then
-                local cbor = require 'org.conman.cbor'
+                local cbor = require 'simCBOR'
                 local buff = tobuffer(cbor.encode(data))
                 return buff
             else
@@ -1906,7 +1906,7 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
                 if scheme and scheme ~= 1 and scheme ~= 2 then
                     error('decoding scheme mismatch.')
                 end
-                local cbor = require 'org.conman.cbor'
+                local cbor = require 'simCBOR'
                 local tbl = cbor.decode(data)
                 return tbl
             else

@@ -1,6 +1,6 @@
 local sim = require 'sim'
 local simZMQ = require 'simZMQ'
-local cbor = require 'org.conman.cbor'
+local cbor = require 'simCBOR'
 
 local RemoteApiClient = {}
 

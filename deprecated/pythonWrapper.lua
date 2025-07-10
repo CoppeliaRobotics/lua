@@ -5,7 +5,7 @@ simSubprocess = require('simSubprocess')
 simUI = require('simUI')
 json = require 'dkjson'
 -- cbor=require 'cbor' -- encodes strings as buffers, always. DO NOT USE!!
-cbor = require 'org.conman.cbor'
+cbor = require 'simCBOR'
 
 pythonWrapper = {}
 

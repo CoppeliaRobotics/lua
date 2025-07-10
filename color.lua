@@ -121,7 +121,7 @@ function Color:__index(k)
 end
 
 function Color:__tocbor(sref, stref)
-    local cbor = require 'org.conman.cbor'
+    local cbor = require 'simCBOR'
     local cbor_c = require 'org.conman.cbor_c'
     return cbor_c.encode(0xC0, 4008)
         .. cbor.encode(self:rgb888())

@@ -34,7 +34,7 @@ __buffmetatable__ = {
         return self.__buff__
     end,
     __tocbor = function(self)
-        local cbor = require('org.conman.cbor')
+        local cbor = require('simCBOR')
         return cbor.TYPE.BIN(self.__buff__)
     end,
     newobj = function(txt)
@@ -179,7 +179,7 @@ require = wrap(require, function(origRequire)
         local arg = ({...})[1]
         local first = not package.loaded[arg]
         local ret = {origRequire(...)}
-        if first and arg == 'org.conman.cbor' then
+        if first and arg == 'simCBOR' then
             (function(cbor)
                 cbor.decode = wrap(cbor.decode, function(origFunc)
                     return function(b, ...)
