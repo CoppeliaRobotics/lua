@@ -1341,6 +1341,7 @@ for apiName, info in pairs{
         argType = {'handle'},
     },
     getReferencedHandle = {
+        argType = {'handle'},
         retType = {'handle'},
     },
     getReferencedHandlesTags = {
@@ -1500,30 +1501,35 @@ for apiName, info in pairs{
         argType = {'handle', nil, 'matrix'},
     },
     getVector2Property = {
+        argType = {'handle'},
         retType = {'matrix'},
     },
     setVector3Property = {
         argType = {'handle', nil, 'matrix'},
     },
     getVector3Property = {
+        argType = {'handle'},
         retType = {'matrix'},
     },
     setQuaternionProperty = {
         argType = {'handle', nil, 'quaternion'},
     },
     getQuaternionProperty = {
+        argType = {'handle'},
         retType = {'quaternion'},
     },
     setPoseProperty = {
         argType = {'handle', nil, 'pose'},
     },
     getPoseProperty = {
+        argType = {'handle'},
         retType = {'pose'},
     },
     setColorProperty = {
         argType = {'handle', nil, 'color'},
     },
     getColorProperty = {
+        argType = {'handle'},
         retType = {'color'},
     },
     setFloatArrayProperty = {
