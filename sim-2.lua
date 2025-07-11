@@ -1265,6 +1265,348 @@ require = wrap(require, function(origRequire)
     end
 end)
 
+for apiName, info in pairs{
+    addItemToCollection = {
+        argType = {nil, nil, 'handle'},
+    },
+    addForce = {
+        argType = {'handle', 'vector3', 'vector3'},
+    },
+    addForceAndTorque = {
+        argType = {'handle', 'vector3', 'vector3'},
+    },
+    addReferencedHandle = {
+        argType = {'handle', 'handle'},
+    },
+    alignShapeBB = {
+        argType = {'handle', 'pose'},
+    },
+    callScriptFunction = {
+        argType = {'handle'},
+    },
+    checkCollision = {
+        argType = {'handle', 'handle'},
+    },
+    checkOctreePointOccupancy = {
+        argType = {'handle'},
+    },
+    checkProximitySensor = {
+        argType = {'handle', 'handle'},
+    },
+    checkVisionSensor = {
+        argType = {'handle', 'handle'},
+    },
+    checkVisionSensorEx = {
+        argType = {'handle', 'handle'},
+    },
+    computeMassAndInertia = {
+        argType = {'handle'},
+    },
+    executeScriptString = {
+        argType = {'handle'},
+    },
+    getApiFunc = {
+        argType = {'handle'},
+    },
+    getApiInfo = {
+        argType = {'handle'},
+    },
+    getExtensionString = {
+        argType = {'handle'},
+    },
+    getObjectMatrix = {
+        argType = {'handle', 'handle'},
+        retType = {'matrix'},
+    },
+    getObjectOrientation = {
+        argType = {'handle', 'handle'},
+        retType = {'vector3'},
+    },
+    getObjectPose = {
+        argType = {'handle', 'handle'},
+        retType = {'pose'},
+    },
+    getObjectPosition = {
+        argType = {'handle', 'handle'},
+        retType = {'vector3'},
+    },
+    getObjectQuaternion = {
+        argType = {'handle', 'handle'},
+        retType = {'quaternion'},
+    },
+    getObjectsInTree = {
+        argType = {'handle'},
+    },
+    getReferencedHandles = {
+        argType = {'handle'},
+    },
+    getReferencedHandle = {
+        retType = {'handle'},
+    },
+    getReferencedHandlesTags = {
+        argType = {'handle'},
+    },
+    getStackTraceback = {
+        argType = {'handle'},
+    },
+    initScript = {
+        argType = {'handle'},
+    },
+    insertObjectIntoOctree = {
+        argType = {'handle', 'handle', nil, 'color', nil},
+    },
+    insertObjectIntoPointCloud = {
+        argType = {'handle'},
+    },
+    insertPointsIntoPointCloud = {
+        argType = {'handle', 'handle', nil, nil, 'color'},
+    },
+    insertVoxelsIntoOctree = {
+        argType = {'handle', nil, nil, 'color'},
+    },
+    intersectPointsWithPointCloud = {
+        argType = {'handle'},
+    },
+    loadScene = {
+        argType = {'handle'},
+    },
+    readVisionSensor = {
+        argType = {'handle'},
+    },
+    relocateShapeFrame = {
+        argType = {'handle', 'pose'},
+    },
+    removeModel = {
+        argType = {'handle'},
+    },
+    removePointsFromPointCloud = {
+        argType = {'handle'},
+    },
+    removeReferencedObjects = {
+        argType = {'handle'},
+    },
+    removeVoxelsFromOctree = {
+        argType = {'handle'},
+    },
+    resetDynamicObject = {
+        argType = {'handle'},
+    },
+    resetGraph = {
+        argType = {'handle'},
+    },
+    resetProximitySensor = {
+        argType = {'handle'},
+    },
+    resetVisionSensor = {
+        argType = {'handle'},
+    },
+    saveModel = {
+        argType = {'handle'},
+    },
+    saveScene = {
+        argType = {'handle'},
+    },
+    scaleObject = {
+        argType = {'handle'},
+    },
+    setObjectMatrix = {
+        argType = {'handle', 'matrix', 'handle'},
+    },
+    setObjectOrientation = {
+        argType = {'handle', 'vector3', 'handle'},
+    },
+    setObjectPose = {
+        argType = {'handle', 'pose', 'handle'},
+    },
+    setObjectPosition = {
+        argType = {'handle', 'vector3', 'handle'},
+    },
+    setObjectQuaternion = {
+        argType = {'handle', 'quaternion', 'handle'},
+    },
+    setReferencedHandles = {
+        argType = {'handle'},
+    },
+    setShapeBB = {
+        argType = {'handle', 'vector3'},
+    },
+    subtractObjectFromOctree = {
+        argType = {'handle', 'handle'},
+    },
+    subtractObjectFromPointCloud = {
+        argType = {'handle', 'handle'},
+    },
+    ungroupShape = {
+        argType = {'handle'},
+    },
+    visitTree = {
+        argType = {'handle'},
+    },
+    getShapeAppearance = {
+        argType = {'handle'},
+    },
+    setShapeAppearance = {
+        argType = {'handle'},
+    },
+    setBoolProperty = {
+        argType = {'handle'},
+    },
+    getBoolProperty = {
+        argType = {'handle'},
+    },
+    setIntProperty = {
+        argType = {'handle'},
+    },
+    getIntProperty = {
+        argType = {'handle'},
+    },
+    setLongProperty = {
+        argType = {'handle'},
+    },
+    getLongProperty = {
+        argType = {'handle'},
+    },
+    setFloatProperty = {
+        argType = {'handle'},
+    },
+    getFloatProperty = {
+        argType = {'handle'},
+    },
+    setStringProperty = {
+        argType = {'handle'},
+    },
+    getStringProperty = {
+        argType = {'handle'},
+    },
+    setBufferProperty = {
+        argType = {'handle'},
+    },
+    getBufferProperty = {
+        argType = {'handle'},
+    },
+    setTableProperty = {
+        argType = {'handle'},
+    },
+    getTableProperty = {
+        argType = {'handle'},
+    },
+    setIntArray2Property = {
+        argType = {'handle'},
+    },
+    getIntArray2Property = {
+        argType = {'handle'},
+    },
+    setVector2Property = {
+        argType = {'handle', nil, 'matrix'},
+    },
+    getVector2Property = {
+        retType = {'matrix'},
+    },
+    setVector3Property = {
+        argType = {'handle', nil, 'matrix'},
+    },
+    getVector3Property = {
+        retType = {'matrix'},
+    },
+    setQuaternionProperty = {
+        argType = {'handle', nil, 'quaternion'},
+    },
+    getQuaternionProperty = {
+        retType = {'quaternion'},
+    },
+    setPoseProperty = {
+        argType = {'handle', nil, 'pose'},
+    },
+    getPoseProperty = {
+        retType = {'pose'},
+    },
+    setColorProperty = {
+        argType = {'handle', nil, 'color'},
+    },
+    getColorProperty = {
+        retType = {'color'},
+    },
+    setFloatArrayProperty = {
+        argType = {'handle'},
+    },
+    getFloatArrayProperty = {
+        argType = {'handle'},
+    },
+    setIntArrayProperty = {
+        argType = {'handle'},
+    },
+    getIntArrayProperty = {
+        argType = {'handle'},
+    },
+    removeProperty = {
+        argType = {'handle'},
+    },
+    getPropertyName = {
+        argType = {'handle'},
+    },
+    getPropertyInfo = {
+        argType = {'handle'},
+    },
+    setEventFilters = {
+        argType = {'handle'},
+    },
+    getProperty = {
+        argType = {'handle'},
+    },
+    setProperty = {
+        argType = {'handle'},
+    },
+    getPropertyTypeString = {
+        argType = {'handle'},
+    },
+    getProperties = {
+        argType = {'handle'},
+    },
+    setProperties = {
+        argType = {'handle'},
+    },
+    getPropertiesInfos = {
+        argType = {'handle'},
+    },
+} do
+    local argType = info.argType or {}
+    local retType = info.retType or {}
+    sim[apiName] = wrap(sim[apiName], function(origFunc)
+        return function(...)
+            local args = {...}
+            for i = 1, #args do
+                local t = argType and argType[i]
+                if t then
+                    local a = callmeta(args[i], '__to' .. t)
+                    if a ~= nil then
+                        args[i] = a
+                    end
+                end
+            end
+            local ret = {origFunc(table.unpack(args))}
+            for i = 1, #ret do
+                local t = info.retType and info.retType[i]
+                if t then
+                    local simEigen = require 'simEigen'
+                    local Color = require 'color'
+                    local cls = ({
+                        handle = sim.Object,
+                        vector3 = simEigen.Vector,
+                        matrix = simEigen.Matrix,
+                        quaternion = simEigen.Quaternion,
+                        pose = simEigen.Pose,
+                        color = Color
+                    })[t]
+                    if cls then
+                        ret[i] = cls(ret[i])
+                    end
+                end
+            end
+            return table.unpack(ret)
+        end
+    end)
+end
+
 -- Hidden, internal functions:
 ----------------------------------------------------------
 
