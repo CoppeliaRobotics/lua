@@ -1265,353 +1265,105 @@ require = wrap(require, function(origRequire)
     end
 end)
 
-for apiName, info in pairs{
-    addItemToCollection = {
-        argType = {nil, nil, 'handle'},
-    },
-    addForce = {
-        argType = {'handle', 'vector3', 'vector3'},
-    },
-    addForceAndTorque = {
-        argType = {'handle', 'vector3', 'vector3'},
-    },
-    addReferencedHandle = {
-        argType = {'handle', 'handle'},
-    },
-    alignShapeBB = {
-        argType = {'handle', 'pose'},
-    },
-    callScriptFunction = {
-        argType = {'handle'},
-    },
-    checkCollision = {
-        argType = {'handle', 'handle'},
-    },
-    checkOctreePointOccupancy = {
-        argType = {'handle'},
-    },
-    checkProximitySensor = {
-        argType = {'handle', 'handle'},
-    },
-    checkVisionSensor = {
-        argType = {'handle', 'handle'},
-    },
-    checkVisionSensorEx = {
-        argType = {'handle', 'handle'},
-    },
-    computeMassAndInertia = {
-        argType = {'handle'},
-    },
-    executeScriptString = {
-        argType = {'handle'},
-    },
-    getApiFunc = {
-        argType = {'handle'},
-    },
-    getApiInfo = {
-        argType = {'handle'},
-    },
-    getExtensionString = {
-        argType = {'handle'},
-    },
-    getObjectMatrix = {
-        argType = {'handle', 'handle'},
-        retType = {'matrix'},
-    },
-    getObjectOrientation = {
-        argType = {'handle', 'handle'},
-        retType = {'vector3'},
-    },
-    getObjectPose = {
-        argType = {'handle', 'handle'},
-        retType = {'pose'},
-    },
-    getObjectPosition = {
-        argType = {'handle', 'handle'},
-        retType = {'vector3'},
-    },
-    getObjectQuaternion = {
-        argType = {'handle', 'handle'},
-        retType = {'quaternion'},
-    },
-    getObjectsInTree = {
-        argType = {'handle'},
-    },
-    getReferencedHandles = {
-        argType = {'handle'},
-    },
-    getReferencedHandle = {
-        argType = {'handle'},
-        retType = {'handle'},
-    },
-    getReferencedHandlesTags = {
-        argType = {'handle'},
-    },
-    getStackTraceback = {
-        argType = {'handle'},
-    },
-    initScript = {
-        argType = {'handle'},
-    },
-    insertObjectIntoOctree = {
-        argType = {'handle', 'handle', nil, 'color', nil},
-    },
-    insertObjectIntoPointCloud = {
-        argType = {'handle'},
-    },
-    insertPointsIntoPointCloud = {
-        argType = {'handle', 'handle', nil, nil, 'color'},
-    },
-    insertVoxelsIntoOctree = {
-        argType = {'handle', nil, nil, 'color'},
-    },
-    intersectPointsWithPointCloud = {
-        argType = {'handle'},
-    },
-    loadScene = {
-        argType = {'handle'},
-    },
-    readVisionSensor = {
-        argType = {'handle'},
-    },
-    relocateShapeFrame = {
-        argType = {'handle', 'pose'},
-    },
-    removeModel = {
-        argType = {'handle'},
-    },
-    removePointsFromPointCloud = {
-        argType = {'handle'},
-    },
-    removeReferencedObjects = {
-        argType = {'handle'},
-    },
-    removeVoxelsFromOctree = {
-        argType = {'handle'},
-    },
-    resetDynamicObject = {
-        argType = {'handle'},
-    },
-    resetGraph = {
-        argType = {'handle'},
-    },
-    resetProximitySensor = {
-        argType = {'handle'},
-    },
-    resetVisionSensor = {
-        argType = {'handle'},
-    },
-    saveModel = {
-        argType = {'handle'},
-    },
-    saveScene = {
-        argType = {'handle'},
-    },
-    scaleObject = {
-        argType = {'handle'},
-    },
-    setObjectMatrix = {
-        argType = {'handle', 'matrix', 'handle'},
-    },
-    setObjectOrientation = {
-        argType = {'handle', 'vector3', 'handle'},
-    },
-    setObjectPose = {
-        argType = {'handle', 'pose', 'handle'},
-    },
-    setObjectPosition = {
-        argType = {'handle', 'vector3', 'handle'},
-    },
-    setObjectQuaternion = {
-        argType = {'handle', 'quaternion', 'handle'},
-    },
-    setReferencedHandles = {
-        argType = {'handle'},
-    },
-    setShapeBB = {
-        argType = {'handle', 'vector3'},
-    },
-    subtractObjectFromOctree = {
-        argType = {'handle', 'handle'},
-    },
-    subtractObjectFromPointCloud = {
-        argType = {'handle', 'handle'},
-    },
-    ungroupShape = {
-        argType = {'handle'},
-    },
-    visitTree = {
-        argType = {'handle'},
-    },
-    getShapeAppearance = {
-        argType = {'handle'},
-    },
-    setShapeAppearance = {
-        argType = {'handle'},
-    },
-    setBoolProperty = {
-        argType = {'handle'},
-    },
-    getBoolProperty = {
-        argType = {'handle'},
-    },
-    setIntProperty = {
-        argType = {'handle'},
-    },
-    getIntProperty = {
-        argType = {'handle'},
-    },
-    setLongProperty = {
-        argType = {'handle'},
-    },
-    getLongProperty = {
-        argType = {'handle'},
-    },
-    setFloatProperty = {
-        argType = {'handle'},
-    },
-    getFloatProperty = {
-        argType = {'handle'},
-    },
-    setStringProperty = {
-        argType = {'handle'},
-    },
-    getStringProperty = {
-        argType = {'handle'},
-    },
-    setBufferProperty = {
-        argType = {'handle'},
-    },
-    getBufferProperty = {
-        argType = {'handle'},
-    },
-    setTableProperty = {
-        argType = {'handle'},
-    },
-    getTableProperty = {
-        argType = {'handle'},
-    },
-    setIntArray2Property = {
-        argType = {'handle'},
-    },
-    getIntArray2Property = {
-        argType = {'handle'},
-    },
-    setVector2Property = {
-        argType = {'handle', nil, 'matrix'},
-    },
-    getVector2Property = {
-        argType = {'handle'},
-        retType = {'matrix'},
-    },
-    setVector3Property = {
-        argType = {'handle', nil, 'matrix'},
-    },
-    getVector3Property = {
-        argType = {'handle'},
-        retType = {'matrix'},
-    },
-    setQuaternionProperty = {
-        argType = {'handle', nil, 'quaternion'},
-    },
-    getQuaternionProperty = {
-        argType = {'handle'},
-        retType = {'quaternion'},
-    },
-    setPoseProperty = {
-        argType = {'handle', nil, 'pose'},
-    },
-    getPoseProperty = {
-        argType = {'handle'},
-        retType = {'pose'},
-    },
-    setColorProperty = {
-        argType = {'handle', nil, 'color'},
-    },
-    getColorProperty = {
-        argType = {'handle'},
-        retType = {'color'},
-    },
-    setFloatArrayProperty = {
-        argType = {'handle'},
-    },
-    getFloatArrayProperty = {
-        argType = {'handle'},
-    },
-    setIntArrayProperty = {
-        argType = {'handle'},
-    },
-    getIntArrayProperty = {
-        argType = {'handle'},
-    },
-    removeProperty = {
-        argType = {'handle'},
-    },
-    getPropertyName = {
-        argType = {'handle'},
-    },
-    getPropertyInfo = {
-        argType = {'handle'},
-    },
-    setEventFilters = {
-        argType = {'handle'},
-    },
-    getProperty = {
-        argType = {'handle'},
-    },
-    setProperty = {
-        argType = {'handle'},
-    },
-    getPropertyTypeString = {
-        argType = {'handle'},
-    },
-    getProperties = {
-        argType = {'handle'},
-    },
-    setProperties = {
-        argType = {'handle'},
-    },
-    getPropertiesInfos = {
-        argType = {'handle'},
-    },
-} do
-    local argType = info.argType or {}
-    local retType = info.retType or {}
-    sim[apiName] = wrap(sim[apiName], function(origFunc)
-        return function(...)
-            local args = {...}
-            for i = 1, #args do
-                local t = argType and argType[i]
-                if t then
-                    local a = callmeta(args[i], '__to' .. t)
-                    if a ~= nil then
-                        args[i] = a
-                    end
-                end
-            end
-            local ret = {origFunc(table.unpack(args))}
-            for i = 1, #ret do
-                local t = info.retType and info.retType[i]
-                if t then
-                    local simEigen = require 'simEigen'
-                    local Color = require 'color'
-                    local cls = ({
-                        handle = sim.Object,
-                        vector3 = simEigen.Vector,
-                        matrix = simEigen.Matrix,
-                        quaternion = simEigen.Quaternion,
-                        pose = simEigen.Pose,
-                        color = Color
-                    })[t]
-                    if cls then
-                        ret[i] = cls(ret[i])
-                    end
-                end
-            end
-            return table.unpack(ret)
-        end
-    end)
-end
+sim.addItemToCollection = wrapTypes(sim.addItemToCollection, {nil, nil, 'handle'}, {})
+sim.addForce = wrapTypes(sim.addForce, {'handle', 'vector3', 'vector3'}, {})
+sim.addForceAndTorque = wrapTypes(sim.addForceAndTorque, {'handle', 'vector3', 'vector3'}, {})
+sim.addReferencedHandle = wrapTypes(sim.addReferencedHandle, {'handle', 'handle'}, {})
+sim.alignShapeBB = wrapTypes(sim.alignShapeBB, {'handle', 'pose'}, {})
+sim.callScriptFunction = wrapTypes(sim.callScriptFunction, {'handle'}, {})
+sim.checkCollision = wrapTypes(sim.checkCollision, {'handle', 'handle'}, {})
+sim.checkOctreePointOccupancy = wrapTypes(sim.checkOctreePointOccupancy, {'handle'}, {})
+sim.checkProximitySensor = wrapTypes(sim.checkProximitySensor, {'handle', 'handle'}, {})
+sim.checkVisionSensor = wrapTypes(sim.checkVisionSensor, {'handle', 'handle'}, {})
+sim.checkVisionSensorEx = wrapTypes(sim.checkVisionSensorEx, {'handle', 'handle'}, {})
+sim.computeMassAndInertia = wrapTypes(sim.computeMassAndInertia, {'handle'}, {})
+sim.executeScriptString = wrapTypes(sim.executeScriptString, {'handle'}, {})
+sim.getApiFunc = wrapTypes(sim.getApiFunc, {'handle'}, {})
+sim.getApiInfo = wrapTypes(sim.getApiInfo, {'handle'}, {})
+sim.getExtensionString = wrapTypes(sim.getExtensionString, {'handle'}, {})
+sim.getObjectMatrix = wrapTypes(sim.getObjectMatrix, {'handle', 'handle'}, {'matrix'})
+sim.getObjectOrientation = wrapTypes(sim.getObjectOrientation, {'handle', 'handle'}, {'vector3'})
+sim.getObjectPose = wrapTypes(sim.getObjectPose, {'handle', 'handle'}, {'pose'})
+sim.getObjectPosition = wrapTypes(sim.getObjectPosition, {'handle', 'handle'}, {'vector3'})
+sim.getObjectQuaternion = wrapTypes(sim.getObjectQuaternion, {'handle', 'handle'}, {'quaternion'})
+sim.getObjectsInTree = wrapTypes(sim.getObjectsInTree, {'handle'}, {})
+sim.getReferencedHandles = wrapTypes(sim.getReferencedHandles, {'handle'}, {})
+sim.getReferencedHandle = wrapTypes(sim.getReferencedHandle, {'handle'}, {'handle'})
+sim.getReferencedHandlesTags = wrapTypes(sim.getReferencedHandlesTags, {'handle'}, {})
+sim.getStackTraceback = wrapTypes(sim.getStackTraceback, {'handle'}, {})
+sim.initScript = wrapTypes(sim.initScript, {'handle'}, {})
+sim.insertObjectIntoOctree = wrapTypes(sim.insertObjectIntoOctree, {'handle', 'handle', nil, 'color', nil}, {})
+sim.insertObjectIntoPointCloud = wrapTypes(sim.insertObjectIntoPointCloud, {'handle'}, {})
+sim.insertPointsIntoPointCloud = wrapTypes(sim.insertPointsIntoPointCloud, {'handle', 'handle', nil, nil, 'color'}, {})
+sim.insertVoxelsIntoOctree = wrapTypes(sim.insertVoxelsIntoOctree, {'handle', nil, nil, 'color'}, {})
+sim.intersectPointsWithPointCloud = wrapTypes(sim.intersectPointsWithPointCloud, {'handle'}, {})
+sim.loadScene = wrapTypes(sim.loadScene, {'handle'}, {})
+sim.readVisionSensor = wrapTypes(sim.readVisionSensor, {'handle'}, {})
+sim.relocateShapeFrame = wrapTypes(sim.relocateShapeFrame, {'handle', 'pose'}, {})
+sim.removeModel = wrapTypes(sim.removeModel, {'handle'}, {})
+sim.removePointsFromPointCloud = wrapTypes(sim.removePointsFromPointCloud, {'handle'}, {})
+sim.removeReferencedObjects = wrapTypes(sim.removeReferencedObjects, {'handle'}, {})
+sim.removeVoxelsFromOctree = wrapTypes(sim.removeVoxelsFromOctree, {'handle'}, {})
+sim.resetDynamicObject = wrapTypes(sim.resetDynamicObject, {'handle'}, {})
+sim.resetGraph = wrapTypes(sim.resetGraph, {'handle'}, {})
+sim.resetProximitySensor = wrapTypes(sim.resetProximitySensor, {'handle'}, {})
+sim.resetVisionSensor = wrapTypes(sim.resetVisionSensor, {'handle'}, {})
+sim.saveModel = wrapTypes(sim.saveModel, {'handle'}, {})
+sim.saveScene = wrapTypes(sim.saveScene, {'handle'}, {})
+sim.scaleObject = wrapTypes(sim.scaleObject, {'handle'}, {})
+sim.setObjectMatrix = wrapTypes(sim.setObjectMatrix, {'handle', 'matrix', 'handle'}, {})
+sim.setObjectOrientation = wrapTypes(sim.setObjectOrientation, {'handle', 'vector3', 'handle'}, {})
+sim.setObjectPose = wrapTypes(sim.setObjectPose, {'handle', 'pose', 'handle'}, {})
+sim.setObjectPosition = wrapTypes(sim.setObjectPosition, {'handle', 'vector3', 'handle'}, {})
+sim.setObjectQuaternion = wrapTypes(sim.setObjectQuaternion, {'handle', 'quaternion', 'handle'}, {})
+sim.setReferencedHandles = wrapTypes(sim.setReferencedHandles, {'handle'}, {})
+sim.setShapeBB = wrapTypes(sim.setShapeBB, {'handle', 'vector3'}, {})
+sim.subtractObjectFromOctree = wrapTypes(sim.subtractObjectFromOctree, {'handle', 'handle'}, {})
+sim.subtractObjectFromPointCloud = wrapTypes(sim.subtractObjectFromPointCloud, {'handle', 'handle'}, {})
+sim.ungroupShape = wrapTypes(sim.ungroupShape, {'handle'}, {})
+sim.visitTree = wrapTypes(sim.visitTree, {'handle'}, {})
+sim.getShapeAppearance = wrapTypes(sim.getShapeAppearance, {'handle'}, {})
+sim.setShapeAppearance = wrapTypes(sim.setShapeAppearance, {'handle'}, {})
+sim.setBoolProperty = wrapTypes(sim.setBoolProperty, {'handle'}, {})
+sim.getBoolProperty = wrapTypes(sim.getBoolProperty, {'handle'}, {})
+sim.setIntProperty = wrapTypes(sim.setIntProperty, {'handle'}, {})
+sim.getIntProperty = wrapTypes(sim.getIntProperty, {'handle'}, {})
+sim.setLongProperty = wrapTypes(sim.setLongProperty, {'handle'}, {})
+sim.getLongProperty = wrapTypes(sim.getLongProperty, {'handle'}, {})
+sim.setFloatProperty = wrapTypes(sim.setFloatProperty, {'handle'}, {})
+sim.getFloatProperty = wrapTypes(sim.getFloatProperty, {'handle'}, {})
+sim.setStringProperty = wrapTypes(sim.setStringProperty, {'handle'}, {})
+sim.getStringProperty = wrapTypes(sim.getStringProperty, {'handle'}, {})
+sim.setBufferProperty = wrapTypes(sim.setBufferProperty, {'handle'}, {})
+sim.getBufferProperty = wrapTypes(sim.getBufferProperty, {'handle'}, {})
+sim.setTableProperty = wrapTypes(sim.setTableProperty, {'handle'}, {})
+sim.getTableProperty = wrapTypes(sim.getTableProperty, {'handle'}, {})
+sim.setIntArray2Property = wrapTypes(sim.setIntArray2Property, {'handle'}, {})
+sim.getIntArray2Property = wrapTypes(sim.getIntArray2Property, {'handle'}, {})
+sim.setVector2Property = wrapTypes(sim.setVector2Property, {'handle', nil, 'matrix'}, {})
+sim.getVector2Property = wrapTypes(sim.getVector2Property, {'handle'}, {'matrix'})
+sim.setVector3Property = wrapTypes(sim.setVector3Property, {'handle', nil, 'matrix'}, {})
+sim.getVector3Property = wrapTypes(sim.getVector3Property, {'handle'}, {'matrix'})
+sim.setQuaternionProperty = wrapTypes(sim.setQuaternionProperty, {'handle', nil, 'quaternion'}, {})
+sim.getQuaternionProperty = wrapTypes(sim.getQuaternionProperty, {'handle'}, {'quaternion'})
+sim.setPoseProperty = wrapTypes(sim.setPoseProperty, {'handle', nil, 'pose'}, {})
+sim.getPoseProperty = wrapTypes(sim.getPoseProperty, {'handle'}, {'pose'})
+sim.setColorProperty = wrapTypes(sim.setColorProperty, {'handle', nil, 'color'}, {})
+sim.getColorProperty = wrapTypes(sim.getColorProperty, {'handle'}, {'color'})
+sim.setFloatArrayProperty = wrapTypes(sim.setFloatArrayProperty, {'handle'}, {})
+sim.getFloatArrayProperty = wrapTypes(sim.getFloatArrayProperty, {'handle'}, {})
+sim.setIntArrayProperty = wrapTypes(sim.setIntArrayProperty, {'handle'}, {})
+sim.getIntArrayProperty = wrapTypes(sim.getIntArrayProperty, {'handle'}, {})
+sim.removeProperty = wrapTypes(sim.removeProperty, {'handle'}, {})
+sim.getPropertyName = wrapTypes(sim.getPropertyName, {'handle'}, {})
+sim.getPropertyInfo = wrapTypes(sim.getPropertyInfo, {'handle'}, {})
+sim.setEventFilters = wrapTypes(sim.setEventFilters, {'handle'}, {})
+sim.getProperty = wrapTypes(sim.getProperty, {'handle'}, {})
+sim.setProperty = wrapTypes(sim.setProperty, {'handle'}, {})
+sim.getPropertyTypeString = wrapTypes(sim.getPropertyTypeString, {'handle'}, {})
+sim.getProperties = wrapTypes(sim.getProperties, {'handle'}, {})
+sim.setProperties = wrapTypes(sim.setProperties, {'handle'}, {})
+sim.getPropertiesInfos = wrapTypes(sim.getPropertiesInfos, {'handle'}, {})
 
 -- Hidden, internal functions:
 ----------------------------------------------------------

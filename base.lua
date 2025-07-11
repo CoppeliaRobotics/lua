@@ -83,6 +83,43 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
+function wrapTypes(func, argType, retType)
+    return wrap(func, function(origFunc)
+        return function(...)
+            local args = {...}
+            for i = 1, #args do
+                local t = argType and argType[i]
+                if t then
+                    local a = callmeta(args[i], '__to' .. t)
+                    if a ~= nil then
+                        args[i] = a
+                    end
+                end
+            end
+            local ret = {origFunc(table.unpack(args))}
+            for i = 1, #ret do
+                local t = retType and retType[i]
+                if t then
+                    local simEigen = require 'simEigen'
+                    local Color = require 'color'
+                    local cls = ({
+                        handle = sim.Object,
+                        vector3 = simEigen.Vector,
+                        matrix = simEigen.Matrix,
+                        quaternion = simEigen.Quaternion,
+                        pose = simEigen.Pose,
+                        color = Color
+                    })[t]
+                    if cls then
+                        ret[i] = cls(ret[i])
+                    end
+                end
+            end
+            return table.unpack(ret)
+        end
+    end)
+end
+
 function callmeta(o, mm, d)
     local mt = getmetatable(o)
     if mt and mt[mm] then
