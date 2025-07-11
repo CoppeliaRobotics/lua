@@ -1,6 +1,7 @@
 local sim = require 'sim'
 local simQHull = require 'simQHull'
 local path = require('models.path_customization-2')
+local simEigen = require('simEigen')
 
 _S.conveyor = {}
 
@@ -74,9 +75,9 @@ function _S.conveyor.getPathData()
         sim.unpackDoubleTable(sim.readCustomBufferData(_S.conveyor.model, 'PATHCTRLPTS'))
     for i = 1, 7, 1 do pathData[#pathData + 1] = pathData[i] end
 
-    local m = Matrix(math.floor(#pathData / 7), 7, pathData)
-    _S.conveyor.pathPositions = m:slice(1, 1, m:rows(), 3):data()
-    _S.conveyor.pathQuaternions = m:slice(1, 4, m:rows(), 7):data()
+    local m = simEigen.Matrix(math.floor(#pathData / 7), 7, pathData)
+    _S.conveyor.pathPositions = m:block(1, 1, m:rows(), 3):data()
+    _S.conveyor.pathQuaternions = m:block(1, 4, m:rows(), 4):data()
     _S.conveyor.pathLengths, _S.conveyor.totalLength = sim.getPathLengths(
                                                            _S.conveyor.pathPositions, 3
                                                        )
@@ -84,9 +85,9 @@ function _S.conveyor.getPathData()
     if _S.conveyor.config.type == 1 then
         -- shift positions towards the outside, by the half thickness of the pads:
         for i = 1, m:rows(), 1 do
-            local rot = Matrix3x3:fromquaternion(m:slice(i, 4, i, 7):data())
-            local zaxis = rot:slice(1, 3, 3, 3)
-            local p = m:slice(i, 1, i, 3):t()
+            local rot = simEigen.Quaternion(m:block(i, 4, 1, 4):data()):torotation()
+            local zaxis = rot:block(1, 3, 3, 1)
+            local p = m:block(i, 1, 1, 3):t()
             p = p + zaxis * _S.conveyor.config.beltElementThickness / 2
             _S.conveyor.pathPositions[3 * (i - 1) + 1] = p[1]
             _S.conveyor.pathPositions[3 * (i - 1) + 2] = p[2]
@@ -152,12 +153,12 @@ function _S.conveyor.rebuildConveyor(oldPads, oldJoints)
             sim.writeCustomStringData(jnt, 'PATHROL', 'a')
             sim.setObjectProperty(cyl, sim.objectproperty_selectmodelbaseinstead)
             sim.setObjectInt32Param(jnt, sim.objintparam_visibility_layer, 512)
-            local m = Matrix3x3:rotx(-math.pi / 2)
+            local m = simEigen.Quaternion:fromaxisangle(simEigen.Vector({1.0, 0.0, 0.0}), -math.pi / 2):torotation()
             sim.setObjectPosition(
                 jnt, {-_S.conveyor.config.length / 2 + dx * (i - 1), 0, -_S.conveyor.config.radius},
                 _S.conveyor.model
             )
-            sim.setObjectQuaternion(jnt, Matrix3x3:toquaternion(m), _S.conveyor.model)
+            sim.setObjectQuaternion(jnt, simEigen.Quaternion:fromrotation(m):data(), _S.conveyor.model)
         end
     else
         local padCnt = _S.conveyor.totalLength //

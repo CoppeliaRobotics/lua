@@ -771,7 +771,7 @@ function _S.getConfigDistance(confA, confB, metric, types)
 end
 
 function sim.getPathLengths(...)
-    local matrix = require 'matrix-2'
+    local simEigen = require('simEigen')
     local path, dof, cb = checkargs({
         {type = 'table', item_type = 'float', size = '2..*'}, {type = 'int'},
         {type = 'any', default_nil = true, nullable = true},
@@ -780,7 +780,7 @@ function sim.getPathLengths(...)
     if dof < 1 or (confCnt < 2) then error("Bad table size.") end
     local distancesAlongPath = {0}
     local totDist = 0
-    local pM = matrix.Matrix(confCnt, dof, path)
+    local pM = simEigen.Matrix(confCnt, dof, path)
     local metric = {}
     local tt = {}
     for i = 1, dof, 1 do

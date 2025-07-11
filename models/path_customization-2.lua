@@ -1,5 +1,6 @@
 local sim = require 'sim'
 local simUI = require 'simUI'
+local simEigen = require('simEigen')
 
 function sysCall_init()
     _S.path.init()
@@ -572,16 +573,14 @@ function _S.path.computePaths()
                    )
         for j = 1, #pp, 1 do interpolatedPath2[(i - 1) * 12 + j] = pp[j] end
     end
-    local mPath = Matrix(#path // 12, 12, path)
-    local mInterpPath = Matrix(#interpolatedPath2 // 12, 12, interpolatedPath2)
+    local mPath = simEigen.Matrix(#path // 12, 12, path)
+    local mInterpPath = simEigen.Matrix(#interpolatedPath2 // 12, 12, interpolatedPath2)
 
-    interpolatedPath2 = _S.path.recomputeOrientations(
-                            mInterpPath:slice(1, 1, mInterpPath:rows(), 7):data()
-                        )
+    interpolatedPath2 = _S.path.recomputeOrientations(mInterpPath:block(1, 1, mInterpPath:rows(), 7):data())
 
-    return mPath:slice(1, 1, mPath:rows(), 7):data(), interpolatedPath2,
-           mPath:slice(1, 8, mPath:rows(), mPath:cols()):data(),
-           mInterpPath:slice(1, 8, mInterpPath:rows(), mInterpPath:cols()):data()
+    return mPath:block(1, 1, mPath:rows(), 7):data(), interpolatedPath2,
+           mPath:block(1, 8, mPath:rows(), mPath:cols() - 7):data(),
+           mInterpPath:block(1, 8, mInterpPath:rows(), mInterpPath:cols() - 7):data()
 end
 
 function _S.path.displayLine(index)
@@ -599,9 +598,7 @@ function _S.path.displayLine(index)
             col = c.line.color
             s = c.line.thickness
         end
-        _S.path.lineCont[index] = sim.addDrawingObject(
-                                      sim.drawing_lines, s, 0, _S.path.model, 9999, col
-                                  )
+        _S.path.lineCont[index] = sim.addDrawingObject(sim.drawing_lines, s, 0, _S.path.model, 9999, col)
         local cont = _S.path.lineCont[index]
         for i = 0, (#path / 7) - 2, 1 do
             local p1 = {path[i * 7 + 1], path[i * 7 + 2], path[i * 7 + 3]}
@@ -623,22 +620,17 @@ function _S.path.displayLine(index)
                                   )
             local p = sim.getObjectPosition(_S.path.model)
             local q = sim.getObjectQuaternion(_S.path.model)
-            local m = Matrix4x4:frompose({p[1], p[2], p[3], q[1], q[2], q[3], q[4]})
+            local m = simEigen.Pose({p[1], p[2], p[3], q[1], q[2], q[3], q[4]}):totransform()
             for i = 0, (#path / 7) - 1, 1 do
-                local m0 = Matrix4x4:frompose(
-                               {
-                        path[i * 7 + 1], path[i * 7 + 2], path[i * 7 + 3], path[i * 7 + 4],
-                        path[i * 7 + 5], path[i * 7 + 6], path[i * 7 + 7],
-                    }
-                           )
+                local m0 = simEigen.Pose({path[i * 7 + 1], path[i * 7 + 2], path[i * 7 + 3], path[i * 7 + 4], path[i * 7 + 5], path[i * 7 + 6], path[i * 7 + 7]}):totransform()
                 m0 = m * m0
-                local p2 = m0 * Vector({_S.path.ctrlPtsSize, 0, 0, 1})
+                local p2 = m0 * simEigen.Vector({_S.path.ctrlPtsSize, 0, 0, 1})
                 local l = {m0[1][4], m0[2][4], m0[3][4], p2[1], p2[2], p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[1], l)
-                local p2 = m0 * Vector({0, _S.path.ctrlPtsSize, 0, 1})
+                local p2 = m0 * simEigen.Vector({0, _S.path.ctrlPtsSize, 0, 1})
                 local l = {m0[1][4], m0[2][4], m0[3][4], p2[1], p2[2], p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[2], l)
-                local p2 = m0 * Vector({0, 0, _S.path.ctrlPtsSize, 1})
+                local p2 = m0 * simEigen.Vector({0, 0, _S.path.ctrlPtsSize, 1})
                 local l = {m0[1][4], m0[2][4], m0[3][4], p2[1], p2[2], p2[3]}
                 sim.addDrawingObjectItem(_S.path.tickCont[3], l)
             end
@@ -913,7 +905,7 @@ function _S.path.upVector_callback(ui, id, newVal)
         i = i + 1
     end
     if t[1] ~= 0 or t[2] ~= 0 or t[3] ~= 0 then
-        t = Vector(t):normalized():data()
+        t = simEigen.Vector(t):normalized():data()
         c.upVector = t
         _S.path.writeInfo(c)
         _S.path.setup()
@@ -934,7 +926,7 @@ end
 
 function _S.path.align_callback(ui, id, newVal)
     local c = _S.path.readInfo()
-    local zvect = Vector3(c.upVector)
+    local zvect = simEigen.Vector(c.upVector)
     c.autoOrientation = id - 7
     _S.path.writeInfo(c)
     _S.path.setDlgItemContent()
@@ -944,21 +936,21 @@ end
 
 function _S.path.output_callback(ui, id, newVal)
     local c = _S.path.readInfo()
-    local ctrlPts = Matrix(#_S.path.paths[1] // 7, 7, _S.path.paths[1])
-    local pts = Matrix(#_S.path.paths[2] // 7, 7, _S.path.paths[2])
+    local ctrlPts = simEigen.Matrix(#_S.path.paths[1] // 7, 7, _S.path.paths[1])
+    local pts = simEigen.Matrix(#_S.path.paths[2] // 7, 7, _S.path.paths[2])
     if (c.bitCoded & 2) ~= 0 then -- path is closed. First and last pts are duplicate
-        ctrlPts = ctrlPts:droprow(ctrlPts:rows())
-        pts = pts:droprow(pts:rows())
+        ctrlPts = ctrlPts:block(1, 1, ctrlPts:rows() - 1, ctrlPts:cols())
+        pts = pts:block(1, 1, pts:rows() - 1, pts:cols())
     end
-    local pathM = Matrix4x4:frompose(sim.getObjectPose(_S.path.model))
+    local pathM = simEigen.Pose(sim.getObjectPose(_S.path.model)):totransform()
     local relPts = 'relCtrlPts={'
     local absPts = 'absCtrlPts={'
-    local pos = ctrlPts:slice(1, 1, ctrlPts:rows(), 3):data()
-    local quat = ctrlPts:slice(1, 4, ctrlPts:rows(), 7):data()
+    local pos = ctrlPts:block(1, 1, ctrlPts:rows(), 3):data()
+    local quat = ctrlPts:block(1, 4, ctrlPts:rows(), 4):data()
     for i = 1, ctrlPts:rows(), 1 do
         local relData = ctrlPts[i]:data()
-        local tr = Matrix4x4:frompose(ctrlPts[i])
-        local absData = Matrix4x4:topose(pathM * tr)
+        local tr = simEigen.Pose(ctrlPts[i]):totransform()
+        local absData = simEigen.Pose((pathM * tr):data())
         for j = 1, 7, 1 do
             relPts = relPts .. string.format("%.4e", relData[j])
             absPts = absPts .. string.format("%.4e", absData[j])
@@ -974,12 +966,12 @@ function _S.path.output_callback(ui, id, newVal)
     sim.addLog(sim.verbosity_scriptinfos, absPts)
     local relPts = 'relPts={'
     local absPts = 'absPts={'
-    local pos = pts:slice(1, 1, pts:rows(), 3):data()
-    local quat = pts:slice(1, 4, pts:rows(), 7):data()
+    local pos = pts:block(1, 1, pts:rows(), 3):data()
+    local quat = pts:block(1, 4, pts:rows(), 4):data()
     for i = 1, pts:rows(), 1 do
         local relData = pts[i]:data()
-        local tr = Matrix4x4:frompose(pts[i])
-        local absData = Matrix4x4:topose(pathM * tr)
+        local tr = simEigen.Pose(pts[i]:data()):totransform()
+        local absData = simEigen.Pose((pathM * tr):data())
         for j = 1, 7, 1 do
             relPts = relPts .. string.format("%.4e", relData[j])
             absPts = absPts .. string.format("%.4e", absData[j])
@@ -1041,11 +1033,11 @@ function _S.path.recomputeOrientations(path)
         local retVal, nIndex
         if index ~= 1 then
             nIndex = index - 1
-            retVal = Vector3(mpath[nIndex])
+            retVal = simEigen.Vector(mpath:row(nIndex):data())
         else
             if (c.bitCoded & 2) ~= 0 then
                 nIndex = mpath:rows() - 1
-                retVal = Vector3(mpath[nIndex])
+                retVal = simEigen.Vector(mpath:row(nIndex):data())
             end
         end
         return retVal, nIndex
@@ -1055,24 +1047,24 @@ function _S.path.recomputeOrientations(path)
         local retVal, nIndex
         if index ~= mpath:rows() then
             nIndex = index + 1
-            retVal = Vector3(mpath[nIndex])
+            retVal = simEigen.Vector(mpath:row(nIndex):data())
         else
             if (c.bitCoded & 2) ~= 0 then
                 nIndex = 2
-                retVal = Vector3(mpath[nIndex])
+                retVal = simEigen.Vector(mpath:row(nIndex):data())
             end
         end
         return retVal, nIndex
     end
 
     if (c.bitCoded & 16) ~= 0 then
-        local zvect = Vector3(c.upVector)
-        local mppath = Matrix(#path // 7, 7, path)
-        mppath = mppath:slice(1, 1, mppath:rows(), 3)
-        local retPath = Matrix(mppath:rows(), 7)
+        local zvect = simEigen.Vector(c.upVector)
+        local mppath = simEigen.Matrix(#path // 7, 7, path)
+        mppath = mppath:block(1, 1, mppath:rows(), 3)
+        local retPath = simEigen.Matrix(mppath:rows(), 7)
         local prevPose
         for i = 1, mppath:rows(), 1 do
-            local p1 = Vector3(mppath[i])
+            local p1 = simEigen.Vector(mppath:row(i):data())
             local p0, ni0 = getPreviousPt(mppath, i)
             if p0 and (p1 - p0):norm() < 0.0001 then
                 -- Prev pt is coincident
@@ -1140,13 +1132,11 @@ function _S.path.recomputeOrientations(path)
                     m = m:horzcat(vr:cross(vf))
                     m = m:horzcat(vf)
                 end
-                m = Matrix4x4:fromrotation(m)
-                m[1][4] = p1[1]
-                m[2][4] = p1[2]
-                m[3][4] = p1[3]
-                prevPose = Matrix4x4:topose(m)
+                m = m:horzcat(p1)
+                m = m:vertcat(simEigen.Vector({0, 0, 0, 1}):t())
+                prevPose = simEigen.Pose:fromtransform(m)
             end
-            retPath[i] = prevPose
+            retPath:setrow(i, simEigen.Matrix(1, 7, prevPose:data()))
         end
         path = retPath:data()
     end
