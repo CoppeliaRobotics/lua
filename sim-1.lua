@@ -6,6 +6,13 @@ for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
 
+if unpack == nil then
+    function unpack(...)
+        sim.addLog(sim.verbosity_scriptwarnings | sim.verbosity_once, "unpack is deprecated. Use table.unpack instead.")
+        return table.unpack(...)
+    end
+end
+
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
