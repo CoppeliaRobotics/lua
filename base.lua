@@ -104,6 +104,7 @@ function wrapTypes(func, argType, retType)
                     local Color = require 'color'
                     local cls = ({
                         handle = sim.Object,
+                        vector2 = simEigen.Vector,
                         vector3 = simEigen.Vector,
                         matrix = simEigen.Matrix,
                         matrix3x3 = function(data) return simEigen.Matrix(3, 3, data) end,
