@@ -106,6 +106,11 @@ function wrapTypes(func, argType, retType)
                         handle = sim.Object,
                         vector3 = simEigen.Vector,
                         matrix = simEigen.Matrix,
+                        matrix3x3 = function(data) return simEigen.Matrix(3, 3, data) end,
+                        matrix4x4 = function(data)
+                            if #data == 12 then data = table.add(data, {0, 0, 0, 1}) end
+                            return simEigen.Matrix(4, 4, data)
+                        end,
                         quaternion = simEigen.Quaternion,
                         pose = simEigen.Pose,
                         color = Color
