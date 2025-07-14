@@ -492,8 +492,8 @@ function sim.getAlternateConfigs(...)
 
     for i = 1, #jointHandles, 1 do sim.setJointPosition(jointHandles[i], initConfig[i]) end
     if next(configs) ~= nil then
-        local matrix = require 'matrix-2'
-        configs = matrix.Matrix:fromtable(configs)
+        local simEigen = require('simEigen')
+        configs = simEigen.Matrix:fromtable(configs)
         configs = configs:data()
     end
     sim.setStepping(lb)

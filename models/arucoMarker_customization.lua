@@ -1,4 +1,5 @@
 local sim = require 'sim'
+local simEigen = require 'simEigen'
 local simIM = require 'simIM'
 require 'configUi'
 
@@ -24,7 +25,7 @@ function generate(config)
             local h = sim.createPrimitiveShape(sim.primitiveshape_cuboid, size)
             sim.addReferencedHandle(self, h)
             local c = simIM.get(img, {i, j})
-            sim.setShapeColor(h, '', sim.colorcomponent_ambient_diffuse, (Vector(c) / 255):data())
+            sim.setShapeColor(h, '', sim.colorcomponent_ambient_diffuse, (simEigen.Vector(c) / 255):data())
             sim.setObjectParent(h, self, false)
             sim.setObjectPosition(
                 h,

@@ -54,3 +54,9 @@ function math.randomseed2(seed)
     -- same as math.randomseed, but each script has its own generator
     auxFunc('randseed', seed)
 end
+
+math.randomseed = wrap(math.randomseed, function(origFunc)
+    return function(a, ...)
+        return origFunc(math.floor(a), ...) -- in Lua 5.4 only integer accepted
+    end
+end)

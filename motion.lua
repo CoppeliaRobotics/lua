@@ -649,6 +649,7 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
+    local simEigen = require'simEigen'
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -668,9 +669,9 @@ function sim.generateTimeOptimalTrajectory(...)
         dof ~= #minMaxAccel / 2 then error("Bad table size.") end
     local lb = sim.setStepping(true)
 
-    local pM = Matrix(confCnt, dof, path)
-    local mmvM = Matrix(dof, 2, minMaxVel)
-    local mmaM = Matrix(dof, 2, minMaxAccel)
+    local pM = simEigen.Matrix(confCnt, dof, path)
+    local mmvM = simEigen.Matrix(dof, 2, minMaxVel)
+    local mmaM = simEigen.Matrix(dof, 2, minMaxAccel)
 
     local code = [=[
 def sysCall_init():
@@ -748,7 +749,7 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return Matrix:fromtable(r.qs[1]):data(), r.ts, script
+    return simEigen.Matrix:fromtable(r.qs[1]):data(), r.ts, script
 end
 
 end -- end of motion.extend
