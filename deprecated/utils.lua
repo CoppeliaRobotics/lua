@@ -1,6 +1,4 @@
-local sim = require 'sim'
-
--- DEPRECATED. Do not use anymore if possible
+-- DEPRECATED. Do not use anymore
 
 local utils = {}
 
