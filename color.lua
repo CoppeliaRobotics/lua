@@ -133,10 +133,6 @@ function Color:__tocolor()
     return self:data()
 end
 
-function Color:__index(k)
-    return Color[k]
-end
-
 function Color:__tocbor(sref, stref)
     local cbor = require 'simCBOR'
     local cbor_c = require 'org.conman.cbor_c'
