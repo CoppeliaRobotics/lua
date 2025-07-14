@@ -90,7 +90,7 @@ import('checkargs')
 require('motion').extend(sim)
 require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)
-require('deprecated.utils')
+-- require('deprecated.utils') no! Breaks many things
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)

@@ -1,5 +1,7 @@
 -- DEPRECATED. Do not use anymore
 
+local sim = require 'sim'
+
 local utils = {}
 
 function asserttype(x, t, name)
