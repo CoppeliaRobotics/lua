@@ -164,8 +164,14 @@ setmetatable(
                 assert(#rgb == 3, 'incorrect table size')
                 return setmetatable({r = rgb[1], g = rgb[2], b = rgb[3]}, self)
             elseif type(rgb) == 'string' then
-                assert(#rgb == 7 and rgb:sub(1, 1) == '#', 'invalid format')
-                return Color(tonumber('0x' .. rgb:sub(2)))
+                assert(rgb:sub(1, 1) == '#', 'invalid format')
+                rgb = rgb:sub(2)
+                if #rgb == 3 then
+                    local r, g, b = table.unpack(string.chars(rgb))
+                    rgb = r .. r .. g .. g .. b .. b
+                end
+                assert(#rgb == 6, 'invalid length')
+                return Color(tonumber('0x' .. rgb))
             elseif math.type(rgb) == 'integer' then
                 assert(0 <= rgb and rgb <= 0xFFFFFF, 'invalid value')
                 return Color{
