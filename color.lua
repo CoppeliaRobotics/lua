@@ -1,6 +1,32 @@
-local sim = require 'sim'
+local class = require 'middleclass'
 
-local Color = {}
+local Color = class 'Color'
+
+function Color:initialize(rgb)
+    if type(rgb) == 'string' then
+        assert(rgb:sub(1, 1) == '#', 'invalid format')
+        rgb = rgb:sub(2)
+        if #rgb == 3 then
+            local r, g, b = table.unpack(string.chars(rgb))
+            rgb = r .. r .. g .. g .. b .. b
+        end
+        assert(#rgb == 6, 'invalid length')
+        rgb = tonumber('0x' .. rgb)
+    end
+
+    if math.type(rgb) == 'integer' then
+        assert(0 <= rgb and rgb <= 0xFFFFFF, 'invalid value')
+        rgb = {
+            ((rgb & 0xFF0000) >> 16) / 255.,
+            ((rgb &   0xFF00) >>  8) / 255.,
+             (rgb &     0xFF)        / 255.,
+        }
+    end
+
+    assert(type(rgb) == 'table', 'invalid type')
+    assert(#rgb == 3, 'incorrect table size')
+    self.r, self.g, self.b = table.unpack(rgb)
+end
 
 function Color:red()
     return math.max(0, math.min(1, self.r))
@@ -78,22 +104,13 @@ function Color:inverted()
     return Color{1 - self:red(), 1 - self:green(), 1 - self:blue()}
 end
 
-function Color:iscolor(v)
-    assert(self == Color, 'class method')
-    return getmetatable(v) == Color
-end
-
 function Color:html()
     return string.format('#%02x%02x%02x', self:r8(), self:g8(), self:b8())
 end
 
 function Color:__eq(o)
-    if Color:iscolor(o) then
-        return self:html() == o:html()
-    elseif type(o) == 'string' then
-        return self:html() == o
-    elseif math.type(o) == 'integer' then
-        return self:rgb888() == o
+    if Color.isInstanceOf(o, Color) then
+        return self:rgb888() == o:rgb888()
     else
         return false
     end
@@ -109,7 +126,7 @@ function Color:__tostring()
 end
 
 function Color:__iscolor()
-    return Color:iscolor(self)
+    return true
 end
 
 function Color:__tocolor()
@@ -156,35 +173,6 @@ function Color:hsv(h, s, v)
     end
     return Color{r, g, b}
 end
-
-setmetatable(
-    Color, {
-        __call = function(self, rgb)
-            if type(rgb) == 'table' then
-                assert(#rgb == 3, 'incorrect table size')
-                return setmetatable({r = rgb[1], g = rgb[2], b = rgb[3]}, self)
-            elseif type(rgb) == 'string' then
-                assert(rgb:sub(1, 1) == '#', 'invalid format')
-                rgb = rgb:sub(2)
-                if #rgb == 3 then
-                    local r, g, b = table.unpack(string.chars(rgb))
-                    rgb = r .. r .. g .. g .. b .. b
-                end
-                assert(#rgb == 6, 'invalid length')
-                return Color(tonumber('0x' .. rgb))
-            elseif math.type(rgb) == 'integer' then
-                assert(0 <= rgb and rgb <= 0xFFFFFF, 'invalid value')
-                return Color{
-                    ((rgb & 0xFF0000) >> 16) / 255.,
-                    ((rgb &   0xFF00) >>  8) / 255.,
-                     (rgb &     0xFF)        / 255.,
-                }
-            else
-                error 'invalid type'
-            end
-        end,
-    }
-)
 
 function Color.unittest()
     assert(true)

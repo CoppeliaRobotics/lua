@@ -129,7 +129,11 @@ end
 function callmeta(o, mm, d)
     local mt = getmetatable(o)
     if mt and mt[mm] then
-        return mt[mm](o)
+        if type(mt[mm]) == 'function' then
+            return mt[mm](o)
+        else
+            return mt[mm]
+        end
     else
         return d
     end
