@@ -749,7 +749,7 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return simEigen.Matrix:fromtable(r.qs[1]):data(), r.ts, script
+    return simEigen.Matrix(r.qs[1]):data(), r.ts, script
 end
 
 end -- end of motion.extend

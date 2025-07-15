@@ -238,19 +238,28 @@ else
     end
 end
 
+tostring = wrap(tostring, function(origToString)
+    return function(...)
+        local lb = setAutoYield(false)
+        local retVals = {origToString(...)}
+        setAutoYield(lb)
+        return table.unpack(retVals)
+    end
+end)
+
 function print(...)
+    local lb = setAutoYield(false)
     local a = table.pack(...)
     local s = ''
     for i = 1, a.n do
         s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i], {omitQuotes = true})
     end
-
-    local lb = setAutoYield(false)
     _S.printAsync(s)
     setAutoYield(lb)
 end
 
 function printf(fmt, ...)
+    local lb = setAutoYield(false)
     local a = table.pack(...)
     for i = 1, a.n do
         if type(a[i]) == 'table' then
@@ -260,6 +269,7 @@ function printf(fmt, ...)
         end
     end
     print(string.format(fmt, table.unpack(a, 1, a.n)))
+    setAutoYield(lb)
 end
 
 function _S.funcToString(f)
