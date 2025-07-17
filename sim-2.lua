@@ -49,7 +49,7 @@ function sim.step(wait)
 end
 
 local checkargs = require('checkargs')
-require('motion').extend(sim)
+require('motion-2').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)

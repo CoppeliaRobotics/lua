@@ -87,7 +87,7 @@ function sim.step(wait)
 end
 
 import('checkargs')
-require('motion').extend(sim)
+require('motion-1').extend(sim)
 require('deprecated.old').extend(sim)
 require('sim-deprecated').extend(sim)
 -- require('deprecated.utils') no! Breaks many things

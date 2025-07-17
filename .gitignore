@@ -6,6 +6,7 @@ configUi-3.lua
 actionServer*.lua
 behaviortree.lua
 actions/
+simEigen/
 sim*.lua
 !sim.lua
 !sim-*.lua
