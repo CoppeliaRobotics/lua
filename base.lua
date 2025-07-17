@@ -103,18 +103,31 @@ function wrapTypes(func, argType, retType)
                     local simEigen = require 'simEigen'
                     local Color = require 'color'
                     local cls = ({
-                        handle = sim.Object,
-                        vector2 = simEigen.Vector,
-                        vector3 = simEigen.Vector,
-                        matrix = simEigen.Matrix,
-                        matrix3x3 = function(data) return simEigen.Matrix(3, 3, data) end,
+                        handle = function(h)
+                            return sim.Object(h)
+                        end,
+                        vector2 = function(data)
+                            return simEigen.Vector(data)
+                        end,
+                        vector3 = function(data)
+                            return simEigen.Vector(data)
+                        end,
+                        matrix3x3 = function(data)
+                            return simEigen.Matrix(3, 3, data)
+                        end,
                         matrix4x4 = function(data)
                             if #data == 12 then data = table.add(data, {0, 0, 0, 1}) end
                             return simEigen.Matrix(4, 4, data)
                         end,
-                        quaternion = simEigen.Quaternion,
-                        pose = simEigen.Pose,
-                        color = Color
+                        quaternion = function(data)
+                            return simEigen.Quaternion(data)
+                        end,
+                        pose = function(data)
+                            return simEigen.Pose(data)
+                        end,
+                        color = function(data)
+                            return Color(data)
+                        end,
                     })[t]
                     if cls then
                         ret[i] = cls(ret[i])
