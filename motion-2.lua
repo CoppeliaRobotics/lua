@@ -217,52 +217,55 @@ function sim.moveToPose_init(params)
         end
     end
     
-    if params.targetPose == nil or type(params.targetPose) ~= 'table' or #params.targetPose ~= 7 then
+    if not Pose:ispose(params.targetPose) then
         error("missing or invalid 'targetPose' field.")
     end
     local dim = 4
     if params.metric then
+        if not Vector:isvector(params.metric, 4) then
+            error("invalid 'metric' field.")
+        end
         dim = 1
     end
 
-    params.maxVel = params.maxVel or table.rep(9999.0, dim)
-    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
-    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    params.maxVel = params.maxVel or Vector(dim, 9999.0)
+    params.maxAccel = params.maxAccel or Vector(dim, 99999.0)
+    params.maxJerk = params.maxJerk or Vector(dim, 9999999.0)
     
     if type(params.maxVel) == 'number' then
-        params.maxVel = table.rep(params.maxVel, dim)
+        params.maxVel = Vector(dim, params.maxVel)
     end
-    if type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
+    if not Vector:isvector(params.maxVel, dim) then
         error("invalid 'maxVel' field.")
     end
     if type(params.maxAccel) == 'number' then
-        params.maxAccel = table.rep(params.maxAccel, dim)
+        params.maxAccel = Vector(dim, params.maxAccel)
     end
-    if type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
+    if not Vector:isvector(params.maxAccel, dim) then
         error("invalid 'maxAccel' field.")
     end
     if type(params.maxJerk) == 'number' then
-        params.maxJerk = table.rep(params.maxJerk, dim)
+        params.maxJerk = Vector(dim, params.maxJerk)
     end
-    if type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
+    if not Vector:isvector(params.maxJerk, dim) then
         error("invalid 'maxJerk' field.")
     end
     
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
-    params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+    params.minVel = params.minVel or (params.maxVel * -1.0)
     if type(params.minVel) == 'number' then
-        params.minVel = table.rep(params.minVel, dim)
+        params.minVel = Vector(dim, params.minVel)
     end
-    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
+    if not Vector:isvector(params.minVel, dim) then
         error("missing or invalid 'minVel' field.")
     end
-    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    params.minAccel = params.minAccel or (params.maxAccel * -1.0)
     if type(params.minAccel) == 'number' then
-        params.minAccel = table.rep(params.minAccel, dim)
+        params.minAccel = Vector(dim, params.minAccel)
     end
-    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
+    if not Vector:isvector(params.minAccel, dim) then
         error("missing or invalid 'minAccel' field.")
     end
 
@@ -305,20 +308,15 @@ function sim.moveToPose_init(params)
         end
     end
 
-    params.vel = params.vel or table.rep(0.0, dim)
-    params.accel = params.accel or table.rep(0.0, dim)
-    params.targetVel = params.targetVel or table.rep(0.0, dim)
+    params.vel = params.vel or Vector(dim, 0.0)
+    params.accel = params.accel or Vector(dim, 0.0)
+    params.targetVel = params.targetVel or Vector(dim, 0.0)
     
     params.timeStep = params.timeStep or 0
-    table.slice(params.maxVel, 1, dim)
-    table.slice(params.minVel, 1, dim)
-    table.slice(params.maxAccel, 1, dim)
-    table.slice(params.minAccel, 1, dim)
-    table.slice(params.maxJerk, 1, dim)
 
-    params.startMatrix = sim.poseToMatrix(params.pose)
-    params.targetMatrix = sim.poseToMatrix(params.targetPose)
-    params.matrix = table.clone(params.startMatrix)
+    params.startMatrix = Pose:totransform(params.pose)
+    params.targetMatrix = Pose:totransform(params.targetPose)
+    params.matrix = params.startMatrix:copy()
     
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
@@ -332,15 +330,15 @@ function sim.moveToPose_init(params)
     params.timeLeft = 0
     params.dist = 1.0
     
-    local axis, angle = sim.getRotationAxis(params.startMatrix, params.targetMatrix)
+    local axis, angle = sim.getRotationAxis(params.startMatrix:data(), params.targetMatrix:data())
     params.angle = angle
     if params.metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
         -- the start and goal pose. This always results in straight line movement paths
         local dx = {
-            (params.targetMatrix[4] - params.startMatrix[4]) * params.metric[1],
-            (params.targetMatrix[8] - params.startMatrix[8]) * params.metric[2],
-            (params.targetMatrix[12] - params.startMatrix[12]) * params.metric[3], params.angle * params.metric[4],
+            (params.targetMatrix[1][4] - params.startMatrix[1][4]) * params.metric[1],
+            (params.targetMatrix[2][4] - params.startMatrix[2][4]) * params.metric[2],
+            (params.targetMatrix[3][4] - params.startMatrix[4][4]) * params.metric[3], params.angle * params.metric[4],
         }
         params.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
         if params.dist > 0.000001 then
@@ -352,13 +350,13 @@ function sim.moveToPose_init(params)
         -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
         -- is handled and controlled individually. This can result in non-straight line movement paths,
         -- due to how the Ruckig functions operate depending on 'flags'
-        local dx = {
-            params.targetMatrix[4] - params.startMatrix[4], params.targetMatrix[8] - params.startMatrix[8],
-            params.targetMatrix[12] - params.startMatrix[12], params.angle,
-        }
-        local currentPosVelAccel = table.add(table.rep(0.0, dim), params.vel, params.accel)
-        local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
-        local targetPosVel = table.add(dx, params.targetVel)
+        local dx = Vector({
+            params.targetMatrix[1][4] - params.startMatrix[1][4], params.targetMatrix[2][4] - params.startMatrix[2][4],
+            params.targetMatrix[3][4] - params.startMatrix[3][4], params.angle,
+        })
+        local currentPosVelAccel = Vector(dim, 0.0):vertcat(params.vel, params.accel):data()
+        local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
+        local targetPosVel = dx:vertcat(params.targetVel):data()
         params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
     end
     
@@ -383,9 +381,9 @@ function sim.moveToPose_step(data)
                 end
                 local t = newPosVelAccel[1] / data.dist
                 data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
-                data.pose = sim.matrixToPose(data.matrix)
-                data.vel = {newPosVelAccel[2]}
-                data.accel = {newPosVelAccel[3]}
+                data.pose = Pose:fromtransform(data.matrix)
+                data.vel = Vector{newPosVelAccel[2]}
+                data.accel = Vector{newPosVelAccel[3]}
                 local cb = _S.simMoveToPose_callbacks[data]
                 if cb then
                     if cb(data) then
@@ -396,7 +394,7 @@ function sim.moveToPose_step(data)
                         sim.setObjectPose(data.object, data.pose, data.relObject)
                     end
                     if data.ik then
-                        local simIK = require('simIK')
+                        local simIK = require('simIK-2')
                         local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                         if f & cmd.params.ik.breakFlags ~= 0 then
                             error('simIK.handleGroup in sim.moveToPose_step returned flags ' .. f)
@@ -422,12 +420,12 @@ function sim.moveToPose_step(data)
                 t = newPosVelAccel[4] / data.angle
             end
             data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
-            data.matrix[4] = data.startMatrix[4] + newPosVelAccel[1]
-            data.matrix[8] = data.startMatrix[8] + newPosVelAccel[2]
-            data.matrix[12] = data.startMatrix[12] + newPosVelAccel[3]
-            data.pose = sim.matrixToPose(data.matrix)
-            data.vel  = table.slice(newPosVelAccel, 5, 8)
-            data.accel = table.slice(newPosVelAccel, 9, 12)
+            data.matrix[1][4] = data.startMatrix[1][4] + newPosVelAccel[1]
+            data.matrix[2][4] = data.startMatrix[2][4] + newPosVelAccel[2]
+            data.matrix[3][4] = data.startMatrix[3][4] + newPosVelAccel[3]
+            data.pose = Pose:fromtransform(data.matrix)
+            data.vel  = Vector(table.slice(newPosVelAccel, 5, 8))
+            data.accel = Vector(table.slice(newPosVelAccel, 9, 12))
             local cb = _S.simMoveToPose_callbacks[data]
             if cb then
                 if cb(data) then
@@ -438,7 +436,7 @@ function sim.moveToPose_step(data)
                     sim.setObjectPose(data.object, data.pose, data.relObject)
                 end
                 if data.ik then
-                    local simIK = require('simIK')
+                    local simIK = require('simIK-2')
                     simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                 end
             end
@@ -455,7 +453,7 @@ function sim.moveToPose_cleanup(data)
         _S.simMoveToPose_callbacks[data] = nil
     end
     if data.ik then
-        local simIK = require('simIK')
+        local simIK = require('simIK-2')
         simIK.eraseEnvironment(data.ik.ikEnv)
         data.ik = nil
     end

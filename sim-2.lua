@@ -1272,6 +1272,20 @@ sim.checkForceSensor = wrap(sim.readForceSensor, function(orig)
     end
 end)
 
+sim.getRotationAxis = wrap(sim.getRotationAxis, function(orig)
+    return function (mStart, mGoal)
+        local axis, angle = orig(mStart:data(), mGoal:data())
+        return simEigen.Vector(axis), angle
+    end
+end)
+
+sim.interpolateMatrices = wrap(sim.interpolateMatrices, function(orig)
+    return function (m1, m2)
+        local m = orig(m1:data(), m2:data())
+        return simEigen.Matrix(3, 4, m):vertcat(simEigen.Matrix(1, 4, {0.0, 0.0, 0.0, 1.0}))
+    end
+end)
+
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
 
 sim.addItemToCollection = wrapTypes(sim.addItemToCollection, {nil, nil, 'handle'}, {})
