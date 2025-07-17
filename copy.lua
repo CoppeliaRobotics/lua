@@ -39,4 +39,26 @@ function copy.deepcopy(o, opts, copies)
     return c
 end
 
+function copy.unittest()
+    local t = {1, 2, {10, 20}}
+    local tc = copy.copy(t)
+    local td = copy.deepcopy(t)
+    t[1] = -1
+    t[3][1] = -10
+    assert(t[1] < 0 and t[3][1] < 0)
+    assert(tc[1] > 0 and tc[3][1] < 0)
+    assert(td[1] > 0 and td[3][1] > 0)
+
+    local simEigen = require 'simEigen'
+    local mtx = simEigen.Matrix
+    local mt = {mtx{{1, 2}}, mtx{{3, 4}}}
+    local mtc = copy.copy(mt)
+    local mtd = copy.deepcopy(mt)
+    mt[1] = mtx{{-1, -2}}
+    mt[2][1][1] = -3
+    assert(mt[1][1][1] < 0 and mt[2][1][1] < 0)
+    assert(mtc[1][1][1] > 0 and mtc[2][1][1] < 0)
+    assert(mtd[1][1][1] > 0 and mtd[2][1][1] > 0)
+end
+
 return copy
