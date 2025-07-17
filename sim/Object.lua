@@ -257,6 +257,16 @@ return {
             })
         end
 
+        function sim.Object:__copy()
+            local o = sim.Object(rawget(self, '__handle'))
+            rawset(o, '__query', rawget(self, '__query'))
+            return o
+        end
+
+        function sim.Object:__deepcopy(m)
+            return self:__copy()
+        end
+
         function sim.Object:__index(k)
             -- int indexing for accessing siblings:
             if math.type(k) == 'integer' then

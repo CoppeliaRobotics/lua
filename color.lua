@@ -108,6 +108,14 @@ function Color:html()
     return string.format('#%02x%02x%02x', self:r8(), self:g8(), self:b8())
 end
 
+function Color:__copy()
+    return Color(self:rgb888())
+end
+
+function Color:__deepcopy(m)
+    return Color(self:rgb888())
+end
+
 function Color:__eq(o)
     if Color.isInstanceOf(o, Color) then
         return self:rgb888() == o:rgb888()
