@@ -1265,6 +1265,13 @@ require = wrap(require, function(origRequire)
     end
 end)
 
+sim.checkForceSensor = wrap(sim.readForceSensor, function(orig)
+    return function (...)
+        local r, force, torque = orig(...)
+        return force, torque
+    end
+end)
+
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
 
 sim.addItemToCollection = wrapTypes(sim.addItemToCollection, {nil, nil, 'handle'}, {})
@@ -1278,6 +1285,7 @@ sim.checkOctreePointOccupancy = wrapTypes(sim.checkOctreePointOccupancy, {'handl
 sim.checkProximitySensor = wrapTypes(sim.checkProximitySensor, {'handle', 'handle'}, {})
 sim.checkVisionSensor = wrapTypes(sim.checkVisionSensor, {'handle', 'handle'}, {})
 sim.checkVisionSensorEx = wrapTypes(sim.checkVisionSensorEx, {'handle', 'handle'}, {})
+sim.checkForceSensor = wrapTypes(sim.checkForceSensor, {'handle'}, {'vector3', 'vector3'})
 sim.computeMassAndInertia = wrapTypes(sim.computeMassAndInertia, {'handle'}, {})
 sim.executeScriptString = wrapTypes(sim.executeScriptString, {'handle'}, {})
 sim.getApiFunc = wrapTypes(sim.getApiFunc, {'handle'}, {})

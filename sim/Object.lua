@@ -163,6 +163,7 @@ return {
                 checkProximitySensor = methodWrapper{ sim.checkProximitySensor, objType = 'proximitySensor', },
                 checkVisionSensor = methodWrapper{ sim.checkVisionSensor, objType = 'visionSensor', },
                 checkVisionSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
+                checkSensor = methodWrapper{ sim.checkForceSensor, objType = 'forceSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
                 executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
                 getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
