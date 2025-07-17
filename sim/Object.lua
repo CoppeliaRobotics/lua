@@ -173,6 +173,8 @@ return {
                 getPose = methodWrapper{ sim.getObjectPose, },
                 getPosition = methodWrapper{ sim.getObjectPosition, },
                 getQuaternion = methodWrapper{ sim.getObjectQuaternion, },
+                getVelocity = methodWrapper{ sim.getObjectVelocity, },
+                getDynVelocity = methodWrapper{ sim.getShapeVelocity, objType = 'shape', },
                 getObjectsInTree = methodWrapper{ sim.getObjectsInTree, },
                 getReferencedHandles = methodWrapper{ sim.getReferencedHandles, },
                 getReferencedHandle = methodWrapper{ sim.getReferencedHandle, },
