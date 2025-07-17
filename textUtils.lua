@@ -1,8 +1,6 @@
 local textUtils = {}
 local sim = require 'sim'
 
-local sim = require 'sim'
-
 function textUtils.generateTextShape(txt, color, height, centered, alphabetModel, parentDummy)
     height = height or 0.1
     color = color or {1, 1, 1}

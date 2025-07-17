@@ -12,11 +12,11 @@ function sim.moveToConfig_init(params)
     params = params or {}
     params = copy.deepcopy(params) -- do not modify input values
     if params.pos then
-        if type(params.pos) ~= 'table' or #params.pos == 0 then
+        if not Vector:isvector(params.pos) then
             error("invalid 'pos' field.")
         end
         if params.joints ~= nil and (type(params.joints) ~= 'table' or #params.joints ~= #params.pos) then
-            error("invalid 'pos' field.")
+            error("invalid 'joints' field.")
         end
     else
         if params.joints == nil then
@@ -25,37 +25,37 @@ function sim.moveToConfig_init(params)
             if type(params.joints) ~= 'table' or #params.joints == 0 then
                 error("invalid 'joints' field.")
             end
-            params.pos = {}
+            params.pos = Vector(#params.joints, 0.0)
             for i = 1, #params.joints do
                 params.pos[i] = sim.getJointPosition(params.joints[i])
             end
         end
     end
     local dim = #params.pos
-    if params.targetPos == nil or type(params.targetPos) ~= 'table' or #params.targetPos ~= dim then
+    if not Vector:isvector(params.targetPos, dim) then
         error("missing or invalid 'targetPos' field.")
     end
 
-    params.maxVel = params.maxVel or table.rep(9999.0, dim)
-    params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
-    params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
+    params.maxVel = params.maxVel or Vector(dim, 9999.0)
+    params.maxAccel = params.maxAccel or Vector(dim, 99999.0)
+    params.maxJerk = params.maxJerk or Vector(dim, 9999999.0)
     
     if type(params.maxVel) == 'number' then
-        params.maxvel = table.rep(params.maxvel, dim)
+        params.maxvel = Vector(dim, params.maxvel)
     end
-    if type(params.maxVel) ~= 'table' or #params.maxVel ~= dim then
+    if not Vector:isvector(params.maxVel, dim) then
         error("invalid 'maxVel' field.")
     end
     if type(params.maxAccel) == 'number' then
-        params.maxAccel = table.rep(params.maxAccel, dim)
+        params.maxAccel = Vector(dim, params.maxAccel)
     end
-    if type(params.maxAccel) ~= 'table' or #params.maxAccel ~= dim then
+    if not Vector:isvector(params.maxAccel, dim) then
         error("invalid 'maxAccel' field.")
     end
     if type(params.maxJerk) == 'number' then
-        params.maxJerk = table.rep(params.maxJerk, dim)
+        params.maxJerk = Vector(dim, params.maxJerk)
     end
-    if type(params.maxJerk) ~= 'table' or #params.maxJerk ~= dim then
+    if not Vector:isvector(params.maxJerk, dim) then
         error("invalid 'maxJerk' field.")
     end
     
@@ -63,41 +63,33 @@ function sim.moveToConfig_init(params)
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
 
-    params.vel = params.vel or table.rep(0.0, dim)
-    params.accel = params.accel or table.rep(0.0, dim)
-    params.minVel = params.minVel or map(function(h) return (-h) end, params.maxVel)
+    params.vel = params.vel or Vector(dim, 0.0)
+    params.accel = params.accel or Vector(dim, 0.0)
+    params.minVel = params.minVel or (params.maxVel * -1.0)
     if type(params.minVel) == 'number' then
-        params.minVel = table.rep(params.minVel, dim)
+        params.minVel = Vector(dim, params.minVel)
     end
-    if type(params.minVel) ~= 'table' or #params.minVel ~= dim then
+    if not Vector:isvector(params.minVel, dim) then
         error("missing or invalid 'minVel' field.")
     end
-    params.minAccel = params.minAccel or map(function(h) return (-h) end, params.maxAccel)
+    params.minAccel = params.minAccel or (params.maxAccel * -1.0)
     if type(params.minAccel) == 'number' then
-        params.minAccel = table.rep(params.minAccel, dim)
+        params.minAccel = Vector(dim, params.minAccel)
     end
-    if type(params.minAccel) ~= 'table' or #params.minAccel ~= dim then
+    if not Vector:isvector(params.minAccel, dim) then
         error("missing or invalid 'minAccel' field.")
     end
-    params.targetVel = params.targetVel or table.rep(0.0, dim)
+    params.targetVel = params.targetVel or Vector(dim, 0.0)
     params.timeStep = params.timeStep or 0
-    if type(params.vel) ~= 'table' or #params.vel ~= dim then
+    if not Vector:isvector(params.vel, dim) then
         error("missing or invalid 'vel' field.")
     end
-    if type(params.accel) ~= 'table' or #params.accel ~= dim then
+    if not Vector:isvector(params.accel, dim) then
         error("missing or invalid 'accel' field.")
     end
-    if type(params.targetVel) ~= 'table' or #params.targetVel ~= dim then
+    if not Vector:isvector(params.targetVel, dim) then
         error("missing or invalid 'targetVel' field.")
     end
-    table.slice(params.vel, 1, dim)
-    table.slice(params.accel, 1, dim)
-    table.slice(params.maxVel, 1, dim)
-    table.slice(params.minVel, 1, dim)
-    table.slice(params.maxAccel, 1, dim)
-    table.slice(params.minAccel, 1, dim)
-    table.slice(params.maxJerk, 1, dim)
-    table.slice(params.targetVel, 1, dim)
 
     for i = 1, dim do
         local v = params.pos[i]
@@ -109,9 +101,9 @@ function sim.moveToConfig_init(params)
         end
         params.targetPos[i] = w
     end
-    local currentPosVelAccel = table.add(params.pos, params.vel, params.accel)
-    local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
-    local targetPosVel = table.add(params.targetPos, params.targetVel)
+    local currentPosVelAccel = params.pos:vertcat(params.vel, params.accel):data()
+    local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
+    local targetPosVel = params.targetPos:vertcat(params.targetVel):data()
     local sel = table.rep(1, dim)
     
     params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
@@ -134,15 +126,14 @@ function sim.moveToConfig_step(data)
         dt = sim.getSimulationTimeStep()
     end
     local res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+    newPosVelAccel = Vector(newPosVelAccel)
     if res >= 0 then
         if res == 0 then
             data.timeLeft = dt - syncTime
         end
-        for i = 1, #data.pos do
-            data.pos[i] = newPosVelAccel[i]
-            data.vel[i] = newPosVelAccel[#data.pos + i]
-            data.accel[i] = newPosVelAccel[#data.pos * 2 + i]
-        end
+        data.pos = newPosVelAccel:block(1, 1, #data.pos, 1)
+        data.vel = newPosVelAccel:block(#data.pos + 1, 1, #data.pos, 1)
+        data.accel = newPosVelAccel:block(2 * #data.pos + 1, 1, #data.pos, 1)
         local cb = _S.simMoveToConfig_callbacks[data]
         if cb then
             if cb(data) then
@@ -198,7 +189,7 @@ function sim.moveToPose_init(params)
     params = copy.deepcopy(params) -- do not modify input values
     params.relObject = params.relObject or -1
     if params.pose then
-        if not Pose.ispose(params.pose) then
+        if not Pose:ispose(params.pose) then
             error("invalid 'pose' field.")
         end
         params.relObject = -1
