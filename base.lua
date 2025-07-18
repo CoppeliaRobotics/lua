@@ -104,29 +104,28 @@ function wrapTypes(func, argType, retType)
                     local Color = require 'color'
                     local cls = ({
                         handle = function(h)
-                            return sim.Object(h)
+                            return sim.Object:toobject(h)
                         end,
                         vector2 = function(data)
-                            return simEigen.Vector(data)
+                            return simEigen.Vector:tovector(data)
                         end,
                         vector3 = function(data)
-                            return simEigen.Vector(data)
+                            return simEigen.Vector:tovector(data)
                         end,
                         matrix3x3 = function(data)
-                            return simEigen.Matrix(3, 3, data)
+                            return simEigen.Matrix:tomatrix(data, 3, 3)
                         end,
                         matrix4x4 = function(data)
-                            if #data == 12 then data = table.add(data, {0, 0, 0, 1}) end
-                            return simEigen.Matrix(4, 4, data)
+                            return simEigen.Matrix:tomatrix(data, 4, 4)
                         end,
                         quaternion = function(data)
-                            return simEigen.Quaternion(data)
+                            return simEigen.Quaternion:toquaternion(data)
                         end,
                         pose = function(data)
-                            return simEigen.Pose(data)
+                            return simEigen.Pose:topose(data)
                         end,
                         color = function(data)
-                            return Color(data)
+                            return Color:tocolor(data)
                         end,
                     })[t]
                     if cls then
