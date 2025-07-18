@@ -111,7 +111,9 @@ function wrapTypes(sim, func, argType, retType)
                 if t then
                     local cls = ({
                         handle = function(h)
-                            return sim.Object(h)
+                            -- for now don't wrap handles with sim.Object
+                            return h
+                            -- return sim.Object(h)
                         end,
                         vector2 = function(data)
                             return simEigen.Vector(data)
