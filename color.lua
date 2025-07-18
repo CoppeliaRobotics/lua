@@ -178,6 +178,18 @@ function Color:hsv(h, s, v)
     return Color{r, g, b}
 end
 
+function Color:iscolor(c)
+    assert(self == Color, 'class method')
+    return Color:isInstanceOf(c, Color)
+end
+
+function Color:tocolor(c)
+    assert(self == Color, 'class method')
+    if Color:iscolor(c) then return c end
+    if type(c) == 'table' and #t == 3 then return Color(c) end
+    error 'bad data'
+end
+
 function Color.unittest()
     assert(true)
     print(debug.getinfo(1, 'S').source, 'tests passed')
