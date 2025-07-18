@@ -330,7 +330,7 @@ return {
 
         function sim.Object:isobject(o)
             assert(self == sim.Object, 'class method')
-            return sim.Object:isInstanceOf(o, sim.Object)
+            return sim.Object.isInstanceOf(o, sim.Object)
         end
 
         function sim.Object:toobject(o)
