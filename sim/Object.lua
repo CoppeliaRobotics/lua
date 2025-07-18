@@ -328,6 +328,18 @@ return {
             return sim.Object(path, opts)
         end
 
+        function sim.Object:isobject(o)
+            assert(self == sim.Object, 'class method')
+            return sim.Object:isInstanceOf(o, sim.Object)
+        end
+
+        function sim.Object:toobject(o)
+            assert(self == sim.Object, 'class method')
+            if sim.Object:isobject(o) then return o end
+            if math.type(o) == 'integer' then return sim.Object(o) end
+            error 'bad type'
+        end
+
         -- definition of constants / static objects:
         sim.Scene = sim.Object(sim.handle_scene)
         sim.App = sim.Object(sim.handle_app)
