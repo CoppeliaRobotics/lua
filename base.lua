@@ -83,13 +83,22 @@ function wrap(originalFunction, wrapperFunctionGenerator)
     return wrapperFunctionGenerator(originalFunction)
 end
 
-function wrapTypes(func, argType, retType)
+function wrapTypes(sim, func, argType, retType)
     return wrap(func, function(origFunc)
         return function(...)
+            local Color = require 'color'
+            local simEigen = require 'simEigen'
             local args = {...}
             for i = 1, #args do
                 local t = argType and argType[i]
-                if t then
+                if t == 'handle' then
+                    if type(args[i]) == 'string' then
+                        args[i] = sim.getObject(args[i])
+                    end
+                    if sim.Object:isobject(args[i]) then
+                        args[i] = #args[i]
+                    end
+                elseif t then
                     local a = callmeta(args[i], '__to' .. t)
                     if a ~= nil then
                         args[i] = a
@@ -100,32 +109,30 @@ function wrapTypes(func, argType, retType)
             for i = 1, #ret do
                 local t = retType and retType[i]
                 if t then
-                    local simEigen = require 'simEigen'
-                    local Color = require 'color'
                     local cls = ({
                         handle = function(h)
-                            return sim.Object:toobject(h)
+                            return sim.Object(h)
                         end,
                         vector2 = function(data)
-                            return simEigen.Vector:tovector(data)
+                            return simEigen.Vector(data)
                         end,
                         vector3 = function(data)
-                            return simEigen.Vector:tovector(data)
+                            return simEigen.Vector(data)
                         end,
                         matrix3x3 = function(data)
-                            return simEigen.Matrix:tomatrix(data, 3, 3)
+                            return simEigen.Matrix(3, 3, data)
                         end,
                         matrix4x4 = function(data)
-                            return simEigen.Matrix:tomatrix(data, 4, 4)
+                            return simEigen.Matrix(4, 4, data)
                         end,
                         quaternion = function(data)
-                            return simEigen.Quaternion:toquaternion(data)
+                            return simEigen.Quaternion(data)
                         end,
                         pose = function(data)
-                            return simEigen.Pose:topose(data)
+                            return simEigen.Pose(data)
                         end,
                         color = function(data)
-                            return Color:tocolor(data)
+                            return Color(data)
                         end,
                     })[t]
                     if cls then

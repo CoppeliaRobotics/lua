@@ -336,7 +336,7 @@ return {
         function sim.Object:toobject(o)
             assert(self == sim.Object, 'class method')
             if sim.Object:isobject(o) then return o end
-            if math.type(o) == 'integer' then return sim.Object(o) end
+            if math.type(o) == 'integer' or type(o) == 'string' then return sim.Object(o) end
             error 'bad type'
         end
 
