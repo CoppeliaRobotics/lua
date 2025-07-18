@@ -314,8 +314,8 @@ function sim.moveToPose_init(params)
     
     params.timeStep = params.timeStep or 0
 
-    params.startMatrix = Pose:totransform(params.pose)
-    params.targetMatrix = Pose:totransform(params.targetPose)
+    params.startMatrix = params.pose:totransform()
+    params.targetMatrix = params.targetPose:totransform()
     params.matrix = params.startMatrix:copy()
     
     if type(params.callback) == 'string' then
@@ -330,7 +330,7 @@ function sim.moveToPose_init(params)
     params.timeLeft = 0
     params.dist = 1.0
     
-    local axis, angle = sim.getRotationAxis(params.startMatrix:data(), params.targetMatrix:data())
+    local axis, angle = sim.getRotationAxis(params.startMatrix, params.targetMatrix)
     params.angle = angle
     if params.metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
@@ -481,7 +481,6 @@ function sim.moveToPose(...)
 end
 
 function sim.generateTimeOptimalTrajectory(...)
-    local simEigen = require'simEigen'
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -501,9 +500,9 @@ function sim.generateTimeOptimalTrajectory(...)
         dof ~= #minMaxAccel / 2 then error("Bad table size.") end
     local lb = sim.setStepping(true)
 
-    local pM = simEigen.Matrix(confCnt, dof, path)
-    local mmvM = simEigen.Matrix(dof, 2, minMaxVel)
-    local mmaM = simEigen.Matrix(dof, 2, minMaxAccel)
+    local pM = Matrix(confCnt, dof, path)
+    local mmvM = Matrix(dof, 2, minMaxVel)
+    local mmaM = Matrix(dof, 2, minMaxAccel)
 
     local code = [=[
 def sysCall_init():

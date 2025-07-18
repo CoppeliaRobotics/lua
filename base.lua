@@ -492,16 +492,12 @@ function getAsDisplayString(...)
 end
 
 function _S.sysCallBase_init()
-    -- Hook function, registered further down
+    -- Hook function, registered further down. Needs to work without sim.lua!
     if sysCall_thread then __coroutine__ = coroutine.create(sysCall_thread) end
-
-    _S.initGlobals = {}
-    for key, val in pairs(_G) do _S.initGlobals[key] = true end
-    _S.initGlobals._S = nil
 end
 
 function _S.sysCallBase_nonSimulation()
-    -- Hook function, registered further down
+    -- Hook function, registered further down. Needs to work without sim.lua!
     if __coroutine__ then
         if coroutine.status(__coroutine__) ~= 'dead' then
             local _, ays = getAutoYield() -- save (autoYield should be on a thread-basis)
@@ -517,7 +513,7 @@ function _S.sysCallBase_nonSimulation()
 end
 
 function _S.sysCallBase_actuation()
-    -- Hook function, registered further down
+    -- Hook function, registered further down. Needs to work without sim.lua!
     if __coroutine__ then
         if coroutine.status(__coroutine__) ~= 'dead' then
             local _, ays = getAutoYield() -- save (autoYield should be on a thread-basis)
