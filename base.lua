@@ -556,6 +556,9 @@ function _evalExec(inputStr)
         if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
             H = sim.getObject
             SEL = sim.getObjectSel()
+            if _G.sim.Object then
+                SEL = map(function(h) return _G.sim.Object(h) end, SEL)
+            end
             SEL1 = SEL[#SEL]
         end
 
