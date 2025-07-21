@@ -301,19 +301,44 @@ return {
                 getPropertiesInfos = methodWrapper{ sim.getPropertiesInfos, },
 
                 getHandleProperty = function(self, k)
-                    return sim.Object(sim.getIntProperty(self.__handle, k))
+                    local h = sim.getIntProperty(self.__handle, k)
+                    if h ~= -1 then
+                        return sim.Object(h)
+                    end
                 end,
 
                 setHandleProperty = function(self, k, v)
-                    return setIntArrayProperty(self.__handle, k, v)
+                    if sim.Object:isobject(v) then
+                        v = #v
+                    end
+                    return sim.setIntProperty(self.__handle, k, v)
                 end,
 
                 getHandlesProperty = function(self, k)
-                    return map(function(h) return sim.Object(h) end, sim.getIntArrayProperty(self.__handle, k))
+                    return map(
+                        function(h)
+                            if h ~= -1 then
+                                return sim.Object(h)
+                            end
+                        end,
+                        sim.getIntArrayProperty(self.__handle, k)
+                    )
                 end,
 
                 setHandlesProperty = function(self, k, v)
-                    return setIntArrayProperty(self.__handle, k, map(function(o) return #o end, v))
+                    return sim.setIntArrayProperty(
+                        self.__handle,
+                        k,
+                        map(
+                            function(o)
+                                if sim.Object:isobject(o) then
+                                    o = #o
+                                end
+                                return o
+                            end,
+                            v
+                        )
+                    )
                 end,
             })
         end
