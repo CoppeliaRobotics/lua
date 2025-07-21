@@ -24,8 +24,7 @@ return {
             -- check if we have some type hint for property `k`...
             if k ~= 'objectType' then
                 local th = sim.Object.Properties or {}
-                th = th[self.__object.objectType] or {}
-                th = th[k] or {}
+                th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
                 if th.type then t = th.type end
                 if th.alias then k = th.alias end
             end
@@ -389,11 +388,27 @@ return {
             error 'bad type'
         end
 
+        sim.Object.SceneObjectTypes = {
+            'dummy',
+            'forceSensor',
+            'joint',
+            'octree',
+            'pointCloud',
+            'proximitySensor',
+            'script',
+            'shape',
+            'texture',
+            'visionSensor'
+        }
+
         sim.Object.Properties = {
             scene = {
                 ['objects'] = {type = 'handles', alias = 'objectHandles'},
                 ['orphans'] = {type = 'handles', alias = 'orphanHandles'},
                 ['selection'] = {type = 'handles', alias = 'selectionHandles'},
+            },
+            object = {
+                ['parent'] = {type = 'handle', alias = 'parentHandle'},
             },
             dummy = {
                 ['linkedDummy'] = {type = 'handle', alias = 'linkedDummyHandle'},
@@ -406,11 +421,6 @@ return {
                 ['meshes'] = {type = 'handles'},
             },
         }
-
-        for _, t in ipairs{'dummy', 'forceSensor', 'joint', 'octree', 'pointCloud', 'proximitySensor', 'script', 'shape', 'texture', 'visionSensor'} do
-            sim.Object.Properties[t] = sim.Object.Properties[t] or {}
-            sim.Object.Properties[t]['parent'] = {type = 'handle', alias = 'parentHandle'}
-        end
 
         -- definition of constants / static objects:
         sim.scene = sim.Object(sim.handle_scene)
