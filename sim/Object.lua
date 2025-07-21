@@ -49,8 +49,23 @@ return {
 
             local prefix = self.__prefix
             if prefix ~= '' then k = prefix .. '.' .. k end
-            local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
-            self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
+
+            local t
+
+            -- check if we have some type hint for property `k`...
+            if k ~= 'objectType' then
+                local th = sim.Object.Properties or {}
+                th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
+                if th.type then t = th.type end
+                if th.alias then k = th.alias end
+            end
+
+            if self.__object:getPropertyInfo(k) then
+                if not t then
+                    t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
+                end
+                self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
+            end
         end
 
         function sim.PropertyGroup:__tostring()
