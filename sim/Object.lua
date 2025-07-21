@@ -18,10 +18,25 @@ return {
             local object = self.__object
             local prefix = self.__prefix
             if prefix ~= '' then k = prefix .. '.' .. k end
+
+            local t
+
+            -- check if we have some type hint for property `k`...
+            if k ~= 'objectType' then
+                local th = sim.Object.Properties or {}
+                th = th[self.__object.objectType] or {}
+                th = th[k] or {}
+                if th.type then t = th.type end
+                if th.alias then k = th.alias end
+            end
+
             if self.__object:getPropertyInfo(k) then
-                local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
+                if not t then
+                    t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
+                end
                 return self.__object['get' .. t:capitalize() .. 'Property'](self.__object, k)
             end
+
             if self.__object:getPropertyName(0, {prefix = k .. '.'}) then
                 return sim.PropertyGroup(self.__object, {prefix = k})
             end
@@ -270,6 +285,22 @@ return {
                 getProperties = methodWrapper{ sim.getProperties, },
                 setProperties = methodWrapper{ sim.setProperties, },
                 getPropertiesInfos = methodWrapper{ sim.getPropertiesInfos, },
+
+                getHandleProperty = function(self, k)
+                    return sim.Object(sim.getIntProperty(self.__handle, k))
+                end,
+
+                setHandleProperty = function(self, k, v)
+                    return setIntArrayProperty(self.__handle, k, v)
+                end,
+
+                getHandlesProperty = function(self, k)
+                    return map(function(h) return sim.Object(h) end, sim.getIntArrayProperty(self.__handle, k))
+                end,
+
+                setHandlesProperty = function(self, k, v)
+                    return setIntArrayProperty(self.__handle, k, map(function(o) return #o end, v))
+                end,
             })
         end
 
