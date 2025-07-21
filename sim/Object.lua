@@ -135,7 +135,7 @@ return {
         function sim.ObjectChildren:__ipairs()
             local function stateless_iter(self, i)
                 i = i + 1
-                local h = sim.getObjectChild(self.__object.__handle, i)
+                local h = sim.getObjectChild(self.__object, i)
                 if h ~= -1 then return i, sim.Object(h) end
             end
             return stateless_iter, self, -1
@@ -406,6 +406,11 @@ return {
 
         function sim.Object:__tohandle()
             return self.__handle
+        end
+
+        function sim.Object:__tocbor()
+            local cbor = require 'simCBOR'
+            return cbor.encode(self.__handle)
         end
 
         function sim.Object:__pairs()
