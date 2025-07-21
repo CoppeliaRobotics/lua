@@ -151,8 +151,16 @@ return {
             elseif handle == '@' then
                 handle = sim.handle_app
             elseif type(handle) == 'string' then
-                query= handle
-                handle = sim.getObject(query, opts)
+                if table.find({'/', '.'}, handle:sub(1, 1)) then
+                    query = handle
+                    handle = sim.getObject(query, opts)
+                elseif table.find(sim.Object.CreatableObjectTypes, handle) then
+                    local objType = handle
+                    local props = opts
+                    handle = sim.createObject(objType, props)
+                else
+                    error 'invalid argument'
+                end
             else
                 assert(math.type(handle) == 'integer', 'invalid type for handle')
                 assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene, 'invalid handle')
@@ -443,8 +451,15 @@ return {
             'script',
             'shape',
             'texture',
-            'visionSensor'
+            'visionSensor',
         }
+
+        sim.Object.CreatableObjectTypes = table.add(
+            {
+                'collection',
+            },
+            sim.Object.SceneObjectTypes
+        )
 
         sim.Object.Properties = {
             scene = {
