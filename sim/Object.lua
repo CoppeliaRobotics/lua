@@ -127,7 +127,7 @@ return {
             local function stateless_iter(self, k)
                 local v
                 k, v = next(r, k)
-                if v ~= nil then return k, v end
+                if k ~= nil then return k, v end
             end
             return stateless_iter, self, nil
         end
