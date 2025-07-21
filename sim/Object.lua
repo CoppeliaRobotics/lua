@@ -114,21 +114,36 @@ return {
 
         function sim.Object:initialize(handle, opts)
             opts = opts or {}
+
+            local query
             if handle == '/' then
-                rawset(self, '__handle', sim.handle_scene)
+                handle = sim.handle_scene
+                rawset(self, 'objectType', 'scene')
             elseif handle == '@' then
-                rawset(self, '__handle', sim.handle_app)
+                handle = sim.handle_app
             elseif type(handle) == 'string' then
-                rawset(self, '__handle', sim.getObject(handle, opts))
-                rawset(self, '__query', handle)
+                query= handle
+                handle = sim.getObject(query, opts)
             else
                 assert(math.type(handle) == 'integer', 'invalid type for handle')
                 assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene, 'invalid handle')
-                rawset(self, '__handle', handle)
-                if sim.isHandle(handle) then
-                    rawset(self, '__query', sim.getObjectAlias(handle))
-                end
             end
+            rawset(self, '__handle', handle)
+            if query then
+                rawset(self, '__query', query)
+            elseif sim.isHandle(handle) then
+                rawset(self, '__query', sim.getObjectAlias(handle))
+            end
+
+            local objectType
+            if handle == sim.handle_app then
+                objectType = 'app'
+            elseif handle == sim.handle_scene then
+                objectType = 'scene'
+            else
+                objectType = sim.getStringProperty(handle, 'objectType')
+            end
+            rawset(self, 'objectType', objectType)
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(self))
@@ -145,10 +160,9 @@ return {
 
             local function methodWrapper(kwargs)
                 local apiFunc, info = kwargs[1], kwargs
-                local t = sim.getStringProperty(self.__handle, 'objectType', {noError = true})
-                if not t and self.__handle == sim.handle_scene then t = 'scene' end
-                if not t and self.__handle == sim.handle_app then t = 'app' end
-                if (info.objType or t) == t then return apiFunc end
+                if (info.objType or objectType) == objectType then
+                    return apiFunc
+                end
             end
 
             rawset(self, '__methods', {
@@ -344,8 +358,31 @@ return {
             error 'bad type'
         end
 
+        sim.Object.Properties = {
+            scene = {
+                ['objects'] = {type = 'handles', alias = 'objectHandles'},
+                ['orphans'] = {type = 'handles', alias = 'orphanHandles'},
+                ['selection'] = {type = 'handles', alias = 'selectionHandles'},
+            },
+            dummy = {
+                ['linkedDummy'] = {type = 'handle', alias = 'linkedDummyHandle'},
+                ['mujoco.jointProxy'] = {type = 'handle', alias = 'mujoco.jointProxyHandle'},
+            },
+            proximitySensor = {
+                ['detectedObjectHandle'] = {type = 'handle'},
+            },
+            shape = {
+                ['meshes'] = {type = 'handles'},
+            },
+        }
+
+        for _, t in ipairs{'dummy', 'forceSensor', 'joint', 'octree', 'pointCloud', 'proximitySensor', 'script', 'shape', 'texture', 'visionSensor'} do
+            sim.Object.Properties[t] = sim.Object.Properties[t] or {}
+            sim.Object.Properties[t]['parent'] = {type = 'handle', alias = 'parentHandle'}
+        end
+
         -- definition of constants / static objects:
-        sim.Scene = sim.Object(sim.handle_scene)
-        sim.App = sim.Object(sim.handle_app)
+        sim.scene = sim.Object(sim.handle_scene)
+        sim.app = sim.Object(sim.handle_app)
     end
 }
