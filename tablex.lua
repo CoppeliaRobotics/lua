@@ -1,3 +1,8 @@
+local function logDeprecated(what, repl)
+    local sim = require('sim-2')
+    sim.addLog(sim.verbosity_warnings | sim.verbosity_once, what .. ' is deprecated. use ' .. repl .. ' instead')
+end
+
 table.getn = table.getn or function(a)
     return #a
 end
@@ -209,6 +214,8 @@ function table.clone(t)
 end
 
 function table.deepcopy(orig, opts, copies)
+    logDeprecated('table.deepcopy', 'copy.deepcopy')
+
     opts = opts or {}
     copies = copies or {}
 
