@@ -391,8 +391,9 @@ return {
         sim.Object.SceneObjectTypes = {
             'dummy',
             'forceSensor',
+            'graph',
             'joint',
-            'octree',
+            'ocTree',
             'pointCloud',
             'proximitySensor',
             'script',
