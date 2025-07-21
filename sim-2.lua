@@ -903,11 +903,6 @@ function sim.createObject(objectType, initialProperties)
         end
         return v
     end
-    local function extractValueOrError(key, err)
-        local errmsg = err
-        if not errmsg then errmsg = 'property "' .. key .. '" is required' end
-        assert(p[key] ~= nil, errmsg)
-    end
     local function v(intValue, booleanValue)
         if booleanValue then return intValue else return 0 end
     end
@@ -931,8 +926,8 @@ function sim.createObject(objectType, initialProperties)
         floatParams[3] = extractValueOrDefault('torqueThreshold', 0.)
         h = sim.createForceSensor(options, intParams, floatParams)
     elseif objectType == 'joint' then
-        local jointType = extractValueOrError('jointType')
-        local jointMode = extractValueOrError('jointMode')
+        local jointType = extractValueOrDefault('jointType', sim.joint_revolute)
+        local jointMode = extractValueOrDefault('jointMode', sim.jointmode_dynamic)
         local jointSize = {
             extractValueOrDefault('jointLength', 0.),
             extractValueOrDefault('jointDiameter', 0.),
@@ -963,16 +958,12 @@ function sim.createObject(objectType, initialProperties)
         -- FIXME: bit0 set (1): points have random colors
         -- FIXME: bit1 set (2): show OC tree structure
         -- FIXME: bit2 set (4): reserved. keep unset
-        -- FIXME: bit3 set (8): do not use an OC tree structure. When enabled, point cloud operations are limited, and point clouds will not be collidable, measurable or detectable anymore, but adding points will be much faster
+            + v(8, not extractValueOrDefault('ocTreeStruct', true))
         -- FIXME: bit4 set (16): color is emissive
         local pointSize = extractValueOrDefault('pointSize', 0.)
-        if p.ocTreeStruct ~= nil then
-            options = options + (p.ocTreeStruct and 0 or 8)
-            p.ocTreeStruct = nil
-        end
         h = sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize)
     elseif objectType == 'proximitySensor' then
-        local sensorType = extractValueOrError('sensorType')
+        local sensorType = extractValueOrDefault('sensorType', sim.proximitysensor_ray)
         local subType = 16
         local options = 0
             + v(1, extractValueOrDefault('explicitHandling', false))
@@ -1012,13 +1003,10 @@ function sim.createObject(objectType, initialProperties)
         -- FIXME: floatParams[1+12]: sensing point size
         h = sim.createProximitySensor(sensorType, subType, options, intParams, floatParams)
     elseif objectType == 'script' then
-        local scriptType = extractValueOrError('scriptType')
+        local scriptType = extractValueOrDefault('scriptType', sim.scripttype_simulation)
         local scriptText = extractValueOrDefault('code', '')
         local options = 0
-        if p.scriptDisabled ~= nil then
-            options = options + 1
-            p.scriptDisabled = nil
-        end
+            + v(1, extractValueOrDefault('scriptDisabled', true))
         local lang = extractValueOrDefault('language', 'lua')
         h = sim.createScript(scriptType, scriptText, options, lang)
     elseif objectType == 'shape' then
