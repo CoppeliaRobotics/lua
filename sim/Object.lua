@@ -114,7 +114,10 @@ return {
                 return self.__object / k
             elseif math.type(k) == 'integer' then
                 if k >= 1 then
-                    return sim.Object(sim.getObjectChild(self.__object.__handle, k - 1))
+                    local h = sim.getObjectChild(self.__object.__handle, k - 1)
+                    if h ~= -1 then
+                        return sim.Object(h)
+                    end
                 end
             end
         end
@@ -135,10 +138,10 @@ return {
         function sim.ObjectChildren:__ipairs()
             local function stateless_iter(self, i)
                 i = i + 1
-                local h = sim.getObjectChild(self.__object, i)
+                local h = self.__object[i]
                 if h ~= -1 then return i, sim.Object(h) end
             end
-            return stateless_iter, self, -1
+            return stateless_iter, self, 0
         end
 
         sim.Object = class 'sim.Object'
@@ -445,6 +448,38 @@ return {
             if sim.Object:isobject(o) then return o end
             if math.type(o) == 'integer' or type(o) == 'string' then return sim.Object(o) end
             error 'bad type'
+        end
+
+        function sim.Object.unittest()
+            f = sim.Object '/Floor'
+            b = sim.Object '/Floor/box'
+            assert(b == f / 'box')
+            if #sim.scene.orphans > 0 then
+                assert(sim.scene.orphans[1].parent == nil)
+            else
+                print 'skipped orphans test'
+            end
+            assert(f.children.box == b)
+            assert(f.children.box == f.children[1])
+            assert(b.parent == f)
+            d1 = sim.Object('dummy', {
+                alias = 'd1',
+            })
+            assert(sim.Object:isobject(d1))
+            d2 = sim.Object('dummy', {
+                alias = 'd2',
+                dummyType = sim.dummytype_dynloopclosure,
+                linkedDummyHandle = #d1,
+            })
+            assert(d2.linkedDummy == d1)
+            sim.removeObjects{d1, d2}
+            cbor = require 'simCBOR'
+            p = table.frompairs(f.children)
+            assert(cbor.encode(p) == cbor.encode{box = b})
+            ip = table.fromipairs(f.children)
+            assert(cbor.encode(ip) == cbor.encode{b})
+            assert(b:getPosition(f):norm() < 1e-7)
+            print(debug.getinfo(1, 'S').source, 'tests passed')
         end
 
         sim.Object.SceneObjectTypes = {
