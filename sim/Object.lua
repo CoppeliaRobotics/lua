@@ -416,6 +416,10 @@ return {
             return sim.Object(path, opts)
         end
 
+        function sim.Object:__eq(o)
+            return self.__handle == o.__handle
+        end
+
         function sim.Object:isobject(o)
             assert(self == sim.Object, 'class method')
             return sim.Object.isInstanceOf(o, sim.Object)
