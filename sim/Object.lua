@@ -86,7 +86,7 @@ return {
                     local ptype, pflags, descr = self.__object:getPropertyInfo(prefix .. pname)
                     local readable = pflags & 2 == 0
                     if readable then
-                        local t = sim.getPropertyTypeString(ptype)
+                        local t = sim.getPropertyTypeString(ptype, true)
                         props[pname2] = self.__object['get' .. t:capitalize() .. 'Property'](self.__object, prefix .. pname)
                     end
                 elseif props[pname2] == nil then
