@@ -44,7 +44,8 @@ function table.eq(a, b)
     end
     ]]
     for ak, av in pairs(a) do
-        if b[ak] == nil then return false end
+        local bv = b[ak]
+        if bv == nil then return false end
     end
     for bk, bv in pairs(b) do
         local av = a[bk]
@@ -373,6 +374,18 @@ function table.items(tbl, opts)
     return ret
 end
 
+function table.frompairs(p)
+    local t = {}
+    for k, v in pairs(p) do t[k] = v end
+    return t
+end
+
+function table.fromipairs(ip)
+    local t = {}
+    for k, v in ipairs(ip) do table.insert(t, v) end
+    return t
+end
+
 function table.unittest()
     assert(table.eq({1, 2, 3}, {1, 2, 3}))
     assert(not table.eq({1, 2, 3, 4}, {1, 2, 3}))
@@ -393,5 +406,7 @@ function table.unittest()
     assert(table.eq(table.flatten {a = {b = 1, c = 3}, x = {y = 10, z = 3}}, {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}))
     assert(table.eq(table.unflatten {['a.b'] = 1, ['a.c'] = 3, ['x.y'] = 10, ['x.z'] = 3}, {a = {b = 1, c = 3}, x = {y = 10, z = 3}}))
     assert(table.eq(table.items({a = 'A', b = 3, c = {'c', 'd'}}, {sort = true}), {{'a', 'A'}, {'b', 3}, {'c', {'c', 'd'}}}))
+    assert(table.eq(table.frompairs{a = 10, b = 20}, {a = 10, b = 20}))
+    assert(table.eq(table.fromipairs{10, 20}, {10, 20}))
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
