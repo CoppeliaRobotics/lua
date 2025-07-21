@@ -165,7 +165,7 @@ return {
                 end
             else
                 assert(math.type(handle) == 'integer', 'invalid type for handle')
-                assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene, 'invalid handle')
+                assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
             end
             rawset(self, '__handle', handle)
             if query then
