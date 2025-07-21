@@ -98,6 +98,13 @@ function wrapTypes(sim, func, argType, retType)
                     if sim.Object:isobject(args[i]) then
                         args[i] = #args[i]
                     end
+                elseif t == 'handles' then
+                    assert(type(args[i]) == 'table', 'bad type')
+                    for j = 1, #args[i] do
+                        if sim.Object:isobject(args[i][j]) then
+                            args[i][j] = #args[i][j]
+                        end
+                    end
                 elseif t then
                     local a = callmeta(args[i], '__to' .. t)
                     if a ~= nil then
@@ -111,7 +118,12 @@ function wrapTypes(sim, func, argType, retType)
                 if t then
                     local cls = ({
                         handle = function(h)
-                            -- for now don't wrap handles with sim.Object
+                            -- for now don't wrap handle with sim.Object
+                            return h
+                            -- return sim.Object(h)
+                        end,
+                        handles = function(h)
+                            -- for now don't wrap handles with {sim.Object}
                             return h
                             -- return sim.Object(h)
                         end,
