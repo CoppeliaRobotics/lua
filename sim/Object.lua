@@ -113,7 +113,9 @@ return {
             if type(k) == 'string' then
                 return self.__object / k
             elseif math.type(k) == 'integer' then
-                return sim.Object(sim.getObjectChild(self.__object.__handle, k))
+                if k >= 1 then
+                    return sim.Object(sim.getObjectChild(self.__object.__handle, k - 1))
+                end
             end
         end
 
