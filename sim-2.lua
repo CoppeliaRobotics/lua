@@ -1027,7 +1027,7 @@ function sim.createObject(objectType, initialProperties)
         local h = sim.createPrimitiveShape()
         local h = sim.createShape()
     elseif objectType == 'texture' then
-        error '"shape" type not supported'
+        error '"texture" type not supported'
         local h = sim.createTexture()
     elseif objectType == 'visionSensor' then
         local options = 0
