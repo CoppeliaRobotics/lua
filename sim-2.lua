@@ -4,7 +4,7 @@ sim.version = '2.0'
 sim.__ = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)
 
-local simEigen = require'simEigen'
+local simEigen = require 'simEigen'
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
@@ -893,6 +893,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
 end)
 
 function sim.createObject(objectType, initialProperties)
+    local Color = require 'color'
     local p = table.clone(initialProperties or {})
     local h
     local function extractValueOrDefault(key, default)
@@ -1010,101 +1011,76 @@ function sim.createObject(objectType, initialProperties)
         local lang = extractValueOrDefault('language', 'lua')
         h = sim.createScript(scriptType, scriptText, options, lang)
     elseif objectType == 'shape' then
-        if p.type == 'mesh' then
-            local tRes, tCoord, texture
-            local shadingAngle = 0.0
+        local t = extractValueOrDefault('type', nil)
+        assert(t, '"type" field is required')
+        if t == 'mesh' then
             local options = 0
                 + v(1, extractValueOrDefault('culling', false))
                 + v(2, extractValueOrDefault('edges', false))
-            if type(p.texture) == 'table' then
-                if p.texture.interpolate == false then
-                    options = options + 4
-                end
-                if p.texture.decal then
-                    options = options + 8
-                end
-                if p.texture.rgba then
-                    options = options + 16
-                end
-                if p.texture.horizFlip then
-                    options = options + 32
-                end
-                if p.texture.vertFlip then
-                    options = options + 64
-                end
-                tRes = p.texture.resolution
-                tCoord = p.texture.coordinates
-                texture = p.texture.image
-            end
-            if p.shadingAngle then
-                shadingAngle = p.shadingAngle
-            end
-            h = sim.createShape(options, shadingAngle, p.vertices, p.indices, p.normals, tCoord, texture, tRes)
-        elseif p.type == 'heightfield' then
-            local shadingAngle = 0.0
+                + v(4, not extractValueOrDefault('texture.interpolate', true))
+                + v(8, extractValueOrDefault('texture.decal', false))
+                + v(16, extractValueOrDefault('texture.rgba', false))
+                + v(32, extractValueOrDefault('texture.horizFlip', false))
+                + v(64, extractValueOrDefault('texture.vertFlip', false))
+            local res = extractValueOrDefault('texture.resolution', nil)
+            local coord = extractValueOrDefault('texture.coordinates', nil)
+            local img = extractValueOrDefault('texture.image', nil)
+            local shadingAngle = extractValueOrDefault('shadingAngle', 0.)
+            local vertices = extractValueOrDefault('vertices', {})
+            local indices = extractValueOrDefault('indices', {})
+            local normals = extractValueOrDefault('normals', {})
+            h = sim.createShape(options, shadingAngle, vertices, indices, normals, coord, img, res)
+        elseif t == 'heightfield' then
             local options = 0
                 + v(1, extractValueOrDefault('culling', false))
                 + v(2, extractValueOrDefault('edges', false))
                 + v(4, extractValueOrDefault('mesh', false))
-            if p.shadingAngle then
-                shadingAngle = p.shadingAngle
-            end
-            h = sim.createHeightfieldShape(options, shadingAngle, p.heights:cols(), p.heights:rows(), p.cellSize * (p.heights:cols() - 1), p.heights:data())
+            local shadingAngle = extractValueOrDefault('shadingAngle', 0.)
+            local heights = extractValueOrDefault('heights', nil)
+            assert(height, 'field "heights" is required')
+            heights = Matrix:tomatrix(heights)
+            local cellSize = extractValueOrDefault('cellSize', nil)
+            h = sim.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data())
         else
-            local pt = -1
-            if p.type == 'plane' then
-                pt = sim.primitiveshape_plane
-            elseif p.type == 'disc' then
-                pt = sim.primitiveshape_disc
-            elseif p.type == 'cuboid' then
-                pt = sim.primitiveshape_cuboid
-            elseif p.type == 'spheroid' then
-                pt = sim.primitiveshape_spheroid
-            elseif p.type == 'cylinder' then
-                pt = sim.primitiveshape_cylinder
-            elseif p.type == 'cone' then
-                pt = sim.primitiveshape_cone
-            elseif p.type == 'capsule' then
-                pt = sim.primitiveshape_capsule
+            local pt = ({
+                plane = sim.primitiveshape_plane,
+                disc = sim.primitiveshape_disc,
+                cuboid = sim.primitiveshape_cuboid,
+                spheroid = sim.primitiveshape_spheroid,
+                cylinder = sim.primitiveshape_cylinder,
+                cone = sim.primitiveshape_cone,
+                capsule = sim.primitiveshape_capsule,
+            })[t]
+            assert(pt, 'invalid value for "type" field')
+            local options = 2
+                + v(1, extractValueOrDefault('culling', false))
+                + v(4, extractValueOrDefault('open', false))
+                + v(8, extractValueOrDefault('mesh', false))
+            local size = extractValueOrDefault('size', nil)
+            assert(size, 'field "size" is required')
+            size = simEigen.Vector:tovector(size, 3)
+            h = sim.createPrimitiveShape(pt, size, options)
+            local shadingAngle = extractValueOrDefault('shadingAngle', nil)
+            if shadingAngle ~= nil then
+                sim.setFloatProperty(h, 'applyShadingAngle', shadingAngle)
             end
-            if pt >= 0 then
-                local options = 2
-                    + v(1, extractValueOrDefault('culling', false))
-                    + v(4, extractValueOrDefault('open', false))
-                    + v(8, extractValueOrDefault('mesh', false))
-                h = sim.createPrimitiveShape(pt, p.size, options)
-                if p.shadingAngle then
-                    sim.setFloatProperty(h, 'applyShadingAngle', p.shadingAngle)
-                end
-                if p.edges then
-                    sim.setFloatProperty(h, 'applyShowEdges', p.edges)
-                end
+            local edges = extractValueOrDefault('edges', nil)
+            if edges ~= nil then
+                sim.setFloatProperty(h, 'applyShowEdges', edges)
             end
         end
-        p.size = nil
-        p.type = nil
-        p.heights = nil
-        p.cellSize = nil
-        p.vertices = nil
-        p.indices = nil
-        p.normals = nil
-        p.edges = nil
-        p.shadingAngle = nil
-        p.texture = nil
     elseif objectType == 'texture' then
         error '"texture" type not supported'
         h = sim.createTexture()
     elseif objectType == 'visionSensor' then
+        local bgCol = extractValueOrDefault('backgroundColor', nil)
         local options = 0
             + v(1, extractValueOrDefault('explicitHandling', false))
             + v(2, extractValueOrDefault('perspective', false))
             + v(4, extractValueOrDefault('showFrustum', false))
             -- bit 3 set (8): reserved. Set to 0
             + v(16, extractValueOrDefault('useExtImage', false))
-        local bgCol = extractValueOrDefault('backgroundColor', false)
-        if bgCol then
-            options = options + 128
-        end
+            + v(128, bgCol)
         -- FIXME: bit 5 set (32): sensor will use local lights
         -- FIXME: bit 6 set (64): sensor will not render any fog
         local intParams = table.rep(0, 4)
@@ -1122,9 +1098,10 @@ function sim.createObject(objectType, initialProperties)
         end
         floatParams[4] = extractValueOrDefault('sensorSize', 0.01)
         if bgCol then
-            floatParams[7] = bgCol[1]
-            floatParams[8] = bgCol[2]
-            floatParams[9] = bgCol[3]
+            bgCol = Color:tocolor(bgCol)
+            floatParams[7] = bgCol:red()
+            floatParams[8] = bgCol:green()
+            floatParams[9] = bgCol:blue()
         end
         h = sim.createVisionSensor(options, intParams, floatParams)
     else
@@ -1531,6 +1508,7 @@ sim.checkVisionSensor = wrapTypes(sim, sim.checkVisionSensor, {'handle', 'handle
 sim.checkVisionSensorEx = wrapTypes(sim, sim.checkVisionSensorEx, {'handle', 'handle'}, {})
 sim.checkForceSensor = wrapTypes(sim, sim.checkForceSensor, {'handle'}, {'vector3', 'vector3'})
 sim.computeMassAndInertia = wrapTypes(sim, sim.computeMassAndInertia, {'handle'}, {})
+sim.createPrimitiveShape = wrapTypes(sim, sim.createPrimitiveShape, {nil, 'vector3', nil}, {'handle'})
 sim.executeScriptString = wrapTypes(sim, sim.executeScriptString, {'handle'}, {})
 sim.getApiFunc = wrapTypes(sim, sim.getApiFunc, {'handle'}, {})
 sim.getApiInfo = wrapTypes(sim, sim.getApiInfo, {'handle'}, {})
