@@ -146,23 +146,43 @@ return {
 
         sim.Object = class 'sim.Object'
 
-        function sim.Object:initialize(handle, opts)
+        function sim.Object:create(propsOrType, props)
+            assert(self == sim.Object, 'class method')
+            if type(propsOrType) ~= 'string' then
+                assert(type(propsOrType) == 'table' and props == nil, 'invalid args')
+                props = propsOrType
+                propsOrType = props.objectType
+            end
+            return sim.Object(sim.createObject(propsOrType, props))
+        end
+
+        function sim.Object:get(query, opts)
+            assert(self == sim.Object, 'class method')
+            local handle = sim.getObject(query, opts)
+            if handle ~= -1 then
+                return sim.Object(handle, opts, query)
+            end
+        end
+
+        function sim.Object:initialize(handle, opts, _query)
             opts = opts or {}
 
-            local query
             if handle == '/' then
                 handle = sim.handle_scene
-                rawset(self, 'objectType', 'scene')
+                _query = '/'
             elseif handle == '@' then
                 handle = sim.handle_app
+                _query = '@'
             elseif type(handle) == 'string' then
                 if table.find({'/', '.'}, handle:sub(1, 1)) then
-                    query = handle
-                    handle = sim.getObject(query, opts)
+                    _query = handle
+                    local o = sim.Object:get(_query, opts)
+                    assert(o)
+                    handle = #o
                 elseif table.find(sim.Object.CreatableObjectTypes, handle) then
                     local objType = handle
                     local props = opts
-                    handle = sim.createObject(objType, props)
+                    handle = #sim.Object:create(objType, props)
                 else
                     error 'invalid argument'
                 end
@@ -170,9 +190,10 @@ return {
                 assert(math.type(handle) == 'integer', 'invalid type for handle')
                 assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
             end
+
             rawset(self, '__handle', handle)
-            if query then
-                rawset(self, '__query', query)
+            if _query then
+                rawset(self, '__query', _query)
             elseif sim.isHandle(handle) then
                 rawset(self, '__query', sim.getObjectAlias(handle))
             end
