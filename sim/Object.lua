@@ -146,57 +146,29 @@ return {
 
         sim.Object = class 'sim.Object'
 
-        function sim.Object:create(propsOrType, props)
-            assert(self == sim.Object, 'class method')
-            if type(propsOrType) ~= 'string' then
-                assert(type(propsOrType) == 'table' and props == nil, 'invalid args')
-                props = propsOrType
-                propsOrType = props.objectType
-            end
-            return sim.Object(sim.createObject(propsOrType, props))
-        end
-
-        function sim.Object:get(query, opts)
-            assert(self == sim.Object, 'class method')
-            local handle = sim.getObject(query, opts)
-            if handle ~= -1 then
-                return sim.Object(handle, opts, query)
-            end
-        end
-
         function sim.Object:initialize(handle, opts, _query)
-            opts = opts or {}
-
-            if handle == '/' then
-                handle = sim.handle_scene
-                _query = '/'
-            elseif handle == '@' then
-                handle = sim.handle_app
-                _query = '@'
-            elseif type(handle) == 'string' then
-                if table.find({'/', '.'}, handle:sub(1, 1)) then
-                    _query = handle
-                    local o = sim.Object:get(_query, opts)
-                    assert(o)
-                    handle = #o
-                elseif table.find(sim.Object.CreatableObjectTypes, handle) then
-                    local objType = handle
-                    local props = opts
-                    handle = #sim.Object:create(objType, props)
-                else
-                    error 'invalid argument'
-                end
-            else
-                assert(math.type(handle) == 'integer', 'invalid type for handle')
+            if math.type(handle) == 'integer' then
+                assert(opts == nil and _query == nil, 'invalid args')
                 assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
+            elseif type(handle) == 'string' then
+                _query = handle
+                assert(_query:sub(1, 1) == '/' or _query:sub(1, 1) == '.', 'invalid object query')
+                handle = sim.getObject(_query, opts or {})
+                assert(handle ~= -1, 'object query returned error')
+            elseif sim.Object:isobject(handle) then
+                assert(opts == nil and _query == nil, 'invalid args')
+                _query = handle.__query
+                handle = #handle
+            elseif type(handle) == 'table' then
+                assert(opts == nil and _query == nil, 'invalid args')
+                local initialProperties = handle
+                handle = sim.createObject(initialProperties)
+            else
+                error 'invalid type for handle'
             end
 
             rawset(self, '__handle', handle)
-            if _query then
-                rawset(self, '__query', _query)
-            elseif sim.isHandle(handle) then
-                rawset(self, '__query', sim.getObjectAlias(handle))
-            end
+            rawset(self, '__query', _query)
 
             local objectType
             if handle == sim.handle_app then
@@ -483,15 +455,17 @@ return {
             assert(f.children.box == b)
             assert(f.children.box == f.children[1])
             assert(b.parent == f)
-            d1 = sim.Object('dummy', {
+            d1 = sim.Object{
+                objectType = 'dummy',
                 alias = 'd1',
-            })
+            }
             assert(sim.Object:isobject(d1))
-            d2 = sim.Object('dummy', {
+            d2 = sim.Object{
+                objectType = 'dummy',
                 alias = 'd2',
                 dummyType = sim.dummytype_dynloopclosure,
                 linkedDummyHandle = #d1,
-            })
+            }
             assert(d2.linkedDummy == d1)
             sim.removeObjects{d1, d2}
             cbor = require 'simCBOR'

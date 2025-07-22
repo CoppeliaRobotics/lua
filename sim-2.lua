@@ -892,7 +892,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
     end
 end)
 
-function sim.createObject(objectType, initialProperties)
+function sim.createObject(initialProperties)
     local Color = require 'color'
     local p = table.clone(initialProperties or {})
     local h
@@ -907,6 +907,8 @@ function sim.createObject(objectType, initialProperties)
     local function v(intValue, booleanValue)
         if booleanValue then return intValue else return 0 end
     end
+    local objectType = extractValueOrDefault('objectType', nil)
+    assert(objectType ~= nil, 'field "objectType" is required')
     if false then
     elseif objectType == 'collection' then
         h = sim.createCollection()
