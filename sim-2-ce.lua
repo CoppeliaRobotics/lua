@@ -1,3 +1,7 @@
 local codeEditorInfos = require('sim-ce-x')
 
-registerCodeEditorInfos("sim-2", codeEditorInfos)
+local sim2Specific = [[
+sim.initScript(int scriptHandle = sim.handle_self)
+]]
+
+registerCodeEditorInfos("sim-2", codeEditorInfos .. sim2Specific)
