@@ -69,7 +69,7 @@ return {
         end
 
         function sim.PropertyGroup:__tostring()
-            return 'sim.PropertyGroup(' .. self.__object .. ', {prefix = ' .. _S.anyToString(self.__prefix) .. '})'
+            return 'sim.PropertyGroup(' .. tostring(self.__object) .. ', {prefix = ' .. _S.anyToString(self.__prefix) .. '})'
         end
 
         function sim.PropertyGroup:__pairs()
