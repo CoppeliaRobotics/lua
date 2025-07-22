@@ -897,7 +897,7 @@ function sim.createObject(objectType, initialProperties)
     local h
     local function extractValueOrDefault(key, default)
         local v = default
-        if p[key] then
+        if p[key] ~= nil then
             v = p[key]
             p[key] = nil
         end
@@ -1010,13 +1010,90 @@ function sim.createObject(objectType, initialProperties)
         local lang = extractValueOrDefault('language', 'lua')
         h = sim.createScript(scriptType, scriptText, options, lang)
     elseif objectType == 'shape' then
-        error '"shape" type not supported'
-        local h = sim.createHeightfieldShape()
-        local h = sim.createPrimitiveShape()
-        local h = sim.createShape()
+        if p.type == 'mesh' then
+            local tRes, tCoord, texture
+            local shadingAngle = 0.0
+            local options = 0
+                + v(1, extractValueOrDefault('culling', false))
+                + v(2, extractValueOrDefault('edges', false))
+            if type(p.texture) == 'table' then
+                if p.texture.interpolate == false then
+                    options = options + 4
+                end
+                if p.texture.decal then
+                    options = options + 8
+                end
+                if p.texture.rgba then
+                    options = options + 16
+                end
+                if p.texture.horizFlip then
+                    options = options + 32
+                end
+                if p.texture.vertFlip then
+                    options = options + 64
+                end
+                tRes = p.texture.resolution
+                tCoord = p.texture.coordinates
+                texture = p.texture.image
+            end
+            if p.shadingAngle then
+                shadingAngle = p.shadingAngle
+            end
+            h = sim.createShape(options, shadingAngle, p.vertices, p.indices, p.normals, tCoord, texture, tRes)
+        elseif p.type == 'heightfield' then
+            local shadingAngle = 0.0
+            local options = 0
+                + v(1, extractValueOrDefault('culling', false))
+                + v(2, extractValueOrDefault('edges', false))
+                + v(4, extractValueOrDefault('mesh', false))
+            if p.shadingAngle then
+                shadingAngle = p.shadingAngle
+            end
+            h = sim.createHeightfieldShape(options, shadingAngle, p.heights:cols(), p.heights:rows(), p.cellSize * (p.heights:cols() - 1), p.heights:data())
+        else
+            local pt = -1
+            if p.type == 'plane' then
+                pt = sim.primitiveshape_plane
+            elseif p.type == 'disc' then
+                pt = sim.primitiveshape_disc
+            elseif p.type == 'cuboid' then
+                pt = sim.primitiveshape_cuboid
+            elseif p.type == 'spheroid' then
+                pt = sim.primitiveshape_spheroid
+            elseif p.type == 'cylinder' then
+                pt = sim.primitiveshape_cylinder
+            elseif p.type == 'cone' then
+                pt = sim.primitiveshape_cone
+            elseif p.type == 'capsule' then
+                pt = sim.primitiveshape_capsule
+            end
+            if pt >= 0 then
+                local options = 2
+                    + v(1, extractValueOrDefault('culling', false))
+                    + v(4, extractValueOrDefault('open', false))
+                    + v(8, extractValueOrDefault('mesh', false))
+                h = sim.createPrimitiveShape(pt, p.size, options)
+                if p.shadingAngle then
+                    sim.setFloatProperty(h, 'applyShadingAngle', p.shadingAngle)
+                end
+                if p.edges then
+                    sim.setFloatProperty(h, 'applyShowEdges', p.edges)
+                end
+            end
+        end
+        p.size = nil
+        p.type = nil
+        p.heights = nil
+        p.cellSize = nil
+        p.vertices = nil
+        p.indices = nil
+        p.normals = nil
+        p.edges = nil
+        p.shadingAngle = nil
+        p.texture = nil
     elseif objectType == 'texture' then
         error '"texture" type not supported'
-        local h = sim.createTexture()
+        h = sim.createTexture()
     elseif objectType == 'visionSensor' then
         local options = 0
             + v(1, extractValueOrDefault('explicitHandling', false))
@@ -1024,9 +1101,12 @@ function sim.createObject(objectType, initialProperties)
             + v(4, extractValueOrDefault('showFrustum', false))
             -- bit 3 set (8): reserved. Set to 0
             + v(16, extractValueOrDefault('useExtImage', false))
+        local bgCol = extractValueOrDefault('backgroundColor', false)
+        if bgCol then
+            options = options + 128
+        end
         -- FIXME: bit 5 set (32): sensor will use local lights
         -- FIXME: bit 6 set (64): sensor will not render any fog
-        -- FIXME: bit 7 set (128): sensor will use a specific color for default background (i.e. null pixels)
         local intParams = table.rep(0, 4)
         local res = extractValueOrDefault('resolution', {256, 256})
         intParams[1] = res[1]
@@ -1041,10 +1121,11 @@ function sim.createObject(objectType, initialProperties)
             floatParams[3] = extractValueOrDefault('viewSize', 0.1)
         end
         floatParams[4] = extractValueOrDefault('sensorSize', 0.01)
-        local bg = extractValueOrDefault('backgroundColor', {0., 0., 0.})
-        floatParams(7, bg[1])
-        floatParams(8, bg[2])
-        floatParams(9, bg[3])
+        if bgCol then
+            floatParams[7] = bgCol[1]
+            floatParams[8] = bgCol[2]
+            floatParams[9] = bgCol[3]
+        end
         h = sim.createVisionSensor(options, intParams, floatParams)
     else
         error 'unsupported object type'
@@ -1467,6 +1548,7 @@ sim.getReferencedHandles = wrapTypes(sim, sim.getReferencedHandles, {'handle'}, 
 sim.getReferencedHandle = wrapTypes(sim, sim.getReferencedHandle, {'handle'}, {'handle'})
 sim.getReferencedHandlesTags = wrapTypes(sim, sim.getReferencedHandlesTags, {'handle'}, {})
 sim.getStackTraceback = wrapTypes(sim, sim.getStackTraceback, {'handle'}, {})
+sim.multiplyPoses = wrapTypes(sim, sim.multiplyPoses, {'pose', 'pose'}, {'pose'})
 sim.initScript = wrapTypes(sim, sim.initScript, {'handle'}, {})
 sim.insertObjectIntoOctree = wrapTypes(sim, sim.insertObjectIntoOctree, {'handle', 'handle', nil, 'color', nil}, {})
 sim.insertObjectIntoPointCloud = wrapTypes(sim, sim.insertObjectIntoPointCloud, {'handle'}, {})
