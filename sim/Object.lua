@@ -305,7 +305,9 @@ return {
                 end,
 
                 setHandleProperty = function(self, k, v)
-                    if sim.Object:isobject(v) then
+                    if v == nil then
+                        v = -1
+                    elseif sim.Object:isobject(v) then
                         v = #v
                     end
                     return sim.setIntProperty(self.__handle, k, v)
@@ -323,6 +325,9 @@ return {
                 end,
 
                 setHandlesProperty = function(self, k, v)
+                    if v == nil then
+                        v = {}
+                    end
                     return sim.setIntArrayProperty(
                         self.__handle,
                         k,
