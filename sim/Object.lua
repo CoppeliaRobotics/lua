@@ -206,6 +206,7 @@ return {
                 checkSensor = methodWrapper{ sim.checkForceSensor, objType = 'forceSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
                 executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
+                getAlias = methodWrapper{ sim.getObjectAlias, },
                 getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
                 getApiInfo = methodWrapper{ sim.getApiInfo, objType = 'script', },
                 getExtensionString = methodWrapper{ sim.getExtensionString, },
@@ -470,6 +471,18 @@ return {
             ip = table.fromipairs(f.children)
             assert(cbor.encode(ip) == cbor.encode{b})
             assert(b:getPosition(f):norm() < 1e-7)
+
+            a = sim.Object {objectType = 'dummy', alias = 'a', }
+            b = sim.Object {objectType = 'dummy', alias = 'b', }
+            c = sim.Object {objectType = 'dummy', alias = 'c', }
+            c.parent = b
+            b.parent = a
+            a.modelBase = true
+            assert(c:getAlias(1) == '/a/c')
+            b.modelBase = true
+            assert(c:getAlias(1) == '/a/b/c')
+            sim.removeObjects{a, b, c}
+
             print(debug.getinfo(1, 'S').source, 'tests passed')
         end
 
