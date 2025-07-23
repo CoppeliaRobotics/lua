@@ -22,12 +22,11 @@ return {
             local t
 
             -- check if we have some type hint for property `k`...
-            if k ~= 'objectType' then
-                local th = sim.Object.Properties or {}
-                th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
-                if th.type then t = th.type end
-                if th.alias then k = th.alias end
-            end
+            local objectType = rawget(self.__object, 'objectType')
+            local th = sim.Object.Properties or {}
+            th = (th[objectType] or {})[k] or th.object[k] or {}
+            if th.type then t = th.type end
+            if th.alias then k = th.alias end
 
             if self.__object:getPropertyInfo(k) then
                 if not t then
@@ -53,12 +52,11 @@ return {
             local t
 
             -- check if we have some type hint for property `k`...
-            if k ~= 'objectType' then
-                local th = sim.Object.Properties or {}
-                th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
-                if th.type then t = th.type end
-                if th.alias then k = th.alias end
-            end
+            local objectType = rawget(self.__object, 'objectType')
+            local th = sim.Object.Properties or {}
+            th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
+            if th.type then t = th.type end
+            if th.alias then k = th.alias end
 
             if self.__object:getPropertyInfo(k) then
                 if not t then
@@ -170,14 +168,7 @@ return {
             rawset(self, '__handle', handle)
             rawset(self, '__query', _query)
 
-            local objectType
-            if handle == sim.handle_app then
-                objectType = 'app'
-            elseif handle == sim.handle_scene then
-                objectType = 'scene'
-            else
-                objectType = sim.getStringProperty(handle, 'objectType')
-            end
+            local objectType = sim.getStringProperty(handle, 'objectType')
             rawset(self, 'objectType', objectType)
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
