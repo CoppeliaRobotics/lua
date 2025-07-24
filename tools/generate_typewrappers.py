@@ -107,13 +107,18 @@ return {extend = function(sim)\n
                     dv = dv.replace('[', '{').replace(']', '}')
                 gen_code += f"""        args[{i}] = read_{recipe}(args[{i}], {dv}) -- {f.in_args[i].name} [{f.in_args[i].type}]
 """
-            gen_code += f"""        local ret = {{origFunc(table.unpack(args))}}
+            if out_recipes:
+                gen_code += f"""        local ret = {{origFunc(table.unpack(args))}}
 """
-            for i, recipe in out_recipes.items():
-                gen_code += f"""        ret[{i}] = write_{recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
+                for i, recipe in out_recipes.items():
+                    gen_code += f"""        ret[{i}] = write_{recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
 """
-            gen_code += f"""        return table.unpack(ret)
-    end
+                gen_code += f"""        return table.unpack(ret)
+"""
+            else:
+                gen_code += f"""        return origFunc(table.unpack(args))
+"""
+            gen_code += f"""    end
 end)
 
 """
