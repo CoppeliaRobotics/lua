@@ -61,7 +61,7 @@ if __name__ == '__main__':
             for i, recipe in in_recipes.items():
                 gen_code += f"""        args[{i}] = {recipe}(args[{i}]) -- {f.in_args[i].name} [{f.in_args[i].type}]
 """
-            gen_code += f"""        local ret = origFunc(table.unpack(args))
+            gen_code += f"""        local ret = {origFunc(table.unpack(args))}
 """
             for i, recipe in out_recipes.items():
                 gen_code += f"""        ret[{i}] = {recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
