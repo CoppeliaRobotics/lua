@@ -1,7 +1,15 @@
 local codeEditorInfos = require('sim-ce-x')
 
 -- When removing following, do not forget to add it to zmqRemoteApi/clients/cpp/sim-deprecated.* for backward compatibility!
-local toDeprecateSoon = [[
+local sim_1 = [[
+float[3] anglesOut = sim.abgToYpr(float[3] anglesIn)
+float[3] anglesOut = sim.yprToAbg(float[3] anglesIn)
+float[12] matrix = sim.getObjectMatrix(int objectHandle, int relativeToObjectHandle=sim.handle_world)
+float[3] eulerAngles = sim.getObjectOrientation(int objectHandle, int relativeToObjectHandle=sim.handle_world)
+sim.setObjectMatrix(int objectHandle, float[12] matrix, int relativeToObjectHandle=sim.handle_world)
+sim.setObjectOrientation(int objectHandle, float[3] eulerAngles, int relativeToObjectHandle=sim.handle_world)
+sim.addForce(int shapeHandle, float[3] position, float[3] force)
+sim.addForceAndTorque(int shapeHandle, float[3] force=nil, float[3] torque=nil)
 sim.initScript(int scriptHandle)
 int result, float distance, float[3] detectedPoint, int detectedObjectHandle, float[3] normalVector = sim.checkProximitySensorEx(int sensorHandle, int entityHandle, int mode, float threshold, float maxAngle)
 int result, float distance, float[3] detectedPoint, float[3] normalVector = sim.checkProximitySensorEx2(int sensorHandle, float[3..*] vertices, int itemType, int itemCount, int mode, float threshold, float maxAngle)
@@ -731,4 +739,4 @@ sim.newton_joint_pospid2
 sim.newton_joint_pospid3
 ]]
 
-registerCodeEditorInfos("sim-1", codeEditorInfos .. toDeprecateSoon)
+registerCodeEditorInfos("sim-1", codeEditorInfos .. sim_1)

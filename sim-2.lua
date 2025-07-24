@@ -83,49 +83,6 @@ end
 sim.__.registerScriptFuncHookOrig = sim.registerScriptFuncHook
 sim.registerScriptFuncHook = sim.__.registerScriptFuncHook
 
-function sim.yprToAbg(...)
-    local anglesIn = checkargs({
-        {type = 'table', item_type = 'float', size = '3'}
-    }, ...)
-
-    local lb = sim.setStepping(true)
-    local Rx = sim.buildMatrix({0, 0, 0}, {anglesIn[3], 0, 0})
-    local Ry = sim.buildMatrix({0, 0, 0}, {0, anglesIn[2], 0})
-    local Rz = sim.buildMatrix({0, 0, 0}, {0, 0, anglesIn[1]})
-    local m = sim.multiplyMatrices(Ry, Rx)
-    m = sim.multiplyMatrices(Rz, m)
-    local alphaBetaGamma = sim.getEulerAnglesFromMatrix(m)
-    local alpha = alphaBetaGamma[1]
-    local beta = alphaBetaGamma[2]
-    local gamma = alphaBetaGamma[3]
-    sim.setStepping(lb)
-    return {alpha, beta, gamma}
-end
-
-function sim.abgToYpr(...)
-    local anglesIn = checkargs({
-        {type = 'table', item_type = 'float', size = '3'}
-    }, ...)
-
-    local lb = sim.setStepping(true)
-    local m = sim.buildMatrix({0, 0, 0}, {anglesIn[1], anglesIn[2], anglesIn[3]})
-    local v = m[9]
-    if v > 1 then v = 1 end
-    if v < -1 then v = -1 end
-    local pitchAngle = math.asin(-v)
-    local yawAngle, rollAngle
-    if math.abs(v) < 0.999999 then
-        rollAngle = math.atan2(m[10], m[11])
-        yawAngle = math.atan2(m[5], m[1])
-    else
-        -- Gimbal lock
-        rollAngle = math.atan2(-m[7], m[6])
-        yawAngle = 0
-    end
-    sim.setStepping(lb)
-    return {yawAngle, pitchAngle, rollAngle}
-end
-
 function sim.getQuaternionInverse(q)
     return {-q[1], -q[2], -q[3], q[4]}
 end
@@ -1495,10 +1452,24 @@ sim.interpolateMatrices = wrap(sim.interpolateMatrices, function(orig)
     end
 end)
 
+sim.addForce = wrap(sim.addForce, function(orig)
+    return function (...)
+        -- no return value
+        local h, v1, v2 = checkargs({ {type = 'handle'}, {class = simEigen.Vector, size = 3}, {class = simEigen.Vector, size = 3} }, ...)
+        orig(h, v1:data(), v2:data())
+    end
+end)
+
+sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(orig)
+    return function (...)
+        -- no return value
+        local h, v1, v2 = checkargs({ {type = 'handle'}, class = simEigen.Vector, size = 3, default = simEigen.Vector{0.0, 0.0, 0.0}}, {class = simEigen.Vector, size = 3, default = simEigen.Vector{0.0, 0.0, 0.0}} }, ...)
+        orig(h, v1:data(), v2:data())
+    end
+end)
+
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
 
-sim.addForce = wrapTypes(sim, sim.addForce, {'handle', 'vector3', 'vector3'}, {})
-sim.addForceAndTorque = wrapTypes(sim, sim.addForceAndTorque, {'handle', 'vector3', 'vector3'}, {})
 sim.addItemToCollection = wrapTypes(sim, sim.addItemToCollection, {nil, nil, 'handle'}, {})
 sim.addReferencedHandle = wrapTypes(sim, sim.addReferencedHandle, {'handle', 'handle'}, {})
 sim.alignShapeBB = wrapTypes(sim, sim.alignShapeBB, {'handle', 'pose'}, {})
@@ -1525,12 +1496,13 @@ sim.getIntArrayProperty = wrapTypes(sim, sim.getIntArrayProperty, {'handle'}, {}
 sim.getIntProperty = wrapTypes(sim, sim.getIntProperty, {'handle'}, {})
 sim.getLongProperty = wrapTypes(sim, sim.getLongProperty, {'handle'}, {})
 sim.getObjectAlias = wrapTypes(sim, sim.getObjectAlias, {'handle'}, {})
-sim.getObjectMatrix = wrapTypes(sim, sim.getObjectMatrix, {'handle', 'handle'}, {'matrix4x4'})
-sim.getObjectOrientation = wrapTypes(sim, sim.getObjectOrientation, {'handle', 'handle'}, {'vector3'})
 sim.getObjectParent = wrapTypes(sim, sim.getObjectParent, {'handle'}, {'handle'})
 sim.getObjectPose = wrapTypes(sim, sim.getObjectPose, {'handle', 'handle'}, {'pose'})
 sim.getObjectPosition = wrapTypes(sim, sim.getObjectPosition, {'handle', 'handle'}, {'vector3'})
 sim.getObjectQuaternion = wrapTypes(sim, sim.getObjectQuaternion, {'handle', 'handle'}, {'quaternion'})
+sim.setObjectPose = wrapTypes(sim, sim.setObjectPose, {'handle', 'pose', 'handle'}, {})
+sim.setObjectPosition = wrapTypes(sim, sim.setObjectPosition, {'handle', 'vector3', 'handle'}, {})
+sim.setObjectQuaternion = wrapTypes(sim, sim.setObjectQuaternion, {'handle', 'quaternion', 'handle'}, {})
 sim.getObjectsInTree = wrapTypes(sim, sim.getObjectsInTree, {'handle'}, {})
 sim.getObjectVelocity = wrapTypes(sim, sim.getObjectVelocity, {'handle'}, {'vector3', 'vector3'})
 sim.getPoseProperty = wrapTypes(sim, sim.getPoseProperty, {'handle'}, {'pose'})
@@ -1586,12 +1558,7 @@ sim.setIntArrayProperty = wrapTypes(sim, sim.setIntArrayProperty, {'handle'}, {}
 sim.setIntProperty = wrapTypes(sim, sim.setIntProperty, {'handle'}, {})
 sim.setLongProperty = wrapTypes(sim, sim.setLongProperty, {'handle'}, {})
 sim.setObjectAlias = wrapTypes(sim, sim.setObjectAlias, {'handle'}, {})
-sim.setObjectMatrix = wrapTypes(sim, sim.setObjectMatrix, {'handle', 'matrix4x4', 'handle'}, {})
-sim.setObjectOrientation = wrapTypes(sim, sim.setObjectOrientation, {'handle', 'vector3', 'handle'}, {})
 sim.setObjectParent = wrapTypes(sim, sim.setObjectParent, {'handle', 'handle'}, {})
-sim.setObjectPose = wrapTypes(sim, sim.setObjectPose, {'handle', 'pose', 'handle'}, {})
-sim.setObjectPosition = wrapTypes(sim, sim.setObjectPosition, {'handle', 'vector3', 'handle'}, {})
-sim.setObjectQuaternion = wrapTypes(sim, sim.setObjectQuaternion, {'handle', 'quaternion', 'handle'}, {})
 sim.setPoseProperty = wrapTypes(sim, sim.setPoseProperty, {'handle', nil, 'pose'}, {})
 sim.setProperties = wrapTypes(sim, sim.setProperties, {'handle'}, {})
 sim.setProperty = wrapTypes(sim, sim.setProperty, {'handle'}, {})
