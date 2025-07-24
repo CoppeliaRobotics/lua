@@ -15,30 +15,22 @@ if __name__ == '__main__':
     for line in proc.stdout:
         calltip = line.strip()
         if not calltip: continue
+        if re.match(r'^\w+\.\w+$', calltip): continue
         pp = PrettyPrinter(indent=4)
         try:
             f = FuncDef.from_calltip(calltip)
             #pp.pprint(f)
-            print(f"""
-{f.func_name} = wrap({f.func_name}, function(origFunc)
+            print(f"""{f.func_name} = wrap({f.func_name}, function(origFunc)
     return function(...)
-        local args = {...}
-""")
+        local args = {{...}}""")
             for arg in f.in_args:
                 if arg.type == 'vector3':
-                    print(f"""
-        -- TODO: convert arg {arg.name}
-""")
-            print(f"""
-        local ret = origFunc(table.unpack(args))
-""")
+                    print(f"""        -- TODO: convert arg {arg.name}""")
+            print(f"""        local ret = origFunc(table.unpack(args))""")
             for ret in f.out_args:
                 if arg.type == 'vector3':
-                    print(f"""
-        -- TODO: convert ret {arg.name}
-""")
-            print(f"""
-        return table.unpack(ret)
+                    print(f"""        -- TODO: convert ret {arg.name}""")
+            print(f"""        return table.unpack(ret)
     end
 end)
 
