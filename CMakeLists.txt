@@ -21,3 +21,23 @@ coppeliasim_add_lua_directory("deprecated")
 coppeliasim_add_lua_directory("utils")
 coppeliasim_add_lua_directory("sim")
 coppeliasim_add_lua_directory("sha1")
+
+set(PYTHON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../python")
+set(LUA_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+add_custom_command(
+    OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/sim-2-tw.lua"
+    COMMAND ${CMAKE_COMMAND} -E env
+        LUA_PATH=${CMAKE_CURRENT_SOURCE_DIR}/?.lua
+        PYTHONPATH=${PYTHON_DIR}
+        python3 "${LUA_DIR}/tools/generate_typewrappers.py" "${CMAKE_CURRENT_BINARY_DIR}/sim-2-tw.lua"
+    DEPENDS
+        "${LUA_DIR}/tools/generate_typewrappers.py"
+        "${LUA_DIR}/sim-2-ce.lua"
+        "${PYTHON_DIR}/calltip.py"
+        "${PYTHON_DIR}/calltip.lark"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    COMMENT "Generating sim-2-tw.lua from sim-2-ce.lua"
+    VERBATIM
+)
+add_custom_target(generate_typewrappers ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/sim-2-tw.lua")
+coppeliasim_add_lua("${CMAKE_CURRENT_BINARY_DIR}/sim-2-tw.lua")
