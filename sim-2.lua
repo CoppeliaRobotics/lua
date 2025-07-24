@@ -52,6 +52,7 @@ function sim.step(wait)
 end
 
 local checkargs = require('checkargs')
+local checkargs2 = require('checkargs-2')
 require('motion-2').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
@@ -1455,7 +1456,7 @@ end)
 sim.addForce = wrap(sim.addForce, function(orig)
     return function (...)
         -- no return value
-        local h, v1, v2 = checkargs({ {type = 'handle'}, {class = simEigen.Vector, size = 3}, {class = simEigen.Vector, size = 3} }, ...)
+        local h, v1, v2 = checkargs2({ {type = 'handle'}, {type = "vector3"}, {type = "vector3"} }, ...)
         orig(h, v1:data(), v2:data())
     end
 end)
@@ -1463,7 +1464,7 @@ end)
 sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(orig)
     return function (...)
         -- no return value
-        local h, v1, v2 = checkargs({ {type = 'handle'}, class = simEigen.Vector, size = 3, default = simEigen.Vector{0.0, 0.0, 0.0}}, {class = simEigen.Vector, size = 3, default = simEigen.Vector{0.0, 0.0, 0.0}} }, ...)
+        local h, v1, v2 = checkargs2({ {type = 'handle'}, {type = "vector3", default = simEigen.Vector{0.0, 0.0, 0.0}}, {type = "vector3", default = simEigen.Vector{0.0, 0.0, 0.0}} }, ...)
         orig(h, v1:data(), v2:data())
     end
 end)

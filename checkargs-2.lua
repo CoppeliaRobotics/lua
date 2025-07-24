@@ -4,7 +4,6 @@ local checkargs = {
 }
 
 local simEigen = require 'simEigen'
-local sim = require 'sim-2'
 local Color = require 'Color'
 
 function checkargs.checkarg.any(v, t)
@@ -97,6 +96,7 @@ function checkargs.checkarg.union(v, t)
 end
 
 function checkargs.checkarg.handle(v, t)
+    local sim = require 'sim-2'
     return sim.Object:toobject(v)
 end
 
