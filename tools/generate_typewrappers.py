@@ -15,68 +15,72 @@ if __name__ == '__main__':
     lua_code = "function registerCodeEditorInfos(m, x) print(x) end; require 'sim-2-ce'"
     proc = subprocess.Popen(["lua", "-e", lua_code], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    gen_code = """
-local function write_vector3(v)
-    return Vector(v)
-end
+    gen_code = """-- file generated automatically - do not edit
 
-local function write_matrix(v)
-    return Matrix(v)
-end
+return {
+    extend = function(sim)
+        local simEigen = require 'simEigen'
+        local Color = require 'Color'
 
-local function write_quaternion(v)
-    return Quaternion(v)
-end
+        local function write_vector3(v)
+            return simEigen.Vector(v)
+        end
 
-local function write_pose(v)
-    return Pose(v)
-end
+        local function write_matrix(v)
+            return simEigen.Matrix(v)
+        end
 
-local function write_color(v)
-    return Color(v)
-end
+        local function write_quaternion(v)
+            return simEigen.Quaternion(v)
+        end
 
-local function write_handle(v)
-    return sim.Object(v)
-end
+        local function write_pose(v)
+            return simEigen.Pose(v)
+        end
 
-local function read_vector3(v, def)
-    if v == nil then v = def end
-    if Vector:isvector(v) then v = v:data() end
-    return v
-end
+        local function write_color(v)
+            return Color(v)
+        end
 
-local function read_matrix(v, def)
-    if v == nil then v = def end
-    if Matrix:ismatrix(v) then v = v:data() end
-    return v
-end
+        local function write_handle(v)
+            return sim.Object(v)
+        end
 
-local function read_quaternion(v, def)
-    if v == nil then v = def end
-    if Quaternion:isquaternion(v) then v = v:data() end
-    return v
-end
+        local function read_vector3(v, def)
+            if v == nil then v = def end
+            if simEigen.Vector:isvector(v) then v = v:data() end
+            return v
+        end
 
-local function read_pose(v, def)
-    if v == nil then v = def end
-    if Pose:ispose(v) then v = v:data() end
-    return v
-end
+        local function read_matrix(v, def)
+            if v == nil then v = def end
+            if simEigen.Matrix:ismatrix(v) then v = v:data() end
+            return v
+        end
 
-local function read_color(v, def)
-    if v == nil then v = def end
-    if Color:iscolor(v) then v = v:data() end
-    return v
-end
+        local function read_quaternion(v, def)
+            if v == nil then v = def end
+            if simEigen.Quaternion:isquaternion(v) then v = v:data() end
+            return v
+        end
 
-local function read_handle(v, def)
-    if v == nil then v = def end
-    if sim.Object:isobject(v) then v = #v end
-    return v
-end
+        local function read_pose(v, def)
+            if v == nil then v = def end
+            if simEigen.Pose:ispose(v) then v = v:data() end
+            return v
+        end
 
-return {extend = function(sim)\n
+        local function read_color(v, def)
+            if v == nil then v = def end
+            if Color:iscolor(v) then v = v:data() end
+            return v
+        end
+
+        local function read_handle(v, def)
+            if v == nil then v = def end
+            if sim.Object:isobject(v) then v = #v end
+            return v
+        end
 """
     for line in proc.stdout:
         calltip = line.strip()
@@ -96,35 +100,39 @@ return {extend = function(sim)\n
                 if ret.type in ('vector3', 'matrix', 'quaternion', 'pose', 'color', 'handle'):
                     out_recipes[i] = ret.type
             if not in_recipes and not out_recipes: continue
-            gen_code += f"""{f.func_name} = wrap({f.func_name}, function(origFunc)
-    return function(...)
-        local args = {{...}}
+            gen_code += f"""
+        {f.func_name} = wrap({f.func_name}, function(origFunc)
+            return function(...)
+                local args = {{...}}
 """
             for i, recipe in in_recipes.items():
                 dv = 'nil'
                 if hasattr(f.in_args[i], 'default'):
                     dv = str(f.in_args[i].default)
                     dv = dv.replace('[', '{').replace(']', '}')
-                gen_code += f"""        args[{i}] = read_{recipe}(args[{i}], {dv}) -- {f.in_args[i].name} [{f.in_args[i].type}]
+                gen_code += f"""                args[{i}] = read_{recipe}(args[{i}], {dv}) -- {f.in_args[i].name} [{f.in_args[i].type}]
 """
             if out_recipes:
-                gen_code += f"""        local ret = {{origFunc(table.unpack(args))}}
+                gen_code += f"""                local ret = {{origFunc(table.unpack(args))}}
 """
                 for i, recipe in out_recipes.items():
-                    gen_code += f"""        ret[{i}] = write_{recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
+                    gen_code += f"""                ret[{i}] = write_{recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
 """
-                gen_code += f"""        return table.unpack(ret)
+                gen_code += f"""                return table.unpack(ret)
 """
             else:
-                gen_code += f"""        return origFunc(table.unpack(args))
+                gen_code += f"""                return origFunc(table.unpack(args))
 """
-            gen_code += f"""    end
-end)
-
+            gen_code += f"""            end
+        end)
 """
         except Exception as e:
-            gen_code += f'--[[\n\nERROR: cannot parse calltip\n\n    {calltip}\n\n    {e!s}\n\n]]--\n'
-    gen_code += 'end}\n'
+            gen_code += f"""        --[[
+            ERROR: cannot parse calltip: {calltip}
+            {e!s}
+        ]]--
+"""
+    gen_code += '    end\n}\n'
 
     stderr_output = proc.stderr.read().strip()
     if stderr_output:
