@@ -106,17 +106,19 @@ return {
                 local args = {{...}}
 """
             for i, recipe in in_recipes.items():
+                var = f'args[{i+1}]'
                 dv = 'nil'
                 if hasattr(f.in_args[i], 'default'):
                     dv = str(f.in_args[i].default)
                     dv = dv.replace('[', '{').replace(']', '}')
-                gen_code += f"""                args[{i}] = read_{recipe}(args[{i}], {dv}) -- {f.in_args[i].name} [{f.in_args[i].type}]
+                gen_code += f"""                {var} = read_{recipe}({var}, {dv}) -- {f.in_args[i].name} [{f.in_args[i].type}]
 """
             if out_recipes:
                 gen_code += f"""                local ret = {{origFunc(table.unpack(args))}}
 """
                 for i, recipe in out_recipes.items():
-                    gen_code += f"""                ret[{i}] = write_{recipe}(ret[{i}]) -- {f.out_args[i].name} [{f.out_args[i].type}]
+                    var = f'ret[{i+1}]'
+                    gen_code += f"""                {var} = write_{recipe}({var}) -- {f.out_args[i].name} [{f.out_args[i].type}]
 """
                 gen_code += f"""                return table.unpack(ret)
 """
