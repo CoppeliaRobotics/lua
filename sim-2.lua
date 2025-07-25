@@ -10,6 +10,12 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+-- Not supported anymore in sim-2:
+sim.getRotationAxis = nil
+sim.rotateAroundAxis = nil
+sim.interpolateMatrices = nil
+sim.interpolatePoses = nil
+
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
         if type(a) ~= 'number' then
@@ -482,9 +488,9 @@ function sim.__.getConfigDistance(confA, confB, metric, types)
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
-                local m1 = sim.poseToMatrix({0, 0, 0, confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
-                local m2 = sim.poseToMatrix({0, 0, 0, confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
-                local a, angle = sim.getRotationAxis(m1, m2)
+                local q1 = simEigen.Quaternion({confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
+                local q2 = simEigen.Quaternion({confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
+                local a, angle = q1:axisangle(q2)
                 dd = angle * metric[j - 3]
             end
         end
@@ -1432,42 +1438,7 @@ if not _S.requireWrapped then
     end)
 end
 
-sim.checkForceSensor = wrap(sim.readForceSensor, function(orig)
-    return function (...)
-        local r, force, torque = orig(...)
-        return force, torque
-    end
-end)
-
-sim.getRotationAxis = wrap(sim.getRotationAxis, function(orig)
-    return function (mStart, mGoal)
-        local axis, angle = orig(mStart:data(), mGoal:data())
-        return simEigen.Vector(axis), angle
-    end
-end)
-
-sim.interpolateMatrices = wrap(sim.interpolateMatrices, function(orig)
-    return function (m1, m2, t)
-        local m = orig(m1:data(), m2:data(), t)
-        return simEigen.Matrix(3, 4, m):vertcat(simEigen.Matrix(1, 4, {0.0, 0.0, 0.0, 1.0}))
-    end
-end)
-
-sim.addForce = wrap(sim.addForce, function(orig)
-    return function (...)
-        -- no return value
-        local h, v1, v2 = checkargs2({ {type = 'handle'}, {type = "vector3"}, {type = "vector3"} }, ...)
-        orig(h, v1:data(), v2:data())
-    end
-end)
-
-sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(orig)
-    return function (...)
-        -- no return value
-        local h, v1, v2 = checkargs2({ {type = 'handle'}, {type = "vector3", default = simEigen.Vector{0.0, 0.0, 0.0}}, {type = "vector3", default = simEigen.Vector{0.0, 0.0, 0.0}} }, ...)
-        orig(h, v1:data(), v2:data())
-    end
-end)
+require('sim-2-typewrappers').extend(sim)
 
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
 
@@ -1652,14 +1623,13 @@ function sim.__.linearInterpolate(conf1, conf2, t, types)
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
-                local m1 = sim.poseToMatrix({0, 0, 0, conf1[i - 3], conf1[i - 2], conf1[i - 1], conf1[i - 0]})
-                local m2 = sim.poseToMatrix({0, 0, 0, conf2[i - 3], conf2[i - 2], conf2[i - 1], conf2[i - 0]})
-                local m = sim.interpolateMatrices(m1, m2, t)
-                local p = sim.matrixToPose(m)
-                retVal[i - 3] = p[4]
-                retVal[i - 2] = p[5]
-                retVal[i - 1] = p[6]
-                retVal[i - 0] = p[7]
+                local q1 = simEigen.Quaternion({conf1[i - 3], conf1[i - 2], conf1[i - 1], conf1[i - 0]})
+                local q2 = simEigen.Quaternion({conf2[i - 3], conf2[i - 2], conf2[i - 1], conf2[i - 0]})
+                local q = q1:interp(t, q2)
+                retVal[i - 3] = q[1]
+                retVal[i - 2] = q[2]
+                retVal[i - 1] = q[3]
+                retVal[i - 0] = q[4]
             end
         end
     end
