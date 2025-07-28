@@ -10,12 +10,6 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
--- Not supported anymore in sim-2:
-sim.getRotationAxis = nil
-sim.rotateAroundAxis = nil
-sim.interpolateMatrices = nil
-sim.interpolatePoses = nil
-
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
         if type(a) ~= 'number' then
@@ -89,10 +83,6 @@ function sim.__.registerScriptFuncHook(funcNm, func, before)
 end
 sim.__.registerScriptFuncHookOrig = sim.registerScriptFuncHook
 sim.registerScriptFuncHook = sim.__.registerScriptFuncHook
-
-function sim.getQuaternionInverse(q)
-    return {-q[1], -q[2], -q[3], q[4]}
-end
 
 function sim.fastIdleLoop(enable)
     local data = sim.getBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
@@ -1503,7 +1493,6 @@ sim.insertVoxelsIntoOctree = wrapTypes(sim, sim.insertVoxelsIntoOctree, {'handle
 sim.intersectPointsWithPointCloud = wrapTypes(sim, sim.intersectPointsWithPointCloud, {'handle'}, {})
 sim.isHandle = wrapTypes(sim, sim.isHandle, {'handle'}, {})
 sim.loadScene = wrapTypes(sim, sim.loadScene, {'handle'}, {})
-sim.multiplyPoses = wrapTypes(sim, sim.multiplyPoses, {'pose', 'pose'}, {'pose'})
 sim.readVisionSensor = wrapTypes(sim, sim.readVisionSensor, {'handle'}, {})
 sim.relocateShapeFrame = wrapTypes(sim, sim.relocateShapeFrame, {'handle', 'pose'}, {})
 sim.removeModel = wrapTypes(sim, sim.removeModel, {'handle'}, {})
