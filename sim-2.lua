@@ -5,6 +5,9 @@ sim.__ = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
+local checkargs = require('checkargs')
+local checkargs2 = require('checkargs-2')
+require('motion-2').extend(sim)
 
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
@@ -50,10 +53,6 @@ function sim.step(wait)
     -- Needs to be overridden by Python wrapper and remote API server code
     sim.yield()
 end
-
-local checkargs = require('checkargs')
-local checkargs2 = require('checkargs-2')
-require('motion-2').extend(sim)
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
@@ -1430,6 +1429,18 @@ end
 
 require('sim-2-typewrappers').extend(sim)
 
+sim.addForce = wrap(sim.addForce, function(origFunc)
+    return function(h, fp, ff)
+        origFunc(h, fp, ff)
+    end
+end)
+
+sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(origFunc)
+    return function(h, force, torque)
+        origFunc(h, force, torque)
+    end
+end)
+
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
 
 sim.addItemToCollection = wrapTypes(sim, sim.addItemToCollection, {nil, nil, 'handle'}, {})
@@ -1459,12 +1470,6 @@ sim.getIntProperty = wrapTypes(sim, sim.getIntProperty, {'handle'}, {})
 sim.getLongProperty = wrapTypes(sim, sim.getLongProperty, {'handle'}, {})
 sim.getObjectAlias = wrapTypes(sim, sim.getObjectAlias, {'handle'}, {})
 sim.getObjectParent = wrapTypes(sim, sim.getObjectParent, {'handle'}, {'handle'})
-sim.getObjectPose = wrapTypes(sim, sim.getObjectPose, {'handle', 'handle'}, {'pose'})
-sim.getObjectPosition = wrapTypes(sim, sim.getObjectPosition, {'handle', 'handle'}, {'vector3'})
-sim.getObjectQuaternion = wrapTypes(sim, sim.getObjectQuaternion, {'handle', 'handle'}, {'quaternion'})
-sim.setObjectPose = wrapTypes(sim, sim.setObjectPose, {'handle', 'pose', 'handle'}, {})
-sim.setObjectPosition = wrapTypes(sim, sim.setObjectPosition, {'handle', 'vector3', 'handle'}, {})
-sim.setObjectQuaternion = wrapTypes(sim, sim.setObjectQuaternion, {'handle', 'quaternion', 'handle'}, {})
 sim.getObjectsInTree = wrapTypes(sim, sim.getObjectsInTree, {'handle'}, {})
 sim.getObjectVelocity = wrapTypes(sim, sim.getObjectVelocity, {'handle'}, {'vector3', 'vector3'})
 sim.getPoseProperty = wrapTypes(sim, sim.getPoseProperty, {'handle'}, {'pose'})
