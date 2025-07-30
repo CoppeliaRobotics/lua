@@ -58,13 +58,13 @@ return {
 
         local function read_vector(v, def)
             if v == nil then v = def end
-            if simEigen.Vector:isvector(v) then v = v:data() end
+            if simEigen.Matrix:ismatrix(v) then assert(v:isvector()); v = v:data() end
             return v
         end
 
         local function read_vector3(v, def)
             if v == nil then v = def end
-            if simEigen.Vector:isvector(v, 3) then v = v:data() end
+            if simEigen.Matrix:ismatrix(v) then assert(v:isvector(3)); v = v:data() end
             return v
         end
 
