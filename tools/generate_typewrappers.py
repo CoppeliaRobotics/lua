@@ -22,12 +22,16 @@ return {
         local simEigen = require 'simEigen'
         local Color = require 'Color'
 
-        local function write_vector3(v)
+        local function write_matrix(v)
+            return simEigen.Matrix(v)
+        end
+
+        local function write_vector(v)
             return simEigen.Vector(v)
         end
 
-        local function write_matrix(v)
-            return simEigen.Matrix(v)
+        local function write_vector3(v)
+            return simEigen.Vector(3, v)
         end
 
         local function write_quaternion(v)
@@ -46,15 +50,21 @@ return {
             return sim.Object(v)
         end
 
-        local function read_vector3(v, def)
+        local function read_matrix(v, def)
+            if v == nil then v = def end
+            if simEigen.Matrix:ismatrix(v) then v = v:data() end
+            return v
+        end
+
+        local function read_vector(v, def)
             if v == nil then v = def end
             if simEigen.Vector:isvector(v) then v = v:data() end
             return v
         end
 
-        local function read_matrix(v, def)
+        local function read_vector3(v, def)
             if v == nil then v = def end
-            if simEigen.Matrix:ismatrix(v) then v = v:data() end
+            if simEigen.Vector:isvector(v, 3) then v = v:data() end
             return v
         end
 
@@ -93,11 +103,11 @@ return {
             in_recipes, out_recipes = {}, {}
             for i, arg in enumerate(f.in_args):
                 if isinstance(arg, VarArgs): continue
-                if arg.type in ('vector3', 'matrix', 'quaternion', 'pose', 'color', 'handle'):
+                if arg.type in ('matrix', 'vector', 'vector3', 'quaternion', 'pose', 'color', 'handle'):
                     in_recipes[i] = arg.type
             for i, ret in enumerate(f.out_args):
                 if isinstance(ret, VarArgs): continue
-                if ret.type in ('vector3', 'matrix', 'quaternion', 'pose', 'color', 'handle'):
+                if ret.type in ('matrix', 'vector', 'vector3', 'quaternion', 'pose', 'color', 'handle'):
                     out_recipes[i] = ret.type
             if not in_recipes and not out_recipes: continue
             gen_code += f"""
