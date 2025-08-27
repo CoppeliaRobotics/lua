@@ -6,7 +6,7 @@ for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
 
-sim.__ = {}
+local locals = {}
 __1 = {} -- sometimes globals are needed (but __1 only for sim-1)
 
 if unpack == nil then
@@ -110,19 +110,19 @@ sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
 end)
 
 -- Make sim.registerScriptFuncHook work also with a function as arg 2:
-function sim.__.registerScriptFuncHook(funcNm, func, before)
+function locals.registerScriptFuncHook(funcNm, func, before)
     local retVal
     if type(func) == 'string' then
-        retVal = sim.__.registerScriptFuncHookOrig(funcNm, func, before)
+        retVal = locals.registerScriptFuncHookOrig(funcNm, func, before)
     else
         local str = tostring(func)
-        retVal = sim.__.registerScriptFuncHookOrig(funcNm, '__1.' .. str, before)
+        retVal = locals.registerScriptFuncHookOrig(funcNm, '__1.' .. str, before)
         __1[str] = func
     end
     return retVal
 end
-sim.__.registerScriptFuncHookOrig = sim.registerScriptFuncHook
-sim.registerScriptFuncHook = sim.__.registerScriptFuncHook
+locals.registerScriptFuncHookOrig = sim.registerScriptFuncHook
+sim.registerScriptFuncHook = locals.registerScriptFuncHook
 
 function sim.getRandom(seed)
     if seed then
@@ -304,32 +304,32 @@ function sim.getMatchingPersistentDataTags(...)
 end
 
 function sim.throttle(t, func, ...)
-    sim.__.lastExecTime = sim.__.lastExecTime or {}
-    sim.__.throttleSched = sim.__.throttleSched or {}
+    locals.lastExecTime = locals.lastExecTime or {}
+    locals.throttleSched = locals.throttleSched or {}
 
     local h = string.dump(func)
     local now = sim.getSystemTime()
 
     -- cancel any previous scheduled execution: (see sim.scheduleExecution below)
-    if sim.__.throttleSched[h] then
-        sim.cancelScheduledExecution(sim.__.throttleSched[h])
-        sim.__.throttleSched[h] = nil
+    if locals.throttleSched[h] then
+        sim.cancelScheduledExecution(locals.throttleSched[h])
+        locals.throttleSched[h] = nil
     end
 
-    if sim.__.lastExecTime[h] == nil or sim.__.lastExecTime[h] + t < now then
+    if locals.lastExecTime[h] == nil or locals.lastExecTime[h] + t < now then
         func(...)
-        sim.__.lastExecTime[h] = now
+        locals.lastExecTime[h] = now
     else
         -- if skipping the call (i.e. because it exceeds target rate)
         -- schedule the last call in the future:
-        sim.__.throttleSched[h] = sim.scheduleExecution(function(...)
+        locals.throttleSched[h] = sim.scheduleExecution(function(...)
             func(...)
-            sim.__.lastExecTime[h] = now
-        end, {...}, sim.__.lastExecTime[h] + t)
+            locals.lastExecTime[h] = now
+        end, {...}, locals.lastExecTime[h] + t)
     end
 end
 
-function sim.__.schedulerCallback()
+function locals.schedulerCallback()
     local function fn(t, pq)
         local item = pq:peek()
         if item and item.timePoint <= t then
@@ -339,23 +339,23 @@ function sim.__.schedulerCallback()
         end
     end
 
-    fn(sim.getSystemTime(), sim.__.scheduler.rtpq)
+    fn(sim.getSystemTime(), locals.scheduler.rtpq)
     if sim.getSimulationState() == sim.simulation_advancing_running then
-        fn(sim.getSimulationTime(), sim.__.scheduler.simpq)
+        fn(sim.getSimulationTime(), locals.scheduler.simpq)
     end
 
-    if sim.__.scheduler.simpq:isempty() and sim.__.scheduler.rtpq:isempty() then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', sim.__.schedulerCallback, true)
-        sim.__.scheduler.hook = false
+    if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        locals.scheduler.hook = false
     end
 end
 
 function sim.scheduleExecution(func, args, timePoint, simTime)
-    if not sim.__.scheduler then
+    if not locals.scheduler then
         local priorityqueue = require 'priorityqueue'
-        sim.__.scheduler = {
+        locals.scheduler = {
             simpq = priorityqueue(),
             rtpq = priorityqueue(),
             simTime = {},
@@ -363,14 +363,14 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
         }
     end
 
-    local id = sim.__.scheduler.nextId
-    sim.__.scheduler.nextId = id + 1
+    local id = locals.scheduler.nextId
+    locals.scheduler.nextId = id + 1
     local pq
     if simTime then
-        pq = sim.__.scheduler.simpq
-        sim.__.scheduler.simTime[id] = true
+        pq = locals.scheduler.simpq
+        locals.scheduler.simTime[id] = true
     else
-        pq = sim.__.scheduler.rtpq
+        pq = locals.scheduler.rtpq
     end
     pq:push(timePoint, {
         id = id,
@@ -379,23 +379,23 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
         timePoint = timePoint,
         simTime = simTime,
     })
-    if not sim.__.scheduler.hook then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', sim.__.schedulerCallback, true)
-        sim.__.scheduler.hook = true
+    if not locals.scheduler.hook then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        locals.scheduler.hook = true
     end
     return id
 end
 
 function sim.cancelScheduledExecution(id)
-    if not sim.__.scheduler then return end
+    if not locals.scheduler then return end
     local pq = nil
-    if sim.__.scheduler.simTime[id] then
-        sim.__.scheduler.simTime[id] = nil
-        pq = sim.__.scheduler.simpq
+    if locals.scheduler.simTime[id] then
+        locals.scheduler.simTime[id] = nil
+        pq = locals.scheduler.simpq
     else
-        pq = sim.__.scheduler.rtpq
+        pq = locals.scheduler.rtpq
     end
     return pq:cancel(function(item) return item.id == id end)
 end
@@ -492,7 +492,7 @@ function sim.getAlternateConfigs(...)
         local desiredPose = 0
         if tipHandle ~= -1 then desiredPose = sim.getObjectMatrix(tipHandle) end
         configs =
-            sim.__.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, 1, tipHandle)
+            locals.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, 1, tipHandle)
     end
 
     for i = 1, #jointHandles, 1 do sim.setJointPosition(jointHandles[i], initConfig[i]) end
@@ -593,23 +593,23 @@ function sim.getPathInterpolatedConfig(...)
         local i0, i1, i2
         if t < 0.5 then
             if li == 1 and not closed then
-                retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
             else
                 if t < 0.5 * w then
                     i0 = li - 1
                     i1 = li
                     i2 = hi
                     if li == 1 then i0 = confCnt - 1 end
-                    local a = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i0), sim.__.getConfig(path, dof, i1), 1 - 0.25 * w + t * 0.5, types)
-                    local b = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i1), sim.__.getConfig(path, dof, i2), 0.25 * w + t * 0.5, types)
-                    retVal = sim.__.linearInterpolate(a, b, 0.5 + t / w, types)
+                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.25 * w + t * 0.5, types)
+                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), 0.25 * w + t * 0.5, types)
+                    retVal = locals.linearInterpolate(a, b, 0.5 + t / w, types)
                 else
-                    retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
                 end
             end
         else
             if hi == confCnt and not closed then
-                retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
             else
                 if t > (1 - 0.5 * w) then
                     i0 = li
@@ -617,16 +617,16 @@ function sim.getPathInterpolatedConfig(...)
                     i2 = hi + 1
                     if hi == confCnt then i2 = 2 end
                     t = t - (1 - 0.5 * w)
-                    local a = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i0), sim.__.getConfig(path, dof, i1), 1 - 0.5 * w + t * 0.5, types)
-                    local b = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i1), sim.__.getConfig(path, dof, i2), t * 0.5, types)
-                    retVal = sim.__.linearInterpolate(a, b, t / w, types)
+                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.5 * w + t * 0.5, types)
+                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), t * 0.5, types)
+                    retVal = locals.linearInterpolate(a, b, t / w, types)
                 else
-                    retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
                 end
             end
         end
     elseif pathType == 'linear' then
-        retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+        retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
     end
     return retVal
 end
@@ -742,10 +742,10 @@ function sim.getConfigDistance(...)
     if (#confA ~= #confB) or (metric and #confA ~= #metric) or (types and #confA ~= #types) then
         error("Bad table size.")
     end
-    return sim.__.getConfigDistance(confA, confB, metric, types)
+    return locals.getConfigDistance(confA, confB, metric, types)
 end
 
-function sim.__.getConfigDistance(confA, confB, metric, types)
+function locals.getConfigDistance(confA, confB, metric, types)
     if metric == nil then
         metric = {}
         for i = 1, #confA, 1 do metric[i] = 1 end
@@ -1121,14 +1121,14 @@ function sim.setProperty(target, pname, pvalue, ptype)
 end
 
 function sim.getPropertyTypeString(ptype, forGetterSetter)
-    if not sim.__.propertytypeToStringMap then
-        sim.__.propertytypeToStringMap = {}
+    if not locals.propertytypeToStringMap then
+        locals.propertytypeToStringMap = {}
         for k, v in pairs(sim) do
             local m = string.match(k, 'propertytype_(.*)')
-            if m then sim.__.propertytypeToStringMap[v] = m end
+            if m then locals.propertytypeToStringMap[v] = m end
         end
     end
-    local ret = sim.__.propertytypeToStringMap[ptype]
+    local ret = locals.propertytypeToStringMap[ptype]
     if forGetterSetter then
         if ret == 'floatarray' then ret = 'floatArray' end
         if ret == 'floatarray2' then ret = 'floatArray2' end
@@ -1381,35 +1381,35 @@ sim.getThreadExistRequest = sim.getSimulationStopping
 
 function sim.getNamedBoolParam(...)
     local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(sim.__.parseBool, sim.getNamedStringParam(name))
+    local r, v = pcall(locals.parseBool, sim.getNamedStringParam(name))
     if r then return v end
 end
 
 function sim.getNamedFloatParam(...)
     local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(sim.__.parseFloat, sim.getNamedStringParam(name))
+    local r, v = pcall(locals.parseFloat, sim.getNamedStringParam(name))
     if r then return v end
 end
 
 function sim.getNamedInt32Param(...)
     local name = checkargs({{type = 'string'}}, ...)
-    local r, v = pcall(sim.__.parseInt, sim.getNamedStringParam(name))
+    local r, v = pcall(locals.parseInt, sim.getNamedStringParam(name))
     if r then return v end
 end
 
 function sim.setNamedBoolParam(...)
     local name, value = checkargs({{type = 'string'}, {type = 'bool'}}, ...)
-    return sim.setNamedStringParam(name, sim.__.paramValueToString(value))
+    return sim.setNamedStringParam(name, locals.paramValueToString(value))
 end
 
 function sim.setNamedFloatParam(...)
     local name, value = checkargs({{type = 'string'}, {type = 'float'}}, ...)
-    return sim.setNamedStringParam(name, sim.__.paramValueToString(value))
+    return sim.setNamedStringParam(name, locals.paramValueToString(value))
 end
 
 function sim.setNamedInt32Param(...)
     local name, value = checkargs({{type = 'string'}, {type = 'int'}}, ...)
-    return sim.setNamedStringParam(name, sim.__.paramValueToString(value))
+    return sim.setNamedStringParam(name, locals.paramValueToString(value))
 end
 
 sim.getStringNamedParam = sim.getNamedStringParam
@@ -1419,24 +1419,24 @@ function sim.getSettingString(...)
     local key = checkargs({{type = 'string'}}, ...)
     local r = sim.getNamedStringParam(key)
     if r then return r end
-    sim.__.systemSettings = sim.__.systemSettings or sim.__.readSystemSettings() or {}
-    sim.__.userSettings = sim.__.userSettings or sim.__.readUserSettings() or {}
-    return sim.__.userSettings[key] or sim.__.systemSettings[key]
+    locals.systemSettings = locals.systemSettings or locals.readSystemSettings() or {}
+    locals.userSettings = locals.userSettings or locals.readUserSettings() or {}
+    return locals.userSettings[key] or locals.systemSettings[key]
 end
 
 function sim.getSettingBool(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseBool(sim.getSettingString(key))
+    return locals.parseBool(sim.getSettingString(key))
 end
 
 function sim.getSettingFloat(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseFloat(sim.getSettingString(key))
+    return locals.parseFloat(sim.getSettingString(key))
 end
 
 function sim.getSettingInt32(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseInt(sim.getSettingString(key))
+    return locals.parseInt(sim.getSettingString(key))
 end
 
 function sim.getScriptFunctions(...)
@@ -1661,7 +1661,7 @@ end
 -- Hidden, internal functions:
 ----------------------------------------------------------
 
-function sim.__.readSettings(path)
+function locals.readSettings(path)
     local f = io.open(path, 'r')
     if f == nil then return nil end
     local cfg = {}
@@ -1673,36 +1673,36 @@ function sim.__.readSettings(path)
     return cfg
 end
 
-function sim.__.readSystemSettings()
+function locals.readSystemSettings()
     local sysDir = sim.getStringParam(sim.stringparam_systemdir)
     local psep = package.config:sub(1, 1)
     local usrSet = sysDir .. psep .. 'usrset.txt'
-    return sim.__.readSettings(usrSet)
+    return locals.readSettings(usrSet)
 end
 
-function sim.__.readUserSettings()
+function locals.readUserSettings()
     local plat = sim.getInt32Param(sim.intparam_platform)
     local psep = package.config:sub(1, 1)
     local usrSet = 'CoppeliaSim' .. psep .. 'usrset.txt'
     local home = os.getenv('HOME')
     if plat == 0 then -- windows
         local appdata = os.getenv('appdata')
-        return sim.__.readSettings(appdata .. psep .. usrSet)
+        return locals.readSettings(appdata .. psep .. usrSet)
     elseif plat == 1 then -- macos
-        return sim.__.readSettings(home .. psep .. '.' .. usrSet) or
-                   sim.__.readSettings(
+        return locals.readSettings(home .. psep .. '.' .. usrSet) or
+                   locals.readSettings(
                        home .. psep .. 'Library' .. psep .. 'Preferences' .. psep .. usrSet
                    )
     elseif plat == 2 then -- linux
         local xdghome = os.getenv('XDG_CONFIG_HOME') or home
-        return sim.__.readSettings(xdghome .. psep .. usrSet) or
-                   sim.__.readSettings(home .. psep .. '.' .. usrSet)
+        return locals.readSettings(xdghome .. psep .. usrSet) or
+                   locals.readSettings(home .. psep .. '.' .. usrSet)
     else
         error('unsupported platform: ' .. plat)
     end
 end
 
-function sim.__.parseBool(v)
+function locals.parseBool(v)
     if v == nil then return nil end
     if isbuffer(v) then
         v = tostring(v)
@@ -1716,24 +1716,24 @@ function sim.__.parseBool(v)
     error('bool value expected')
 end
 
-function sim.__.parseFloat(v)
+function locals.parseFloat(v)
     if v == nil then return nil end
     return tonumber(v)
 end
 
-function sim.__.parseInt(v)
+function locals.parseInt(v)
     if v == nil then return nil end
     v = tonumber(v)
     if math.type(v) == 'integer' then return v end
     error('integer value expected')
 end
 
-function sim.__.paramValueToString(v)
+function locals.paramValueToString(v)
     if v == nil then return '' end
     return tostring(v)
 end
 
-function sim.__.linearInterpolate(conf1, conf2, t, types)
+function locals.linearInterpolate(conf1, conf2, t, types)
     local retVal = {}
     local qcnt = 0
     for i = 1, #conf1, 1 do
@@ -1763,13 +1763,13 @@ function sim.__.linearInterpolate(conf1, conf2, t, types)
     return retVal
 end
 
-function sim.__.getConfig(path, dof, index)
+function locals.getConfig(path, dof, index)
     local retVal = {}
     for i = 1, dof, 1 do retVal[#retVal + 1] = path[(index - 1) * dof + i] end
     return retVal
 end
 
-function sim.__.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, index, tipHandle)
+function locals.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, x, index, tipHandle)
     if index > #jointHandles then
         if tipHandle == -1 then
             return {table.deepcopy(confS)}
@@ -1790,7 +1790,7 @@ function sim.__.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, 
         for i = 1, #jointHandles, 1 do c[i] = confS[i] end
         local solutions = {}
         while c[index] <= x[index][2] do
-            local s = sim.__.loopThroughAltConfigSolutions(
+            local s = locals.loopThroughAltConfigSolutions(
                           jointHandles, desiredPose, c, x, index + 1, tipHandle
                       )
             for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
@@ -1800,7 +1800,7 @@ function sim.__.loopThroughAltConfigSolutions(jointHandles, desiredPose, confS, 
     end
 end
 
-function sim.__.comparableTables(t1, t2)
+function locals.comparableTables(t1, t2)
     return (isArray(t1) == isArray(t2)) or (isArray(t1) and #t1 == 0) or (isArray(t2) and #t2 == 0)
 end
 
@@ -1815,74 +1815,74 @@ end
 
 ----------------------------------------------------------
 
-sim.__.dlg = {}
-function sim.__.dlg.ok_callback(ui)
+locals.dlg = {}
+function locals.dlg.ok_callback(ui)
     local simUI = require 'simUI'
-    local h = sim.__.dlg.openDlgsUi[ui]
-    sim.__.dlg.allDlgResults[h].state = sim.dlgret_ok
-    if sim.__.dlg.allDlgResults[h].style == sim.dlgstyle_input then
-        sim.__.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
+    local h = locals.dlg.openDlgsUi[ui]
+    locals.dlg.allDlgResults[h].state = sim.dlgret_ok
+    if locals.dlg.allDlgResults[h].style == sim.dlgstyle_input then
+        locals.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
     end
-    sim.__.dlg.removeUi(h)
+    locals.dlg.removeUi(h)
 end
-function sim.__.dlg.cancel_callback(ui)
-    local h = sim.__.dlg.openDlgsUi[ui]
-    sim.__.dlg.allDlgResults[h].state = sim.dlgret_cancel
-    sim.__.dlg.removeUi(h)
+function locals.dlg.cancel_callback(ui)
+    local h = locals.dlg.openDlgsUi[ui]
+    locals.dlg.allDlgResults[h].state = sim.dlgret_cancel
+    locals.dlg.removeUi(h)
 end
-function sim.__.dlg.input_callback(ui, id, val)
-    local h = sim.__.dlg.openDlgsUi[ui]
-    sim.__.dlg.allDlgResults[h].input = val
+function locals.dlg.input_callback(ui, id, val)
+    local h = locals.dlg.openDlgsUi[ui]
+    locals.dlg.allDlgResults[h].input = val
 end
-function sim.__.dlg.yes_callback(ui)
+function locals.dlg.yes_callback(ui)
     local simUI = require 'simUI'
-    local h = sim.__.dlg.openDlgsUi[ui]
-    sim.__.dlg.allDlgResults[h].state = sim.dlgret_yes
-    if sim.__.dlg.allDlgResults[h].style == sim.dlgstyle_input then
-        sim.__.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
+    local h = locals.dlg.openDlgsUi[ui]
+    locals.dlg.allDlgResults[h].state = sim.dlgret_yes
+    if locals.dlg.allDlgResults[h].style == sim.dlgstyle_input then
+        locals.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
     end
-    sim.__.dlg.removeUi(h)
+    locals.dlg.removeUi(h)
 end
-function sim.__.dlg.no_callback(ui)
+function locals.dlg.no_callback(ui)
     local simUI = require 'simUI'
-    local h = sim.__.dlg.openDlgsUi[ui]
-    sim.__.dlg.allDlgResults[h].state = sim.dlgret_no
-    if sim.__.dlg.allDlgResults[h].style == sim.dlgstyle_input then
-        sim.__.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
+    local h = locals.dlg.openDlgsUi[ui]
+    locals.dlg.allDlgResults[h].state = sim.dlgret_no
+    if locals.dlg.allDlgResults[h].style == sim.dlgstyle_input then
+        locals.dlg.allDlgResults[h].input = simUI.getEditValue(ui, 1)
     end
-    sim.__.dlg.removeUi(h)
+    locals.dlg.removeUi(h)
 end
-function sim.__.dlg.removeUi(handle)
+function locals.dlg.removeUi(handle)
     local simUI = require 'simUI'
-    local ui = sim.__.dlg.openDlgs[handle]
+    local ui = locals.dlg.openDlgs[handle]
     simUI.destroy(ui)
-    sim.__.dlg.openDlgsUi[ui] = nil
-    sim.__.dlg.openDlgs[handle] = nil
-    if sim.__.dlg.allDlgResults[handle].state == sim.dlgret_still_open then
-        sim.__.dlg.allDlgResults[handle].state = sim.dlgret_cancel
+    locals.dlg.openDlgsUi[ui] = nil
+    locals.dlg.openDlgs[handle] = nil
+    if locals.dlg.allDlgResults[handle].state == sim.dlgret_still_open then
+        locals.dlg.allDlgResults[handle].state = sim.dlgret_cancel
     end
 end
-function sim.__.dlg.switch()
+function locals.dlg.switch()
     -- remove all
-    if sim.__.dlg.openDlgsUi then
+    if locals.dlg.openDlgsUi then
         local toRem = {}
-        for key, val in pairs(sim.__.dlg.openDlgsUi) do toRem[#toRem + 1] = val end
-        for i = 1, #toRem, 1 do sim.__.dlg.removeUi(toRem[i]) end
-        sim.__.dlg.openDlgsUi = nil
-        sim.__.dlg.openDlgs = nil
+        for key, val in pairs(locals.dlg.openDlgsUi) do toRem[#toRem + 1] = val end
+        for i = 1, #toRem, 1 do locals.dlg.removeUi(toRem[i]) end
+        locals.dlg.openDlgsUi = nil
+        locals.dlg.openDlgs = nil
     end
 end
-function sim.__.sysCallEx_beforeInstanceSwitch()
+function locals.sysCallEx_beforeInstanceSwitch()
     -- Hook function, registered further down
-    sim.__.dlg.switch() -- remove all
+    locals.dlg.switch() -- remove all
 end
-function sim.__.sysCallEx_addOnScriptSuspend()
+function locals.sysCallEx_addOnScriptSuspend()
     -- Hook function, registered further down
-    sim.__.dlg.switch() -- remove all
+    locals.dlg.switch() -- remove all
 end
-function sim.__.sysCallEx_cleanup()
+function locals.sysCallEx_cleanup()
     -- Hook function, registered further down
-    sim.__.dlg.switch() -- remove all
+    locals.dlg.switch() -- remove all
 end
 
 sim.packTable = wrap(sim.packTable, function(origFunc)

@@ -1,7 +1,7 @@
 local sim = table.clone(_S.internalApi.sim)
 sim.version = '2.0'
 
-sim.__ = {}
+local locals = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
@@ -127,19 +127,19 @@ sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
 end)
 
 -- Make sim.registerScriptFuncHook work also with a function as arg 2:
-function sim.__.registerScriptFuncHook(funcNm, func, before)
+function locals.registerScriptFuncHook(funcNm, func, before)
     local retVal
     if type(func) == 'string' then
-        retVal = sim.__.registerScriptFuncHookOrig(funcNm, func, before)
+        retVal = locals.registerScriptFuncHookOrig(funcNm, func, before)
     else
         local str = tostring(func)
-        retVal = sim.__.registerScriptFuncHookOrig(funcNm, '__2.' .. str, before)
+        retVal = locals.registerScriptFuncHookOrig(funcNm, '__2.' .. str, before)
         __2[str] = func
     end
     return retVal
 end
-sim.__.registerScriptFuncHookOrig = sim.registerScriptFuncHook
-sim.registerScriptFuncHook = sim.__.registerScriptFuncHook
+locals.registerScriptFuncHookOrig = sim.registerScriptFuncHook
+sim.registerScriptFuncHook = locals.registerScriptFuncHook
 
 function sim.fastIdleLoop(enable)
     local data = sim.getBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
@@ -192,32 +192,32 @@ function sim.isPluginLoaded(pluginName)
 end
 
 function sim.throttle(t, func, ...)
-    sim.__.lastExecTime = sim.__.lastExecTime or {}
-    sim.__.throttleSched = sim.__.throttleSched or {}
+    locals.lastExecTime = locals.lastExecTime or {}
+    locals.throttleSched = locals.throttleSched or {}
 
     local h = string.dump(func)
     local now = sim.getSystemTime()
 
     -- cancel any previous scheduled execution: (see sim.scheduleExecution below)
-    if sim.__.throttleSched[h] then
-        sim.cancelScheduledExecution(sim.__.throttleSched[h])
-        sim.__.throttleSched[h] = nil
+    if locals.throttleSched[h] then
+        sim.cancelScheduledExecution(locals.throttleSched[h])
+        locals.throttleSched[h] = nil
     end
 
-    if sim.__.lastExecTime[h] == nil or sim.__.lastExecTime[h] + t < now then
+    if locals.lastExecTime[h] == nil or locals.lastExecTime[h] + t < now then
         func(...)
-        sim.__.lastExecTime[h] = now
+        locals.lastExecTime[h] = now
     else
         -- if skipping the call (i.e. because it exceeds target rate)
         -- schedule the last call in the future:
-        sim.__.throttleSched[h] = sim.scheduleExecution(function(...)
+        locals.throttleSched[h] = sim.scheduleExecution(function(...)
             func(...)
-            sim.__.lastExecTime[h] = now
-        end, {...}, sim.__.lastExecTime[h] + t)
+            locals.lastExecTime[h] = now
+        end, {...}, locals.lastExecTime[h] + t)
     end
 end
 
-function sim.__.schedulerCallback()
+function locals.schedulerCallback()
     local function fn(t, pq)
         local item = pq:peek()
         if item and item.timePoint <= t then
@@ -227,23 +227,23 @@ function sim.__.schedulerCallback()
         end
     end
 
-    fn(sim.getSystemTime(), sim.__.scheduler.rtpq)
+    fn(sim.getSystemTime(), locals.scheduler.rtpq)
     if sim.getSimulationState() == sim.simulation_advancing_running then
-        fn(sim.getSimulationTime(), sim.__.scheduler.simpq)
+        fn(sim.getSimulationTime(), locals.scheduler.simpq)
     end
 
-    if sim.__.scheduler.simpq:isempty() and sim.__.scheduler.rtpq:isempty() then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', sim.__.schedulerCallback, true)
-        sim.__.scheduler.hook = false
+    if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        locals.scheduler.hook = false
     end
 end
 
 function sim.scheduleExecution(func, args, timePoint, simTime)
-    if not sim.__.scheduler then
+    if not locals.scheduler then
         local priorityqueue = require 'priorityqueue'
-        sim.__.scheduler = {
+        locals.scheduler = {
             simpq = priorityqueue(),
             rtpq = priorityqueue(),
             simTime = {},
@@ -251,14 +251,14 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
         }
     end
 
-    local id = sim.__.scheduler.nextId
-    sim.__.scheduler.nextId = id + 1
+    local id = locals.scheduler.nextId
+    locals.scheduler.nextId = id + 1
     local pq
     if simTime then
-        pq = sim.__.scheduler.simpq
-        sim.__.scheduler.simTime[id] = true
+        pq = locals.scheduler.simpq
+        locals.scheduler.simTime[id] = true
     else
-        pq = sim.__.scheduler.rtpq
+        pq = locals.scheduler.rtpq
     end
     pq:push(timePoint, {
         id = id,
@@ -267,23 +267,23 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
         timePoint = timePoint,
         simTime = simTime,
     })
-    if not sim.__.scheduler.hook then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', sim.__.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', sim.__.schedulerCallback, true)
-        sim.__.scheduler.hook = true
+    if not locals.scheduler.hook then
+        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        locals.scheduler.hook = true
     end
     return id
 end
 
 function sim.cancelScheduledExecution(id)
-    if not sim.__.scheduler then return end
+    if not locals.scheduler then return end
     local pq = nil
-    if sim.__.scheduler.simTime[id] then
-        sim.__.scheduler.simTime[id] = nil
-        pq = sim.__.scheduler.simpq
+    if locals.scheduler.simTime[id] then
+        locals.scheduler.simTime[id] = nil
+        pq = locals.scheduler.simpq
     else
-        pq = sim.__.scheduler.rtpq
+        pq = locals.scheduler.rtpq
     end
     return pq:cancel(function(item) return item.id == id end)
 end
@@ -372,23 +372,23 @@ function sim.getPathInterpolatedConfig(...)
         local i0, i1, i2
         if t < 0.5 then
             if li == 1 and not closed then
-                retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
             else
                 if t < 0.5 * w then
                     i0 = li - 1
                     i1 = li
                     i2 = hi
                     if li == 1 then i0 = confCnt - 1 end
-                    local a = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i0), sim.__.getConfig(path, dof, i1), 1 - 0.25 * w + t * 0.5, types)
-                    local b = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i1), sim.__.getConfig(path, dof, i2), 0.25 * w + t * 0.5, types)
-                    retVal = sim.__.linearInterpolate(a, b, 0.5 + t / w, types)
+                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.25 * w + t * 0.5, types)
+                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), 0.25 * w + t * 0.5, types)
+                    retVal = locals.linearInterpolate(a, b, 0.5 + t / w, types)
                 else
-                    retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
                 end
             end
         else
             if hi == confCnt and not closed then
-                retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
             else
                 if t > (1 - 0.5 * w) then
                     i0 = li
@@ -396,16 +396,16 @@ function sim.getPathInterpolatedConfig(...)
                     i2 = hi + 1
                     if hi == confCnt then i2 = 2 end
                     t = t - (1 - 0.5 * w)
-                    local a = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i0), sim.__.getConfig(path, dof, i1), 1 - 0.5 * w + t * 0.5, types)
-                    local b = sim.__.linearInterpolate(sim.__.getConfig(path, dof, i1), sim.__.getConfig(path, dof, i2), t * 0.5, types)
-                    retVal = sim.__.linearInterpolate(a, b, t / w, types)
+                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.5 * w + t * 0.5, types)
+                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), t * 0.5, types)
+                    retVal = locals.linearInterpolate(a, b, t / w, types)
                 else
-                    retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
                 end
             end
         end
     elseif pathType == 'linear' then
-        retVal = sim.__.linearInterpolate(sim.__.getConfig(path, dof, li), sim.__.getConfig(path, dof, hi), t, types)
+        retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
     end
     return retVal
 end
@@ -506,10 +506,10 @@ function sim.getConfigDistance(...)
     if (#confA ~= #confB) or (metric and #confA ~= #metric) or (types and #confA ~= #types) then
         error("Bad table size.")
     end
-    return sim.__.getConfigDistance(confA, confB, metric, types)
+    return locals.getConfigDistance(confA, confB, metric, types)
 end
 
-function sim.__.getConfigDistance(confA, confB, metric, types)
+function locals.getConfigDistance(confA, confB, metric, types)
     if metric == nil then
         metric = {}
         for i = 1, #confA, 1 do metric[i] = 1 end
@@ -786,14 +786,14 @@ function sim.setProperty(target, pname, pvalue, ptype)
 end
 
 function sim.getPropertyTypeString(ptype, forGetterSetter)
-    if not sim.__.propertytypeToStringMap then
-        sim.__.propertytypeToStringMap = {}
+    if not locals.propertytypeToStringMap then
+        locals.propertytypeToStringMap = {}
         for k, v in pairs(sim) do
             local m = string.match(k, 'propertytype_(.*)')
-            if m then sim.__.propertytypeToStringMap[v] = m end
+            if m then locals.propertytypeToStringMap[v] = m end
         end
     end
-    local ret = sim.__.propertytypeToStringMap[ptype]
+    local ret = locals.propertytypeToStringMap[ptype]
     if forGetterSetter then
         if ret == 'floatarray' then ret = 'floatArray' end
         if ret == 'floatarray2' then ret = 'floatArray2' end
@@ -1249,24 +1249,24 @@ function sim.getSettingString(...)
     local key = checkargs({{type = 'string'}}, ...)
     local r = sim.getStringProperty(sim.handle_app, 'namedParam.settings.' .. key, {noError = true}) --sim.getNamedStringParam(key)
     if r then return r end
-    sim.__.systemSettings = sim.__.systemSettings or sim.__.readSystemSettings() or {}
-    sim.__.userSettings = sim.__.userSettings or sim.__.readUserSettings() or {}
-    return sim.__.userSettings[key] or sim.__.systemSettings[key]
+    locals.systemSettings = locals.systemSettings or locals.readSystemSettings() or {}
+    locals.userSettings = locals.userSettings or locals.readUserSettings() or {}
+    return locals.userSettings[key] or locals.systemSettings[key]
 end
 
 function sim.getSettingBool(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseBool(sim.getSettingString(key))
+    return locals.parseBool(sim.getSettingString(key))
 end
 
 function sim.getSettingFloat(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseFloat(sim.getSettingString(key))
+    return locals.parseFloat(sim.getSettingString(key))
 end
 
 function sim.getSettingInt32(...)
     local key = checkargs({{type = 'string'}}, ...)
-    return sim.__.parseInt(sim.getSettingString(key))
+    return locals.parseInt(sim.getSettingString(key))
 end
 
 function sim.getScriptFunctions(...)
@@ -1617,7 +1617,7 @@ sim.visitTree = wrapTypes(sim, sim.visitTree, {'handle'}, {})
 -- Hidden, internal functions:
 ----------------------------------------------------------
 
-function sim.__.readSettings(path)
+function locals.readSettings(path)
     local f = io.open(path, 'r')
     if f == nil then return nil end
     local cfg = {}
@@ -1629,21 +1629,21 @@ function sim.__.readSettings(path)
     return cfg
 end
 
-function sim.__.readSystemSettings()
+function locals.readSystemSettings()
     local sysDir = sim.getStringProperty(sim.handle_app, 'systemPath')
     local psep = package.config:sub(1, 1)
     local usrSet = sysDir .. psep .. 'usrset.txt'
-    return sim.__.readSettings(usrSet)
+    return locals.readSettings(usrSet)
 end
 
-function sim.__.readUserSettings()
+function locals.readUserSettings()
     local usrDir = sim.getStringProperty(sim.handle_app, 'settingsPath')
     local psep = package.config:sub(1, 1)
     local usrSet = usrDir .. psep .. 'usrset.txt'
-    return sim.__.readSettings(usrSet)
+    return locals.readSettings(usrSet)
 end
 
-function sim.__.parseBool(v)
+function locals.parseBool(v)
     if v == nil then return nil end
     if isbuffer(v) then
         v = tostring(v)
@@ -1657,24 +1657,24 @@ function sim.__.parseBool(v)
     error('bool value expected')
 end
 
-function sim.__.parseFloat(v)
+function locals.parseFloat(v)
     if v == nil then return nil end
     return tonumber(v)
 end
 
-function sim.__.parseInt(v)
+function locals.parseInt(v)
     if v == nil then return nil end
     v = tonumber(v)
     if math.type(v) == 'integer' then return v end
     error('integer value expected')
 end
 
-function sim.__.paramValueToString(v)
+function locals.paramValueToString(v)
     if v == nil then return '' end
     return tostring(v)
 end
 
-function sim.__.linearInterpolate(conf1, conf2, t, types)
+function locals.linearInterpolate(conf1, conf2, t, types)
     local retVal = {}
     local qcnt = 0
     for i = 1, #conf1, 1 do
@@ -1703,13 +1703,13 @@ function sim.__.linearInterpolate(conf1, conf2, t, types)
     return retVal
 end
 
-function sim.__.getConfig(path, dof, index)
+function locals.getConfig(path, dof, index)
     local retVal = {}
     for i = 1, dof, 1 do retVal[#retVal + 1] = path[(index - 1) * dof + i] end
     return retVal
 end
 
-function sim.__.comparableTables(t1, t2)
+function locals.comparableTables(t1, t2)
     return (isArray(t1) == isArray(t2)) or (isArray(t1) and #t1 == 0) or (isArray(t2) and #t2 == 0)
 end
 
