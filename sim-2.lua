@@ -24,6 +24,64 @@ sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     end
 end)
 
+sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
+    return function(...)
+        local r = origFunc(...)
+        if r == 0 then
+            error("Failed reorienting bounding box.")
+        end
+    end
+end)
+
+sim.checkDistance = wrap(sim.checkDistance, function(origFunc)
+    return function(...)
+        local r, distData, objPair = origFunc(...)
+        return (r > 0), {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, distData[7], objPair
+    end
+end)
+
+sim.checkCollision = wrap(sim.checkCollision, function(origFunc)
+    return function(...)
+        local r, objPair = origFunc(...)
+        return (r > 0), objPair
+    end
+end)
+
+sim.checkProximitySensor = wrap(sim.checkProximitySensor, function(origFunc)
+    return function(...)
+        local r, dist, p1, h, n = origFunc(...)
+        if r then
+            return r, dist, p1, h, n
+        else
+            return false, 0.0, {0.0, 0.0, 0.0}, -1, {0.0, 0.0, 0.0}
+        end
+    end
+end)
+
+sim.auxiliaryConsoleClose = wrap(sim.auxiliaryConsoleClose, function(origFunc)
+    return function(...)
+        origFunc(...)
+    end
+end)
+
+sim.auxiliaryConsolePrint = wrap(sim.auxiliaryConsolePrint, function(origFunc)
+    return function(...)
+        origFunc(...)
+    end
+end)
+
+sim.auxiliaryConsoleShow = wrap(sim.auxiliaryConsoleShow, function(origFunc)
+    return function(...)
+        origFunc(...)
+    end
+end)
+
+sim.announceSceneContentChange = wrap(sim.announceSceneContentChange, function(origFunc)
+    return function(...)
+        origFunc(...)
+    end
+end)
+
 function sim.setStepping(enable)
     -- Convenience function, so that we have the same, more intuitive name also with external clients
     -- Needs to be overridden by Python wrapper and remote API server code
@@ -1426,6 +1484,21 @@ if not _S.requireWrapped then
         end
     end)
 end
+
+sim.getShapeInertia = wrap(sim.getShapeInertia, function(origFunc)
+    return function(h)
+        local m, comM = origFunc(h)
+        local a, b = table.batched(m, 3), {comM[4], comM[8], comM[12]}
+        return a, b
+    end
+end)
+
+sim.setShapeInertia = wrap(sim.setShapeInertia, function(origFunc)
+    return function(h, m, p)
+        print(h, m ,p)
+        origFunc(h, m, simEigen.Pose(p):totransform():data())
+    end
+end)
 
 require('sim-2-typewrappers').extend(sim)
 

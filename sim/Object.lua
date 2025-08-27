@@ -192,6 +192,8 @@ return {
             end
 
             rawset(self, '__methods', {
+                getInertia = methodWrapper{ sim.getShapeInertia, objType = 'shape', },
+                setInertia = methodWrapper{ sim.setShapeInertia, objType = 'shape', },
                 addItemToCollection = methodWrapper{ sim.addItemToCollection, objType = 'collection', },
                 addForce = methodWrapper{ sim.addForce, objType = 'shape', },
                 addForceAndTorque = methodWrapper{ sim.addForceAndTorque, objType = 'shape', },
