@@ -1,5 +1,5 @@
 local sim = table.clone(_S.internalApi.sim)
-sim.version = '2.0'
+sim.version = 2
 
 local locals = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)

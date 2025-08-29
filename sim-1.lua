@@ -1,7 +1,7 @@
 -- The is the first versioned sim-namespace
 
 local sim = table.clone(_S.internalApi.sim)
-sim.version = '1.0'
+sim.version = 1
 for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
