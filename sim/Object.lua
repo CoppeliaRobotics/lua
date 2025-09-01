@@ -202,10 +202,7 @@ return {
                 callFunction = methodWrapper{ sim.callScriptFunction, objType = 'script', },
                 checkCollision = methodWrapper{ sim.checkCollision, },
                 checkPointOccupancy = methodWrapper{ sim.checkOctreePointOccupancy, objType = 'ocTree', },
-                checkProximitySensor = methodWrapper{ sim.checkProximitySensor, objType = 'proximitySensor', },
-                checkVisionSensor = methodWrapper{ sim.checkVisionSensor, objType = 'visionSensor', },
-                checkVisionSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
-                checkSensor = methodWrapper{ sim.checkForceSensor, objType = 'forceSensor', },
+                checkSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
                 executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
                 getAlias = methodWrapper{ sim.getObjectAlias, },
@@ -346,6 +343,20 @@ return {
                     )
                 end,
             })
+
+            if objectType == 'forceSensor' then
+                self.__methods.checkSensor = function(self, ...)
+                    return sim.checkForceSensor(self.__handle, ...)
+                end
+            elseif objectType == 'proximitySensor' then
+                self.__methods.checkSensor = function(self, ...)
+                    return sim.checkProximitySensor(self.__handle, ...)
+                end
+            elseif objectType == 'visionSensor' then
+                self.__methods.checkSensor = function(self, ...)
+                    return sim.checkVisionSensor(self.__handle, ...)
+                end
+            end
         end
 
         function sim.Object:__copy()
