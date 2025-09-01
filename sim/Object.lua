@@ -516,7 +516,7 @@ return {
                 ['mujoco.jointProxy'] = {type = 'handle', alias = 'mujoco.jointProxyHandle'},
             },
             proximitySensor = {
-                ['detectedObjectHandle'] = {type = 'handle'},
+                ['detectedObject'] = {type = 'handle', alias = 'detectedObjectHandle'},
             },
             shape = {
                 ['meshes'] = {type = 'handles'},
