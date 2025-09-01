@@ -11,6 +11,8 @@ return {
         end
 
         function sim.PropertyGroup:__index(k)
+            assert(type(k) == 'string', 'invalid key type')
+
             if k:startswith '__' then
                 return rawget(self, k)
             end
@@ -144,21 +146,20 @@ return {
 
         sim.Object = class 'sim.Object'
 
-        function sim.Object:initialize(handle, opts, _query)
+        function sim.Object:initialize(handle, opts)
             if math.type(handle) == 'integer' then
-                assert(opts == nil and _query == nil, 'invalid args')
+                assert(opts == nil, 'invalid args')
                 assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
             elseif type(handle) == 'string' then
-                _query = handle
-                assert(_query:sub(1, 1) == '/' or _query:sub(1, 1) == '.', 'invalid object query')
-                handle = sim.getObject(_query, opts or {})
+                local query = handle
+                assert(query:sub(1, 1) == '/' or query:sub(1, 1) == '.', 'invalid object query')
+                handle = sim.getObject(query, opts or {})
                 assert(handle ~= -1, 'object query returned error')
             elseif sim.Object:isobject(handle) then
-                assert(opts == nil and _query == nil, 'invalid args')
-                _query = handle.__query
+                assert(opts == nil, 'invalid args')
                 handle = #handle
             elseif type(handle) == 'table' then
-                assert(opts == nil and _query == nil, 'invalid args')
+                assert(opts == nil, 'invalid args')
                 local initialProperties = handle
                 handle = sim.createObject(initialProperties)
             else
@@ -166,7 +167,6 @@ return {
             end
 
             rawset(self, '__handle', handle)
-            rawset(self, '__query', _query)
 
             local objectType = sim.getStringProperty(handle, 'objectType')
             rawset(self, 'objectType', objectType)
@@ -350,7 +350,6 @@ return {
 
         function sim.Object:__copy()
             local o = sim.Object(rawget(self, '__handle'))
-            rawset(o, '__query', rawget(self, '__query'))
             return o
         end
 
@@ -359,12 +358,6 @@ return {
         end
 
         function sim.Object:__index(k)
-            -- int indexing for accessing siblings:
-            if math.type(k) == 'integer' then
-                assert(self.__query)
-                return sim.Object(self.__query, {index = k})
-            end
-
             -- lookup existing properties first:
             local v = rawget(self, k)
             if v then return v end
@@ -529,6 +522,18 @@ return {
                 ['meshes'] = {type = 'handles'},
             },
         }
+
+        sim.ObjectArray = class 'sim.ObjectArray'
+
+        function sim.ObjectArray:initialize(query)
+            rawset(self, '__query', query)
+        end
+
+        function sim.ObjectArray:__index(k)
+            assert(math.type(k) == 'integer', 'invalid index type')
+            assert(self.__query)
+            return sim.Object(self.__query, {index = k})
+        end
 
         -- definition of constants / static objects:
         sim.scene = sim.Object(sim.handle_scene)
