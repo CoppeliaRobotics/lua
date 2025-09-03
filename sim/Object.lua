@@ -536,14 +536,23 @@ return {
 
         sim.ObjectArray = class 'sim.ObjectArray'
 
-        function sim.ObjectArray:initialize(query)
-            rawset(self, '__query', query)
+        function sim.ObjectArray:initialize(...)
+            rawset(self, '__object', sim.Object(...))
+            assert(self[0] == self.__object, 'sim.ObjectArray must point to first object of the array')
         end
 
         function sim.ObjectArray:__index(k)
             assert(math.type(k) == 'integer', 'invalid index type')
-            assert(self.__query)
-            return sim.Object(self.__query, {index = k})
+            if k >= 0 then
+                local parent = self.__object.parent or sim.scene
+                local alias = self.__object.alias
+                for i, child in ipairs(parent.children) do
+                    if child.alias == alias then
+                        k = k - 1
+                        if k < 0 then return child end
+                    end
+                end
+            end
         end
 
         -- definition of constants / static objects:
