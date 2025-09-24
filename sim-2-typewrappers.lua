@@ -197,5 +197,90 @@ return {
                 return origFunc(table.unpack(args))
             end
         end)
+
+        sim.addGraphCurve = wrap(sim.addGraphCurve, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- graphHandle [handle]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.addGraphStream = wrap(sim.addGraphStream, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- graphHandle [handle]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.addItemToCollection = wrap(sim.addItemToCollection, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- collectionHandle [handle]
+                args[3] = read_handle(args[3], nil) -- objectHandle [handle]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- shapeHandle [handle]
+                args[2] = read_pose(args[2], nil) -- p [pose]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.changeEntityColor = wrap(sim.changeEntityColor, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- entityHandle [handle]
+                args[2] = read_color(args[2], nil) -- newColor [color]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.checkCollision = wrap(sim.checkCollision, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- entity1Handle [handle]
+                args[2] = read_handle(args[2], nil) -- entity2Handle [handle]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.checkDistance = wrap(sim.checkDistance, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- entity1Handle [handle]
+                args[2] = read_handle(args[2], nil) -- entity2Handle [handle]
+                local ret = {origFunc(table.unpack(args))}
+                ret[3] = write_vector3(ret[3]) -- p1 [vector3]
+                ret[4] = write_vector3(ret[4]) -- p2 [vector3]
+                return table.unpack(ret)
+            end
+        end)
+
+        sim.checkOctreePointOccupancy = wrap(sim.checkOctreePointOccupancy, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- octreeHandle [handle]
+                return origFunc(table.unpack(args))
+            end
+        end)
+
+        sim.checkProximitySensor = wrap(sim.checkProximitySensor, function(origFunc)
+            return function(...)
+                local args = {...}
+                args[1] = read_handle(args[1], nil) -- sensorHandle [handle]
+                args[2] = read_handle(args[2], nil) -- entityHandle [handle]
+                local ret = {origFunc(table.unpack(args))}
+                ret[3] = write_vector3(ret[3]) -- detectedPoint [vector3]
+                ret[4] = write_handle(ret[4]) -- detectedObjectHandle [handle]
+                ret[5] = write_vector3(ret[5]) -- normalVector [vector3]
+                return table.unpack(ret)
+            end
+        end)
     end
 }

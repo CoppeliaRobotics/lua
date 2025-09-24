@@ -1,4 +1,4 @@
-local startTimeout = 10
+local startTimeout = initTimeout or 10
 local sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
 if _DEVMODE then
     sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
@@ -1043,8 +1043,7 @@ function initPython(prog)
             else
                 errMsg =
                     "The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor2' and 'zmq' are properly installed, e.g. via: $ "
-                errMsg = errMsg .. pyth ..
-                             " -m pip install pyzmq cbor2. Additionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file"
+                errMsg = errMsg .. pyth .. " -m pip install pyzmq cbor2.\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file, or via the luaExec directive at the top of your script, e.g.: #luaExec initTimeout = 60"
                 simSubprocess.wait(subprocess, 0.1)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)
