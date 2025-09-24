@@ -180,6 +180,7 @@ function sysCall_init(...)
 
     local prog = pythonBoilerplate .. pythonUserCode
     prog = prog:gsub("XXXconnectionAddress1XXX", replyPortStr)
+    prog = prog:gsub("XXXpidXXX", tostring(sim.getLongProperty(sim.handle_app, 'pid')))
     local tmp = ''
     if _additionalPaths then
         for i = 1, #_additionalPaths, 1 do
@@ -1042,8 +1043,8 @@ function initPython(prog)
                 end
             else
                 errMsg =
-                    "The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor2' and 'zmq' are properly installed, e.g. via: $ "
-                errMsg = errMsg .. pyth .. " -m pip install pyzmq cbor2.\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file, or via the luaExec directive at the top of your script, e.g.: #luaExec initTimeout = 60"
+                    "The Python interpreter could not handle the wrapper script (or communication between the launched subprocess and CoppeliaSim could not be established via sockets). Make sure that the Python modules 'cbor2', 'zmq' and 'psutil' are properly installed, e.g. via: $ "
+                errMsg = errMsg .. pyth .. " -m pip install pyzmq cbor2 psutil.\nAdditionally, you can try adjusting the value of startTimeout in lua/pythonWrapperV2.lua, at the top of the file, or via the luaExec directive at the top of your script, e.g.: #luaExec initTimeout = 60"
                 simSubprocess.wait(subprocess, 0.1)
                 if simSubprocess.isRunning(subprocess) then
                     simSubprocess.kill(subprocess)
@@ -1232,6 +1233,7 @@ pythonBoilerplate = [=[
 
 import time
 import sys
+import psutil
 import os
 import zmq
 import re
@@ -1280,6 +1282,7 @@ class RemoteAPIClient:
     def __init__(self):
         self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
+        self.socket.setsockopt(zmq.RCVTIMEO, 1000) # 1 sec timeout
         self.socket.connect(f'XXXconnectionAddress1XXX')
         self.callbackFuncs = {}
         self.requiredItems = {}
@@ -1337,9 +1340,23 @@ class RemoteAPIClient:
         self.socket.send(rawReq)
 
     def _recv(self):
-        rawResp = self.socket.recv()
-        resp = cbor.loads(rawResp)
-        return resp
+        def isCoppeliaSimAlive():
+            try:
+                proc = psutil.Process(int(f'XXXpidXXX'))
+                if proc.is_running() and proc.status() != psutil.STATUS_ZOMBIE and proc.name() == 'coppeliaSim':
+                    return True
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+            return False    
+        
+        while True:
+            try:
+                rawResp = self.socket.recv()
+                resp = cbor.loads(rawResp)
+                return resp
+            except zmq.Again:
+                if isCoppeliaSimAlive():
+                    continue
 
     def _process_response(self, resp):
         ret = resp['ret']
