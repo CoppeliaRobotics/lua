@@ -1,8 +1,8 @@
 local sim = require 'sim'
-local simUI = require 'simUI'
-local simCmd = require 'simCmd'
+local simUI
 
 function setupForLang(lang)
+    local simCmd = require 'simCmd'
     sim.setStringProperty(sim.handle_app, 'namedParam.simCmd.preferredSandboxLang', lang)
     simCmd.setSelectedScript(-1, lang)
     sim.setStringProperty(sim.handle_app, 'sandboxLang', lang)
@@ -42,6 +42,7 @@ local function main()
 
     local v = sim.getIntProperty(sim.handle_app, 'productVersionNb')
     v = table.join({v // 1000000, v // 10000 % 100, v // 100 % 100}, '.')
+    simUI = require 'simUI'
     ui = simUI.create(
              [[<ui closeable="true" title="Welcome to CoppeliaSim ]] .. v .. [[" modal="true">
         <label text="This version of CoppeliaSim supports both <b>Lua</b> and <b>Python</b> as the scripting languages for writing child scripts, customization scripts and add-ons. Choosing your preferred language will make it easier to access (e.g. in the sandbox).<br/><br/>Which language do you want to set as the preferred language?" wordwrap="true" />

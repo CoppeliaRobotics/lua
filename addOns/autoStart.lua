@@ -3,17 +3,20 @@ local autoStart = {}
 local sim = require 'sim'
 
 function autoStart.get(opts)
+    local v
+
     if opts.readNamedParam then
-        local v = sim.getNamedBoolParam(opts.ns .. '.autoStart')
-        if v ~= nil then
-            return v
-        end
+        v = sim.getNamedBoolParam(opts.ns .. '.autoStart')
     end
 
-    v = sim.getBoolProperty(sim.handle_app, 'customData.' .. opts.ns .. '.autoStart', {noError = true})
+    if v == nil then
+        v = sim.getBoolProperty(sim.handle_app, 'customData.' .. opts.ns .. '.autoStart', {noError = true})
+    end
+
     if v == nil then
         v = opts.default
     end
+
     return v
 end
 
