@@ -208,6 +208,12 @@ function table.reversed(t)
     return ret
 end
 
+function table.sorted(t, f)
+    local tc = table.clone(t)
+    table.sort(tc, f)
+    return tc
+end
+
 function table.clone(t)
     local copy = {}
     for k, v in pairs(t) do copy[k] = v end
