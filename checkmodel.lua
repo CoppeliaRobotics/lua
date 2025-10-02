@@ -105,6 +105,8 @@ function checkmodel.showDynamicObjectsGraph(parentHandle, g, visited)
             style.label = string.format("%s (%d)", node.alias or "?", id)
             if node.info then
                 style.label = '< <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>' .. style.label .. '</TD></TR><TR><TD><FONT POINT-SIZE="10">' .. node.info .. '</FONT></TD></TR></TABLE> >'
+            else
+                style.label = '"' .. style.label .. '"'
             end
             return style
         end,
