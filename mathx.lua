@@ -60,3 +60,14 @@ math.randomseed = wrap(math.randomseed, function(origFunc)
         return origFunc(math.floor(a), ...) -- in Lua 5.4 only integer accepted
     end
 end)
+
+function math.median(t)
+    local n = #t
+    if n == 0 then return nil end
+    local s = table.sorted(t)
+    if n % 2 == 1 then
+        return s[(n + 1) // 2]
+    else
+        return 0.5 * (s[n // 2] + s[n // 2 + 1])
+    end
+end

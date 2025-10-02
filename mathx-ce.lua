@@ -40,6 +40,7 @@ number y = math.tanh(number x)
 int y = math.tointeger(number x)
 string type = math.type(number x)
 bool b = math.ult(int m, int n)
+number m = math.median(table t)
 math.huge
 math.pi
 ]])
