@@ -31,7 +31,7 @@ local function getInfo(handle)
     return info
 end
 
-function checkmodel.buildDynamicObjectsGraph(parentHandle, g, visited)
+function checkmodel.buildObjectsGraph(parentHandle, g, visited)
     parentHandle = parentHandle or sim.handle_scene
     g = g or Graph(); visited = visited or {}
 
@@ -59,14 +59,33 @@ function checkmodel.buildDynamicObjectsGraph(parentHandle, g, visited)
                 if linkedDummy ~= -1 then
                     local obj = sim.getObjectParent(linkedDummy)
                     edge(parentHandle, obj)
-                    checkmodel.buildDynamicObjectsGraph(handle, g, visited)
+                    checkmodel.buildObjectsGraph(handle, g, visited)
                 end
             end
         elseif objType == 'forceSensor' then
             edge(parentHandle, handle)
         end
-        checkmodel.buildDynamicObjectsGraph(handle, g, visited)
+        checkmodel.buildObjectsGraph(handle, g, visited)
     end
+    return g
+end
+
+function checkmodel.buildDynamicObjectsGraph(parentHandle)
+    local g = checkmodel.buildObjectsGraph(parentHandle)
+
+    -- remove non-dynamic items:
+    local staticV, staticE = {}, {}
+    for _, id in ipairs(g:getAllVertices()) do
+        local v = g:getVertex(id)
+        --if not v.dynamic then table.insert(staticV, id) end
+        if not v.dynamic then g:removeVertex(id) end
+    end
+    for _, ids in ipairs(g:getAllEdges()) do
+        local e = g:getEdge(table.unpack(ids))
+        --if not e.dynamic then table.insert(staticE, ids) end
+        if not e.dynamic then g:removeEdge(table.unpack(ids)) end
+    end
+
     return g
 end
 
@@ -87,8 +106,7 @@ function checkmodel.openFile(f)
     end
 end
 
-function checkmodel.showDynamicObjectsGraph(parentHandle, g, visited)
-    local g = checkmodel.buildDynamicObjectsGraph(parentHandle)
+function checkmodel.showObjectsGraph(g)
     local outFile = sim.getStringProperty(sim.handle_app, 'tempPath') .. '/graph.png'
     g:render{
         nodeStyle = function(id)
