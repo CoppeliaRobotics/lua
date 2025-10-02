@@ -33,9 +33,7 @@ function checkmodel.buildDynamicObjectsGraph(parentHandle, g, visited)
         if handle == -1 then break end
         local objType = sim.getStringProperty(handle, 'objectType')
         if objType == 'shape' then
-            if sim.getBoolProperty(handle, 'dynamic') then
-                addEdge(g, parentHandle, handle)
-            end
+            addEdge(g, parentHandle, handle)
         elseif objType == 'joint' then
             addEdge(g, parentHandle, handle)
         elseif objType == 'dummy' then
