@@ -9,24 +9,23 @@ local function getInfo(handle)
         alias = sim.getStringProperty(handle, 'alias'),
         objType = sim.getStringProperty(handle, 'objectType'),
     }
-    local extraInfo = {}
     local objType = sim.getStringProperty(handle, 'objectType')
     if objType == 'shape' then
+        local shapeType
         if sim.getBoolProperty(handle, 'primitive') then
-            table.insert(extraInfo, 'primitive')
+            shapeType = 'primitive'
         elseif sim.getBoolProperty(handle, 'convex') then
-            table.insert(extraInfo, 'convex')
+            shapeType = 'convex'
         else
-            table.insert(extraInfo, 'non-convex')
+            shapeType = 'non-convex'
         end
-        if sim.getBoolProperty(handle, 'compound') then
-            table.insert(extraInfo, 'compound')
+        if shapeType and sim.getBoolProperty(handle, 'compound') then
+            shapeType = shapeType .. ', compound'
         end
+        local massInfo = 'mass=' .. sim.getFloatProperty(handle, 'mass')
+        info.info = {shapeType, massInfo}
     elseif objType == 'joint' then
-        table.insert(extraInfo, 'dynCtrlMode=' .. sim.getIntProperty(handle, 'dynCtrlMode'))
-    end
-    if #extraInfo > 0 then
-        info.info = table.concat(extraInfo, ', ')
+        info.info = {'dynCtrlMode=' .. sim.getIntProperty(handle, 'dynCtrlMode')}
     end
     return info
 end
@@ -124,8 +123,8 @@ function checkmodel.showObjectsGraph(g)
             end
             style.color = node.dynamic and "black" or "gray"
             style.label = string.format("%s (%d)", node.alias or "?", id)
-            if node.info then
-                style.label = '< <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>' .. style.label .. '</TD></TR><TR><TD><FONT POINT-SIZE="10">' .. node.info .. '</FONT></TD></TR></TABLE> >'
+            if node.info and #node.info > 0 then
+                style.label = '< <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>' .. style.label .. '</TD></TR><TR><TD><FONT POINT-SIZE="10">' .. table.concat(node.info, '<BR/>') .. '</FONT></TD></TR></TABLE> >'
             else
                 style.label = '"' .. style.label .. '"'
             end
