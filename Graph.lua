@@ -157,7 +157,7 @@ function Graph:_undirectedConnectedComponents()
 
             while #queue > 0 do
                 local currentId = table.remove(queue, 1)
-                component:addVertex(currentId, self.vertices[currentId].info)
+                component:addVertex(currentId, self.vertices[currentId])
 
                 -- Add all neighbors to the queue
                 for neighborId, edgeKey in pairs(self.adjacency[currentId]) do
@@ -166,13 +166,11 @@ function Graph:_undirectedConnectedComponents()
                         table.insert(queue, neighborId)
 
                         -- Add the edge to the component
-                        local info = self.edges[edgeKey]
-                        component:addEdge(currentId, neighborId, info)
+                        component:addEdge(currentId, neighborId, self.edges[edgeKey])
                     elseif component:getVertex(neighborId) then
                         -- If neighbor is already in component, ensure edge is added
                         if not component:getEdge(currentId, neighborId) then
-                            local info = self.edges[edgeKey]
-                            component:addEdge(currentId, neighborId, info)
+                            component:addEdge(currentId, neighborId, self.edges[edgeKey])
                         end
                     end
                 end
@@ -198,7 +196,7 @@ function Graph:_weaklyConnectedComponents()
 
             while #queue > 0 do
                 local currentId = table.remove(queue, 1)
-                component:addVertex(currentId, self.vertices[currentId].info)
+                component:addVertex(currentId, self.vertices[currentId])
 
                 -- Add outgoing neighbors
                 for targetId, edgeKey in pairs(self.adjacency[currentId]) do
