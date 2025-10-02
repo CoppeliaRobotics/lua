@@ -355,7 +355,7 @@ function Graph.static:dot(doc, outFile)
         table.insert(args, outFile)
     end
     local ec, out, err = simSubprocess.exec(dotPath, args, doc, {useSearchPath=usp})
-    if ec ~= 0 then error('dot failed: ' .. err) end
+    if ec ~= 0 then error('dot failed (' .. err .. '), dot source: ' .. doc) end
     if not outFile then
         -- result image is written to stdout
         return out
