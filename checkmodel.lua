@@ -112,7 +112,7 @@ local function openFile(f)
 end
 
 function checkmodel.showDynamicObjectsGraph(parentHandle, g, visited)
-    local g = checkmodel.buildDynamicObjectsGraph()
+    local g = checkmodel.buildDynamicObjectsGraph(parentHandle)
     local outfile = sim.getStringProperty(sim.handle_app, 'tempPath') .. '/graph.png'
     local graphviz = require 'graphviz'
     graphviz.dot(graphToDot(g), outfile)
