@@ -100,7 +100,10 @@ function checkmodel.showDynamicObjectsGraph(parentHandle, g, visited)
             elseif node.objType == "joint" or node.objType == "forceSensor" then
                 style.shape = "ellipse"
             end
-
+            if node.dynamic then
+                style.style = 'filled'
+                style.fillcolor = 'lightgray'
+            end
             style.color = node.dynamic and "black" or "gray"
             style.label = string.format("%s (%d)", node.alias or "?", id)
             if node.info then
