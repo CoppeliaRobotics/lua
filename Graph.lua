@@ -9,14 +9,22 @@ function Graph:initialize(directed)
     self.adjacency = {} -- adjacency list for efficient edge lookups
 end
 
+function Graph:union(g2)
+    for _, id in ipairs(g2:getAllVertices()) do
+        self:addVertex(id, g2:getVertex(id))
+    end
+    for _, ids in ipairs(g2:getAllEdges()) do
+        self:addEdge(ids[1], ids[2], g2:getEdge(ids[1], ids[2]))
+    end
+end
+
 -- Add a vertex with optional info
 function Graph:addVertex(id, info)
-    if self.vertices[id] then
-        return false -- vertex already exists
-    end
+    assert(self.vertices[id] == nil, 'vertex already exists')
 
     self.vertices[id] = info or {}
     self.adjacency[id] = {}
+
     return true
 end
 
@@ -49,15 +57,15 @@ function Graph:getVertex(id)
     return self.vertices[id]
 end
 
+-- Check if vertex exists
+function Graph:hasVertex(id)
+    return self.vertices[id] ~= nil
+end
+
 -- Add an edge with optional info
 function Graph:addEdge(id1, id2, info)
-    -- Ensure both vertices exist
-    if not self.vertices[id1] then
-        self:addVertex(id1)
-    end
-    if not self.vertices[id2] then
-        self:addVertex(id2)
-    end
+    assert(self.vertices[id1] ~= nil, 'vertex ' .. id1 .. ' doesn\'t exist')
+    assert(self.vertices[id2] ~= nil, 'vertex ' .. id2 .. ' doesn\'t exist')
 
     local edgeKey = self:_getEdgeKey(id1, id2)
     local reverseKey = self:_getEdgeKey(id2, id1)
@@ -107,6 +115,11 @@ function Graph:getEdge(id1, id2)
     return self.edges[edgeKey]
 end
 
+-- Check if edge exists
+function Graph:hasEdge(id1, id2)
+    return self:getEdge(id1, id2) ~= nil
+end
+
 -- Get all outgoing edges from a vertex
 function Graph:getOutEdges(id)
     if not self.adjacency[id] then
@@ -135,93 +148,104 @@ function Graph:getInEdges(id)
     return inEdges
 end
 
--- Compute connected components using BFS
-function Graph:connectedComponents()
-    if self.directed then
-        return self:_weaklyConnectedComponents()
-    else
-        return self:_undirectedConnectedComponents()
-    end
-end
-
--- Private method for undirected graph connected components
-function Graph:_undirectedConnectedComponents()
+function Graph:connectedComponents(strongly)
     local visited = {}
     local components = {}
 
-    for vertexId, _ in pairs(self.vertices) do
-        if not visited[vertexId] then
-            local component = Graph:new(self.directed)
-            local queue = {vertexId}
-            visited[vertexId] = true
+    local function dfs(u, vertices, useDirs)
+        visited[u] = true
+        table.insert(vertices, u)
 
-            while #queue > 0 do
-                local currentId = table.remove(queue, 1)
-                component:addVertex(currentId, self.vertices[currentId])
+        local neighbors = {}
+        if useDirs then
+            neighbors = self:getOutEdges(u)
+        else
+            -- weakly connected (or undirected)
+            local outs = self:getOutEdges(u)
+            local ins = self:getInEdges(u)
+            local seen = {}
+            for _, v in ipairs(outs) do seen[v] = true end
+            for _, v in ipairs(ins) do seen[v] = true end
+            for v,_ in pairs(seen) do table.insert(neighbors, v) end
+        end
 
-                -- Add all neighbors to the queue
-                for neighborId, edgeKey in pairs(self.adjacency[currentId]) do
-                    if not visited[neighborId] then
-                        visited[neighborId] = true
-                        table.insert(queue, neighborId)
-
-                        -- Add the edge to the component
-                        component:addEdge(currentId, neighborId, self.edges[edgeKey])
-                    elseif component:getVertex(neighborId) then
-                        -- If neighbor is already in component, ensure edge is added
-                        if not component:getEdge(currentId, neighborId) then
-                            component:addEdge(currentId, neighborId, self.edges[edgeKey])
-                        end
-                    end
-                end
+        for _, v in ipairs(neighbors) do
+            if not visited[v] then
+                dfs(v, vertices, useDirs)
             end
-
-            table.insert(components, component)
         end
     end
 
-    return components
-end
-
--- Private method for weakly connected components in directed graphs
-function Graph:_weaklyConnectedComponents()
-    local visited = {}
-    local components = {}
-
-    for vertexId, _ in pairs(self.vertices) do
-        if not visited[vertexId] then
-            local component = Graph:new(self.directed)
-            local queue = {vertexId}
-            visited[vertexId] = true
-
-            while #queue > 0 do
-                local currentId = table.remove(queue, 1)
-                component:addVertex(currentId, self.vertices[currentId])
-
-                -- Add outgoing neighbors
-                for targetId, edgeKey in pairs(self.adjacency[currentId]) do
-                    if not visited[targetId] then
-                        visited[targetId] = true
-                        table.insert(queue, targetId)
-                    end
-
-                    -- Add the edge to component if both vertices are in component
-                    if component:getVertex(targetId) then
-                        local info = self.edges[edgeKey]
-                        component:addEdge(currentId, targetId, info)
-                    end
+    local function buildSubgraph(vertices)
+        local g = Graph(self:isDirected())
+        -- clone vertices
+        for _, v in ipairs(vertices) do
+            g:addVertex(v, self:getVertex(v))
+        end
+        -- clone edges (only inside this component)
+        for _, v in ipairs(vertices) do
+            for _, w in ipairs(self:getOutEdges(v)) do
+                if g:hasVertex(w) then
+                    g:addEdge(v, w, self:getEdge(v, w))
                 end
+            end
+        end
+        return g
+    end
 
-                -- Add incoming neighbors (for weak connectivity)
-                for sourceId, targets in pairs(self.adjacency) do
-                    if targets[currentId] and not visited[sourceId] then
-                        visited[sourceId] = true
-                        table.insert(queue, sourceId)
-                    end
+    if not self:isDirected() then
+        -- undirected graph
+        for _, v in ipairs(self:getAllVertices()) do
+            if not visited[v] then
+                local verts = {}
+                dfs(v, verts, false)
+                table.insert(components, buildSubgraph(verts))
+            end
+        end
+    else
+        if strongly then
+            -- Kosaraju SCC
+            local order = {}
+            local visited1 = {}
+
+            local function dfs1(u)
+                visited1[u] = true
+                for _, v in ipairs(self:getOutEdges(u)) do
+                    if not visited1[v] then dfs1(v) end
+                end
+                table.insert(order, u)
+            end
+
+            for _, v in ipairs(self:getAllVertices()) do
+                if not visited1[v] then dfs1(v) end
+            end
+
+            local visited2 = {}
+            local function dfs2(u, verts)
+                visited2[u] = true
+                table.insert(verts, u)
+                for _, v in ipairs(self:getInEdges(u)) do
+                    if not visited2[v] then dfs2(v, verts) end
                 end
             end
 
-            table.insert(components, component)
+            for i = #order, 1, -1 do
+                local v = order[i]
+                if not visited2[v] then
+                    local verts = {}
+                    dfs2(v, verts)
+                    table.insert(components, buildSubgraph(verts))
+                end
+            end
+        else
+            -- weakly connected components
+            for _, v in ipairs(self:getAllVertices()) do
+                if not visited[v] then
+                    local verts = {}
+                    dfs(v, verts, false)
+                    table.insert(components, buildSubgraph(verts))
+                end
+            end
         end
     end
 
@@ -278,16 +302,6 @@ function Graph:edgeCount()
     return count
 end
 
--- Check if vertex exists
-function Graph:hasVertex(id)
-    return self.vertices[id] ~= nil
-end
-
--- Check if edge exists
-function Graph:hasEdge(id1, id2)
-    return self:getEdge(id1, id2) ~= nil
-end
-
 -- Render to image
 function Graph:render(opts)
     local gvdoc = self:tographviz(opts)
@@ -301,7 +315,7 @@ function Graph:tographviz(opts)
     opts.edgeStyle = opts.edgeStyle or function(id1, id2) return {} end
 
     local lines = {}
-    table.insert(lines, 'graph G {')
+    table.insert(lines, (self:isDirected() and 'di' or '') .. 'graph G {')
 
     local function styleTxt(s)
         if next(s) == nil then return '' end
@@ -319,15 +333,18 @@ function Graph:tographviz(opts)
     end
 
     -- render edges (undirected, deduplicated)
+    local arrow = self:isDirected() and '->' or '--'
     local seen = {}
     for _, ids in ipairs(self:getAllEdges()) do
         local id1, id2 = table.unpack(ids)
+        if not self:isDirected() then
+            id1, id2 = math.min(id1, id2), math.max(id1, id2)
+        end
         local edgeStyle = opts.edgeStyle(id1, id2)
-        local a, b = math.min(id1, id2), math.max(id1, id2)
-        local key = a .. '-' .. b
+        local key = id1 .. '-' .. id2
         if not seen[key] then
             seen[key] = true
-            table.insert(lines, string.format('  %d -- %d%s;', a, b, styleTxt(edgeStyle)))
+            table.insert(lines, string.format('  %d %s %d%s;', id1, arrow, id2, styleTxt(edgeStyle)))
         end
     end
 

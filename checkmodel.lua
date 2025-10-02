@@ -11,21 +11,20 @@ local function getInfo(handle)
     }
     local objType = sim.getStringProperty(handle, 'objectType')
     if objType == 'shape' then
-        local shapeType
+        info.is = {}
         if sim.getBoolProperty(handle, 'primitive') then
-            shapeType = 'primitive'
+            info.is.primitive = true
         elseif sim.getBoolProperty(handle, 'convex') then
-            shapeType = 'convex'
+            info.is.convex = true
         else
-            shapeType = 'non-convex'
+            info.is.non_convex = true
         end
         if shapeType and sim.getBoolProperty(handle, 'compound') then
-            shapeType = shapeType .. ', compound'
+            info.is.compound = true
         end
-        local massInfo = 'mass=' .. sim.getFloatProperty(handle, 'mass')
-        info.info = {shapeType, massInfo}
+        info.mass = sim.getFloatProperty(handle, 'mass')
     elseif objType == 'joint' then
-        info.info = {'dynCtrlMode=' .. sim.getIntProperty(handle, 'dynCtrlMode')}
+        info.dynCtrlMode = sim.getIntProperty(handle, 'dynCtrlMode')
     end
     return info
 end
@@ -123,8 +122,19 @@ function checkmodel.showObjectsGraph(g)
             end
             style.color = node.dynamic and "black" or "gray"
             style.label = string.format("%s (%d)", node.alias or "?", id)
-            if node.info and #node.info > 0 then
-                style.label = '< <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>' .. style.label .. '</TD></TR><TR><TD><FONT POINT-SIZE="10">' .. table.concat(node.info, '<BR/>') .. '</FONT></TD></TR></TABLE> >'
+            local extraInfo = {}
+            if node.is then
+                local s = {}
+                for k in pairs(node.is) do table.insert(s, k) end
+                table.insert(extraInfo, table.concat(s, ', '))
+            end
+            for _, k in ipairs{'mass', 'dynCtrlMode'} do
+                if node[k] then
+                    table.insert(extraInfo, k .. '=' .. node[k])
+                end
+            end
+            if #extraInfo > 0 then
+                style.label = '< <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0"><TR><TD>' .. style.label .. '</TD></TR><TR><TD><FONT POINT-SIZE="10">' .. table.concat(extraInfo, '<BR/>') .. '</FONT></TD></TR></TABLE> >'
             else
                 style.label = '"' .. style.label .. '"'
             end
@@ -139,6 +149,40 @@ function checkmodel.showObjectsGraph(g)
         outFile = outFile,
     }
     checkmodel.openFile(outFile)
+end
+
+local function mad_stats(data)
+    local med = math.median(data)
+    local deviations = {}
+    for i,v in ipairs(data) do
+        deviations[i] = math.abs(v - med)
+    end
+    local mad = math.median(deviations)
+    return {median = med, mad = mad}
+end
+
+local function is_outlier_mad(x, stats, threshold)
+    threshold = threshold or 3.5
+    if stats.mad == 0 then return false end
+    local z = math.abs(x - stats.median) / stats.mad
+    return z > threshold
+end
+
+local function iqr_stats(data)
+    local s = table.sorted(data)
+    local n = #s
+    local q1 = math.median({table.unpack(s, 1, math.floor(n/2))})
+    local q3 = math.median({table.unpack(s, math.ceil(n/2)+1, n)})
+    assert(q3 ~= nil, table.tostring(data))
+    local iqr = q3 - q1
+    return {q1 = q1, q3 = q3, iqr = iqr}
+end
+
+local function is_outlier_iqr(x, stats, factor)
+    factor = factor or 1.5
+    local lower = stats.q1 - factor*stats.iqr
+    local upper = stats.q3 + factor*stats.iqr
+    return x < lower or x > upper
 end
 
 function checkmodel.check(modelHandle)
@@ -157,6 +201,24 @@ function checkmodel.check(modelHandle)
         if sim.getStringProperty(handle, 'objectType') == 'shape' and sim.getBoolProperty(handle, 'dynamic') then
             if not sim.getBoolProperty(handle, 'primitive') and not sim.getBoolProperty(handle, 'convex') then
                 report(handle, 'Shape is dynamic and non-convex: simulation will be unstable')
+            end
+        end
+    end
+
+    local g = checkmodel.buildDynamicObjectsGraph(modelHandle)
+
+    for i, cc in ipairs(g:connectedComponents()) do
+        local masses = {}
+        for _, id in ipairs(cc:getAllVertices()) do
+            local v = cc:getVertex(id)
+            if v.mass then table.insert(masses, v.mass) end
+        end
+        local mad_s = mad_stats(masses)
+        local iqr_s = iqr_stats(masses)
+        for _, id in ipairs(cc:getAllVertices()) do
+            local v = cc:getVertex(id)
+            if v.mass and (is_outlier_iqr(v.mass, iqr_s) or is_outlier_mad(v.mass, mad_s)) then
+                report(id, 'Mass of object is too big or too small with respect to other masses of the same part')
             end
         end
     end
