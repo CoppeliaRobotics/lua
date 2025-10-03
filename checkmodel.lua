@@ -151,38 +151,45 @@ function checkmodel.showObjectsGraph(g)
     checkmodel.openFile(outFile)
 end
 
-local function mad_stats(data)
-    local med = math.median(data)
-    local deviations = {}
-    for i,v in ipairs(data) do
-        deviations[i] = math.abs(v - med)
+function checkmodel.checkConnectedComponentMasses(cc, maxRatioLimit, report, removed)
+    removed = removed or {}
+
+    local function maxRatio(a, b)
+        return math.max(a/b, b/a)
     end
-    local mad = math.median(deviations)
-    return {median = med, mad = mad}
-end
 
-local function is_outlier_mad(x, stats, threshold)
-    threshold = threshold or 3.5
-    if stats.mad == 0 then return false end
-    local z = math.abs(x - stats.median) / stats.mad
-    return z > threshold
-end
+    local function score(mass)
+        local maximalMaxRatio = 0
+        local numViolations = 0
+        for _, id in ipairs(cc:getAllVertices()) do
+            local v = cc:getVertex(id)
+            if not removed[id] and v.mass then
+                local mr = maxRatio(mass, v.mass)
+                if mr > maxRatioLimit then
+                    numViolations = numViolations + 1
+                    maximalMaxRatio = math.max(maximalMaxRatio, mr)
+                end
+            end
+        end
+        return numViolations * maximalMaxRatio
+    end
 
-local function iqr_stats(data)
-    local s = table.sorted(data)
-    local n = #s
-    local q1 = math.median({table.unpack(s, 1, math.floor(n/2))})
-    local q3 = math.median({table.unpack(s, math.ceil(n/2)+1, n)})
-    assert(q3 ~= nil, table.tostring(data))
-    local iqr = q3 - q1
-    return {q1 = q1, q3 = q3, iqr = iqr}
-end
+    local scores = {}
+    for _, id in ipairs(cc:getAllVertices()) do
+        local v = cc:getVertex(id)
+        if not removed[id] and v.mass then
+            table.insert(scores, {id, v.mass, score(v.mass)})
+        end
+    end
+    table.sort(scores, function(a, b) return a[3] > b[3] end)
+    assert(#scores > 0, 'empty')
 
-local function is_outlier_iqr(x, stats, factor)
-    factor = factor or 1.5
-    local lower = stats.q1 - factor*stats.iqr
-    local upper = stats.q3 + factor*stats.iqr
-    return x < lower or x > upper
+    local topScore = scores[1]
+    if topScore[3] > 0 then
+        report(topScore[1], string.format('mass of %f is inbalanced with respect to neighboring objects', topScore[2]))
+        removed[topScore[1]] = true
+        checkmodel.checkConnectedComponentMasses(cc, maxRatioLimit, report, removed)
+    end
 end
 
 function checkmodel.check(modelHandle)
@@ -208,19 +215,7 @@ function checkmodel.check(modelHandle)
     local g = checkmodel.buildDynamicObjectsGraph(modelHandle)
 
     for i, cc in ipairs(g:connectedComponents()) do
-        local masses = {}
-        for _, id in ipairs(cc:getAllVertices()) do
-            local v = cc:getVertex(id)
-            if v.mass then table.insert(masses, v.mass) end
-        end
-        local mad_s = mad_stats(masses)
-        local iqr_s = iqr_stats(masses)
-        for _, id in ipairs(cc:getAllVertices()) do
-            local v = cc:getVertex(id)
-            if v.mass and (is_outlier_iqr(v.mass, iqr_s) or is_outlier_mad(v.mass, mad_s)) then
-                report(id, 'Mass of object is too big or too small with respect to other masses of the same part')
-            end
-        end
+        checkmodel.checkConnectedComponentMasses(cc, 10, report)
     end
 
     return issues
