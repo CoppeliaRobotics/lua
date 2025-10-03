@@ -552,14 +552,17 @@ end
 
 function _evalExec(inputStr)
     local sim = require 'sim'
+    local function setConvenienceVars()
+        H = sim.getObject
+        SEL = sim.getObjectSel()
+        if _G.sim and _G.sim.Object then
+            SEL = map(function(h) return _G.sim.Object(h) end, SEL)
+        end
+        SEL1 = SEL[#SEL]
+    end
     local function pfunc(theStr)
         if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
-            H = sim.getObject
-            SEL = sim.getObjectSel()
-            if _G.sim.Object then
-                SEL = map(function(h) return _G.sim.Object(h) end, SEL)
-            end
-            SEL1 = SEL[#SEL]
+            setConvenienceVars()
         end
 
         local func, err = load('return ' .. theStr)
@@ -586,10 +589,7 @@ function _evalExec(inputStr)
             if H ~= sim.getObject then
                 addLog(430 | 0x0f000, "cannot change 'H' variable")
             end
-
-            H = sim.getObject
-            SEL = sim.getObjectSel()
-            SEL1 = SEL[#SEL]
+            setConvenienceVars()
         end
     end
     pcall(pfunc, inputStr)
