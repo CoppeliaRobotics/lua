@@ -200,22 +200,33 @@ function checkmodel.check(modelHandle)
         table.insert(issues[handle], string.format(issue, ...))
     end
 
+    local g = checkmodel.buildDynamicObjectsGraph(modelHandle)
+
     if sim.getBoolProperty(modelHandle, 'model.notDynamic') then
         report(modelHandle, 'Model is not dynamic')
     end
 
-    for _, handle in ipairs(sim.getObjectsInTree(modelHandle)) do
-        if sim.getStringProperty(handle, 'objectType') == 'shape' and sim.getBoolProperty(handle, 'dynamic') then
-            if not sim.getBoolProperty(handle, 'primitive') and not sim.getBoolProperty(handle, 'convex') then
-                report(handle, 'Shape is dynamic and non-convex: simulation will be unstable')
+    for _, id in ipairs(g:getAllVertices()) do
+        local v = g:getVertex(id)
+        if v.objType == 'shape' and v.dynamic then
+            if not v.is.primitive and not v.is.convex then
+                report(id, 'Shape is dynamic and non-convex: simulation will be unstable')
             end
         end
     end
 
-    local g = checkmodel.buildDynamicObjectsGraph(modelHandle)
-
     for i, cc in ipairs(g:connectedComponents()) do
         checkmodel.checkConnectedComponentMasses(cc, 10, report)
+    end
+
+    for _, id in ipairs(g:getAllVertices()) do
+        if sim.getStringProperty(id, 'objectType') == 'shape' then
+            local bb = sim.getVector3Property(id, 'bbHSize')
+            local com = map(math.abs, sim.getVector3Property(id, 'centerOfMass'))
+            if com[1] > bb[1] or com[2] > bb[2] or com[3] > bb[3] then
+                report(id, 'Center of mass is outside shape bounding box')
+            end
+        end
     end
 
     return issues
