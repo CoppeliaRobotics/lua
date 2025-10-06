@@ -304,8 +304,30 @@ end
 
 -- Render to image
 function Graph:render(opts)
+    local sim = require 'sim'
+    local simSubprocess = require 'simSubprocess'
+    local usp = false
+    local enginePath = sim.getStringProperty(sim.handle_app, 'customData.graphvizPath', {noError = true})
+    if enginePath then
+        enginePath = enginePath .. '/'
+        usp = true
+    else
+        enginePath = ''
+    end
+    local engine = opts.engine or 'dot'
+    enginePath = enginePath .. engine
+    local args = {'-Tjpg', '-Gsize=10!', '-Gdpi=150'}
+    if opts.outFile then
+        table.insert(args, '-o')
+        table.insert(args, opts.outFile)
+    end
     local gvdoc = self:tographviz(opts)
-    return Graph:dot(gvdoc, opts.outFile)
+    local ec, out, err = simSubprocess.exec(enginePath, args, gvdoc, {useSearchPath=usp})
+    if ec ~= 0 then error('failed (' .. err .. '), source: ' .. gvdoc) end
+    if not opts.outFile then
+        -- result image is written to stdout
+        return out
+    end
 end
 
 -- Render to a dot file
@@ -350,31 +372,6 @@ function Graph:tographviz(opts)
 
     table.insert(lines, '}')
     return table.concat(lines, '\n')
-end
-
--- Render a dot file to image
-function Graph.static:dot(doc, outFile)
-    local sim = require 'sim'
-    local simSubprocess = require 'simSubprocess'
-    local dotPath = sim.getStringProperty(sim.handle_app, 'customData.graphvizPath', {noError = true})
-    local usp = false
-    if dotPath == nil then
-        dotPath = 'dot'
-        usp = true
-    else
-        dotPath = dotPath .. '/dot'
-    end
-    local args = {'-Tjpg', '-Gsize=10!', '-Gdpi=150'}
-    if outFile then
-        table.insert(args, '-o')
-        table.insert(args, outFile)
-    end
-    local ec, out, err = simSubprocess.exec(dotPath, args, doc, {useSearchPath=usp})
-    if ec ~= 0 then error('dot failed (' .. err .. '), dot source: ' .. doc) end
-    if not outFile then
-        -- result image is written to stdout
-        return out
-    end
 end
 
 return Graph
