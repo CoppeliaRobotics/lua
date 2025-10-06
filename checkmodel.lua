@@ -75,12 +75,10 @@ function checkmodel.buildDynamicObjectsGraph(parentHandle)
     local staticV, staticE = {}, {}
     for _, id in ipairs(g:getAllVertices()) do
         local v = g:getVertex(id)
-        --if not v.dynamic then table.insert(staticV, id) end
         if not v.dynamic then g:removeVertex(id) end
     end
     for _, ids in ipairs(g:getAllEdges()) do
         local e = g:getEdge(table.unpack(ids))
-        --if not e.dynamic then table.insert(staticE, ids) end
         if not e.dynamic then g:removeEdge(table.unpack(ids)) end
     end
 
