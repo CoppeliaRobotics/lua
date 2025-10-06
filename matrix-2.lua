@@ -1,5 +1,4 @@
 local sim = require 'sim'
-sim.addLog(sim.verbosity_warnings | sim.verbosity_once, '"matrix" module is deprecated. please use simEigen')
 
 local matrix = {}
 
