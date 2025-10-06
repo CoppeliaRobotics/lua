@@ -60,6 +60,7 @@ function checkmodel.buildObjectsGraph(parentHandle, g, visited)
                     checkmodel.buildObjectsGraph(handle, g, visited)
                 end
             end
+            edge(parentHandle, handle)
         elseif objType == 'forceSensor' then
             edge(parentHandle, handle)
         end
@@ -108,10 +109,8 @@ function checkmodel.showObjectsGraph(g)
         nodeStyle = function(id)
             local node = g:getVertex(id)
             local style = {}
-            style.shape = "ellipse"
-            if node.objType == "shape" then
-                style.shape = "box"
-            elseif node.objType == "joint" or node.objType == "forceSensor" then
+            style.shape = "box"
+            if node.objType == "joint" or node.objType == "forceSensor" then
                 style.shape = "ellipse"
             end
             if node.dynamic then
@@ -121,6 +120,9 @@ function checkmodel.showObjectsGraph(g)
             style.color = node.dynamic and "black" or "gray"
             style.label = string.format("%s (%d)", node.alias or "?", id)
             local extraInfo = {}
+            if node.objType == 'dummy' then
+                table.insert(extraInfo, 'type=dummy')
+            end
             if node.is then
                 local s = {}
                 for k in pairs(node.is) do table.insert(s, k) end
