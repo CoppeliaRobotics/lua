@@ -1616,6 +1616,23 @@ function sim.setShapeAppearance(handle, savedData, opts)
     end
 end
 
+function sim.openFile(f)
+    local platform = sim.getIntProperty(sim.handle_app, 'platform')
+    local simSubprocess = require 'simSubprocess'
+    if platform == 0 then
+        -- windows
+        simSubprocess.exec('cmd', {'/c', 'start', '', f})
+    elseif platform == 1 then
+        -- mac
+        simSubprocess.exec('open', {f})
+    elseif platform == 2 then
+        -- linux
+        simSubprocess.exec('xdg-open', {f})
+    else
+        error('unknown platform: ' .. platform)
+    end
+end
+
 apropos = apropos or function(what) -- other sim-versions also have a global apropos function...
     utils.apropos(what)
 end

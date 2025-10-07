@@ -86,23 +86,6 @@ function checkmodel.buildDynamicObjectsGraph(parentHandle)
     return g
 end
 
-function checkmodel.openFile(f)
-    local platform = sim.getIntProperty(sim.handle_app, 'platform')
-    local simSubprocess = require 'simSubprocess'
-    if platform == 0 then
-        -- windows
-        simSubprocess.exec('cmd', {'/c', 'start', '', f})
-    elseif platform == 1 then
-        -- mac
-        simSubprocess.exec('open', {f})
-    elseif platform == 2 then
-        -- linux
-        simSubprocess.exec('xdg-open', {f})
-    else
-        error('unknown platform: ' .. platform)
-    end
-end
-
 function checkmodel.showObjectsGraph(g)
     local outFile = sim.getStringProperty(sim.handle_app, 'tempPath') .. '/graph.png'
     g:render{
@@ -148,7 +131,7 @@ function checkmodel.showObjectsGraph(g)
         end,
         outFile = outFile,
     }
-    checkmodel.openFile(outFile)
+    sim.openFile(outFile)
 end
 
 function checkmodel.checkConnectedComponentMasses(cc, maxRatioLimit, report, removed)
