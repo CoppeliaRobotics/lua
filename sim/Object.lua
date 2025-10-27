@@ -192,6 +192,8 @@ return {
             end
 
             rawset(self, '__methods', {
+                getMass = methodWrapper{ sim.getShapeMass, objType = 'shape', },
+                setMass = methodWrapper{ sim.setShapeMass, objType = 'shape', },
                 getInertia = methodWrapper{ sim.getShapeInertia, objType = 'shape', },
                 setInertia = methodWrapper{ sim.setShapeInertia, objType = 'shape', },
                 addItemToCollection = methodWrapper{ sim.addItemToCollection, objType = 'collection', },
@@ -201,6 +203,7 @@ return {
                 alignBB = methodWrapper{ sim.alignShapeBB, objType = 'shape', },
                 callFunction = methodWrapper{ sim.callScriptFunction, objType = 'script', },
                 checkCollision = methodWrapper{ sim.checkCollision, },
+                checkDistance = methodWrapper{ sim.checkDistance, },
                 checkPointOccupancy = methodWrapper{ sim.checkOctreePointOccupancy, objType = 'ocTree', },
                 checkSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
@@ -345,18 +348,19 @@ return {
             })
 
             if objectType == 'forceSensor' then
-                self.__methods.checkSensor = function(self, ...)
+                self.__methods.checkSensor = function(...)
                     return sim.checkForceSensor(self.__handle, ...)
                 end
             elseif objectType == 'proximitySensor' then
-                self.__methods.checkSensor = function(self, ...)
+                self.__methods.checkSensor = function(...)
                     return sim.checkProximitySensor(self.__handle, ...)
                 end
             elseif objectType == 'visionSensor' then
-                self.__methods.checkSensor = function(self, ...)
+                self.__methods.checkSensor = function(...)
                     return sim.checkVisionSensor(self.__handle, ...)
                 end
             end
+            
         end
 
         function sim.Object:__copy()
