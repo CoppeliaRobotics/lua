@@ -9,9 +9,11 @@ actions/
 simEigen/
 sim*.lua
 !sim.lua
-!sim-*.lua
+!sim-1.lua
+!sim-1-ce.lua
+!sim-2.lua
+!sim-2-ce.lua
 !sim-deprecated.lua
-!sim_old.lua
 getCallContexts.lua
 simBB.lua
 threejsFrontend-custom.lua
