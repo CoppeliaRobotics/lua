@@ -47,7 +47,7 @@ return {
         end
 
         local function write_handle(v)
-            if v == -1 then return -1 end
+            if v == -1 then return nil end
             return sim.Object(v)
         end
 
