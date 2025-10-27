@@ -348,20 +348,11 @@ return {
             })
 
             if objectType == 'forceSensor' then
-                self.__methods.checkSensor = function(...)
-                    return sim.checkForceSensor(self.__handle, ...)
-                end
+                self.__methods.checkSensor = sim.checkForceSensor
             elseif objectType == 'proximitySensor' then
-                self.__methods.checkSensor = function(...)
-                    local args = {...}
-                    table.remove(args, 1)
-                    print(args)
-                    return sim.checkProximitySensor(self.__handle, ...)
-                end
+                self.__methods.checkSensor = sim.checkProximitySensor
             elseif objectType == 'visionSensor' then
-                self.__methods.checkSensor = function(...)
-                    return sim.checkVisionSensor(self.__handle, ...)
-                end
+                self.__methods.checkSensor = sim.checkVisionSensor
             end
             --[[
             if objectType == 'shape' then
