@@ -585,36 +585,57 @@ function sim.getPathLengths(...)
 end
 
 function sim.changeEntityColor(...)
-    local entityHandle, color, colorComponent = checkargs({
-        {type = 'int'},
-        {type = 'table', size = 3, item_type = 'float'},
-        {type = 'int', default = sim.colorcomponent_ambient_diffuse},
-    }, ...)
-    local colorData = {}
-    local objs = {entityHandle}
-    if sim.isHandle(entityHandle, sim.objecttype_collection) then
-        objs = sim.getCollectionObjects(entityHandle)
+    local args = {...}
+    local objs = {}
+    local complexColData
+    local simpleColData, colorComponent
+    if type(args[1]) == 'table' then
+        complexColData = checkargs({{type = 'table'}, size = '1..*'}, ...)
+        for i = 1, #complexColData, 1 do
+            if sim.isHandle(complexColData[i].handle, sim.objecttype_sceneobject) then
+                objs[#objs + 1] = complexColData[i].handle
+            end
+        end
+    else
+        local entityHandle
+        entityHandle, simpleColData, colorComponent = checkargs({
+            {type = 'int'},
+            {type = 'table', size = 3, item_type = 'float', default = {1.0, 0.0, 0.0}},
+            {type = 'int', default = sim.colorcomponent_ambient_diffuse},
+        }, ...)
+        objs = {entityHandle}
+        if sim.isHandle(entityHandle, sim.objecttype_collection) then
+            objs = sim.getCollectionObjects(entityHandle)
+        end
     end
+    local retVal = {}
     for i = 1, #objs, 1 do
         if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
-            local visible = sim.getBoolProperty(objs[i], 'visible')
-            if visible == 1 then
-                local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
-                colorData[#colorData + 1] = {handle = objs[i], data = col, comp = colorComponent}
-                sim.setShapeColor(objs[i], nil, colorComponent, color)
+            local comp = {colorComponent}
+            if complexColData then
+                comp = {sim.colorcomponent_ambient_diffuse, sim.colorcomponent_specular, sim.colorcomponent_emission, sim.colorcomponent_transparency, sim.colorcomponent_auxiliary}
+            end
+            for j = 1, #comp do
+                local res, col = sim.getShapeColor(objs[i], '@compound', comp[j])
+                retVal[#retVal + 1] = {handle = objs[i], data = col, comp = comp[j]}
             end
         end
     end
-    return colorData
-end
-
-function sim.restoreEntityColor(...)
-    local colorData = checkargs({{type = 'table'}, size = '1..*'}, ...)
-    for i = 1, #colorData, 1 do
-        if sim.isHandle(colorData[i].handle, sim.objecttype_sceneobject) then
-            sim.setShapeColor(colorData[i].handle, '@compound', colorData[i].comp, colorData[i].data)
+    if complexColData then
+        for i = 1, #complexColData, 1 do
+            if sim.isHandle(complexColData[i].handle, sim.objecttype_sceneobject) then
+                sim.setShapeColor(complexColData[i].handle, '@compound', complexColData[i].comp, complexColData[i].data)
+            end
+        end
+    else
+        for i = 1, #objs, 1 do
+            if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
+                local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
+                sim.setShapeColor(objs[i], nil, colorComponent, simpleColData)
+            end
         end
     end
+    return retVal
 end
 
 function sim.wait(...)
@@ -1509,12 +1530,13 @@ sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(origFunc)
 end)
 
 -- wrapTypes = function(x, ...) return x end -- (disable wrapTypes)
-
+---[[
 sim.addItemToCollection = wrapTypes(sim, sim.addItemToCollection, {nil, nil, 'handle'}, {})
 sim.addReferencedHandle = wrapTypes(sim, sim.addReferencedHandle, {'handle', 'handle'}, {})
 sim.alignShapeBB = wrapTypes(sim, sim.alignShapeBB, {'handle', 'pose'}, {})
 sim.callScriptFunction = wrapTypes(sim, sim.callScriptFunction, {'handle'}, {})
 sim.checkCollision = wrapTypes(sim, sim.checkCollision, {'handle', 'handle'}, {})
+sim.checkDistance = wrapTypes(sim, sim.checkDistance, {'handle', 'handle'}, {})
 sim.readForceSensor = wrapTypes(sim, sim.readForceSensor, {'handle'}, {'vector3', 'vector3'})
 sim.checkOctreePointOccupancy = wrapTypes(sim, sim.checkOctreePointOccupancy, {'handle'}, {})
 sim.checkProximitySensor = wrapTypes(sim, sim.checkProximitySensor, {'handle', 'handle'}, {})
@@ -1607,7 +1629,7 @@ sim.subtractObjectFromOctree = wrapTypes(sim, sim.subtractObjectFromOctree, {'ha
 sim.subtractObjectFromPointCloud = wrapTypes(sim, sim.subtractObjectFromPointCloud, {'handle', 'handle'}, {})
 sim.ungroupShape = wrapTypes(sim, sim.ungroupShape, {'handle'}, {})
 sim.visitTree = wrapTypes(sim, sim.visitTree, {'handle'}, {})
-
+--]]
 -- Hidden, internal functions:
 ----------------------------------------------------------
 

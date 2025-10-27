@@ -353,6 +353,9 @@ return {
                 end
             elseif objectType == 'proximitySensor' then
                 self.__methods.checkSensor = function(...)
+                    local args = {...}
+                    table.remove(args, 1)
+                    print(args)
                     return sim.checkProximitySensor(self.__handle, ...)
                 end
             elseif objectType == 'visionSensor' then
@@ -360,7 +363,19 @@ return {
                     return sim.checkVisionSensor(self.__handle, ...)
                 end
             end
-            
+            --[[
+            if objectType == 'shape' then
+                self.__methods.changeColor = function(...)
+                    local args = {...}
+                    print(args)
+                    if #args[1] > 0 and (type(args[1]) == 'table') and args[1].handle then
+                        return sim.changeEntityColor(args[1])
+                    else
+                        return sim.changeEntityColor(self.__handle, ...)
+                    end
+                end
+            end
+            --]]
         end
 
         function sim.Object:__copy()
