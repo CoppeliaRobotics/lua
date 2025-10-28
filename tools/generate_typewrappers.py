@@ -51,6 +51,10 @@ return {
             return sim.Object(v)
         end
 
+        local function write_handlearray(v)
+            return map(function(h) return sim.Object(h) end, v)
+        end
+
         local function read_matrix(v, def)
             if v == nil then v = def end
             if simEigen.Matrix:ismatrix(v) then v = v:data() end
@@ -92,6 +96,14 @@ return {
             if sim.Object:isobject(v) then v = #v end
             return v
         end
+
+        local function read_handlearray(v, def)
+            if v == nil then v = def end
+            return map(function(x)
+                if sim.Object:isobject(x) then x = #x end
+                return x
+            end, v)
+        end
 """
     for line in proc.stdout:
         calltip = line.strip()
@@ -106,10 +118,14 @@ return {
                 if isinstance(arg, VarArgs): continue
                 if arg.type in ('matrix', 'vector', 'vector3', 'quaternion', 'pose', 'color', 'handle'):
                     in_recipes[i] = arg.type
+                elif arg.type == 'array' and arg.item_type == 'handle':
+                    in_recipes[i] = 'handlearray'
             for i, ret in enumerate(f.out_args):
                 if isinstance(ret, VarArgs): continue
                 if ret.type in ('matrix', 'vector', 'vector3', 'quaternion', 'pose', 'color', 'handle'):
                     out_recipes[i] = ret.type
+                elif ret.type == 'array' and ret.item_type == 'handle':
+                    out_recipes[i] = 'handlearray'
             if not in_recipes and not out_recipes: continue
             gen_code += f"""
         {f.func_name} = wrap({f.func_name}, function(origFunc)
