@@ -208,6 +208,7 @@ return {
                 checkPointOccupancy = methodWrapper{ sim.checkOctreePointOccupancy, objType = 'ocTree', },
                 checkSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
+                getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
                 executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
                 getAlias = methodWrapper{ sim.getObjectAlias, },
                 getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
