@@ -18,3 +18,4 @@ getCallContexts.lua
 simBB.lua
 threejsFrontend-custom.lua
 booleanMesh.lua
+sim-2-typewrappers.lua

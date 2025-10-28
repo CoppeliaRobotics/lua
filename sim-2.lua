@@ -585,57 +585,36 @@ function sim.getPathLengths(...)
 end
 
 function sim.changeEntityColor(...)
-    local args = {...}
-    local objs = {}
-    local complexColData
-    local simpleColData, colorComponent
-    if type(args[1]) == 'table' then
-        complexColData = checkargs({{type = 'table'}, size = '1..*'}, ...)
-        for i = 1, #complexColData, 1 do
-            if sim.isHandle(complexColData[i].handle, sim.objecttype_sceneobject) then
-                objs[#objs + 1] = complexColData[i].handle
-            end
-        end
-    else
-        local entityHandle
-        entityHandle, simpleColData, colorComponent = checkargs({
-            {type = 'int'},
-            {type = 'table', size = 3, item_type = 'float', default = {1.0, 0.0, 0.0}},
-            {type = 'int', default = sim.colorcomponent_ambient_diffuse},
-        }, ...)
-        objs = {entityHandle}
-        if sim.isHandle(entityHandle, sim.objecttype_collection) then
-            objs = sim.getCollectionObjects(entityHandle)
-        end
+    local entityHandle, color, colorComponent = checkargs({
+        {type = 'int'},
+        {type = 'table', size = 3, item_type = 'float'},
+        {type = 'int', default = sim.colorcomponent_ambient_diffuse},
+    }, ...)
+    local colorData = {}
+    local objs = {entityHandle}
+    if sim.isHandle(entityHandle, sim.objecttype_collection) then
+        objs = sim.getCollectionObjects(entityHandle)
     end
-    local retVal = {}
     for i = 1, #objs, 1 do
         if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
-            local comp = {colorComponent}
-            if complexColData then
-                comp = {sim.colorcomponent_ambient_diffuse, sim.colorcomponent_specular, sim.colorcomponent_emission, sim.colorcomponent_transparency, sim.colorcomponent_auxiliary}
-            end
-            for j = 1, #comp do
-                local res, col = sim.getShapeColor(objs[i], '@compound', comp[j])
-                retVal[#retVal + 1] = {handle = objs[i], data = col, comp = comp[j]}
-            end
-        end
-    end
-    if complexColData then
-        for i = 1, #complexColData, 1 do
-            if sim.isHandle(complexColData[i].handle, sim.objecttype_sceneobject) then
-                sim.setShapeColor(complexColData[i].handle, '@compound', complexColData[i].comp, complexColData[i].data)
-            end
-        end
-    else
-        for i = 1, #objs, 1 do
-            if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
+            local visible = sim.getBoolProperty(objs[i], 'visible')
+            if visible == 1 then
                 local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
-                sim.setShapeColor(objs[i], nil, colorComponent, simpleColData)
+                colorData[#colorData + 1] = {handle = objs[i], data = col, comp = colorComponent}
+                sim.setShapeColor(objs[i], nil, colorComponent, color)
             end
         end
     end
-    return retVal
+    return colorData
+end
+
+function sim.restoreEntityColor(...)
+    local colorData = checkargs({{type = 'table'}, size = '1..*'}, ...)
+    for i = 1, #colorData, 1 do
+        if sim.isHandle(colorData[i].handle, sim.objecttype_sceneobject) then
+            sim.setShapeColor(colorData[i].handle, '@compound', colorData[i].comp, colorData[i].data)
+        end
+    end
 end
 
 function sim.wait(...)

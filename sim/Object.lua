@@ -192,11 +192,12 @@ return {
             end
 
             rawset(self, '__methods', {
+                addCurve = methodWrapper{ sim.addGraphCurve, objType = 'graph', },
+                addStream = methodWrapper{ sim.addGraphStream, objType = 'graph', },
                 getMass = methodWrapper{ sim.getShapeMass, objType = 'shape', },
                 setMass = methodWrapper{ sim.setShapeMass, objType = 'shape', },
                 getInertia = methodWrapper{ sim.getShapeInertia, objType = 'shape', },
                 setInertia = methodWrapper{ sim.setShapeInertia, objType = 'shape', },
-                addItemToCollection = methodWrapper{ sim.addItemToCollection, objType = 'collection', },
                 addForce = methodWrapper{ sim.addForce, objType = 'shape', },
                 addForceAndTorque = methodWrapper{ sim.addForceAndTorque, objType = 'shape', },
                 addReferencedHandle = methodWrapper{ sim.addReferencedHandle, },
@@ -347,6 +348,15 @@ return {
                 end,
             })
 
+            self.__methods.addToCollection = function(...)
+                local args = {...}
+                print(args)
+                if #args < 2 then
+                    error('the function requires more arguments.')
+                end
+                return sim.addItemToCollection(args[2], sim.handle_single, self.__handle, ...)
+            end
+
             if objectType == 'forceSensor' then
                 self.__methods.checkSensor = sim.checkForceSensor
             elseif objectType == 'proximitySensor' then
@@ -354,19 +364,6 @@ return {
             elseif objectType == 'visionSensor' then
                 self.__methods.checkSensor = sim.checkVisionSensor
             end
-            --[[
-            if objectType == 'shape' then
-                self.__methods.changeColor = function(...)
-                    local args = {...}
-                    print(args)
-                    if #args[1] > 0 and (type(args[1]) == 'table') and args[1].handle then
-                        return sim.changeEntityColor(args[1])
-                    else
-                        return sim.changeEntityColor(self.__handle, ...)
-                    end
-                end
-            end
-            --]]
         end
 
         function sim.Object:__copy()
