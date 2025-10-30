@@ -194,10 +194,6 @@ return {
             rawset(self, '__methods', {
                 addCurve = methodWrapper{ sim.addGraphCurve, objType = 'graph', },
                 addStream = methodWrapper{ sim.addGraphStream, objType = 'graph', },
-                getMass = methodWrapper{ sim.getShapeMass, objType = 'shape', },
-                setMass = methodWrapper{ sim.setShapeMass, objType = 'shape', },
-                getInertia = methodWrapper{ sim.getShapeInertia, objType = 'shape', },
-                setInertia = methodWrapper{ sim.setShapeInertia, objType = 'shape', },
                 addForce = methodWrapper{ sim.addForce, objType = 'shape', },
                 addForceAndTorque = methodWrapper{ sim.addForceAndTorque, objType = 'shape', },
                 addReferencedHandle = methodWrapper{ sim.addReferencedHandle, },
@@ -209,12 +205,9 @@ return {
                 checkSensorEx = methodWrapper{ sim.checkVisionSensorEx, objType = 'visionSensor', },
                 computeMassAndInertia = methodWrapper{ sim.computeMassAndInertia, },
                 getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
-                executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
-                getAlias = methodWrapper{ sim.getObjectAlias, },
-                getApiFunc = methodWrapper{ sim.getApiFunc, objType = 'script', },
                 getApiInfo = methodWrapper{ sim.getApiInfo, objType = 'script', },
-                getExtensionString = methodWrapper{ sim.getExtensionString, },
-                getParent = methodWrapper{ sim.getObjectParent, },
+                getExplicitHandling = methodWrapper{ sim.getExplicitHandling, },
+                executeScriptString = methodWrapper{ sim.executeScriptString, objType = 'script', },
                 getMatrix = methodWrapper{ sim.getObjectMatrix, },
                 getOrientation = methodWrapper{ sim.getObjectOrientation, },
                 getPose = methodWrapper{ sim.getObjectPose, },
@@ -351,7 +344,6 @@ return {
 
             self.__methods.addToCollection = function(...)
                 local args = {...}
-                print(args)
                 if #args < 2 then
                     error('the function requires more arguments.')
                 end
@@ -359,11 +351,21 @@ return {
             end
 
             if objectType == 'forceSensor' then
-                self.__methods.checkSensor = sim.checkForceSensor
+                self.__methods.checkSensor = sim.readForceSensor
+                self.__methods.getForce = function ()
+                    local f, t = sim.readForceSensor(self.__handle)
+                    return f
+                end
+               self.__methods.getTorque = function ()
+                    local f, t = sim.readForceSensor(self.__handle)
+                    return t
+                end
             elseif objectType == 'proximitySensor' then
                 self.__methods.checkSensor = sim.checkProximitySensor
             elseif objectType == 'visionSensor' then
                 self.__methods.checkSensor = sim.checkVisionSensor
+            elseif objectType == 'joint' then
+                self.__methods.getForce = sim.getJointForce
             end
         end
 

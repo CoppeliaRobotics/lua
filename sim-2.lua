@@ -58,6 +58,13 @@ sim.checkProximitySensor = wrap(sim.checkProximitySensor, function(origFunc)
     end
 end)
 
+sim.readForceSensor = wrap(sim.readForceSensor, function(origFunc)
+    return function(...)
+        local r, f, t = origFunc(...)
+        return f, t
+    end
+end)
+
 sim.auxiliaryConsoleClose = wrap(sim.auxiliaryConsoleClose, function(origFunc)
     return function(...)
         origFunc(...)
