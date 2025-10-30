@@ -325,7 +325,7 @@ return {
                     return sim.setIntProperty(self.__handle, k, v)
                 end,
 
-                getHandlesProperty = function(self, k)
+                getHandleArrayProperty = function(self, k)
                     return map(
                         function(h)
                             if h ~= -1 then
@@ -336,7 +336,7 @@ return {
                     )
                 end,
 
-                setHandlesProperty = function(self, k, v)
+                setHandleArrayProperty = function(self, k, v)
                     if v == nil then
                         v = {}
                     end
@@ -539,9 +539,9 @@ return {
 
         sim.Object.Properties = {
             scene = {
-                ['objects'] = {type = 'handles', alias = 'objectHandles'},
-                ['orphans'] = {type = 'handles', alias = 'orphanHandles'},
-                ['selection'] = {type = 'handles', alias = 'selectionHandles'},
+                ['objects'] = {type = 'handleArray', alias = 'objectHandles'},
+                ['orphans'] = {type = 'handleArray', alias = 'orphanHandles'},
+                ['selection'] = {type = 'handleArray', alias = 'selectionHandles'},
             },
             object = {
                 ['parent'] = {type = 'handle', alias = 'parentHandle'},
@@ -554,7 +554,7 @@ return {
                 ['detectedObject'] = {type = 'handle', alias = 'detectedObjectHandle'},
             },
             shape = {
-                ['meshes'] = {type = 'handles'},
+                ['meshes'] = {type = 'handleArray'},
             },
         }
 
