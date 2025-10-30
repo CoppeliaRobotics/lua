@@ -186,6 +186,7 @@ return {
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(self))
+            self.__properties:registerLocalProperty('absolutePose', function() return self:getPose(sim.handle_world) end)
 
             -- 'children' property provides a way to access direct children by index or by name:
             rawset(self, 'children', sim.ObjectChildren(self))
