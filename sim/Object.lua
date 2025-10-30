@@ -8,6 +8,7 @@ return {
             opts = opts or {}
             self.__object = object
             self.__prefix = opts.prefix or ''
+            self.__localProperties = {}
         end
 
         function sim.PropertyGroup:__index(k)
@@ -15,6 +16,10 @@ return {
 
             if k:startswith '__' then
                 return rawget(self, k)
+            end
+
+            if (self.__localProperties[k] or {}).get then
+                return self.__localProperties[k].get(self.__object)
             end
 
             local object = self.__object
@@ -46,6 +51,10 @@ return {
             if k:startswith '__' then
                 rawset(self, k, v)
                 return
+            end
+
+            if (self.__localProperties[k] or {}).set then
+                return self.__localProperties[k].set(self.__object, v)
             end
 
             local prefix = self.__prefix
@@ -101,6 +110,10 @@ return {
                 if v ~= nil then return k, v end
             end
             return stateless_iter, self, nil
+        end
+
+        function sim.PropertyGroup:registerLocalProperty(k, getter, setter)
+            self.__localProperties[k] = {get = getter, set = setter}
         end
 
         sim.ObjectChildren = class 'sim.ObjectChildren'
