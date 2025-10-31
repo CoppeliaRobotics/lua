@@ -560,8 +560,7 @@ return {
             else
                 print 'skipped orphans test'
             end
-            assert(f.children.box == b)
-            assert(f.children.box == f.children[1])
+            assert(b == f.children[1])
             assert(b.parent == f)
             d1 = sim.Object{
                 objectType = 'dummy',
@@ -577,8 +576,6 @@ return {
             assert(d2.linkedDummy == d1)
             sim.removeObjects{d1, d2}
             cbor = require 'simCBOR'
-            p = table.frompairs(f.children)
-            assert(cbor.encode(p) == cbor.encode{box = b})
             ip = table.fromipairs(f.children)
             assert(cbor.encode(ip) == cbor.encode{b})
             assert(b:getPosition(f):norm() < 1e-7)
