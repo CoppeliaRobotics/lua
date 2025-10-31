@@ -312,6 +312,22 @@ return {
             self.__methods.save = sim.saveScene
         end
 
+        sim.Mesh = class('sim.Mesh', sim.BaseObject)
+
+        function sim.Mesh:initialize(handle)
+            sim.BaseObject.initialize(self, handle)
+
+            assert(self.objectType == 'mesh', 'invalid constructor for object type ' .. self.objectType)
+        end
+
+        sim.Texture = class('sim.Texture', sim.BaseObject)
+
+        function sim.Texture:initialize(handle)
+            sim.BaseObject.initialize(self, handle)
+
+            assert(self.objectType == 'texture', 'invalid constructor for object type ' .. self.objectType)
+        end
+
         sim.SceneObject = class('sim.SceneObject', sim.BaseObject)
 
         function sim.SceneObject:initialize(handle)
@@ -474,14 +490,6 @@ return {
             self.__methods.ungroup = sim.ungroupShape
         end
 
-        sim.Texture = class('sim.Texture', sim.SceneObject)
-
-        function sim.Texture:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'texture', 'invalid constructor for object type ' .. self.objectType)
-        end
-
         sim.VisionSensor = class('sim.VisionSensor', sim.SceneObject)
 
         function sim.VisionSensor:initialize(handle)
@@ -494,6 +502,13 @@ return {
             self.__methods.read = sim.readVisionSensor
             self.__methods.reset = sim.resetVisionSensor
         end
+
+        sim.BaseObject.ObjectTypes = {
+            app = sim.App,
+            scene = sim.Scene,
+            mesh = sim.Mesh,
+            texture = sim.Texture,
+        }
 
         sim.SceneObject.ObjectTypes = {
             dummy = sim.Dummy,
@@ -535,15 +550,9 @@ return {
                 end
 
                 local objectType = sim.getStringProperty(handle, 'objectType')
-                if objectType == 'app' then
-                    return sim.App(handle)
-                elseif objectType == 'scene' then
-                    return sim.Scene(handle)
-                else
-                    local cls = sim.SceneObject.ObjectTypes[objectType]
-                    assert(cls, 'unsupported object type: ' .. objectType)
-                    return cls(handle)
-                end
+                local cls = sim.SceneObject.ObjectTypes[objectType] or sim.BaseObject.ObjectTypes[objectType]
+                assert(cls, 'unsupported object type: ' .. objectType)
+                return cls(handle)
             end
         })
 
