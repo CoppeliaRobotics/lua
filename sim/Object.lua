@@ -527,7 +527,7 @@ return {
                 elseif type(arg) == 'table' then
                     assert(opts == nil, 'invalid args')
                     local initialProperties = arg
-                    handle = sim.createObject(initialProperties)
+                    handle = #sim.createObject(initialProperties)
                 else
                     error 'invalid arguments to sim.Object(...)'
                 end
