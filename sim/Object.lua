@@ -26,19 +26,8 @@ return {
             local prefix = self.__prefix
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            local t
-
-            -- check if we have some type hint for property `k`...
-            local objectType = rawget(self.__object, 'objectType')
-            local th = sim.Object.Properties or {}
-            th = (th[objectType] or {})[k] or th.object[k] or {}
-            if th.type then t = th.type end
-            if th.alias then k = th.alias end
-
             if self.__object:getPropertyInfo(k) then
-                if not t then
-                    t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
-                end
+                local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k), true)
                 return self.__object['get' .. t:capitalize() .. 'Property'](self.__object, k)
             end
 
@@ -60,19 +49,8 @@ return {
             local prefix = self.__prefix
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            local t
-
-            -- check if we have some type hint for property `k`...
-            local objectType = rawget(self.__object, 'objectType')
-            local th = sim.Object.Properties or {}
-            th = (th[self.__object.objectType] or {})[k] or th.object[k] or {}
-            if th.type then t = th.type end
-            if th.alias then k = th.alias end
-
             if self.__object:getPropertyInfo(k) then
-                if not t then
-                    t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k))
-                end
+                local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k), true)
                 self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
             end
         end
@@ -181,22 +159,8 @@ return {
             self.__methods.getExplicitHandling = sim.getExplicitHandling
             self.__methods.getFloatArrayProperty = sim.getFloatArrayProperty
             self.__methods.getFloatProperty = sim.getFloatProperty
-            self.__methods.getHandleArrayProperty = function(self, k)
-                return map(
-                    function(h)
-                        if h ~= -1 then
-                            return sim.Object(h)
-                        end
-                    end,
-                    sim.getIntArrayProperty(self.__handle, k)
-                )
-            end
-            self.__methods.getHandleProperty = function(self, k)
-                local h = sim.getIntProperty(self.__handle, k)
-                if h ~= -1 then
-                    return sim.Object(h)
-                end
-            end
+            self.__methods.getHandleArrayProperty = sim.getHandleArrayProperty
+            self.__methods.getHandleProperty = sim.getHandleProperty
             self.__methods.getIntArray2Property = sim.getIntArray2Property
             self.__methods.getIntArrayProperty = sim.getIntArrayProperty
             self.__methods.getIntProperty = sim.getIntProperty
@@ -227,32 +191,8 @@ return {
             self.__methods.setEventFilters = sim.setEventFilters
             self.__methods.setFloatArrayProperty = sim.setFloatArrayProperty
             self.__methods.setFloatProperty = sim.setFloatProperty
-            self.__methods.setHandleArrayProperty = function(self, k, v)
-                if v == nil then
-                    v = {}
-                end
-                return sim.setIntArrayProperty(
-                    self.__handle,
-                    k,
-                    map(
-                        function(o)
-                            if sim.Object:isobject(o) then
-                                o = #o
-                            end
-                            return o
-                        end,
-                        v
-                    )
-                )
-            end
-            self.__methods.setHandleProperty = function(self, k, v)
-                if v == nil then
-                    v = -1
-                elseif sim.Object:isobject(v) then
-                    v = #v
-                end
-                return sim.setIntProperty(self.__handle, k, v)
-            end
+            self.__methods.setHandleArrayProperty = sim.setHandleArrayProperty
+            self.__methods.setHandleProperty = sim.setHandleProperty
             self.__methods.setIntArray2Property = sim.setIntArray2Property
             self.__methods.setIntArrayProperty = sim.setIntArrayProperty
             self.__methods.setIntProperty = sim.setIntProperty
@@ -664,34 +604,6 @@ return {
 
             print(debug.getinfo(1, 'S').source, 'tests passed')
         end
-
-        sim.Object.CreatableObjectTypes = table.add(
-            {
-                'collection',
-            },
-            sim.Object.SceneObjectTypes
-        )
-
-        sim.Object.Properties = {
-            scene = {
-                ['objects'] = {type = 'handleArray', alias = 'objectHandles'},
-                ['orphans'] = {type = 'handleArray', alias = 'orphanHandles'},
-                ['selection'] = {type = 'handleArray', alias = 'selectionHandles'},
-            },
-            object = {
-                ['parent'] = {type = 'handle', alias = 'parentHandle'},
-            },
-            dummy = {
-                ['linkedDummy'] = {type = 'handle', alias = 'linkedDummyHandle'},
-                ['mujoco.jointProxy'] = {type = 'handle', alias = 'mujoco.jointProxyHandle'},
-            },
-            proximitySensor = {
-                ['detectedObject'] = {type = 'handle', alias = 'detectedObjectHandle'},
-            },
-            shape = {
-                ['meshes'] = {type = 'handleArray'},
-            },
-        }
 
         sim.ObjectArray = class 'sim.ObjectArray'
 
