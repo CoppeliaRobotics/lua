@@ -355,6 +355,14 @@ return {
             return sim.Object(path, opts)
         end
 
+        sim.Camera = class('sim.Camera', sim.SceneObject)
+
+        function sim.Camera:initialize(handle)
+            sim.SceneObject.initialize(self, handle)
+
+            assert(self.objectType == 'camera', 'invalid constructor for object type ' .. self.objectType)
+        end
+
         sim.Dummy = class('sim.Dummy', sim.SceneObject)
 
         function sim.Dummy:initialize(handle)
@@ -405,6 +413,14 @@ return {
 
             self.__methods.getForce = sim.getJointForce
             self.__methods.resetDynamicObject = sim.resetDynamicObject
+        end
+
+        sim.Light = class('sim.Light', sim.SceneObject)
+
+        function sim.Light:initialize(handle)
+            sim.SceneObject.initialize(self, handle)
+
+            assert(self.objectType == 'light', 'invalid constructor for object type ' .. self.objectType)
         end
 
         sim.OcTree = class('sim.OcTree', sim.SceneObject)
@@ -508,10 +524,12 @@ return {
         }
 
         sim.SceneObject.ObjectTypes = {
+            camera = sim.Camera,
             dummy = sim.Dummy,
             forceSensor = sim.ForceSensor,
             graph = sim.Graph,
             joint = sim.Joint,
+            light = sim.Light,
             ocTree = sim.OcTree,
             pointCloud = sim.PointCloud,
             proximitySensor = sim.ProximitySensor,
