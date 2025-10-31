@@ -102,47 +102,6 @@ return {
             self.__localProperties[k] = {get = getter, set = setter}
         end
 
-        sim.ObjectChildren = class 'sim.ObjectChildren'
-
-        function sim.ObjectChildren:initialize(object)
-            self.__object = object
-        end
-
-        function sim.ObjectChildren:__index(k)
-            if type(k) == 'string' then
-                return self.__object / k
-            elseif math.type(k) == 'integer' then
-                if k >= 1 then
-                    local h = sim.getObjectChild(self.__object.__handle, k - 1)
-                    if h ~= -1 then
-                        return sim.Object(h)
-                    end
-                end
-            end
-        end
-
-        function sim.ObjectChildren:__pairs()
-            local r = {}
-            for i, h in ipairs(sim.getObjectsInTree(self.__object.__handle, sim.handle_all, 3)) do
-                r[sim.getObjectAlias(h)] = sim.Object(h)
-            end
-            local function stateless_iter(self, k)
-                local v
-                k, v = next(r, k)
-                if k ~= nil then return k, v end
-            end
-            return stateless_iter, self, nil
-        end
-
-        function sim.ObjectChildren:__ipairs()
-            local function stateless_iter(self, i)
-                i = i + 1
-                local h = self.__object[i]
-                if h ~= -1 then return i, sim.Object(h) end
-            end
-            return stateless_iter, self, 0
-        end
-
         sim.BaseObject = class 'sim.BaseObject'
 
         function sim.BaseObject:initialize(handle)
@@ -323,9 +282,6 @@ return {
 
             assert(sim.isHandle(handle), 'invalid handle')
             assert(sim.SceneObject.ObjectTypes[self.objectType], 'invalid constructor for object type ' .. self.objectType)
-
-            -- 'children' property provides a way to access direct children by index or by name:
-            rawset(self, 'children', sim.ObjectChildren(self))
 
             self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getMatrix = sim.getObjectMatrix
