@@ -284,6 +284,7 @@ return {
             assert(sim.SceneObject.ObjectTypes[self.objectType], 'invalid constructor for object type ' .. self.objectType)
 
             self.__methods.addReferencedHandle = sim.addReferencedHandle
+            self.__methods.getAlias = sim.getObjectAlias
             self.__methods.getMatrix = sim.getObjectMatrix
             self.__methods.getOrientation = sim.getObjectOrientation
             self.__methods.getPose = sim.getObjectPose
