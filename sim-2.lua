@@ -807,6 +807,7 @@ function sim.getPropertyTypeString(ptype, forGetterSetter)
         if ret == 'floatarray3' then ret = 'floatArray3' end
         if ret == 'intarray' then ret = 'intArray' end
         if ret == 'intarray2' then ret = 'intArray2' end
+        if ret == 'handlearray' then ret = 'handleArray' end
         ret = string.capitalize(ret)
     end
     return ret
