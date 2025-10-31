@@ -150,9 +150,6 @@ return {
 
             -- add methods from sim.* API:
             rawset(self, '__methods', {})
-            self.__methods.addReferencedHandle = sim.addReferencedHandle
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
             self.__methods.getBoolProperty = sim.getBoolProperty
             self.__methods.getBufferProperty = sim.getBufferProperty
             self.__methods.getColorProperty = sim.getColorProperty
@@ -173,22 +170,14 @@ return {
             self.__methods.getPropertyName = sim.getPropertyName
             self.__methods.getPropertyTypeString = sim.getPropertyTypeString
             self.__methods.getQuaternionProperty = sim.getQuaternionProperty
-            self.__methods.getReferencedHandle = sim.getReferencedHandle
-            self.__methods.getReferencedHandles = sim.getReferencedHandles
-            self.__methods.getReferencedHandlesTags = sim.getReferencedHandlesTags
             self.__methods.getStringProperty = sim.getStringProperty
             self.__methods.getTableProperty = sim.getTableProperty
             self.__methods.getVector2Property = sim.getVector2Property
             self.__methods.getVector3Property = sim.getVector3Property
-            self.__methods.removeModel = sim.removeModel
             self.__methods.removeProperty = sim.removeProperty
-            self.__methods.removeReferencedObjects = sim.removeReferencedObjects
-            self.__methods.saveModel = sim.saveModel
-            self.__methods.scaleObject = sim.scaleObject
             self.__methods.setBoolProperty = sim.setBoolProperty
             self.__methods.setBufferProperty = sim.setBufferProperty
             self.__methods.setColorProperty = sim.setColorProperty
-            self.__methods.setEventFilters = sim.setEventFilters
             self.__methods.setFloatArrayProperty = sim.setFloatArrayProperty
             self.__methods.setFloatProperty = sim.setFloatProperty
             self.__methods.setHandleArrayProperty = sim.setHandleArrayProperty
@@ -201,12 +190,10 @@ return {
             self.__methods.setProperties = sim.setProperties
             self.__methods.setProperty = sim.setProperty
             self.__methods.setQuaternionProperty = sim.setQuaternionProperty
-            self.__methods.setReferencedHandles = sim.setReferencedHandles
             self.__methods.setStringProperty = sim.setStringProperty
             self.__methods.setTableProperty = sim.setTableProperty
             self.__methods.setVector2Property = sim.setVector2Property
             self.__methods.setVector3Property = sim.setVector3Property
-            self.__methods.visitTree = sim.visitTree
         end
 
         function sim.BaseObject:__copy()
@@ -277,6 +264,8 @@ return {
                 end
                 return sim.addItemToCollection(args[2], sim.handle_single, self.__handle, ...)
             end
+            self.__methods.checkCollision = sim.checkCollision
+            self.__methods.checkDistance = sim.checkDistance
         end
 
         sim.App = class('sim.App', sim.BaseObject)
@@ -330,18 +319,26 @@ return {
             -- 'children' property provides a way to access direct children by index or by name:
             rawset(self, 'children', sim.ObjectChildren(self))
 
+            self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getMatrix = sim.getObjectMatrix
             self.__methods.getOrientation = sim.getObjectOrientation
             self.__methods.getPose = sim.getObjectPose
             self.__methods.getPosition = sim.getObjectPosition
             self.__methods.getQuaternion = sim.getObjectQuaternion
+            self.__methods.getReferencedHandle = sim.getReferencedHandle
+            self.__methods.getReferencedHandles = sim.getReferencedHandles
+            self.__methods.getReferencedHandlesTags = sim.getReferencedHandlesTags
             self.__methods.getVelocity = sim.getObjectVelocity
+            self.__methods.removeReferencedObjects = sim.removeReferencedObjects
+            self.__methods.scaleObject = sim.scaleObject
             self.__methods.setMatrix = sim.setObjectMatrix
             self.__methods.setOrientation = sim.setObjectOrientation
             self.__methods.setParent = sim.setObjectParent
             self.__methods.setPose = sim.setObjectPose
             self.__methods.setPosition = sim.setObjectPosition
             self.__methods.setQuaternion = sim.setObjectQuaternion
+            self.__methods.setReferencedHandles = sim.setReferencedHandles
+            self.__methods.visitTree = sim.visitTree
 
             self.__properties:registerLocalProperty('absolutePose', function() return self:getPose(sim.handle_world) end)
         end
@@ -364,6 +361,9 @@ return {
             sim.SceneObject.initialize(self, handle)
 
             assert(self.objectType == 'dummy', 'invalid constructor for object type ' .. self.objectType)
+
+            self.__methods.checkCollision = sim.checkCollision
+            self.__methods.checkDistance = sim.checkDistance
         end
 
         sim.ForceSensor = class('sim.ForceSensor', sim.SceneObject)
@@ -414,6 +414,8 @@ return {
 
             assert(self.objectType == 'ocTree', 'invalid constructor for object type ' .. self.objectType)
 
+            self.__methods.checkCollision = sim.checkCollision
+            self.__methods.checkDistance = sim.checkDistance
             self.__methods.checkPointOccupancy = sim.checkOctreePointOccupancy
             self.__methods.insertObject = sim.insertObjectIntoOctree
             self.__methods.insertVoxels = sim.insertVoxelsIntoOctree
@@ -428,6 +430,8 @@ return {
 
             assert(self.objectType == 'pointCloud', 'invalid constructor for object type ' .. self.objectType)
 
+            self.__methods.checkCollision = sim.checkCollision
+            self.__methods.checkDistance = sim.checkDistance
             self.__methods.insertObject = sim.insertObjectIntoPointCloud
             self.__methods.insertPoints = sim.insertPointsIntoPointCloud
             self.__methods.intersectPoints = sim.intersectPointsWithPointCloud
@@ -471,6 +475,8 @@ return {
             self.__methods.addForce = sim.addForce
             self.__methods.addForceAndTorque = sim.addForceAndTorque
             self.__methods.alignBB = sim.alignShapeBB
+            self.__methods.checkCollision = sim.checkCollision
+            self.__methods.checkDistance = sim.checkDistance
             self.__methods.computeMassAndInertia = sim.computeMassAndInertia
             self.__methods.getAppearance = sim.getShapeAppearance
             self.__methods.getDynVelocity = sim.getShapeVelocity
