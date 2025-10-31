@@ -230,15 +230,6 @@ return {
             -- redirect to default property group otherwise:
             local p = rawget(self, '__properties')[k]
             if p ~= nil then return p end
-
-            -- (script funcs proxy)
-            -- this is bad, as every non-existent property access (top-level) turns into
-            -- an existent function, pretty confusing...
-            --[[
-            return function(self, ...)
-                return (rawget(self, 'callFunction') or function() end)(k, ...)
-            end
-            ]]--
         end
 
         function sim.BaseObject:__newindex(k, v)
