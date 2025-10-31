@@ -571,7 +571,7 @@ return {
                 objectType = 'dummy',
                 alias = 'd2',
                 dummyType = sim.dummytype_dynloopclosure,
-                linkedDummyHandle = #d1,
+                linkedDummy = d1,
             }
             assert(d2.linkedDummy == d1)
             sim.removeObjects{d1, d2}
