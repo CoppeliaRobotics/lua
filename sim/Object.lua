@@ -18,8 +18,12 @@ return {
                 return rawget(self, k)
             end
 
-            if (self.__localProperties[k] or {}).get then
-                return self.__localProperties[k].get(self.__object)
+            if self.__localProperties[k] then
+                if self.__localProperties[k].get then
+                    return self.__localProperties[k].get()
+                else
+                    error('local property "' .. k .. '" can\'t be read')
+                end
             end
 
             local object = self.__object
@@ -42,8 +46,12 @@ return {
                 return
             end
 
-            if (self.__localProperties[k] or {}).set then
-                return self.__localProperties[k].set(self.__object, v)
+            if self.__localProperties[k] then
+                if self.__localProperties[k].set then
+                    return self.__localProperties[k].set(v)
+                else
+                    error('local property "' .. k .. '" can\'t be written')
+                end
             end
 
             local prefix = self.__prefix
@@ -340,7 +348,10 @@ return {
             self.__methods.setReferencedHandles = sim.setReferencedHandles
             self.__methods.visitTree = sim.visitTree
 
-            self.__properties:registerLocalProperty('absolutePose', function() return self:getPose(sim.handle_world) end)
+            self.__properties:registerLocalProperty('absolutePose',
+                function() return self:getPose(sim.handle_world) end,
+                function(pose) return self:setPose(pose, sim.handle_world) end
+            )
         end
 
         function sim.SceneObject:__div(path)
