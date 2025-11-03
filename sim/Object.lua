@@ -300,6 +300,25 @@ return {
             self.__methods.setQuaternion = sim.setObjectQuaternion
             self.__methods.setReferencedHandles = sim.setReferencedHandles
             self.__methods.visitTree = sim.visitTree
+
+            self.__properties:registerLocalProperty('matrix',
+                function()
+                    return self.pose:totransform()
+                end,
+                function(m)
+                    local Pose = require('simEigen').Pose
+                    self.pose = Pose:fromtransform(m)
+                end
+            )
+            self.__properties:registerLocalProperty('absMatrix',
+                function()
+                    return self.absPose:totransform()
+                end,
+                function(m)
+                    local Pose = require('simEigen').Pose
+                    self.absPose = Pose:fromtransform(m)
+                end
+            )
         end
 
         function sim.SceneObject:__div(path)
