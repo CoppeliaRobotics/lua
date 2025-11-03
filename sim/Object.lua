@@ -238,25 +238,37 @@ return {
         sim.App = class('sim.App', sim.BaseObject)
 
         function sim.App:initialize(handle)
+            if handle == nil then handle = sim.handle_app end
+            assert(handle == sim.handle_app, 'invalid handle')
+
             sim.BaseObject.initialize(self, handle)
 
-            assert(handle == sim.handle_app, 'invalid handle')
             assert(self.objectType == 'app', 'invalid constructor for object type ' .. self.objectType)
 
             rawset(self, 'namedParam', sim.PropertyGroup(self, {prefix = 'namedParam'}))
         end
 
+        function sim.App:__tostring()
+            return self.class.name .. '()'
+        end
+
         sim.Scene = class('sim.Scene', sim.BaseObject)
 
         function sim.Scene:initialize(handle)
+            if handle == nil then handle = sim.handle_scene end
+            assert(handle == sim.handle_scene, 'invalid handle')
+
             sim.BaseObject.initialize(self, handle)
 
-            assert(handle == sim.handle_scene, 'invalid handle')
             assert(self.objectType == 'scene', 'invalid constructor for object type ' .. self.objectType)
 
             self.__methods.getObjectsInTree = sim.getObjectsInTree
             self.__methods.load = sim.loadScene
             self.__methods.save = sim.saveScene
+        end
+
+        function sim.Scene:__tostring()
+            return self.class.name .. '()'
         end
 
         sim.Mesh = class('sim.Mesh', sim.BaseObject)
@@ -627,7 +639,7 @@ return {
         end
 
         -- definition of constants / static objects:
-        sim.scene = sim.Object(sim.handle_scene)
-        sim.app = sim.Object(sim.handle_app)
+        sim.scene = sim.Scene()
+        sim.app = sim.App()
     end
 }
