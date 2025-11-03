@@ -133,6 +133,112 @@ sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     end
 end)
 
+sim.getObject = wrap(sim.getObject, function(origFunc)
+    return function(path, options)
+        options = options or {}
+        local proxy = -1
+        local index = -1
+        local option = 0
+        if options.proxy then proxy = options.proxy end
+        if options.index then index = options.index end
+        if options.noError then option = 1 end
+        return origFunc(path, index, proxy, option)
+    end
+end)
+
+sim.getObjectFromUid = wrap(sim.getObjectFromUid, function(origFunc)
+    return function(path, options)
+        options = options or {}
+        local option = 0
+        if options.noError then option = 1 end
+        return origFunc(path, option)
+    end
+end)
+
+function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
+    if handle == baseHandle then return '.' end
+
+    aliasOptions = aliasOptions or -1
+    options = options or {}
+
+    local function getPath(h, parent)
+        parent = parent or -1
+        local tmp = h
+        local path = {}
+        while tmp ~= parent do
+            if tmp == -1 then return end
+            table.insert(path, 1, tmp)
+            tmp = sim.getObjectParent(tmp)
+        end
+        return path
+    end
+
+    local path = getPath(handle)
+    local basePath = getPath(baseHandle)
+
+    local commonAncestor = -1
+    local commonAncestorModel = -1
+    for i = 1, math.min(#path, #basePath) do
+        if path[i] == basePath[i] then
+            commonAncestor = path[i]
+            if sim.getBoolProperty(path[i], 'modelBase') then
+                commonAncestorModel = path[i]
+            end
+        else
+            break
+        end
+    end
+
+    local function isAncestor(a, h)
+        -- true iff. h is a (grand-)child of a
+        if a == h then return true end
+        local tmp = h
+        while tmp ~= -1 do
+            tmp = sim.getObjectParent(tmp)
+            if tmp == a then return true end
+        end
+        return false
+    end
+
+    if commonAncestor == -1 then
+        return sim.getObjectAlias(handle, aliasOptions)
+    elseif commonAncestor == baseHandle then
+        -- simple case: handle is a (grand-)child of baseHandle
+        local p = getPath(handle, baseHandle)
+        p = filter(
+                function(h)
+                return sim.getBoolProperty(h, 'modelBase') or h == p[#p]
+            end, p
+            )
+        return (options.noDot and '' or './') .. table.join(map(sim.getObjectAlias, p), '/')
+    elseif commonAncestor == handle then
+        -- reverse case: go upwards in the hierarchy
+        for col = 1, 0, -1 do
+            for up = 0, 30 do
+                for colcol = 0, 30 do
+                    local p = {}
+                    for _ = 1, col do table.insert(p, ':') end
+                    for _ = 1, colcol do table.insert(p, '::') end
+                    for _ = 1, up do table.insert(p, '..') end
+                    p = table.join(p, '/')
+                    if sim.getObject(p, {proxy = baseHandle, noError = true}) == handle then
+                        return p
+                    end
+                end
+            end
+        end
+    else
+        local p_bh_cam = sim.getObjectAliasRelative(commonAncestorModel, baseHandle, aliasOptions)
+        local p_cam_h = sim.getObjectAliasRelative(handle, commonAncestorModel, aliasOptions, {noDot = true} )
+        if commonAncestorModel ~= -1 and p_bh_cam and p_cam_h then
+            return p_bh_cam .. '/' .. p_cam_h
+        end
+        local p_bh_ca = sim.getObjectAliasRelative(commonAncestor, baseHandle, aliasOptions)
+        local p_ca_h = sim.getObjectAliasRelative(handle, commonAncestor, aliasOptions, {noDot = true} )
+        if p_bh_ca and p_ca_h then return p_bh_ca .. '/' .. p_ca_h end
+    end
+end
+
 -- Make sim.registerScriptFuncHook work also with a function as arg 2:
 function locals.registerScriptFuncHook(funcNm, func, before)
     local retVal
@@ -1130,108 +1236,6 @@ function sim.createObject(initialProperties)
     end
     sim.setProperties(h, p)
     return h
-end
-
-function sim.getObject(path, options)
-    options = options or {}
-    local proxy = -1
-    local index = -1
-    local option = 0
-    if options.proxy then proxy = options.proxy end
-    if options.index then index = options.index end
-    if options.noError then option = 1 end
-    return sim._getObject(path, index, proxy, option)
-end
-
-function sim.getObjectFromUid(path, options)
-    options = options or {}
-    local option = 0
-    if options.noError then option = 1 end
-    return sim._getObjectFromUid(path, option)
-end
-
-function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
-    if handle == baseHandle then return '.' end
-
-    aliasOptions = aliasOptions or -1
-    options = options or {}
-
-    local function getPath(h, parent)
-        parent = parent or -1
-        local tmp = h
-        local path = {}
-        while tmp ~= parent do
-            if tmp == -1 then return end
-            table.insert(path, 1, tmp)
-            tmp = sim.getObjectParent(tmp)
-        end
-        return path
-    end
-
-    local path = getPath(handle)
-    local basePath = getPath(baseHandle)
-
-    local commonAncestor = -1
-    local commonAncestorModel = -1
-    for i = 1, math.min(#path, #basePath) do
-        if path[i] == basePath[i] then
-            commonAncestor = path[i]
-            if sim.getBoolProperty(path[i], 'modelBase') then
-                commonAncestorModel = path[i]
-            end
-        else
-            break
-        end
-    end
-
-    local function isAncestor(a, h)
-        -- true iff. h is a (grand-)child of a
-        if a == h then return true end
-        local tmp = h
-        while tmp ~= -1 do
-            tmp = sim.getObjectParent(tmp)
-            if tmp == a then return true end
-        end
-        return false
-    end
-
-    if commonAncestor == -1 then
-        return sim.getObjectAlias(handle, aliasOptions)
-    elseif commonAncestor == baseHandle then
-        -- simple case: handle is a (grand-)child of baseHandle
-        local p = getPath(handle, baseHandle)
-        p = filter(
-                function(h)
-                return sim.getBoolProperty(h, 'modelBase') or h == p[#p]
-            end, p
-            )
-        return (options.noDot and '' or './') .. table.join(map(sim.getObjectAlias, p), '/')
-    elseif commonAncestor == handle then
-        -- reverse case: go upwards in the hierarchy
-        for col = 1, 0, -1 do
-            for up = 0, 30 do
-                for colcol = 0, 30 do
-                    local p = {}
-                    for _ = 1, col do table.insert(p, ':') end
-                    for _ = 1, colcol do table.insert(p, '::') end
-                    for _ = 1, up do table.insert(p, '..') end
-                    p = table.join(p, '/')
-                    if sim.getObject(p, {proxy = baseHandle, noError = true}) == handle then
-                        return p
-                    end
-                end
-            end
-        end
-    else
-        local p_bh_cam = sim.getObjectAliasRelative(commonAncestorModel, baseHandle, aliasOptions)
-        local p_cam_h = sim.getObjectAliasRelative(handle, commonAncestorModel, aliasOptions, {noDot = true} )
-        if commonAncestorModel ~= -1 and p_bh_cam and p_cam_h then
-            return p_bh_cam .. '/' .. p_cam_h
-        end
-        local p_bh_ca = sim.getObjectAliasRelative(commonAncestor, baseHandle, aliasOptions)
-        local p_ca_h = sim.getObjectAliasRelative(handle, commonAncestor, aliasOptions, {noDot = true} )
-        if p_bh_ca and p_ca_h then return p_bh_ca .. '/' .. p_ca_h end
-    end
 end
 
 function sim.generateTextShape(...)

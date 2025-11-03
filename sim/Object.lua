@@ -285,8 +285,6 @@ return {
 
             self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getAlias = sim.getObjectAlias
-            self.__methods.getMatrix = sim.getObjectMatrix
-            self.__methods.getOrientation = sim.getObjectOrientation
             self.__methods.getPose = sim.getObjectPose
             self.__methods.getPosition = sim.getObjectPosition
             self.__methods.getQuaternion = sim.getObjectQuaternion
@@ -296,8 +294,6 @@ return {
             self.__methods.getVelocity = sim.getObjectVelocity
             self.__methods.removeReferencedObjects = sim.removeReferencedObjects
             self.__methods.scaleObject = sim.scaleObject
-            self.__methods.setMatrix = sim.setObjectMatrix
-            self.__methods.setOrientation = sim.setObjectOrientation
             self.__methods.setParent = sim.setObjectParent
             self.__methods.setPose = sim.setObjectPose
             self.__methods.setPosition = sim.setObjectPosition
@@ -381,6 +377,7 @@ return {
 
             self.__methods.getForce = sim.getJointForce
             self.__methods.resetDynamicObject = sim.resetDynamicObject
+            self.__methods.getJointVelocity = sim.getJointVelocity
         end
 
         sim.Light = class('sim.Light', sim.SceneObject)
