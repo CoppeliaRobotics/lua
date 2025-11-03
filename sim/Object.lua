@@ -111,10 +111,6 @@ return {
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(self))
 
-            -- pre-assign user namespaces to property groups:
-            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
-            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-
             -- add methods from sim.* API:
             rawset(self, '__methods', {})
             self.__methods.getBoolProperty = sim.getBoolProperty
@@ -243,6 +239,9 @@ return {
 
             assert(self.objectType == 'app', 'invalid constructor for object type ' .. self.objectType)
 
+            -- pre-assign user namespaces to property groups:
+            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
+            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
             rawset(self, 'namedParam', sim.PropertyGroup(self, {prefix = 'namedParam'}))
         end
 
@@ -259,6 +258,10 @@ return {
             sim.BaseObject.initialize(self, handle)
 
             assert(self.objectType == 'scene', 'invalid constructor for object type ' .. self.objectType)
+
+            -- pre-assign user namespaces to property groups:
+            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
+            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
 
             self.__methods.getObjectsInTree = sim.getObjectsInTree
             self.__methods.load = sim.loadScene
@@ -292,6 +295,10 @@ return {
 
             assert(sim.isHandle(handle), 'invalid handle')
             assert(sim.SceneObject.ObjectTypes[self.objectType], 'invalid constructor for object type ' .. self.objectType)
+
+            -- pre-assign user namespaces to property groups:
+            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
+            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
 
             self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getAlias = sim.getObjectAlias
