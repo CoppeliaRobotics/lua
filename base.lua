@@ -475,17 +475,22 @@ end
 
 function _evalExec(inputStr)
     local sim = require 'sim'
-    local function setConvenienceVars()
+    local function setConvenienceVars(oldH)
+        local sim = _G.sim or require 'sim'
+        if oldH ~= nil and H ~= sim.getObject and H ~= oldH then
+            addLog(430 | 0x0f000, "cannot change 'H' variable")
+        end
+        oldH = H -- when importing another 'sim' version, sim.getObject changes
         H = sim.getObject
         SEL = sim.getObjectSel()
-        if _G.sim and _G.sim.Object then
-            SEL = map(function(h) return _G.sim.Object(h) end, SEL)
-        end
         SEL1 = SEL[#SEL]
+        return oldH
     end
     local function pfunc(theStr)
-        if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
-            setConvenienceVars()
+        local setCv = sim.getStringProperty(sim.handle_app, 'namedParam.simCmd.setConvenienceVars', {noError = true})
+        local oldH = nil
+        if setCv ~= false then
+            oldH = setConvenienceVars()
         end
 
         local func, err = load('return ' .. theStr)
@@ -508,11 +513,8 @@ function _evalExec(inputStr)
             addLog(420 | 0x0f000, err)
         end
 
-        if sim.getNamedBoolParam('simCmd.setConvenienceVars') ~= false then
-            if H ~= sim.getObject then
-                addLog(430 | 0x0f000, "cannot change 'H' variable")
-            end
-            setConvenienceVars()
+        if setCv ~= false then
+            setConvenienceVars(oldH)
         end
     end
     pcall(pfunc, inputStr)
