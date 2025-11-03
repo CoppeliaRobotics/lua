@@ -161,6 +161,8 @@ return {
             self.__methods.setTableProperty = sim.setTableProperty
             self.__methods.setVector2Property = sim.setVector2Property
             self.__methods.setVector3Property = sim.setVector3Property
+
+            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
         end
 
         function sim.BaseObject:__copy()
@@ -188,10 +190,6 @@ return {
 
         function sim.BaseObject:__newindex(k, v)
             self.__properties[k] = v
-        end
-
-        function sim.BaseObject:__len()
-            return self.__handle
         end
 
         function sim.BaseObject:__tostring()
@@ -541,7 +539,7 @@ return {
                     assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
                 elseif sim.Object:isobject(arg) then
                     assert(opts == nil, 'invalid args')
-                    handle = #arg
+                    handle = arg.handle
                 else
                     error 'invalid arguments to sim.Object(...)'
                 end

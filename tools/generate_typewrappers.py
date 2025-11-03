@@ -94,14 +94,14 @@ return {
         local function read_handle(v, def)
             if v == nil then v = def end
             if v == nil then v = -1 end
-            if sim.Object:isobject(v) then v = #v end
+            if sim.Object:isobject(v) then v = v.handle end
             return v
         end
 
         local function read_handlearray(v, def)
             if v == nil then v = def end
             return map(function(x)
-                if sim.Object:isobject(x) then x = #x end
+                if sim.Object:isobject(x) then x = x.handle end
                 return x
             end, v)
         end
