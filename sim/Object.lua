@@ -342,7 +342,7 @@ return {
                 if path:sub(1, 2) ~= './' then path = './' .. path end
                 opts.proxy = self.__handle
             end
-            return sim.Object(path, opts)
+            return sim.getObject(path, opts)
         end
 
         sim.Camera = class('sim.Camera', sim.SceneObject)
@@ -403,7 +403,7 @@ return {
 
             self.__methods.getForce = sim.getJointForce
             self.__methods.resetDynamicObject = sim.resetDynamicObject
-            self.__methods.getJointVelocity = sim.getJointVelocity
+            self.__methods.getVelocity = sim.getJointVelocity
         end
 
         sim.Light = class('sim.Light', sim.SceneObject)
@@ -539,18 +539,9 @@ return {
                     assert(opts == nil, 'invalid args')
                     handle = arg
                     assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
-                elseif type(arg) == 'string' then
-                    local query = arg
-                    assert(query:sub(1, 1) == '/' or query:sub(1, 1) == '.', 'invalid object query')
-                    handle = sim.getObject(query, opts or {})
-                    assert(handle ~= -1, 'no such object')
                 elseif sim.Object:isobject(arg) then
                     assert(opts == nil, 'invalid args')
                     handle = #arg
-                elseif type(arg) == 'table' then
-                    assert(opts == nil, 'invalid args')
-                    local initialProperties = arg
-                    handle = #sim.createObject(initialProperties)
                 else
                     error 'invalid arguments to sim.Object(...)'
                 end
@@ -575,8 +566,8 @@ return {
         end
 
         function sim.Object.unittest()
-            f = sim.Object '/Floor'
-            b = sim.Object '/Floor/box'
+            f = sim.getObject '/Floor'
+            b = sim.getObject '/Floor/box'
             assert(b == f / 'box')
             if #sim.scene.orphans > 0 then
                 assert(sim.scene.orphans[1].parent == nil)
@@ -585,12 +576,12 @@ return {
             end
             assert(b == f.children[1])
             assert(b.parent == f)
-            d1 = sim.Object{
+            d1 = sim.createObject{
                 objectType = 'dummy',
                 alias = 'd1',
             }
             assert(sim.Object:isobject(d1))
-            d2 = sim.Object{
+            d2 = sim.createObject{
                 objectType = 'dummy',
                 alias = 'd2',
                 dummyType = sim.dummytype_dynloopclosure,
@@ -603,9 +594,9 @@ return {
             assert(cbor.encode(ip) == cbor.encode{b})
             assert(b:getPosition(f):norm() < 1e-7)
 
-            a = sim.Object {objectType = 'dummy', alias = 'a', }
-            b = sim.Object {objectType = 'dummy', alias = 'b', }
-            c = sim.Object {objectType = 'dummy', alias = 'c', }
+            a = sim.createObject {objectType = 'dummy', alias = 'a', }
+            b = sim.createObject {objectType = 'dummy', alias = 'b', }
+            c = sim.createObject {objectType = 'dummy', alias = 'c', }
             c.parent = b
             b.parent = a
             a.modelBase = true
@@ -620,7 +611,7 @@ return {
         sim.ObjectArray = class 'sim.ObjectArray'
 
         function sim.ObjectArray:initialize(...)
-            rawset(self, '__object', sim.Object(...))
+            rawset(self, '__object', sim.getObject(...))
             assert(self[0] == self.__object, 'sim.ObjectArray must point to first object of the array')
         end
 

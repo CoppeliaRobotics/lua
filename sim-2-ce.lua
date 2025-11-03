@@ -69,6 +69,7 @@ handle handle = sim.createProximitySensor(int sensorType, int subType = 16, int 
 handle handle = sim.createShape(int options, float shadingAngle, float[] vertices, int[] indices, float[] normals, float[] textureCoordinates, buffer texture, int[2] textureResolution)
 handle handle, int textureId, int[2] resolution = sim.createTexture(string fileName, int options = 0, float[2] planeSizes = {0.1, 0.1}, float[2] scalingUV = nil, float[3] xy_g = {0.0, 0.0, 0.0}, int fixedResolution = 0, int[2] resolution = {512, 512})
 handle handle = sim.createVisionSensor(int options = 0, int[4] intParams = nil, float[11] floatParams = nil)
+handle handle = sim.createObject(map properties)
 int order, int totalSiblingsCount = sim.getObjectHierarchyOrder(handle objectHandle)
 sim.setObjectHierarchyOrder(handle objectHandle, int order)
 sim.destroyCollection(handle collectionHandle)
@@ -350,8 +351,6 @@ any value = sim.convertPropertyValue(any value, int fromType, int toType)
 map values = sim.getProperties(handle target, map opts={})
 sim.setProperties(handle target, map props)
 map infos = sim.getPropertiesInfos(handle target, map opts={})
-map object = sim.Object(handle handle)
-map object = sim.Object(string path)
 
 sim.propertytype_bool
 sim.propertytype_int
