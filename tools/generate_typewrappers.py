@@ -93,6 +93,7 @@ return {
 
         local function read_handle(v, def)
             if v == nil then v = def end
+            if v == nil then v = -1 end
             if sim.Object:isobject(v) then v = #v end
             return v
         end
