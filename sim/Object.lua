@@ -300,11 +300,6 @@ return {
             self.__methods.setQuaternion = sim.setObjectQuaternion
             self.__methods.setReferencedHandles = sim.setReferencedHandles
             self.__methods.visitTree = sim.visitTree
-
-            self.__properties:registerLocalProperty('absolutePose',
-                function() return self:getPose(sim.handle_world) end,
-                function(pose) return self:setPose(pose, sim.handle_world) end
-            )
         end
 
         function sim.SceneObject:__div(path)
