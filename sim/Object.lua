@@ -102,6 +102,67 @@ return {
             self.__localProperties[k] = {get = getter, set = setter}
         end
 
+        sim.ReferencedObjectsTags = class 'sim.ReferencedObjectsTags'
+
+        function sim.ReferencedObjectsTags:initialize(object, single)
+            rawset(self, '__object', object)
+            rawset(self, '__single', single)
+        end
+
+        function sim.ReferencedObjectsTags:__index(k)
+            local object = rawget(self, '__object')
+            local single = rawget(self, '__single')
+            if type(k) == 'string' then
+                local objects = sim.getReferencedHandles(object, k)
+                if single then
+                    return objects[1]
+                else
+                    local meta = {}
+                    function meta:add(refObj)
+                        sim.addReferencedHandle(object, refObj, k)
+                        table.insert(self, refObj)
+                    end
+                    function meta:removeObjects()
+                        sim.removeReferencedObjects(object, k)
+                        while #self > 0 do table.remove(self, #self) end
+                    end
+                    function meta:__index(k)
+                        if type(k) == 'string' then return meta[k] else return self[k] end
+                    end
+                    setmetatable(objects, meta)
+                    return objects
+                end
+            end
+        end
+
+        function sim.ReferencedObjectsTags:__newindex(k, v)
+            local object = rawget(self, '__object')
+            local single = rawget(self, '__single')
+            if type(k) == 'string' then
+                if single then
+                    sim.setReferencedHandles(object, {v}, k)
+                else
+                    sim.setReferencedHandles(object, v, k)
+                end
+            end
+        end
+
+        function sim.ReferencedObjectsTags:__pairs()
+            local object = rawget(self, '__object')
+            local single = rawget(self, '__single')
+            if single then return pairs{} end
+            local tags = sim.getReferencedHandlesTags(object) -- a array of strings, e.g. {'k1', 'k2', 'k3'}
+            local i = 0
+            local function iter(_, _)
+                i = i + 1
+                local tag = tags[i]
+                if tag ~= nil then
+                    return tag, self[tag]
+                end
+            end
+            return iter, self, nil
+        end
+
         sim.BaseObject = class 'sim.BaseObject'
 
         function sim.BaseObject:initialize(handle)
@@ -299,6 +360,10 @@ return {
             -- pre-assign user namespaces to property groups:
             rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
             rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
+
+            -- referenced objects interface:
+            rawset(self, 'ref', sim.ReferencedObjectsTags(self, true))
+            rawset(self, 'refs', sim.ReferencedObjectsTags(self))
 
             self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getAlias = sim.getObjectAlias
