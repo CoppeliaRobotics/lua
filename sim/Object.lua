@@ -279,30 +279,11 @@ return {
 
             assert(self.objectType == 'collection', 'invalid constructor for object type ' .. self.objectType)
 
-            self.__methods.addAll = function(self)
-                return sim.addItemToCollection(self.__handle, sim.handle_all, sim.handle_all, 0)
-            end
-            self.__methods.addChain = function(self, handle, excludeHandle)
-                return sim.addItemToCollection(self.__handle, sim.handle_chain, handle, 0 + (excludeHandle and 2 or 0))
-            end
-            self.__methods.addItem = function(self, handle)
-                return sim.addItemToCollection(self.__handle, sim.handle_single, handle, 0)
-            end
-            self.__methods.addTree = function(self, handle, excludeHandle)
-                return sim.addItemToCollection(self.__handle, sim.handle_tree, handle, 0 + (excludeHandle and 2 or 0))
-            end
+            self.__methods.addItem = sim.addToCollection
             self.__methods.checkCollision = sim.checkCollision
             self.__methods.checkDistance = sim.checkDistance
-            self.__methods.destroy = sim.destroyCollection
-            self.__methods.removeChain = function(self, handle, excludeHandle)
-                return sim.addItemToCollection(self.__handle, sim.handle_chain, handle, 1 + (excludeHandle and 2 or 0))
-            end
-            self.__methods.removeItem = function(self, handle)
-                return sim.addItemToCollection(self.__handle, sim.handle_single, handle, 1)
-            end
-            self.__methods.removeTree = function(self, handle, excludeHandle)
-                return sim.addItemToCollection(self.__handle, sim.handle_tree, handle, 1 + (excludeHandle and 2 or 0))
-            end
+            self.__methods.remove = sim.removeCollection
+            self.__methods.removeItem = sim.removeFromCollection
         end
 
         sim.App = class('sim.App', sim.BaseObject)
