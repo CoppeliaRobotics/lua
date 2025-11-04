@@ -20,6 +20,10 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+function sim.addItemToCollection(c, w, h, o)
+    return sim.addToCollection(c, h, w, o)
+end
+
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
         if type(a) ~= 'number' then

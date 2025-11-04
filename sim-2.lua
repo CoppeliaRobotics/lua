@@ -13,6 +13,21 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+locals.simRemoveCollection = sim.destroyCollection
+sim.destroyCollection = nil
+function sim.removeCollection(c)
+    return locals.simRemoveCollection(c)
+end
+
+function sim.removeFromCollection(c, h, w, o)
+    w = w or sim.handle_single
+    o = o or 1
+    if type(o) == 'number' then
+        o = o | 1
+    end
+    return sim.addToCollection(c, h, w, o)
+end
+
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
         if type(a) ~= 'number' then
