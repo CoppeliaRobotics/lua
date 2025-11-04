@@ -582,6 +582,7 @@ return {
             scene = sim.Scene,
             mesh = sim.Mesh,
             texture = sim.Texture,
+            collection = sim.Collection,
         }
 
         sim.SceneObject.ObjectTypes = {
