@@ -8,6 +8,7 @@ return {
             opts = opts or {}
             self.__object = object
             self.__prefix = opts.prefix or ''
+            self.__newPropertyForcedType = opts.newPropertyForcedType
             self.__localProperties = {}
         end
 
@@ -57,9 +58,12 @@ return {
             local prefix = self.__prefix
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            if self.__object:getPropertyInfo(k) then
-                local t = sim.getPropertyTypeString(self.__object:getPropertyInfo(k), true)
+            local ptype = self.__newPropertyForcedType or self.__object:getPropertyInfo(k)
+            if ptype then
+                local t = sim.getPropertyTypeString(ptype, true)
                 self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
+            else
+                self.__object:setProperty(k, v)
             end
         end
 
@@ -295,8 +299,8 @@ return {
             -- pre-assign user namespaces to property groups:
             rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
             rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-            rawset(self, 'refs', sim.PropertyGroup(self, {prefix = 'refs'}))
-            rawset(self, 'origRefs', sim.PropertyGroup(self, {prefix = 'origRefs'}))
+            rawset(self, 'refs', sim.PropertyGroup(self, {prefix = 'refs', newPropertyForcedType = sim.propertytype_handlearray}))
+            rawset(self, 'origRefs', sim.PropertyGroup(self, {prefix = 'origRefs', newPropertyForcedType = sim.propertytype_handlearray}))
 
             self.__methods.getAlias = sim.getObjectAlias
             self.__methods.getPose = sim.getObjectPose
