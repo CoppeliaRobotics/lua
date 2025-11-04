@@ -385,6 +385,7 @@ return {
             self.__methods.getPosition = sim.getObjectPosition
             self.__methods.getQuaternion = sim.getObjectQuaternion
             self.__methods.getVelocity = sim.getObjectVelocity
+            self.__methods.remove = function(self) return sim.removeObjects{self} end
             self.__methods.scaleObject = sim.scaleObject
             self.__methods.setParent = sim.setObjectParent
             self.__methods.setPose = sim.setObjectPose
