@@ -380,22 +380,16 @@ return {
             rawset(self, 'ref', sim.ReferencedObjectsTags(self, true))
             rawset(self, 'refs', sim.ReferencedObjectsTags(self))
 
-            self.__methods.addReferencedHandle = sim.addReferencedHandle
             self.__methods.getAlias = sim.getObjectAlias
             self.__methods.getPose = sim.getObjectPose
             self.__methods.getPosition = sim.getObjectPosition
             self.__methods.getQuaternion = sim.getObjectQuaternion
-            self.__methods.getReferencedHandle = sim.getReferencedHandle
-            self.__methods.getReferencedHandles = sim.getReferencedHandles
-            self.__methods.getReferencedHandlesTags = sim.getReferencedHandlesTags
             self.__methods.getVelocity = sim.getObjectVelocity
-            self.__methods.removeReferencedObjects = sim.removeReferencedObjects
             self.__methods.scaleObject = sim.scaleObject
             self.__methods.setParent = sim.setObjectParent
             self.__methods.setPose = sim.setObjectPose
             self.__methods.setPosition = sim.setObjectPosition
             self.__methods.setQuaternion = sim.setObjectQuaternion
-            self.__methods.setReferencedHandles = sim.setReferencedHandles
             self.__methods.visitTree = sim.visitTree
 
             self.__properties:registerLocalProperty('matrix',
