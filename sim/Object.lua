@@ -93,7 +93,6 @@ return {
                 end
                 i = i + 1
             end
-            props.children = self.__object.children
             local function stateless_iter(self, k)
                 local v
                 k, v = next(props, k)
