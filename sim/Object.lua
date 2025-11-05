@@ -192,7 +192,7 @@ return {
         end
 
         function sim.BaseObject:__tostring()
-            return self.class.name .. '(' .. self.__handle .. ')'
+            return 'sim.Object(' .. self.__handle .. ')'
         end
 
         function sim.BaseObject:__tohandle()
@@ -244,10 +244,6 @@ return {
             rawset(self, 'namedParam', sim.PropertyGroup(self, {prefix = 'namedParam'}))
         end
 
-        function sim.App:__tostring()
-            return self.class.name .. '()'
-        end
-
         sim.Scene = class('sim.Scene', sim.BaseObject)
 
         function sim.Scene:initialize(handle)
@@ -265,10 +261,6 @@ return {
             self.__methods.getObjectsInTree = sim.getObjectsInTree
             self.__methods.load = sim.loadScene
             self.__methods.save = sim.saveScene
-        end
-
-        function sim.Scene:__tostring()
-            return self.class.name .. '()'
         end
 
         sim.Mesh = class('sim.Mesh', sim.BaseObject)
