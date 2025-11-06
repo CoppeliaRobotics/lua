@@ -107,61 +107,63 @@ return {
 
         sim.BaseObject = class 'sim.BaseObject'
 
-        function sim.BaseObject:initialize(handle)
+        sim.BaseObject.getBoolProperty = sim.getBoolProperty
+        sim.BaseObject.getBufferProperty = sim.getBufferProperty
+        sim.BaseObject.getColorProperty = sim.getColorProperty
+        sim.BaseObject.getExplicitHandling = sim.getExplicitHandling
+        sim.BaseObject.getFloatArrayProperty = sim.getFloatArrayProperty
+        sim.BaseObject.getFloatProperty = sim.getFloatProperty
+        sim.BaseObject.getHandleArrayProperty = sim.getHandleArrayProperty
+        sim.BaseObject.getHandleProperty = sim.getHandleProperty
+        sim.BaseObject.getIntArray2Property = sim.getIntArray2Property
+        sim.BaseObject.getIntArrayProperty = sim.getIntArrayProperty
+        sim.BaseObject.getIntProperty = sim.getIntProperty
+        sim.BaseObject.getLongProperty = sim.getLongProperty
+        sim.BaseObject.getPoseProperty = sim.getPoseProperty
+        sim.BaseObject.getProperties = sim.getProperties
+        sim.BaseObject.getPropertiesInfos = sim.getPropertiesInfos
+        sim.BaseObject.getProperty = sim.getProperty
+        sim.BaseObject.getPropertyInfo = sim.getPropertyInfo
+        sim.BaseObject.getPropertyName = sim.getPropertyName
+        sim.BaseObject.getPropertyTypeString = sim.getPropertyTypeString
+        sim.BaseObject.getQuaternionProperty = sim.getQuaternionProperty
+        sim.BaseObject.getStringProperty = sim.getStringProperty
+        sim.BaseObject.getTableProperty = sim.getTableProperty
+        sim.BaseObject.getVector2Property = sim.getVector2Property
+        sim.BaseObject.getVector3Property = sim.getVector3Property
+        sim.BaseObject.removeProperty = sim.removeProperty
+        sim.BaseObject.setBoolProperty = sim.setBoolProperty
+        sim.BaseObject.setBufferProperty = sim.setBufferProperty
+        sim.BaseObject.setColorProperty = sim.setColorProperty
+        sim.BaseObject.setFloatArrayProperty = sim.setFloatArrayProperty
+        sim.BaseObject.setFloatProperty = sim.setFloatProperty
+        sim.BaseObject.setHandleArrayProperty = sim.setHandleArrayProperty
+        sim.BaseObject.setHandleProperty = sim.setHandleProperty
+        sim.BaseObject.setIntArray2Property = sim.setIntArray2Property
+        sim.BaseObject.setIntArrayProperty = sim.setIntArrayProperty
+        sim.BaseObject.setIntProperty = sim.setIntProperty
+        sim.BaseObject.setLongProperty = sim.setLongProperty
+        sim.BaseObject.setPoseProperty = sim.setPoseProperty
+        sim.BaseObject.setProperties = sim.setProperties
+        sim.BaseObject.setProperty = sim.setProperty
+        sim.BaseObject.setQuaternionProperty = sim.setQuaternionProperty
+        sim.BaseObject.setStringProperty = sim.setStringProperty
+        sim.BaseObject.setTableProperty = sim.setTableProperty
+        sim.BaseObject.setVector2Property = sim.setVector2Property
+        sim.BaseObject.setVector3Property = sim.setVector3Property
+
+        function sim.BaseObject:initialize(handle, checkObjectType)
             assert(math.type(handle) == 'integer', 'invalid argument type')
             rawset(self, '__handle', handle)
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(self))
 
-            -- add methods from sim.* API:
-            rawset(self, '__methods', {})
-            self.__methods.getBoolProperty = sim.getBoolProperty
-            self.__methods.getBufferProperty = sim.getBufferProperty
-            self.__methods.getColorProperty = sim.getColorProperty
-            self.__methods.getExplicitHandling = sim.getExplicitHandling
-            self.__methods.getFloatArrayProperty = sim.getFloatArrayProperty
-            self.__methods.getFloatProperty = sim.getFloatProperty
-            self.__methods.getHandleArrayProperty = sim.getHandleArrayProperty
-            self.__methods.getHandleProperty = sim.getHandleProperty
-            self.__methods.getIntArray2Property = sim.getIntArray2Property
-            self.__methods.getIntArrayProperty = sim.getIntArrayProperty
-            self.__methods.getIntProperty = sim.getIntProperty
-            self.__methods.getLongProperty = sim.getLongProperty
-            self.__methods.getPoseProperty = sim.getPoseProperty
-            self.__methods.getProperties = sim.getProperties
-            self.__methods.getPropertiesInfos = sim.getPropertiesInfos
-            self.__methods.getProperty = sim.getProperty
-            self.__methods.getPropertyInfo = sim.getPropertyInfo
-            self.__methods.getPropertyName = sim.getPropertyName
-            self.__methods.getPropertyTypeString = sim.getPropertyTypeString
-            self.__methods.getQuaternionProperty = sim.getQuaternionProperty
-            self.__methods.getStringProperty = sim.getStringProperty
-            self.__methods.getTableProperty = sim.getTableProperty
-            self.__methods.getVector2Property = sim.getVector2Property
-            self.__methods.getVector3Property = sim.getVector3Property
-            self.__methods.removeProperty = sim.removeProperty
-            self.__methods.setBoolProperty = sim.setBoolProperty
-            self.__methods.setBufferProperty = sim.setBufferProperty
-            self.__methods.setColorProperty = sim.setColorProperty
-            self.__methods.setFloatArrayProperty = sim.setFloatArrayProperty
-            self.__methods.setFloatProperty = sim.setFloatProperty
-            self.__methods.setHandleArrayProperty = sim.setHandleArrayProperty
-            self.__methods.setHandleProperty = sim.setHandleProperty
-            self.__methods.setIntArray2Property = sim.setIntArray2Property
-            self.__methods.setIntArrayProperty = sim.setIntArrayProperty
-            self.__methods.setIntProperty = sim.setIntProperty
-            self.__methods.setLongProperty = sim.setLongProperty
-            self.__methods.setPoseProperty = sim.setPoseProperty
-            self.__methods.setProperties = sim.setProperties
-            self.__methods.setProperty = sim.setProperty
-            self.__methods.setQuaternionProperty = sim.setQuaternionProperty
-            self.__methods.setStringProperty = sim.setStringProperty
-            self.__methods.setTableProperty = sim.setTableProperty
-            self.__methods.setVector2Property = sim.setVector2Property
-            self.__methods.setVector3Property = sim.setVector3Property
-
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+
+            if checkObjectType then
+                assert(self.objectType == checkObjectType, 'invalid constructor for object type ' .. self.objectType)
+            end
         end
 
         function sim.BaseObject:__copy()
@@ -177,10 +179,6 @@ return {
             -- lookup existing properties first:
             local v = rawget(self, k)
             if v then return v end
-
-            -- redirect to methods:
-            local m = rawget(self, '__methods')[k]
-            if m ~= nil then return m end
 
             -- redirect to default property group otherwise:
             local p = rawget(self, '__properties')[k]
@@ -205,8 +203,6 @@ return {
         end
 
         function sim.BaseObject:__pairs()
-            --local itertools = require 'itertools'
-            --return itertools.chain(self.__properties, self.__methods)
             return pairs(self.__properties)
         end
 
@@ -216,16 +212,14 @@ return {
 
         sim.Collection = class('sim.Collection', sim.BaseObject)
 
+        sim.Collection.addItem = sim.addToCollection
+        sim.Collection.checkCollision = sim.checkCollision
+        sim.Collection.checkDistance = sim.checkDistance
+        sim.Collection.remove = sim.removeCollection
+        sim.Collection.removeItem = sim.removeFromCollection
+
         function sim.Collection:initialize(handle)
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'collection', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.addItem = sim.addToCollection
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
-            self.__methods.remove = sim.removeCollection
-            self.__methods.removeItem = sim.removeFromCollection
+            sim.BaseObject.initialize(self, handle, 'collection')
         end
 
         sim.App = class('sim.App', sim.BaseObject)
@@ -234,9 +228,7 @@ return {
             if handle == nil then handle = sim.handle_app end
             assert(handle == sim.handle_app, 'invalid handle')
 
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'app', 'invalid constructor for object type ' .. self.objectType)
+            sim.BaseObject.initialize(self, handle, 'app')
 
             -- pre-assign user namespaces to property groups:
             rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
@@ -246,76 +238,67 @@ return {
 
         sim.Scene = class('sim.Scene', sim.BaseObject)
 
+        sim.Scene.getObjectsInTree = sim.getObjectsInTree
+        sim.Scene.load = sim.loadScene
+        sim.Scene.save = sim.saveScene
+
         function sim.Scene:initialize(handle)
             if handle == nil then handle = sim.handle_scene end
             assert(handle == sim.handle_scene, 'invalid handle')
 
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'scene', 'invalid constructor for object type ' .. self.objectType)
+            sim.BaseObject.initialize(self, handle, 'scene')
 
             -- pre-assign user namespaces to property groups:
             rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
             rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-
-            self.__methods.getObjectsInTree = sim.getObjectsInTree
-            self.__methods.load = sim.loadScene
-            self.__methods.save = sim.saveScene
         end
 
         sim.Mesh = class('sim.Mesh', sim.BaseObject)
 
         function sim.Mesh:initialize(handle)
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'mesh', 'invalid constructor for object type ' .. self.objectType)
+            sim.BaseObject.initialize(self, handle, 'mesh')
         end
 
         sim.Texture = class('sim.Texture', sim.BaseObject)
 
         function sim.Texture:initialize(handle)
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'texture', 'invalid constructor for object type ' .. self.objectType)
+            sim.BaseObject.initialize(self, handle, 'texture')
         end
 
         sim.DrawingObject = class('sim.DrawingObject', sim.BaseObject)
 
+        sim.DrawingObject.addItem = sim.addDrawingObjectItem
+        sim.DrawingObject.remove = sim.removeDrawingObject
+
         function sim.DrawingObject:initialize(handle)
-            sim.BaseObject.initialize(self, handle)
-
-            assert(self.objectType == 'drawingObject', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.addItem = sim.addDrawingObjectItem
-            self.__methods.remove = sim.removeDrawingObject
+            sim.BaseObject.initialize(self, handle, 'drawingObject')
         end
 
         sim.SceneObject = class('sim.SceneObject', sim.BaseObject)
 
-        function sim.SceneObject:initialize(handle)
-            sim.BaseObject.initialize(self, handle)
+        sim.SceneObject.getAlias = sim.getObjectAlias
+        sim.SceneObject.getPose = sim.getObjectPose
+        sim.SceneObject.getPosition = sim.getObjectPosition
+        sim.SceneObject.getQuaternion = sim.getObjectQuaternion
+        sim.SceneObject.getVelocity = sim.getObjectVelocity
+        sim.SceneObject.remove = function(self) return sim.removeObjects{self} end
+        sim.SceneObject.scaleObject = sim.scaleObject
+        sim.SceneObject.setParent = sim.setObjectParent
+        sim.SceneObject.setPose = sim.setObjectPose
+        sim.SceneObject.setPosition = sim.setObjectPosition
+        sim.SceneObject.setQuaternion = sim.setObjectQuaternion
+        sim.SceneObject.visitTree = sim.visitTree
+
+        function sim.SceneObject:initialize(handle, checkObjectType)
+            sim.BaseObject.initialize(self, handle, checkObjectType)
 
             assert(sim.isHandle(handle), 'invalid handle')
-            assert(sim.SceneObject.ObjectTypes[self.objectType], 'invalid constructor for object type ' .. self.objectType)
 
             -- pre-assign user namespaces to property groups:
             rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
             rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
             rawset(self, 'refs', sim.PropertyGroup(self, {prefix = 'refs', newPropertyForcedType = sim.propertytype_handlearray}))
             rawset(self, 'origRefs', sim.PropertyGroup(self, {prefix = 'origRefs', newPropertyForcedType = sim.propertytype_handlearray}))
-
-            self.__methods.getAlias = sim.getObjectAlias
-            self.__methods.getPose = sim.getObjectPose
-            self.__methods.getPosition = sim.getObjectPosition
-            self.__methods.getQuaternion = sim.getObjectQuaternion
-            self.__methods.getVelocity = sim.getObjectVelocity
-            self.__methods.remove = function(self) return sim.removeObjects{self} end
-            self.__methods.scaleObject = sim.scaleObject
-            self.__methods.setParent = sim.setObjectParent
-            self.__methods.setPose = sim.setObjectPose
-            self.__methods.setPosition = sim.setObjectPosition
-            self.__methods.setQuaternion = sim.setObjectQuaternion
-            self.__methods.visitTree = sim.visitTree
 
             self.__properties:registerLocalProperty('matrix',
                 function()
@@ -352,175 +335,150 @@ return {
         sim.Camera = class('sim.Camera', sim.SceneObject)
 
         function sim.Camera:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'camera', 'invalid constructor for object type ' .. self.objectType)
+            sim.SceneObject.initialize(self, handle, 'camera')
         end
 
         sim.Dummy = class('sim.Dummy', sim.SceneObject)
 
+        sim.Dummy.checkCollision = sim.checkCollision
+        sim.Dummy.checkDistance = sim.checkDistance
+
         function sim.Dummy:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'dummy', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
+            sim.SceneObject.initialize(self, handle, 'dummy')
         end
 
         sim.ForceSensor = class('sim.ForceSensor', sim.SceneObject)
 
+        sim.ForceSensor.checkSensor = sim.readForceSensor
+        sim.ForceSensor.getForce = function ()
+            local f, t = sim.readForceSensor(self.__handle)
+            return f
+        end
+        sim.ForceSensor.getTorque = function ()
+            local f, t = sim.readForceSensor(self.__handle)
+            return t
+        end
+
         function sim.ForceSensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'forceSensor', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkSensor = sim.readForceSensor
-            self.__methods.getForce = function ()
-                local f, t = sim.readForceSensor(self.__handle)
-                return f
-            end
-            self.__methods.getTorque = function ()
-                local f, t = sim.readForceSensor(self.__handle)
-                return t
-            end
+            sim.SceneObject.initialize(self, handle, 'forceSensor')
         end
 
         sim.Graph = class('sim.Graph', sim.SceneObject)
 
+        sim.Graph.addCurve = sim.addGraphCurve
+        sim.Graph.addStream = sim.addGraphStream
+        sim.Graph.resetGraph = sim.resetGraph
+
         function sim.Graph:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'graph', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.addCurve = sim.addGraphCurve
-            self.__methods.addStream = sim.addGraphStream
-            self.__methods.resetGraph = sim.resetGraph
+            sim.SceneObject.initialize(self, handle, 'graph')
         end
 
         sim.Joint = class('sim.Joint', sim.SceneObject)
 
+        sim.Joint.getForce = sim.getJointForce
+        sim.Joint.resetDynamicObject = sim.resetDynamicObject
+        sim.Joint.getVelocity = sim.getJointVelocity
+
         function sim.Joint:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'joint', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.getForce = sim.getJointForce
-            self.__methods.resetDynamicObject = sim.resetDynamicObject
-            self.__methods.getVelocity = sim.getJointVelocity
+            sim.SceneObject.initialize(self, handle, 'joint')
         end
 
         sim.Light = class('sim.Light', sim.SceneObject)
 
         function sim.Light:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'light', 'invalid constructor for object type ' .. self.objectType)
+            sim.SceneObject.initialize(self, handle, 'light')
         end
 
         sim.OcTree = class('sim.OcTree', sim.SceneObject)
 
+        sim.OcTree.checkCollision = sim.checkCollision
+        sim.OcTree.checkDistance = sim.checkDistance
+        sim.OcTree.checkPointOccupancy = sim.checkOctreePointOccupancy
+        sim.OcTree.insertObject = sim.insertObjectIntoOctree
+        sim.OcTree.insertVoxels = sim.insertVoxelsIntoOctree
+        sim.OcTree.removeVoxels = sim.removeVoxelsFromOctree
+        sim.OcTree.subtractObject = sim.subtractObjectFromOctree
+
         function sim.OcTree:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'ocTree', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
-            self.__methods.checkPointOccupancy = sim.checkOctreePointOccupancy
-            self.__methods.insertObject = sim.insertObjectIntoOctree
-            self.__methods.insertVoxels = sim.insertVoxelsIntoOctree
-            self.__methods.removeVoxels = sim.removeVoxelsFromOctree
-            self.__methods.subtractObject = sim.subtractObjectFromOctree
+            sim.SceneObject.initialize(self, handle, 'ocTree')
         end
 
         sim.PointCloud = class('sim.PointCloud', sim.SceneObject)
 
+        sim.PointCloud.checkCollision = sim.checkCollision
+        sim.PointCloud.checkDistance = sim.checkDistance
+        sim.PointCloud.insertObject = sim.insertObjectIntoPointCloud
+        sim.PointCloud.insertPoints = sim.insertPointsIntoPointCloud
+        sim.PointCloud.intersectPoints = sim.intersectPointsWithPointCloud
+        sim.PointCloud.removePoints = sim.removePointsFromPointCloud
+        sim.PointCloud.subtractObject = sim.subtractObjectFromPointCloud
+
         function sim.PointCloud:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'pointCloud', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
-            self.__methods.insertObject = sim.insertObjectIntoPointCloud
-            self.__methods.insertPoints = sim.insertPointsIntoPointCloud
-            self.__methods.intersectPoints = sim.intersectPointsWithPointCloud
-            self.__methods.removePoints = sim.removePointsFromPointCloud
-            self.__methods.subtractObject = sim.subtractObjectFromPointCloud
+            sim.SceneObject.initialize(self, handle, 'pointCloud')
         end
 
         sim.ProximitySensor = class('sim.ProximitySensor', sim.SceneObject)
 
+        sim.ProximitySensor.checkSensor = sim.checkProximitySensor
+        sim.ProximitySensor.resetSensor = sim.resetProximitySensor
+
         function sim.ProximitySensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'proximitySensor', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkSensor = sim.checkProximitySensor
-            self.__methods.resetSensor = sim.resetProximitySensor
+            sim.SceneObject.initialize(self, handle, 'proximitySensor')
         end
 
         sim.Script = class('sim.Script', sim.SceneObject)
 
+        sim.Script.callFunction = sim.callScriptFunction
+        sim.Script.executeScriptString = sim.executeScriptString
+        sim.Script.getApiFunc = sim.getApiFunc
+        sim.Script.getApiInfo = sim.getApiInfo
+        sim.Script.getStackTraceback = sim.getStackTraceback
+        sim.Script.init = sim.initScript
+
         function sim.Script:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'script', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.callFunction = sim.callScriptFunction
-            self.__methods.executeScriptString = sim.executeScriptString
-            self.__methods.getApiFunc = sim.getApiFunc
-            self.__methods.getApiInfo = sim.getApiInfo
-            self.__methods.getStackTraceback = sim.getStackTraceback
-            self.__methods.init = sim.initScript
+            sim.SceneObject.initialize(self, handle, 'script')
         end
 
         sim.Shape = class('sim.Shape', sim.SceneObject)
 
+        sim.Shape.addForce = sim.addForce
+        sim.Shape.addForceAndTorque = sim.addForceAndTorque
+        sim.Shape.alignBB = sim.alignShapeBB
+        sim.Shape.checkCollision = sim.checkCollision
+        sim.Shape.checkDistance = sim.checkDistance
+        sim.Shape.computeMassAndInertia = sim.computeMassAndInertia
+        sim.Shape.getAppearance = sim.getShapeAppearance
+        sim.Shape.getDynVelocity = sim.getShapeVelocity
+        sim.Shape.relocateFrame = sim.relocateShapeFrame
+        sim.Shape.resetDynamicObject = sim.resetDynamicObject
+        sim.Shape.setAppearance = sim.setShapeAppearance
+        sim.Shape.setShapeBB = sim.setShapeBB
+        sim.Shape.ungroup = sim.ungroupShape
+
         function sim.Shape:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'shape', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.addForce = sim.addForce
-            self.__methods.addForceAndTorque = sim.addForceAndTorque
-            self.__methods.alignBB = sim.alignShapeBB
-            self.__methods.checkCollision = sim.checkCollision
-            self.__methods.checkDistance = sim.checkDistance
-            self.__methods.computeMassAndInertia = sim.computeMassAndInertia
-            self.__methods.getAppearance = sim.getShapeAppearance
-            self.__methods.getDynVelocity = sim.getShapeVelocity
-            self.__methods.relocateFrame = sim.relocateShapeFrame
-            self.__methods.resetDynamicObject = sim.resetDynamicObject
-            self.__methods.setAppearance = sim.setShapeAppearance
-            self.__methods.setShapeBB = sim.setShapeBB
-            self.__methods.ungroup = sim.ungroupShape
+            sim.SceneObject.initialize(self, handle, 'shape')
         end
 
         sim.VisionSensor = class('sim.VisionSensor', sim.SceneObject)
 
+        sim.VisionSensor.checkSensor = sim.checkVisionSensor
+        sim.VisionSensor.checkSensorEx = sim.checkVisionSensorEx
+        sim.VisionSensor.read = sim.readVisionSensor
+        sim.VisionSensor.reset = sim.resetVisionSensor
+
         function sim.VisionSensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle)
-
-            assert(self.objectType == 'visionSensor', 'invalid constructor for object type ' .. self.objectType)
-
-            self.__methods.checkSensor = sim.checkVisionSensor
-            self.__methods.checkSensorEx = sim.checkVisionSensorEx
-            self.__methods.read = sim.readVisionSensor
-            self.__methods.reset = sim.resetVisionSensor
+            sim.SceneObject.initialize(self, handle, 'visionSensor')
         end
 
-        sim.BaseObject.ObjectTypes = {
+        sim.Object = {}
+
+        sim.Object.class = {
             app = sim.App,
             scene = sim.Scene,
             mesh = sim.Mesh,
             texture = sim.Texture,
             collection = sim.Collection,
             drawingObject = sim.DrawingObject,
-        }
-
-        sim.SceneObject.ObjectTypes = {
             camera = sim.Camera,
             dummy = sim.Dummy,
             forceSensor = sim.ForceSensor,
@@ -535,8 +493,6 @@ return {
             texture = sim.Texture,
             visionSensor = sim.VisionSensor,
         }
-
-        sim.Object = {}
 
         setmetatable(sim.Object, {
             __call = function(self, arg, opts)
@@ -553,7 +509,7 @@ return {
                 end
 
                 local objectType = sim.getStringProperty(handle, 'objectType')
-                local cls = sim.SceneObject.ObjectTypes[objectType] or sim.BaseObject.ObjectTypes[objectType]
+                local cls = sim.Object.class[objectType]
                 assert(cls, 'unsupported object type: ' .. objectType)
                 return cls(handle)
             end
