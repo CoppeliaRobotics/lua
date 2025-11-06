@@ -253,6 +253,11 @@ return {
             rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
         end
 
+        function sim.Scene:__div(path)
+            if path:sub(1, 1) ~= '/' then path = '/' .. path end
+            return sim.getObject(path)
+        end
+
         sim.Mesh = class('sim.Mesh', sim.BaseObject)
 
         function sim.Mesh:initialize(handle)
@@ -321,15 +326,8 @@ return {
         end
 
         function sim.SceneObject:__div(path)
-            assert(self.__handle ~= sim.handle_app)
-            local opts = {}
-            if self.__handle == sim.handle_scene then
-                if path:sub(1, 1) ~= '/' then path = '/' .. path end
-            else
-                if path:sub(1, 2) ~= './' then path = './' .. path end
-                opts.proxy = self.__handle
-            end
-            return sim.getObject(path, opts)
+            if path:sub(1, 2) ~= './' then path = './' .. path end
+            return sim.getObject(path, {proxy = self.__handle})
         end
 
         sim.Camera = class('sim.Camera', sim.SceneObject)
