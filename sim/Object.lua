@@ -20,11 +20,8 @@ return {
             end
 
             if self.__localProperties[k] then
-                if self.__localProperties[k].get then
-                    return self.__localProperties[k].get()
-                else
-                    error('local property "' .. k .. '" can\'t be read')
-                end
+                assert(self.__localProperties[k].get, 'local property "' .. k .. '" can\'t be read')
+                return self.__localProperties[k].get()
             end
 
             local object = self.__object
@@ -48,11 +45,8 @@ return {
             end
 
             if self.__localProperties[k] then
-                if self.__localProperties[k].set then
-                    return self.__localProperties[k].set(v)
-                else
-                    error('local property "' .. k .. '" can\'t be written')
-                end
+                assert(self.__localProperties[k].set, 'local property "' .. k .. '" can\'t be written')
+                return self.__localProperties[k].set(v)
             end
 
             local prefix = self.__prefix
