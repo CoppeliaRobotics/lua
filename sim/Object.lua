@@ -172,6 +172,16 @@ return {
         end
 
         function sim.BaseObject:__index(k)
+            if k == '__methods' then -- support for coppeliaSim's _getCompletion
+                local m = {}
+                for k, v in pairs(self.class.__instanceDict) do
+                    if k ~= 'initialize' and k:sub(1, 2) ~= '__' and type(v) == 'function' then
+                        m[k] = v
+                    end
+                end
+                return m
+            end
+
             -- lookup existing properties first:
             local v = rawget(self, k)
             if v then return v end
