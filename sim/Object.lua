@@ -279,6 +279,17 @@ return {
             assert(self.objectType == 'texture', 'invalid constructor for object type ' .. self.objectType)
         end
 
+        sim.DrawingObject = class('sim.DrawingObject', sim.BaseObject)
+
+        function sim.DrawingObject:initialize(handle)
+            sim.BaseObject.initialize(self, handle)
+
+            assert(self.objectType == 'drawingObject', 'invalid constructor for object type ' .. self.objectType)
+
+            self.__methods.addItem = sim.addDrawingObjectItem
+            self.__methods.remove = sim.removeDrawingObject
+        end
+
         sim.SceneObject = class('sim.SceneObject', sim.BaseObject)
 
         function sim.SceneObject:initialize(handle)
