@@ -517,6 +517,7 @@ return {
             mesh = sim.Mesh,
             texture = sim.Texture,
             collection = sim.Collection,
+            drawingObject = sim.DrawingObject,
         }
 
         sim.SceneObject.ObjectTypes = {
