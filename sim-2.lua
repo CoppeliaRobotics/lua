@@ -28,6 +28,12 @@ function sim.removeFromCollection(c, h, w, o)
     return sim.addToCollection(c, h, w, o)
 end
 
+sim.addDrawingObjectItem = wrap(sim.addDrawingObjectItem, function(origFunc)
+    return function(...)
+        origFunc(...) -- in sim-2, no return value
+    end
+end)
+
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
         if type(a) ~= 'number' then
