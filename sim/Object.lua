@@ -5,10 +5,8 @@ return {
         sim.PropertyGroup = class 'sim.PropertyGroup'
 
         function sim.PropertyGroup:initialize(object, opts)
-            opts = opts or {}
             self.__object = object
-            self.__prefix = opts.prefix or ''
-            self.__newPropertyForcedType = opts.newPropertyForcedType
+            self.__opts = table.clone(opts or {})
             self.__localProperties = {}
         end
 
@@ -24,8 +22,7 @@ return {
                 return self.__localProperties[k].get()
             end
 
-            local object = self.__object
-            local prefix = self.__prefix
+            local prefix = self.__opts.prefix or ''
             if prefix ~= '' then k = prefix .. '.' .. k end
 
             if self.__object:getPropertyInfo(k) then
@@ -49,10 +46,10 @@ return {
                 return self.__localProperties[k].set(v)
             end
 
-            local prefix = self.__prefix
+            local prefix = self.__opts.prefix or ''
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            local ptype = self.__newPropertyForcedType or self.__object:getPropertyInfo(k)
+            local ptype = self.__opts.newPropertyForcedType or self.__object:getPropertyInfo(k)
             if ptype then
                 local t = sim.getPropertyTypeString(ptype, true)
                 self.__object['set' .. t:capitalize() .. 'Property'](self.__object, k, v)
@@ -62,11 +59,16 @@ return {
         end
 
         function sim.PropertyGroup:__tostring()
-            return 'sim.PropertyGroup(' .. tostring(self.__object) .. ', {prefix = ' .. _S.anyToString(self.__prefix) .. '})'
+            local s = 'sim.PropertyGroup(' .. tostring(self.__object)
+            if next(self.__opts) then
+                s = s .. ', ' .. table.tostring(self.__opts)
+            end
+            s = s .. ')'
+            return s
         end
 
         function sim.PropertyGroup:__pairs()
-            local prefix = self.__prefix
+            local prefix = self.__opts.prefix or ''
             if prefix ~= '' then prefix = prefix .. '.' end
             local props = {}
             local i = 0
