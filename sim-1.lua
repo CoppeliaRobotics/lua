@@ -19,6 +19,7 @@ end
 sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
+sim.addDrawingObject = sim.createDrawingObject
 
 function sim.addItemToCollection(c, w, h, o)
     return sim.addToCollection(c, h, w, o)

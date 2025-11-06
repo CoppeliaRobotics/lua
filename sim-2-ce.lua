@@ -2,7 +2,7 @@ local codeEditorInfos = [[
 handle collectionHandle = sim.createCollection(int options = 0)
 sim.addToCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
 sim.removeFromCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
-handle drawingObjectHandle = sim.addDrawingObject(handle objectType, float size = 1.0, float duplicateTolerance = 0.0, handle parentObjectHandle = -1, int maxItemCount = 1000, float[3] color = {0.0, 0.0, 0.0})
+handle drawingObjectHandle = sim.createDrawingObject(handle objectType, float size = 1.0, float duplicateTolerance = 0.0, handle parentObjectHandle = -1, int maxItemCount = 1000, float[3] color = {0.0, 0.0, 0.0})
 int result = sim.addDrawingObjectItem(handle drawingObjectHandle, float[] itemData = {})
 sim.setObjectSel(handle[] objectHandles)
 handle[] objectHandles = sim.getObjectSel()
