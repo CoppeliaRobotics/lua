@@ -163,7 +163,7 @@ return {
         end
 
         function sim.BaseObject:__copy()
-            local o = self.class(rawget(self, '__handle'))
+            local o = self.class(self.__handle)
             return o
         end
 
