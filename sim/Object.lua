@@ -101,77 +101,9 @@ return {
             self.__localProperties[k] = {get = getter, set = setter}
         end
 
-        sim.BaseObject = class 'sim.BaseObject'
+        sim.Object = class 'sim.Object'
 
-        function sim.BaseObject:initialize(handle)
-            assert(math.type(handle) == 'integer', 'invalid argument type')
-            rawset(self, '__handle', handle)
-
-            -- this property group exposes object's top-level properties as self's table keys (via __index):
-            rawset(self, '__properties', sim.PropertyGroup(self))
-
-            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
-
-            local objMetaInfo = sim.Object.getObjMetaInfo(sim.getStringProperty(self, 'objectType'))
-            for ns, b in pairs(objMetaInfo.namespaces) do
-                if b then
-                    rawset(self, ns, sim.PropertyGroup(self, {prefix = ns}))
-                end
-            end
-            rawset(self, '__methods', objMetaInfo.methods)
-        end
-
-        function sim.BaseObject:__copy()
-            local o = self.class(self.__handle)
-            return o
-        end
-
-        function sim.BaseObject:__deepcopy(m)
-            return self:__copy()
-        end
-
-        function sim.BaseObject:__index(k)
-            -- lookup existing properties first:
-            local v = rawget(self, k)
-            if v then return v end
-
-            -- lookup method:
-            local m = (rawget(self, '__methods') or {})[k]
-            if m then return m end
-
-            -- redirect to default property group otherwise:
-            local p = rawget(self, '__properties')[k]
-            if p ~= nil then return p end
-        end
-
-        function sim.BaseObject:__newindex(k, v)
-            self.__properties[k] = v
-        end
-
-        function sim.BaseObject:__tostring()
-            return 'sim.Object(' .. self.__handle .. ')'
-        end
-
-        function sim.BaseObject:__tohandle()
-            return self.__handle
-        end
-
-        function sim.BaseObject:__tocbor()
-            local cbor = require 'simCBOR'
-            return cbor.encode(self.__handle)
-        end
-
-        function sim.BaseObject:__pairs()
-            return pairs(self.__properties)
-        end
-
-        function sim.BaseObject:__eq(o)
-            return self.__handle == o.__handle
-        end
-
-        sim.Object = {}
-
-        sim.Object.objMetaInfo = {
+        sim.Object.static.objMetaInfo = {
             baseObject = {
                 methods = {
                     getBoolProperty = sim.getBoolProperty,
@@ -416,7 +348,7 @@ return {
             },
         }
 
-        function sim.Object.getObjMetaInfo(objectType)
+        function sim.Object.static:getObjMetaInfo(objectType)
             local ret = {
                 methods = {},
                 namespaces = {},
@@ -438,26 +370,79 @@ return {
             return ret
         end
 
-        setmetatable(sim.Object, {
-            __call = function(self, arg, opts)
-                local handle
-                if math.type(arg) == 'integer' then
-                    assert(opts == nil, 'invalid args')
-                    handle = arg
-                    assert(sim.isHandle(handle) or handle == sim.handle_app or handle == sim.handle_scene or handle >= 10000000, 'invalid handle')
-                elseif sim.Object:isobject(arg) then
-                    assert(opts == nil, 'invalid args')
-                    handle = arg.handle
-                else
-                    error 'invalid arguments to sim.Object(...)'
-                end
-                return sim.BaseObject(handle)
+        function sim.Object:initialize(handle)
+            if sim.Object:isobject(handle) then
+                handle = handle.handle
             end
-        })
+
+            assert(math.type(handle) == 'integer', 'invalid argument type')
+            rawset(self, '__handle', handle)
+
+            -- this property group exposes object's top-level properties as self's table keys (via __index):
+            rawset(self, '__properties', sim.PropertyGroup(self))
+
+            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+
+            local objMetaInfo = sim.Object:getObjMetaInfo(sim.getStringProperty(self, 'objectType'))
+            for ns, b in pairs(objMetaInfo.namespaces) do
+                if b then
+                    rawset(self, ns, sim.PropertyGroup(self, {prefix = ns}))
+                end
+            end
+            rawset(self, '__methods', objMetaInfo.methods)
+        end
+
+        function sim.Object:__copy()
+            local o = self.class(self.__handle)
+            return o
+        end
+
+        function sim.Object:__deepcopy(m)
+            return self:__copy()
+        end
+
+        function sim.Object:__index(k)
+            -- lookup existing properties first:
+            local v = rawget(self, k)
+            if v then return v end
+
+            -- lookup method:
+            local m = (rawget(self, '__methods') or {})[k]
+            if m then return m end
+
+            -- redirect to default property group otherwise:
+            local p = rawget(self, '__properties')[k]
+            if p ~= nil then return p end
+        end
+
+        function sim.Object:__newindex(k, v)
+            self.__properties[k] = v
+        end
+
+        function sim.Object:__tostring()
+            return 'sim.Object(' .. self.__handle .. ')'
+        end
+
+        function sim.Object:__tohandle()
+            return self.__handle
+        end
+
+        function sim.Object:__tocbor()
+            local cbor = require 'simCBOR'
+            return cbor.encode(self.__handle)
+        end
+
+        function sim.Object:__pairs()
+            return pairs(self.__properties)
+        end
+
+        function sim.Object:__eq(o)
+            return self.__handle == o.__handle
+        end
 
         function sim.Object:isobject(o)
             assert(self == sim.Object, 'class method')
-            return sim.BaseObject.isInstanceOf(o, sim.BaseObject)
+            return sim.Object.isInstanceOf(o, sim.Object)
         end
 
         function sim.Object:toobject(o)
@@ -467,7 +452,7 @@ return {
             error 'bad type'
         end
 
-        function sim.Object.unittest()
+        function sim.Object.static.unittest()
             f = sim.getObject '/Floor'
             b = sim.getObject '/Floor/box'
             assert(b == f / 'box')
