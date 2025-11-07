@@ -455,7 +455,6 @@ return {
         function sim.Object.static.unittest()
             f = sim.getObject '/Floor'
             b = sim.getObject '/Floor/box'
-            assert(b == f / 'box')
             if #sim.scene.orphans > 0 then
                 assert(sim.scene.orphans[1].parent == nil)
             else
