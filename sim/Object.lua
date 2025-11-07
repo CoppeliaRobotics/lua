@@ -155,11 +155,9 @@ return {
             app = {
                 superClass = 'baseObject',
                 namespaces = {
-                    customData = true,
-                    signal = true,
-                    namedParam = true,
-                    refs = false,
-                    origRefs = false,
+                    customData = {},
+                    signal = {},
+                    namedParam = {},
                 },
                 methods = {
                 },
@@ -167,11 +165,8 @@ return {
             scene = {
                 superClass = 'baseObject',
                 namespaces = {
-                    customData = true,
-                    signal = true,
-                    namedParam = false,
-                    refs = false,
-                    origRefs = false,
+                    customData = {},
+                    signal = {},
                 },
                 methods = {
                     getObjectsInTree = 'sim-2.getObjectsInTree',
@@ -209,11 +204,10 @@ return {
             sceneObject = {
                 superClass = 'baseObject',
                 namespaces = {
-                    customData = true,
-                    signal = true,
-                    namedParam = false,
-                    refs = true,
-                    origRefs = true,
+                    customData = {},
+                    signal = {},
+                    refs = {newPropertyForcedType = sim.propertytype_handlearray},
+                    origRefs = {newPropertyForcedType = sim.propertytype_handlearray},
                 },
                 methods = {
                     getAlias = 'sim-2.getObjectAlias',
@@ -391,10 +385,8 @@ return {
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
             local objMetaInfo = sim.Object:getObjMetaInfo(sim.getStringProperty(self, 'objectType'))
-            for ns, b in pairs(objMetaInfo.namespaces) do
-                if b then
-                    rawset(self, ns, sim.PropertyGroup(self, {prefix = ns}))
-                end
+            for ns, opts in pairs(objMetaInfo.namespaces) do
+                rawset(self, ns, sim.PropertyGroup(self, table.update({prefix = ns}, opts)))
             end
             local methods = {}
             for m, f in pairs(objMetaInfo.methods) do
