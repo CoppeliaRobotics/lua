@@ -596,7 +596,7 @@ return {
         end
 
         -- definition of constants / static objects:
-        sim.scene = sim.Scene()
-        sim.app = sim.App()
+        sim.scene = sim.Object(sim.handle_scene)
+        sim.app = sim.Object(sim.handle_app)
     end
 }
