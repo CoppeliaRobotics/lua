@@ -131,13 +131,13 @@ return {
         end
 
         function sim.BaseObject:__index(k)
-            -- lookup method:
-            local m = (rawget(self, '__methods') or {})[k]
-            if m then return m end
-
             -- lookup existing properties first:
             local v = rawget(self, k)
             if v then return v end
+
+            -- lookup method:
+            local m = (rawget(self, '__methods') or {})[k]
+            if m then return m end
 
             -- redirect to default property group otherwise:
             local p = rawget(self, '__properties')[k]
