@@ -369,7 +369,7 @@ return {
             if moduleName == 'sim-2' then
                 module = sim
             else
-                require(moduleName)
+                module = require(moduleName)
             end
             for _, field in ipairs(fields) do
                 module = module[field]
