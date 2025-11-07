@@ -1641,6 +1641,11 @@ def _getCalltip(input, pos):
 def require(a):
     return client.require(a)
 
+# make require() visible to external modules:
+import builtins
+assert not getattr(builtins, 'require', False)
+builtins.require = require
+
 def print(*a):
     client.call('__print__', [', '.join(map(str, a))])
 
