@@ -106,50 +106,50 @@ return {
         sim.Object.static.objMetaInfo = {
             baseObject = {
                 methods = {
-                    getBoolProperty = sim.getBoolProperty,
-                    getBufferProperty = sim.getBufferProperty,
-                    getColorProperty = sim.getColorProperty,
-                    getExplicitHandling = sim.getExplicitHandling,
-                    getFloatArrayProperty = sim.getFloatArrayProperty,
-                    getFloatProperty = sim.getFloatProperty,
-                    getHandleArrayProperty = sim.getHandleArrayProperty,
-                    getHandleProperty = sim.getHandleProperty,
-                    getIntArray2Property = sim.getIntArray2Property,
-                    getIntArrayProperty = sim.getIntArrayProperty,
-                    getIntProperty = sim.getIntProperty,
-                    getLongProperty = sim.getLongProperty,
-                    getPoseProperty = sim.getPoseProperty,
-                    getProperties = sim.getProperties,
-                    getPropertiesInfos = sim.getPropertiesInfos,
-                    getProperty = sim.getProperty,
-                    getPropertyInfo = sim.getPropertyInfo,
-                    getPropertyName = sim.getPropertyName,
-                    getPropertyTypeString = sim.getPropertyTypeString,
-                    getQuaternionProperty = sim.getQuaternionProperty,
-                    getStringProperty = sim.getStringProperty,
-                    getTableProperty = sim.getTableProperty,
-                    getVector2Property = sim.getVector2Property,
-                    getVector3Property = sim.getVector3Property,
-                    removeProperty = sim.removeProperty,
-                    setBoolProperty = sim.setBoolProperty,
-                    setBufferProperty = sim.setBufferProperty,
-                    setColorProperty = sim.setColorProperty,
-                    setFloatArrayProperty = sim.setFloatArrayProperty,
-                    setFloatProperty = sim.setFloatProperty,
-                    setHandleArrayProperty = sim.setHandleArrayProperty,
-                    setHandleProperty = sim.setHandleProperty,
-                    setIntArray2Property = sim.setIntArray2Property,
-                    setIntArrayProperty = sim.setIntArrayProperty,
-                    setIntProperty = sim.setIntProperty,
-                    setLongProperty = sim.setLongProperty,
-                    setPoseProperty = sim.setPoseProperty,
-                    setProperties = sim.setProperties,
-                    setProperty = sim.setProperty,
-                    setQuaternionProperty = sim.setQuaternionProperty,
-                    setStringProperty = sim.setStringProperty,
-                    setTableProperty = sim.setTableProperty,
-                    setVector2Property = sim.setVector2Property,
-                    setVector3Property = sim.setVector3Property,
+                    getBoolProperty = 'sim-2.getBoolProperty',
+                    getBufferProperty = 'sim-2.getBufferProperty',
+                    getColorProperty = 'sim-2.getColorProperty',
+                    getExplicitHandling = 'sim-2.getExplicitHandling',
+                    getFloatArrayProperty = 'sim-2.getFloatArrayProperty',
+                    getFloatProperty = 'sim-2.getFloatProperty',
+                    getHandleArrayProperty = 'sim-2.getHandleArrayProperty',
+                    getHandleProperty = 'sim-2.getHandleProperty',
+                    getIntArray2Property = 'sim-2.getIntArray2Property',
+                    getIntArrayProperty = 'sim-2.getIntArrayProperty',
+                    getIntProperty = 'sim-2.getIntProperty',
+                    getLongProperty = 'sim-2.getLongProperty',
+                    getPoseProperty = 'sim-2.getPoseProperty',
+                    getProperties = 'sim-2.getProperties',
+                    getPropertiesInfos = 'sim-2.getPropertiesInfos',
+                    getProperty = 'sim-2.getProperty',
+                    getPropertyInfo = 'sim-2.getPropertyInfo',
+                    getPropertyName = 'sim-2.getPropertyName',
+                    getPropertyTypeString = 'sim-2.getPropertyTypeString',
+                    getQuaternionProperty = 'sim-2.getQuaternionProperty',
+                    getStringProperty = 'sim-2.getStringProperty',
+                    getTableProperty = 'sim-2.getTableProperty',
+                    getVector2Property = 'sim-2.getVector2Property',
+                    getVector3Property = 'sim-2.getVector3Property',
+                    removeProperty = 'sim-2.removeProperty',
+                    setBoolProperty = 'sim-2.setBoolProperty',
+                    setBufferProperty = 'sim-2.setBufferProperty',
+                    setColorProperty = 'sim-2.setColorProperty',
+                    setFloatArrayProperty = 'sim-2.setFloatArrayProperty',
+                    setFloatProperty = 'sim-2.setFloatProperty',
+                    setHandleArrayProperty = 'sim-2.setHandleArrayProperty',
+                    setHandleProperty = 'sim-2.setHandleProperty',
+                    setIntArray2Property = 'sim-2.setIntArray2Property',
+                    setIntArrayProperty = 'sim-2.setIntArrayProperty',
+                    setIntProperty = 'sim-2.setIntProperty',
+                    setLongProperty = 'sim-2.setLongProperty',
+                    setPoseProperty = 'sim-2.setPoseProperty',
+                    setProperties = 'sim-2.setProperties',
+                    setProperty = 'sim-2.setProperty',
+                    setQuaternionProperty = 'sim-2.setQuaternionProperty',
+                    setStringProperty = 'sim-2.setStringProperty',
+                    setTableProperty = 'sim-2.setTableProperty',
+                    setVector2Property = 'sim-2.setVector2Property',
+                    setVector3Property = 'sim-2.setVector3Property',
                 },
             },
             app = {
@@ -174,9 +174,9 @@ return {
                     origRefs = false,
                 },
                 methods = {
-                    getObjectsInTree = sim.getObjectsInTree,
-                    load = sim.loadScene,
-                    save = sim.saveScene,
+                    getObjectsInTree = 'sim-2.getObjectsInTree',
+                    load = 'sim-2.loadScene',
+                    save = 'sim-2.saveScene',
                 },
             },
             mesh = {
@@ -192,18 +192,18 @@ return {
             collection = {
                 superClass = 'baseObject',
                 methods = {
-                    addItem = sim.addToCollection,
-                    checkCollision = sim.checkCollision,
-                    checkDistance = sim.checkDistance,
-                    remove = sim.removeCollection,
-                    removeItem = sim.removeFromCollection,
+                    addItem = 'sim-2.addToCollection',
+                    checkCollision = 'sim-2.checkCollision',
+                    checkDistance = 'sim-2.checkDistance',
+                    remove = 'sim-2.removeCollection',
+                    removeItem = 'sim-2.removeFromCollection',
                 },
             },
             drawingObject = {
                 superClass = 'baseObject',
                 methods = {
-                    addItem = sim.addDrawingObjectItem,
-                    remove = sim.removeDrawingObject,
+                    addItem = 'sim-2.addDrawingObjectItem',
+                    remove = 'sim-2.removeDrawingObject',
                 },
             },
             sceneObject = {
@@ -216,18 +216,18 @@ return {
                     origRefs = true,
                 },
                 methods = {
-                    getAlias = sim.getObjectAlias,
-                    getPose = sim.getObjectPose,
-                    getPosition = sim.getObjectPosition,
-                    getQuaternion = sim.getObjectQuaternion,
-                    getVelocity = sim.getObjectVelocity,
-                    remove = function(self) return sim.removeObjects{self} end,
-                    scaleObject = sim.scaleObject,
-                    setParent = sim.setObjectParent,
-                    setPose = sim.setObjectPose,
-                    setPosition = sim.setObjectPosition,
-                    setQuaternion = sim.setObjectQuaternion,
-                    visitTree = sim.visitTree,
+                    getAlias = 'sim-2.getObjectAlias',
+                    getPose = 'sim-2.getObjectPose',
+                    getPosition = 'sim-2.getObjectPosition',
+                    getQuaternion = 'sim-2.getObjectQuaternion',
+                    getVelocity = 'sim-2.getObjectVelocity',
+                    --remove = function(self) return sim.removeObjects{self} end,
+                    scaleObject = 'sim-2.scaleObject',
+                    setParent = 'sim-2.setObjectParent',
+                    setPose = 'sim-2.setObjectPose',
+                    setPosition = 'sim-2.setObjectPosition',
+                    setQuaternion = 'sim-2.setObjectQuaternion',
+                    visitTree = 'sim-2.visitTree',
                 },
             },
             camera = {
@@ -238,38 +238,30 @@ return {
             dummy = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkCollision = sim.checkCollision,
-                    checkDistance = sim.checkDistance,
+                    checkCollision = 'sim-2.checkCollision',
+                    checkDistance = 'sim-2.checkDistance',
                 },
             },
             forceSensor = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkSensor = sim.readForceSensor,
-                    getForce = function ()
-                        local f, t = sim.readForceSensor(self.__handle)
-                        return f
-                    end,
-                    getTorque = function ()
-                        local f, t = sim.readForceSensor(self.__handle)
-                        return t
-                    end,
+                    checkSensor = 'sim-2.readForceSensor',
                 },
             },
             graph = {
                 superClass = 'sceneObject',
                 methods = {
-                    addCurve = sim.addGraphCurve,
-                    addStream = sim.addGraphStream,
-                    resetGraph = sim.resetGraph,
+                    addCurve = 'sim-2.addGraphCurve',
+                    addStream = 'sim-2.addGraphStream',
+                    resetGraph = 'sim-2.resetGraph',
                 },
             },
             joint = {
                 superClass = 'sceneObject',
                 methods = {
-                    getForce = sim.getJointForce,
-                    resetDynamicObject = sim.resetDynamicObject,
-                    getVelocity = sim.getJointVelocity,
+                    getForce = 'sim-2.getJointForce',
+                    resetDynamicObject = 'sim-2.resetDynamicObject',
+                    getVelocity = 'sim-2.getJointVelocity',
                 },
             },
             light = {
@@ -280,70 +272,70 @@ return {
             ocTree = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkCollision = sim.checkCollision,
-                    checkDistance = sim.checkDistance,
-                    checkPointOccupancy = sim.checkOctreePointOccupancy,
-                    insertObject = sim.insertObjectIntoOctree,
-                    insertVoxels = sim.insertVoxelsIntoOctree,
-                    removeVoxels = sim.removeVoxelsFromOctree,
-                    subtractObject = sim.subtractObjectFromOctree,
+                    checkCollision = 'sim-2.checkCollision',
+                    checkDistance = 'sim-2.checkDistance',
+                    checkPointOccupancy = 'sim-2.checkOctreePointOccupancy',
+                    insertObject = 'sim-2.insertObjectIntoOctree',
+                    insertVoxels = 'sim-2.insertVoxelsIntoOctree',
+                    removeVoxels = 'sim-2.removeVoxelsFromOctree',
+                    subtractObject = 'sim-2.subtractObjectFromOctree',
                 },
             },
             pointCloud = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkCollision = sim.checkCollision,
-                    checkDistance = sim.checkDistance,
-                    insertObject = sim.insertObjectIntoPointCloud,
-                    insertPoints = sim.insertPointsIntoPointCloud,
-                    intersectPoints = sim.intersectPointsWithPointCloud,
-                    removePoints = sim.removePointsFromPointCloud,
-                    subtractObject = sim.subtractObjectFromPointCloud,
+                    checkCollision = 'sim-2.checkCollision',
+                    checkDistance = 'sim-2.checkDistance',
+                    insertObject = 'sim-2.insertObjectIntoPointCloud',
+                    insertPoints = 'sim-2.insertPointsIntoPointCloud',
+                    intersectPoints = 'sim-2.intersectPointsWithPointCloud',
+                    removePoints = 'sim-2.removePointsFromPointCloud',
+                    subtractObject = 'sim-2.subtractObjectFromPointCloud',
                 },
             },
             proximitySensor = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkSensor = sim.checkProximitySensor,
-                    resetSensor = sim.resetProximitySensor,
+                    checkSensor = 'sim-2.checkProximitySensor',
+                    resetSensor = 'sim-2.resetProximitySensor',
                 },
             },
             script = {
                 superClass = 'sceneObject',
                 methods = {
-                    callFunction = sim.callScriptFunction,
-                    executeScriptString = sim.executeScriptString,
-                    getApiFunc = sim.getApiFunc,
-                    getApiInfo = sim.getApiInfo,
-                    getStackTraceback = sim.getStackTraceback,
-                    init = sim.initScript,
+                    callFunction = 'sim-2.callScriptFunction',
+                    executeScriptString = 'sim-2.executeScriptString',
+                    getApiFunc = 'sim-2.getApiFunc',
+                    getApiInfo = 'sim-2.getApiInfo',
+                    getStackTraceback = 'sim-2.getStackTraceback',
+                    init = 'sim-2.initScript',
                 },
             },
             shape = {
                 superClass = 'sceneObject',
                 methods = {
-                    addForce = sim.addForce,
-                    addForceAndTorque = sim.addForceAndTorque,
-                    alignBB = sim.alignShapeBB,
-                    checkCollision = sim.checkCollision,
-                    checkDistance = sim.checkDistance,
-                    computeMassAndInertia = sim.computeMassAndInertia,
-                    getAppearance = sim.getShapeAppearance,
-                    getDynVelocity = sim.getShapeVelocity,
-                    relocateFrame = sim.relocateShapeFrame,
-                    resetDynamicObject = sim.resetDynamicObject,
-                    setAppearance = sim.setShapeAppearance,
-                    setShapeBB = sim.setShapeBB,
-                    ungroup = sim.ungroupShape,
+                    addForce = 'sim-2.addForce',
+                    addForceAndTorque = 'sim-2.addForceAndTorque',
+                    alignBB = 'sim-2.alignShapeBB',
+                    checkCollision = 'sim-2.checkCollision',
+                    checkDistance = 'sim-2.checkDistance',
+                    computeMassAndInertia = 'sim-2.computeMassAndInertia',
+                    getAppearance = 'sim-2.getShapeAppearance',
+                    getDynVelocity = 'sim-2.getShapeVelocity',
+                    relocateFrame = 'sim-2.relocateShapeFrame',
+                    resetDynamicObject = 'sim-2.resetDynamicObject',
+                    setAppearance = 'sim-2.setShapeAppearance',
+                    setShapeBB = 'sim-2.setShapeBB',
+                    ungroup = 'sim-2.ungroupShape',
                 },
             },
             visionSensor = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkSensor = sim.checkVisionSensor,
-                    checkSensorEx = sim.checkVisionSensorEx,
-                    read = sim.readVisionSensor,
-                    reset = sim.resetVisionSensor,
+                    checkSensor = 'sim-2.checkVisionSensor',
+                    checkSensorEx = 'sim-2.checkVisionSensorEx',
+                    read = 'sim-2.readVisionSensor',
+                    reset = 'sim-2.resetVisionSensor',
                 },
             },
         }
@@ -370,6 +362,21 @@ return {
             return ret
         end
 
+        function sim.Object.static:resolveFunction(funcName)
+            local fields = string.split(funcName, '%.')
+            local moduleName = table.remove(fields, 1)
+            local module
+            if moduleName == 'sim-2' then
+                module = sim
+            else
+                require(moduleName)
+            end
+            for _, field in ipairs(fields) do
+                module = module[field]
+            end
+            return module
+        end
+
         function sim.Object:initialize(handle)
             if sim.Object:isobject(handle) then
                 handle = handle.handle
@@ -389,7 +396,11 @@ return {
                     rawset(self, ns, sim.PropertyGroup(self, {prefix = ns}))
                 end
             end
-            rawset(self, '__methods', objMetaInfo.methods)
+            local methods = {}
+            for m, f in pairs(objMetaInfo.methods) do
+                methods[m] = sim.Object:resolveFunction(f)
+            end
+            rawset(self, '__methods', methods)
         end
 
         function sim.Object:__copy()
