@@ -103,52 +103,7 @@ return {
 
         sim.BaseObject = class 'sim.BaseObject'
 
-        sim.BaseObject.getBoolProperty = sim.getBoolProperty
-        sim.BaseObject.getBufferProperty = sim.getBufferProperty
-        sim.BaseObject.getColorProperty = sim.getColorProperty
-        sim.BaseObject.getExplicitHandling = sim.getExplicitHandling
-        sim.BaseObject.getFloatArrayProperty = sim.getFloatArrayProperty
-        sim.BaseObject.getFloatProperty = sim.getFloatProperty
-        sim.BaseObject.getHandleArrayProperty = sim.getHandleArrayProperty
-        sim.BaseObject.getHandleProperty = sim.getHandleProperty
-        sim.BaseObject.getIntArray2Property = sim.getIntArray2Property
-        sim.BaseObject.getIntArrayProperty = sim.getIntArrayProperty
-        sim.BaseObject.getIntProperty = sim.getIntProperty
-        sim.BaseObject.getLongProperty = sim.getLongProperty
-        sim.BaseObject.getPoseProperty = sim.getPoseProperty
-        sim.BaseObject.getProperties = sim.getProperties
-        sim.BaseObject.getPropertiesInfos = sim.getPropertiesInfos
-        sim.BaseObject.getProperty = sim.getProperty
-        sim.BaseObject.getPropertyInfo = sim.getPropertyInfo
-        sim.BaseObject.getPropertyName = sim.getPropertyName
-        sim.BaseObject.getPropertyTypeString = sim.getPropertyTypeString
-        sim.BaseObject.getQuaternionProperty = sim.getQuaternionProperty
-        sim.BaseObject.getStringProperty = sim.getStringProperty
-        sim.BaseObject.getTableProperty = sim.getTableProperty
-        sim.BaseObject.getVector2Property = sim.getVector2Property
-        sim.BaseObject.getVector3Property = sim.getVector3Property
-        sim.BaseObject.removeProperty = sim.removeProperty
-        sim.BaseObject.setBoolProperty = sim.setBoolProperty
-        sim.BaseObject.setBufferProperty = sim.setBufferProperty
-        sim.BaseObject.setColorProperty = sim.setColorProperty
-        sim.BaseObject.setFloatArrayProperty = sim.setFloatArrayProperty
-        sim.BaseObject.setFloatProperty = sim.setFloatProperty
-        sim.BaseObject.setHandleArrayProperty = sim.setHandleArrayProperty
-        sim.BaseObject.setHandleProperty = sim.setHandleProperty
-        sim.BaseObject.setIntArray2Property = sim.setIntArray2Property
-        sim.BaseObject.setIntArrayProperty = sim.setIntArrayProperty
-        sim.BaseObject.setIntProperty = sim.setIntProperty
-        sim.BaseObject.setLongProperty = sim.setLongProperty
-        sim.BaseObject.setPoseProperty = sim.setPoseProperty
-        sim.BaseObject.setProperties = sim.setProperties
-        sim.BaseObject.setProperty = sim.setProperty
-        sim.BaseObject.setQuaternionProperty = sim.setQuaternionProperty
-        sim.BaseObject.setStringProperty = sim.setStringProperty
-        sim.BaseObject.setTableProperty = sim.setTableProperty
-        sim.BaseObject.setVector2Property = sim.setVector2Property
-        sim.BaseObject.setVector3Property = sim.setVector3Property
-
-        function sim.BaseObject:initialize(handle, checkObjectType)
+        function sim.BaseObject:initialize(handle)
             assert(math.type(handle) == 'integer', 'invalid argument type')
             rawset(self, '__handle', handle)
 
@@ -157,9 +112,13 @@ return {
 
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-            if checkObjectType then
-                assert(self.objectType == checkObjectType, 'invalid constructor for object type ' .. self.objectType)
+            local objMetaInfo = sim.Object.getObjMetaInfo(sim.getStringProperty(self, 'objectType'))
+            for ns, b in pairs(objMetaInfo.namespaces) do
+                if b then
+                    rawset(self, ns, sim.PropertyGroup(self, {prefix = ns}))
+                end
             end
+            rawset(self, '__methods', objMetaInfo.methods)
         end
 
         function sim.BaseObject:__copy()
@@ -172,15 +131,9 @@ return {
         end
 
         function sim.BaseObject:__index(k)
-            if k == '__methods' then -- support for coppeliaSim's _getCompletion
-                local m = {}
-                for k, v in pairs(self.class.__instanceDict) do
-                    if k ~= 'initialize' and k:sub(1, 2) ~= '__' and type(v) == 'function' then
-                        m[k] = v
-                    end
-                end
-                return m
-            end
+            -- lookup method:
+            local m = (rawget(self, '__methods') or {})[k]
+            if m then return m end
 
             -- lookup existing properties first:
             local v = rawget(self, k)
@@ -216,287 +169,274 @@ return {
             return self.__handle == o.__handle
         end
 
-        sim.Collection = class('sim.Collection', sim.BaseObject)
-
-        sim.Collection.addItem = sim.addToCollection
-        sim.Collection.checkCollision = sim.checkCollision
-        sim.Collection.checkDistance = sim.checkDistance
-        sim.Collection.remove = sim.removeCollection
-        sim.Collection.removeItem = sim.removeFromCollection
-
-        function sim.Collection:initialize(handle)
-            sim.BaseObject.initialize(self, handle, 'collection')
-        end
-
-        sim.App = class('sim.App', sim.BaseObject)
-
-        function sim.App:initialize(handle)
-            if handle == nil then handle = sim.handle_app end
-            assert(handle == sim.handle_app, 'invalid handle')
-
-            sim.BaseObject.initialize(self, handle, 'app')
-
-            -- pre-assign user namespaces to property groups:
-            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
-            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-            rawset(self, 'namedParam', sim.PropertyGroup(self, {prefix = 'namedParam'}))
-        end
-
-        sim.Scene = class('sim.Scene', sim.BaseObject)
-
-        sim.Scene.getObjectsInTree = sim.getObjectsInTree
-        sim.Scene.load = sim.loadScene
-        sim.Scene.save = sim.saveScene
-
-        function sim.Scene:initialize(handle)
-            if handle == nil then handle = sim.handle_scene end
-            assert(handle == sim.handle_scene, 'invalid handle')
-
-            sim.BaseObject.initialize(self, handle, 'scene')
-
-            -- pre-assign user namespaces to property groups:
-            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
-            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-        end
-
-        function sim.Scene:__div(path)
-            if path:sub(1, 1) ~= '/' then path = '/' .. path end
-            return sim.getObject(path)
-        end
-
-        sim.Mesh = class('sim.Mesh', sim.BaseObject)
-
-        function sim.Mesh:initialize(handle)
-            sim.BaseObject.initialize(self, handle, 'mesh')
-        end
-
-        sim.Texture = class('sim.Texture', sim.BaseObject)
-
-        function sim.Texture:initialize(handle)
-            sim.BaseObject.initialize(self, handle, 'texture')
-        end
-
-        sim.DrawingObject = class('sim.DrawingObject', sim.BaseObject)
-
-        sim.DrawingObject.addItem = sim.addDrawingObjectItem
-        sim.DrawingObject.remove = sim.removeDrawingObject
-
-        function sim.DrawingObject:initialize(handle)
-            sim.BaseObject.initialize(self, handle, 'drawingObject')
-        end
-
-        sim.SceneObject = class('sim.SceneObject', sim.BaseObject)
-
-        sim.SceneObject.getAlias = sim.getObjectAlias
-        sim.SceneObject.getPose = sim.getObjectPose
-        sim.SceneObject.getPosition = sim.getObjectPosition
-        sim.SceneObject.getQuaternion = sim.getObjectQuaternion
-        sim.SceneObject.getVelocity = sim.getObjectVelocity
-        sim.SceneObject.remove = function(self) return sim.removeObjects{self} end
-        sim.SceneObject.scaleObject = sim.scaleObject
-        sim.SceneObject.setParent = sim.setObjectParent
-        sim.SceneObject.setPose = sim.setObjectPose
-        sim.SceneObject.setPosition = sim.setObjectPosition
-        sim.SceneObject.setQuaternion = sim.setObjectQuaternion
-        sim.SceneObject.visitTree = sim.visitTree
-
-        function sim.SceneObject:initialize(handle, checkObjectType)
-            sim.BaseObject.initialize(self, handle, checkObjectType)
-
-            assert(sim.isHandle(handle), 'invalid handle')
-
-            -- pre-assign user namespaces to property groups:
-            rawset(self, 'customData', sim.PropertyGroup(self, {prefix = 'customData'}))
-            rawset(self, 'signal', sim.PropertyGroup(self, {prefix = 'signal'}))
-            rawset(self, 'refs', sim.PropertyGroup(self, {prefix = 'refs', newPropertyForcedType = sim.propertytype_handlearray}))
-            rawset(self, 'origRefs', sim.PropertyGroup(self, {prefix = 'origRefs', newPropertyForcedType = sim.propertytype_handlearray}))
-
-            self.__properties:registerLocalProperty('matrix',
-                function()
-                    return self.pose:totransform()
-                end,
-                function(m)
-                    local Pose = require('simEigen').Pose
-                    self.pose = Pose:fromtransform(m)
-                end
-            )
-            self.__properties:registerLocalProperty('absMatrix',
-                function()
-                    return self.absPose:totransform()
-                end,
-                function(m)
-                    local Pose = require('simEigen').Pose
-                    self.absPose = Pose:fromtransform(m)
-                end
-            )
-        end
-
-        function sim.SceneObject:__div(path)
-            if path:sub(1, 2) ~= './' then path = './' .. path end
-            return sim.getObject(path, {proxy = self.__handle})
-        end
-
-        sim.Camera = class('sim.Camera', sim.SceneObject)
-
-        function sim.Camera:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'camera')
-        end
-
-        sim.Dummy = class('sim.Dummy', sim.SceneObject)
-
-        sim.Dummy.checkCollision = sim.checkCollision
-        sim.Dummy.checkDistance = sim.checkDistance
-
-        function sim.Dummy:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'dummy')
-        end
-
-        sim.ForceSensor = class('sim.ForceSensor', sim.SceneObject)
-
-        sim.ForceSensor.checkSensor = sim.readForceSensor
-        sim.ForceSensor.getForce = function ()
-            local f, t = sim.readForceSensor(self.__handle)
-            return f
-        end
-        sim.ForceSensor.getTorque = function ()
-            local f, t = sim.readForceSensor(self.__handle)
-            return t
-        end
-
-        function sim.ForceSensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'forceSensor')
-        end
-
-        sim.Graph = class('sim.Graph', sim.SceneObject)
-
-        sim.Graph.addCurve = sim.addGraphCurve
-        sim.Graph.addStream = sim.addGraphStream
-        sim.Graph.resetGraph = sim.resetGraph
-
-        function sim.Graph:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'graph')
-        end
-
-        sim.Joint = class('sim.Joint', sim.SceneObject)
-
-        sim.Joint.getForce = sim.getJointForce
-        sim.Joint.resetDynamicObject = sim.resetDynamicObject
-        sim.Joint.getVelocity = sim.getJointVelocity
-
-        function sim.Joint:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'joint')
-        end
-
-        sim.Light = class('sim.Light', sim.SceneObject)
-
-        function sim.Light:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'light')
-        end
-
-        sim.OcTree = class('sim.OcTree', sim.SceneObject)
-
-        sim.OcTree.checkCollision = sim.checkCollision
-        sim.OcTree.checkDistance = sim.checkDistance
-        sim.OcTree.checkPointOccupancy = sim.checkOctreePointOccupancy
-        sim.OcTree.insertObject = sim.insertObjectIntoOctree
-        sim.OcTree.insertVoxels = sim.insertVoxelsIntoOctree
-        sim.OcTree.removeVoxels = sim.removeVoxelsFromOctree
-        sim.OcTree.subtractObject = sim.subtractObjectFromOctree
-
-        function sim.OcTree:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'ocTree')
-        end
-
-        sim.PointCloud = class('sim.PointCloud', sim.SceneObject)
-
-        sim.PointCloud.checkCollision = sim.checkCollision
-        sim.PointCloud.checkDistance = sim.checkDistance
-        sim.PointCloud.insertObject = sim.insertObjectIntoPointCloud
-        sim.PointCloud.insertPoints = sim.insertPointsIntoPointCloud
-        sim.PointCloud.intersectPoints = sim.intersectPointsWithPointCloud
-        sim.PointCloud.removePoints = sim.removePointsFromPointCloud
-        sim.PointCloud.subtractObject = sim.subtractObjectFromPointCloud
-
-        function sim.PointCloud:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'pointCloud')
-        end
-
-        sim.ProximitySensor = class('sim.ProximitySensor', sim.SceneObject)
-
-        sim.ProximitySensor.checkSensor = sim.checkProximitySensor
-        sim.ProximitySensor.resetSensor = sim.resetProximitySensor
-
-        function sim.ProximitySensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'proximitySensor')
-        end
-
-        sim.Script = class('sim.Script', sim.SceneObject)
-
-        sim.Script.callFunction = sim.callScriptFunction
-        sim.Script.executeScriptString = sim.executeScriptString
-        sim.Script.getApiFunc = sim.getApiFunc
-        sim.Script.getApiInfo = sim.getApiInfo
-        sim.Script.getStackTraceback = sim.getStackTraceback
-        sim.Script.init = sim.initScript
-
-        function sim.Script:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'script')
-        end
-
-        sim.Shape = class('sim.Shape', sim.SceneObject)
-
-        sim.Shape.addForce = sim.addForce
-        sim.Shape.addForceAndTorque = sim.addForceAndTorque
-        sim.Shape.alignBB = sim.alignShapeBB
-        sim.Shape.checkCollision = sim.checkCollision
-        sim.Shape.checkDistance = sim.checkDistance
-        sim.Shape.computeMassAndInertia = sim.computeMassAndInertia
-        sim.Shape.getAppearance = sim.getShapeAppearance
-        sim.Shape.getDynVelocity = sim.getShapeVelocity
-        sim.Shape.relocateFrame = sim.relocateShapeFrame
-        sim.Shape.resetDynamicObject = sim.resetDynamicObject
-        sim.Shape.setAppearance = sim.setShapeAppearance
-        sim.Shape.setShapeBB = sim.setShapeBB
-        sim.Shape.ungroup = sim.ungroupShape
-
-        function sim.Shape:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'shape')
-        end
-
-        sim.VisionSensor = class('sim.VisionSensor', sim.SceneObject)
-
-        sim.VisionSensor.checkSensor = sim.checkVisionSensor
-        sim.VisionSensor.checkSensorEx = sim.checkVisionSensorEx
-        sim.VisionSensor.read = sim.readVisionSensor
-        sim.VisionSensor.reset = sim.resetVisionSensor
-
-        function sim.VisionSensor:initialize(handle)
-            sim.SceneObject.initialize(self, handle, 'visionSensor')
-        end
-
         sim.Object = {}
 
-        sim.Object.class = {
-            app = sim.App,
-            scene = sim.Scene,
-            mesh = sim.Mesh,
-            texture = sim.Texture,
-            collection = sim.Collection,
-            drawingObject = sim.DrawingObject,
-            camera = sim.Camera,
-            dummy = sim.Dummy,
-            forceSensor = sim.ForceSensor,
-            graph = sim.Graph,
-            joint = sim.Joint,
-            light = sim.Light,
-            ocTree = sim.OcTree,
-            pointCloud = sim.PointCloud,
-            proximitySensor = sim.ProximitySensor,
-            script = sim.Script,
-            shape = sim.Shape,
-            texture = sim.Texture,
-            visionSensor = sim.VisionSensor,
+        sim.Object.objMetaInfo = {
+            baseObject = {
+                methods = {
+                    getBoolProperty = sim.getBoolProperty,
+                    getBufferProperty = sim.getBufferProperty,
+                    getColorProperty = sim.getColorProperty,
+                    getExplicitHandling = sim.getExplicitHandling,
+                    getFloatArrayProperty = sim.getFloatArrayProperty,
+                    getFloatProperty = sim.getFloatProperty,
+                    getHandleArrayProperty = sim.getHandleArrayProperty,
+                    getHandleProperty = sim.getHandleProperty,
+                    getIntArray2Property = sim.getIntArray2Property,
+                    getIntArrayProperty = sim.getIntArrayProperty,
+                    getIntProperty = sim.getIntProperty,
+                    getLongProperty = sim.getLongProperty,
+                    getPoseProperty = sim.getPoseProperty,
+                    getProperties = sim.getProperties,
+                    getPropertiesInfos = sim.getPropertiesInfos,
+                    getProperty = sim.getProperty,
+                    getPropertyInfo = sim.getPropertyInfo,
+                    getPropertyName = sim.getPropertyName,
+                    getPropertyTypeString = sim.getPropertyTypeString,
+                    getQuaternionProperty = sim.getQuaternionProperty,
+                    getStringProperty = sim.getStringProperty,
+                    getTableProperty = sim.getTableProperty,
+                    getVector2Property = sim.getVector2Property,
+                    getVector3Property = sim.getVector3Property,
+                    removeProperty = sim.removeProperty,
+                    setBoolProperty = sim.setBoolProperty,
+                    setBufferProperty = sim.setBufferProperty,
+                    setColorProperty = sim.setColorProperty,
+                    setFloatArrayProperty = sim.setFloatArrayProperty,
+                    setFloatProperty = sim.setFloatProperty,
+                    setHandleArrayProperty = sim.setHandleArrayProperty,
+                    setHandleProperty = sim.setHandleProperty,
+                    setIntArray2Property = sim.setIntArray2Property,
+                    setIntArrayProperty = sim.setIntArrayProperty,
+                    setIntProperty = sim.setIntProperty,
+                    setLongProperty = sim.setLongProperty,
+                    setPoseProperty = sim.setPoseProperty,
+                    setProperties = sim.setProperties,
+                    setProperty = sim.setProperty,
+                    setQuaternionProperty = sim.setQuaternionProperty,
+                    setStringProperty = sim.setStringProperty,
+                    setTableProperty = sim.setTableProperty,
+                    setVector2Property = sim.setVector2Property,
+                    setVector3Property = sim.setVector3Property,
+                },
+            },
+            app = {
+                superClass = 'baseObject',
+                namespaces = {
+                    customData = true,
+                    signal = true,
+                    namedParam = true,
+                    refs = false,
+                    origRefs = false,
+                },
+                methods = {
+                },
+            },
+            scene = {
+                superClass = 'baseObject',
+                namespaces = {
+                    customData = true,
+                    signal = true,
+                    namedParam = false,
+                    refs = false,
+                    origRefs = false,
+                },
+                methods = {
+                    getObjectsInTree = sim.getObjectsInTree,
+                    load = sim.loadScene,
+                    save = sim.saveScene,
+                },
+            },
+            mesh = {
+                superClass = 'baseObject',
+                methods = {
+                },
+            },
+            texture = {
+                superClass = 'baseObject',
+                methods = {
+                },
+            },
+            collection = {
+                superClass = 'baseObject',
+                methods = {
+                    addItem = sim.addToCollection,
+                    checkCollision = sim.checkCollision,
+                    checkDistance = sim.checkDistance,
+                    remove = sim.removeCollection,
+                    removeItem = sim.removeFromCollection,
+                },
+            },
+            drawingObject = {
+                superClass = 'baseObject',
+                methods = {
+                    addItem = sim.addDrawingObjectItem,
+                    remove = sim.removeDrawingObject,
+                },
+            },
+            sceneObject = {
+                superClass = 'baseObject',
+                namespaces = {
+                    customData = true,
+                    signal = true,
+                    namedParam = false,
+                    refs = true,
+                    origRefs = true,
+                },
+                methods = {
+                    getAlias = sim.getObjectAlias,
+                    getPose = sim.getObjectPose,
+                    getPosition = sim.getObjectPosition,
+                    getQuaternion = sim.getObjectQuaternion,
+                    getVelocity = sim.getObjectVelocity,
+                    remove = function(self) return sim.removeObjects{self} end,
+                    scaleObject = sim.scaleObject,
+                    setParent = sim.setObjectParent,
+                    setPose = sim.setObjectPose,
+                    setPosition = sim.setObjectPosition,
+                    setQuaternion = sim.setObjectQuaternion,
+                    visitTree = sim.visitTree,
+                },
+            },
+            camera = {
+                superClass = 'sceneObject',
+                methods = {
+                },
+            },
+            dummy = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkCollision = sim.checkCollision,
+                    checkDistance = sim.checkDistance,
+                },
+            },
+            forceSensor = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkSensor = sim.readForceSensor,
+                    getForce = function ()
+                        local f, t = sim.readForceSensor(self.__handle)
+                        return f
+                    end,
+                    getTorque = function ()
+                        local f, t = sim.readForceSensor(self.__handle)
+                        return t
+                    end,
+                },
+            },
+            graph = {
+                superClass = 'sceneObject',
+                methods = {
+                    addCurve = sim.addGraphCurve,
+                    addStream = sim.addGraphStream,
+                    resetGraph = sim.resetGraph,
+                },
+            },
+            joint = {
+                superClass = 'sceneObject',
+                methods = {
+                    getForce = sim.getJointForce,
+                    resetDynamicObject = sim.resetDynamicObject,
+                    getVelocity = sim.getJointVelocity,
+                },
+            },
+            light = {
+                superClass = 'sceneObject',
+                methods = {
+                },
+            },
+            ocTree = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkCollision = sim.checkCollision,
+                    checkDistance = sim.checkDistance,
+                    checkPointOccupancy = sim.checkOctreePointOccupancy,
+                    insertObject = sim.insertObjectIntoOctree,
+                    insertVoxels = sim.insertVoxelsIntoOctree,
+                    removeVoxels = sim.removeVoxelsFromOctree,
+                    subtractObject = sim.subtractObjectFromOctree,
+                },
+            },
+            pointCloud = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkCollision = sim.checkCollision,
+                    checkDistance = sim.checkDistance,
+                    insertObject = sim.insertObjectIntoPointCloud,
+                    insertPoints = sim.insertPointsIntoPointCloud,
+                    intersectPoints = sim.intersectPointsWithPointCloud,
+                    removePoints = sim.removePointsFromPointCloud,
+                    subtractObject = sim.subtractObjectFromPointCloud,
+                },
+            },
+            proximitySensor = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkSensor = sim.checkProximitySensor,
+                    resetSensor = sim.resetProximitySensor,
+                },
+            },
+            script = {
+                superClass = 'sceneObject',
+                methods = {
+                    callFunction = sim.callScriptFunction,
+                    executeScriptString = sim.executeScriptString,
+                    getApiFunc = sim.getApiFunc,
+                    getApiInfo = sim.getApiInfo,
+                    getStackTraceback = sim.getStackTraceback,
+                    init = sim.initScript,
+                },
+            },
+            shape = {
+                superClass = 'sceneObject',
+                methods = {
+                    addForce = sim.addForce,
+                    addForceAndTorque = sim.addForceAndTorque,
+                    alignBB = sim.alignShapeBB,
+                    checkCollision = sim.checkCollision,
+                    checkDistance = sim.checkDistance,
+                    computeMassAndInertia = sim.computeMassAndInertia,
+                    getAppearance = sim.getShapeAppearance,
+                    getDynVelocity = sim.getShapeVelocity,
+                    relocateFrame = sim.relocateShapeFrame,
+                    resetDynamicObject = sim.resetDynamicObject,
+                    setAppearance = sim.setShapeAppearance,
+                    setShapeBB = sim.setShapeBB,
+                    ungroup = sim.ungroupShape,
+                },
+            },
+            visionSensor = {
+                superClass = 'sceneObject',
+                methods = {
+                    checkSensor = sim.checkVisionSensor,
+                    checkSensorEx = sim.checkVisionSensorEx,
+                    read = sim.readVisionSensor,
+                    reset = sim.resetVisionSensor,
+                },
+            },
         }
+
+        function sim.Object.getObjMetaInfo(objectType)
+            local ret = {
+                methods = {},
+                namespaces = {},
+            }
+            local objMetaInfo = sim.Object.objMetaInfo[objectType]
+            while objMetaInfo do
+                for k, v in pairs(objMetaInfo.methods) do
+                    if ret.methods[k] == nil then
+                        ret.methods[k] = v
+                    end
+                end
+                for k, v in pairs(objMetaInfo.namespaces or {}) do
+                    if ret.namespaces[k] == nil then
+                        ret.namespaces[k] = v
+                    end
+                end
+                objMetaInfo = sim.Object.objMetaInfo[objMetaInfo.superClass or '']
+            end
+            return ret
+        end
 
         setmetatable(sim.Object, {
             __call = function(self, arg, opts)
@@ -511,11 +451,7 @@ return {
                 else
                     error 'invalid arguments to sim.Object(...)'
                 end
-
-                local objectType = sim.getStringProperty(handle, 'objectType')
-                local cls = sim.Object.class[objectType]
-                assert(cls, 'unsupported object type: ' .. objectType)
-                return cls(handle)
+                return sim.BaseObject(handle)
             end
         })
 
