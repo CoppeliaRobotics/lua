@@ -18,9 +18,19 @@ function type_tags.TAG_40(values)
     return simEigen.Matrix(rows, cols, data)
 end
 
-function type_tags.TAG_4008(value)
+function type_tags.TAG_4294970000(value)
     local Color = require 'color'
     return Color(value)
+end
+
+function type_tags.TAG_4294980000(value)
+    local simEigen = require 'simEigen'
+    return simEigen.Quaternion(value)
+end
+
+function type_tags.TAG_4294980500(value)
+    local simEigen = require 'simEigen'
+    return simEigen.Pose(value)
 end
 
 function simCBOR.decode(data)
