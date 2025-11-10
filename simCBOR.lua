@@ -33,6 +33,11 @@ function type_tags.TAG_4294980500(value)
     return simEigen.Pose(value)
 end
 
+function type_tags.TAG_4294999999(value)
+    local sim = require 'sim-2'
+    return sim.Object(value)
+end
+
 function simCBOR.decode(data)
     return cbor.decode(data, 1, type_tags)
 end
