@@ -107,16 +107,10 @@ return {
         function sim.Object.static:resolveFunction(funcName)
             local fields = string.split(funcName, '%.')
             local moduleName = table.remove(fields, 1)
-            local module
-            if moduleName == 'sim-2' then
-                module = sim
-            else
-                module = require(moduleName)
-            end
-            for _, field in ipairs(fields) do
-                module = module[field]
-            end
-            return module
+            local module = moduleName == 'sim-2' and sim or require(moduleName)
+            local func = module
+            for _, field in ipairs(fields) do func = (func or {})[field] end
+            return func
         end
 
         function sim.Object:initialize(handle)
@@ -140,6 +134,9 @@ return {
             local methods = {}
             for m, f in pairs(objMetaInfo.methods) do
                 methods[m] = sim.Object:resolveFunction(f)
+                if methods[m] == nil then
+                    sim.addLog(sim.verbosity_errors, string.format('sim.Object(%s): method %s: failed to resolve function %s', handle, m, f))
+                end
             end
             rawset(self, '__methods', methods)
         end
