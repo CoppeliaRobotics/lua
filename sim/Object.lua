@@ -127,18 +127,11 @@ return {
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
             local json = require 'dkjson'
-            local objMetaInfo = json.decode(sim.getStringProperty(self, 'objectMetaInfo'))
+            local objMetaInfo = json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
             for ns, opts in pairs(objMetaInfo.namespaces) do
                 rawset(self, ns, sim.PropertyGroup(handle, table.update({prefix = ns}, opts)))
             end
-            local methods = {}
-            for m, f in pairs(objMetaInfo.methods) do
-                methods[m] = sim.Object:resolveFunction(f)
-                if methods[m] == nil then
-                    sim.addLog(sim.verbosity_errors, string.format('sim.Object(%s): method %s: failed to resolve function %s', handle, m, f))
-                end
-            end
-            rawset(self, '__methods', methods)
+            rawset(self, '__methods', objMetaInfo.methods)
         end
 
         function sim.Object:__copy()
@@ -156,8 +149,15 @@ return {
             if v then return v end
 
             -- lookup method:
-            local m = (rawget(self, '__methods') or {})[k]
-            if m then return m end
+            local methods = rawget(self, '__methods')
+            if methods[k] then
+                if type(methods[k]) == 'string' then
+                    local funcName = methods[k]
+                    methods[k] = sim.Object:resolveFunction(funcName)
+                    assert(methods[k], string.format('sim.Object(%s): method %s: failed to resolve function %s', self.handle, k, funcName))
+                end
+                return methods[k]
+            end
 
             -- redirect to default property group otherwise:
             local p = rawget(self, '__properties')[k]
