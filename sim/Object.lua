@@ -240,7 +240,6 @@ return {
             forceSensor = {
                 superClass = 'sceneObject',
                 methods = {
-                    checkSensor = 'sim-2.readForceSensor',
                 },
             },
             graph = {

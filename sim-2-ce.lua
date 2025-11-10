@@ -35,7 +35,6 @@ sim.setObjectPose(handle objectHandle, pose p, handle relativeToObjectHandle = s
 sim.setObjectPosition(handle objectHandle, vector3 pos, handle relativeToObjectHandle = sim.handle_world)
 sim.setObjectQuaternion(handle objectHandle, quaternion quat, handle relativeToObjectHandle = sim.handle_world)
 sim.initScript(handle scriptHandle = sim.handle_self)
-vector3 forceVector, vector3 torqueVector = sim.readForceSensor(handle objectHandle)
 sim.addForce(handle shapeHandle, vector3 position, vector3 force)
 sim.addForceAndTorque(handle shapeHandle, vector3 force = {0.0, 0.0, 0.0}, vector3 torque = {0.0, 0.0, 0.0})
 string info = sim.getLastInfo()
