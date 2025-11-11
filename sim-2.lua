@@ -979,10 +979,11 @@ function sim.getPropertiesInfos(target, opts)
         local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
         pflags = {
             value = pflags,
-            readable = pflags & 2 == 0,
-            writable = pflags & 1 == 0,
-            removable = pflags & 4 > 0,
-            large = pflags & 256 > 0,
+            readable = pflags & sim.propertyinfo_notreadable == 0,
+            writable = pflags & sim.propertyinfo_notwritable == 0,
+            removable = pflags & sim.propertyinfo_removable > 0,
+            silent = pflags & sim.propertyinfo_silent > 0,
+            large = pflags & sim.propertyinfo_largedata > 0,
         }
         propertiesInfos[pname] = {
             type = ptype,
