@@ -19,8 +19,6 @@ map[] originalColorData = sim.changeEntityColor(handle entityHandle, color newCo
 sim.restoreEntityColor(map[] colorData)
 bool result = sim.isHandle(handle objectHandle)
 string objectAlias = sim.getObjectAlias(handle objectHandle, int options = -1)
-float[] theBuffer = sim.checkVisionSensorEx(handle sensorHandle, handle entityHandle, bool returnImage)
-buffer theBuffer = sim.checkVisionSensorEx(handle sensorHandle, handle entityHandle, bool returnImage)
 
 
 float[] vertices, int[] indices, float[] normals = sim.getShapeMesh(handle shapeHandle)
@@ -212,9 +210,7 @@ buffer data = sim.packUInt8Table(int[] uint8Numbers, int startUint8Index=0, int 
 sim.pauseSimulation()
 sim.pushUserEvent(string event, int handle, int uid, map eventData, int options=0)
 sim.quitSimulator()
-int result, float distance, float[3] detectedPoint, int detectedObjectHandle, float[3] normalVector = sim.readProximitySensor(int sensorHandle)
 buffer textureData = sim.readTexture(int textureId, int options, int posX=0, int posY=0, int sizeX=0, int sizeY=0)
-int result, float[] auxPacket1, float[] auxPacket2 = sim.readVisionSensor(int sensorHandle)
 int result = sim.refreshDialogs(int refreshDegree)
 int result = sim.relocateShapeFrame(int shapeHandle, float[7] pose)
 sim.removeDrawingObject(handle drawingObjectHandle)
