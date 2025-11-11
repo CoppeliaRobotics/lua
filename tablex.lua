@@ -66,6 +66,20 @@ function table.keys(t)
     return r
 end
 
+function table.filter(t, opts)
+    opts = opts or {}
+    local r = {}
+    for k, v in pairs(t) do
+        if opts.matchKeyPrefix == nil or string.startswith(k, opts.matchKeyPrefix) then
+            if opts.matchKeyPrefix and opts.stripKeyPrefix then
+                k = string.stripprefix(k, opts.matchKeyPrefix)
+            end
+            r[k] = v
+        end
+    end
+    return r
+end
+
 function table.isarray(t)
     if type(t) ~= 'table' then return false end
     local m = 0
