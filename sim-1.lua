@@ -1329,7 +1329,6 @@ function sim.getPropertyInfos(target, pname, opts)
         },
         label = label,
         descr = descr,
-        class = pclass,
     }
 end
 
@@ -1340,6 +1339,7 @@ function sim.getPropertiesInfos(target, opts)
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
         propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label=true})
+        propertiesInfos[pname].class = pclass
     end
     return propertiesInfos
 end
