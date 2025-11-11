@@ -1309,31 +1309,38 @@ function sim.setProperties(target, props)
     end
 end
 
+function sim.getPropertyInfos(target, pname, opts)
+    opts = opts or {}
+    local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
+    if not ptype then return end
+    local label
+    if opts.label then
+        label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
+    end
+    return {
+        type = ptype,
+        flags = {
+            value = pflags,
+            readable = pflags & sim.propertyinfo_notreadable == 0,
+            writable = pflags & sim.propertyinfo_notwritable == 0,
+            removable = pflags & sim.propertyinfo_removable > 0,
+            silent = pflags & sim.propertyinfo_silent > 0,
+            large = pflags & sim.propertyinfo_largedata > 0,
+        },
+        label = label,
+        descr = descr,
+        class = pclass,
+    }
+end
+
 function sim.getPropertiesInfos(target, opts)
     opts = opts or {}
-
     local propertiesInfos = {}
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i)
         if not pname then break end
-        local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
-        local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
-        pflags = {
-            value = pflags,
-            readable = pflags & 2 == 0,
-            writable = pflags & 1 == 0,
-            removable = pflags & 4 > 0,
-            large = pflags & 256 > 0,
-        }
-        propertiesInfos[pname] = {
-            type = ptype,
-            flags = pflags,
-            label = label,
-            descr = descr,
-            class = pclass,
-        }
+        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label=true})
     end
-
     return propertiesInfos
 end
 

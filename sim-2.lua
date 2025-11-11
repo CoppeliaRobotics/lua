@@ -968,32 +968,38 @@ function sim.setProperties(target, props)
     end
 end
 
-function sim.getPropertiesInfos(target, opts)
+function sim.getPropertyInfos(target, pname, opts)
     opts = opts or {}
-
-    local propertiesInfos = {}
-    for i = 0, 1e100 do
-        local pname, pclass = sim.getPropertyName(target, i)
-        if not pname then break end
-        local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
-        local label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
-        pflags = {
+    local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
+    if not ptype then return end
+    local label
+    if opts.label then
+        label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
+    end
+    return {
+        type = ptype,
+        flags = {
             value = pflags,
             readable = pflags & sim.propertyinfo_notreadable == 0,
             writable = pflags & sim.propertyinfo_notwritable == 0,
             removable = pflags & sim.propertyinfo_removable > 0,
             silent = pflags & sim.propertyinfo_silent > 0,
             large = pflags & sim.propertyinfo_largedata > 0,
-        }
-        propertiesInfos[pname] = {
-            type = ptype,
-            flags = pflags,
-            label = label,
-            descr = descr,
-            class = pclass,
-        }
-    end
+        },
+        label = label,
+        descr = descr,
+        class = pclass,
+    }
+end
 
+function sim.getPropertiesInfos(target, opts)
+    opts = opts or {}
+    local propertiesInfos = {}
+    for i = 0, 1e100 do
+        local pname, pclass = sim.getPropertyName(target, i)
+        if not pname then break end
+        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label=true})
+    end
     return propertiesInfos
 end
 
