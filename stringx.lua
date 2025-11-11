@@ -302,6 +302,25 @@ function string.stripsuffix(s, suffix)
     end
 end
 
+function string.elide(s, maxLen, opts)
+    maxLen = maxLen or 80
+    opts = opts or {}
+    local ret = s
+    if opts.truncateAtNewLine then
+        local n = ret:find("\n")
+        if n then
+            ret = ret:sub(1, n - 1)
+        end
+    end
+    if #ret > maxLen then
+        ret = ret:sub(1, maxLen)
+    end
+    if #ret < #s then
+        ret = ret .. "..."
+    end
+    return ret
+end
+
 function string.utf8sub(s, i, j)
     local start_byte = utf8.offset(s, i) or (#s + 1)
     local end_byte = j and (utf8.offset(s, j + 1) or (#s + 1)) - 1 or #s
