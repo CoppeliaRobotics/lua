@@ -80,6 +80,16 @@ function table.filter(t, opts)
     return r
 end
 
+function table.invert(t, opts)
+    opts = opts or {}
+    local r = {}
+    for k, v in pairs(t) do
+        assert(r[v] == nil or opts.errorOnClash == false, 'value appears multiple times: ' .. v)
+        r[v] = k
+    end
+    return r
+end
+
 function table.isarray(t)
     if type(t) ~= 'table' then return false end
     local m = 0
