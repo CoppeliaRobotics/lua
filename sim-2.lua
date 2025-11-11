@@ -865,11 +865,7 @@ function sim.getProperty(target, pname, opts)
         assert(ptype, 'no such property: ' .. pname)
     end
     if ptype then
-        local getPropertyFunc = 'get' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
-        if not noError then
-            assert(sim[getPropertyFunc], 'no such function: sim.' .. getPropertyFunc)
-        end
-        retVal = sim[getPropertyFunc](target, pname)
+        retVal = sim.getPropertyGetter(ptype)(target, pname)
     end
     return retVal
 end
@@ -907,30 +903,34 @@ function sim.setProperty(target, pname, pvalue, ptype)
         ptype = sim.getPropertyInfo(target, pname)
         assert(ptype ~= nil, 'no such property: ' .. pname)
     end
-    local setPropertyFunc = 'set' .. sim.getPropertyTypeString(ptype, true) .. 'Property'
-    assert(sim[setPropertyFunc], 'no such function: sim.' .. setPropertyFunc)
-    return sim[setPropertyFunc](target, pname, pvalue)
+    return sim.getPropertySetter(ptype)(target, pname, pvalue)
 end
 
-function sim.getPropertyTypeString(ptype, forGetterSetter)
+function sim.getPropertyTypeString(ptype)
     if not locals.propertytypeToStringMap then
-        locals.propertytypeToStringMap = {}
-        for k, v in pairs(sim) do
-            local m = string.match(k, 'propertytype_(.*)')
-            if m then locals.propertytypeToStringMap[v] = m end
-        end
+        locals.propertytypeToStringMap = table.invert(table.filter(sim, {matchKeyPrefix = 'propertytype_', stripKeyPrefix = true}))
     end
-    local ret = locals.propertytypeToStringMap[ptype]
-    if forGetterSetter then
-        if ret == 'floatarray' then ret = 'floatArray' end
-        if ret == 'floatarray2' then ret = 'floatArray2' end
-        if ret == 'floatarray3' then ret = 'floatArray3' end
-        if ret == 'intarray' then ret = 'intArray' end
-        if ret == 'intarray2' then ret = 'intArray2' end
-        if ret == 'handlearray' then ret = 'handleArray' end
-        ret = string.capitalize(ret)
-    end
-    return ret
+    return locals.propertytypeToStringMap[ptype]
+end
+
+function sim.getPropertyGetter(ptype, onlyFuncName)
+    local ptypeStr = sim.getPropertyTypeString(ptype)
+    ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
+    local n = 'get' .. ptypeStr .. 'Property'
+    if onlyFuncName then return n end
+    local func = sim[n]
+    assert(func, 'no such function: sim.' .. n)
+    return func
+end
+
+function sim.getPropertySetter(ptype, onlyFuncName)
+    local ptypeStr = sim.getPropertyTypeString(ptype)
+    ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
+    local n = 'set' .. ptypeStr .. 'Property'
+    if onlyFuncName then return n end
+    local func = sim[n]
+    assert(func, 'no such function: sim.' .. n)
+    return func
 end
 
 function sim.convertPropertyValue(value, fromType, toType)

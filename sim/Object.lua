@@ -27,8 +27,7 @@ return {
 
             local ptype = sim.getPropertyInfo(self.__handle, k)
             if ptype then
-                local t = sim.getPropertyTypeString(ptype, true)
-                return sim['get' .. t:capitalize() .. 'Property'](self.__handle, k)
+                return sim.getPropertyGetter(ptype)(self.__handle, k)
             end
 
             if sim.getPropertyName(self.__handle, 0, {prefix = k .. '.'}) then
@@ -52,8 +51,7 @@ return {
 
             local ptype = self.__opts.newPropertyForcedType or sim.getPropertyInfo(self.__handle, k)
             if ptype then
-                local t = sim.getPropertyTypeString(ptype, true)
-                sim['set' .. t:capitalize() .. 'Property'](self.__handle, k, v)
+                sim.getPropertySetter(ptype)(self.__handle, k, v)
             else
                 sim.setProperty(self.__handle, k, v)
             end
@@ -82,8 +80,7 @@ return {
                     local ptype, pflags, descr = sim.getPropertyInfo(self.__handle, prefix .. pname)
                     local readable = pflags & 2 == 0
                     if readable then
-                        local t = sim.getPropertyTypeString(ptype, true)
-                        props[pname2] = sim['get' .. t:capitalize() .. 'Property'](self.__handle, prefix .. pname)
+                        props[pname2] = sim.getPropertyGetter(ptype)(self.__handle, prefix .. pname)
                     end
                 elseif props[pname2] == nil then
                     props[pname2] = sim.PropertyGroup(self.__handle, {prefix = prefix .. pname})
