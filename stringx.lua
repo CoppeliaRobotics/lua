@@ -246,19 +246,17 @@ function string.escapehtml(s, opts)
         s = tostring(s)
     end
     opts = opts or {}
-    opts.entities = opts.entities or true
-
+    opts.entities = opts.entities ~= false
     if opts.entities then
         local htmlEntities = {
             ["&"] = "&amp;",
             ["<"] = "&lt;",
             [">"] = "&gt;",
             ['"'] = "&quot;",
-            ["'"] = "&#39;",
+            ["'"] = "&apos;",
         }
         s = s:gsub("[&<>\"']", function(match) return htmlEntities[match] end)
     end
-
     return s
 end
 
