@@ -288,6 +288,57 @@ function string.stripmarkdown(s, opts)
     return s
 end
 
+function string.renderxml(node, attrs_order, indent)
+    indent = indent or ""
+    local nl = "\n"
+
+    local xml = {}
+
+    local attrs = ""
+    if node.attrs then
+        local done = {}
+        for _, k in ipairs(attrs_order or {}) do
+            local v = node.attrs[k]
+            if v then
+                attrs = attrs .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
+                done[k] = true
+            end
+        end
+        for k, v in pairs(node.attrs) do
+            if not done[k] then
+                attrs = attrs .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
+            end
+        end
+    end
+
+    if not node.children or #node.children == 0 then
+        table.insert(xml, string.format("%s<%s%s />", indent, node.tag, attrs))
+        return table.concat(xml, "")
+    end
+
+    -- exactly one text child -> inline start/end tag
+    if #node.children == 1 and type(node.children[1]) == "string" then
+        table.insert(xml,
+            string.format("%s<%s%s>%s</%s>",
+                indent, node.tag, attrs, string.escapehtml(node.children[1]), node.tag
+            )
+        )
+        return table.concat(xml)
+    end
+
+    table.insert(xml, string.format("%s<%s%s>", indent, node.tag, attrs))
+    for _, child in ipairs(node.children) do
+        if type(child) == "string" then
+            table.insert(xml, string.escapehtml(child))
+        else
+            table.insert(xml, nl .. string.renderxml(child, attrs_order, indent .. "  "))
+        end
+    end
+    table.insert(xml, string.format("%s</%s>", nl .. indent, node.tag))
+
+    return table.concat(xml)
+end
+
 function string.stripprefix(s, prefix)
     if string.startswith(s, prefix) then
         return s:sub(#prefix + 1)
