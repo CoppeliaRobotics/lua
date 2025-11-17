@@ -108,7 +108,7 @@ return {
             local func = module
             for _, field in ipairs(fields) do func = (func or {})[field] end
             return function(...)
-                __proxyFuncName__ = methodName .. '@method'
+                __proxyFuncName__ = funcName .. ',' .. methodName .. '@method'
                 return func(...)
             end
         end
