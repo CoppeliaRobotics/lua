@@ -21,6 +21,20 @@ sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 sim.addDrawingObject = sim.createDrawingObject
 
+sim.loadImage = wrap(sim.loadImage, function(origFunc)
+    return function(loc, op)
+        return origFunc(op, loc) -- in sim-1 input args are inverted
+    end
+end)
+
+sim.loadModel = wrap(sim.loadModel, function(origFunc)
+    return function(loc, op)
+        local opts = 0
+        if op then opts = 1 end
+        return origFunc(op, op) -- in sim-1 arg2 is a bool
+    end
+end)
+
 function sim.addItemToCollection(c, w, h, o)
     return sim.addToCollection(c, h, w, o)
 end

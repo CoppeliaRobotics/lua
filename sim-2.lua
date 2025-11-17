@@ -28,6 +28,42 @@ function sim.removeFromCollection(c, h, w, o)
     return sim.addToCollection(c, h, w, o)
 end
 
+function sim._getAncestors(obj, objType)
+    objType = objType or sim.handle_all
+    local retVal = {}
+    while obj do
+        obj = obj.parent
+        if obj then
+            if obj.objectType == objType or objType == sim.handle_all then
+                retVal[#retVal + 1] = obj
+            end
+        else
+            break
+        end
+    end
+    return retVal
+end
+
+function sim.loadModelFromBuffer(buff)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelFromBuffer"
+    return sim.loadModel(buff, 0)
+end
+
+function sim.loadModelThumbnailFromBuffer(buff)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelThumbnailFromBuffer"
+    return sim.loadModel(buff, 1)
+end
+
+function sim.loadModelThumbnail(str)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelThumbnail"
+    return sim.loadModel(str, 1)
+end
+
+function sim.loadImageFromBuffer(buff, opt)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadImageFromBuffer"
+    return sim.loadImage("@mem" .. buff, opt)
+end
+
 sim.addDrawingObjectItem = wrap(sim.addDrawingObjectItem, function(origFunc)
     return function(...)
         origFunc(...) -- in sim-2, no return value
