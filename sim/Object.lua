@@ -104,11 +104,13 @@ return {
         function sim.Object.static:resolveFunction(methodName, funcName)
             local fields = string.split(funcName, '%.')
             local moduleName = table.remove(fields, 1)
+            local moduleNameWithoutVer = moduleName:gsub('-.*', '')
+            local funcNameWithoutVer = moduleNameWithoutVer .. '.' .. funcName:gsub('^[^.]+%.', '')
             local module = moduleName == 'sim-2' and sim or require(moduleName)
             local func = module
             for _, field in ipairs(fields) do func = (func or {})[field] end
             return function(...)
-                __proxyFuncName__ = funcName .. ',' .. methodName .. '@method'
+                __proxyFuncName__ = funcNameWithoutVer .. ',' .. methodName .. '@method'
                 return func(...)
             end
         end
