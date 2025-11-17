@@ -101,13 +101,16 @@ return {
 
         sim.Object = class 'sim.Object'
 
-        function sim.Object.static:resolveFunction(funcName)
+        function sim.Object.static:resolveFunction(methodName, funcName)
             local fields = string.split(funcName, '%.')
             local moduleName = table.remove(fields, 1)
             local module = moduleName == 'sim-2' and sim or require(moduleName)
             local func = module
             for _, field in ipairs(fields) do func = (func or {})[field] end
-            return func
+            return function(...)
+                __proxyFuncName__ = methodName .. '@method'
+                return func(...)
+            end
         end
 
         function sim.Object:initialize(handle)
@@ -150,7 +153,7 @@ return {
             if methods[k] then
                 if type(methods[k]) == 'string' then
                     local funcName = methods[k]
-                    methods[k] = sim.Object:resolveFunction(funcName)
+                    methods[k] = sim.Object:resolveFunction(k, funcName)
                     assert(methods[k], string.format('sim.Object(%s): method %s: failed to resolve function %s', self.handle, k, funcName))
                 end
                 return methods[k]
