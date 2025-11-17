@@ -45,22 +45,22 @@ function sim._getAncestors(obj, objType)
 end
 
 function sim.loadModelFromBuffer(buff)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelFromBuffer"
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelFromBuffer"
     return sim.loadModel(buff, 0)
 end
 
 function sim.loadModelThumbnailFromBuffer(buff)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelThumbnailFromBuffer"
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelThumbnailFromBuffer"
     return sim.loadModel(buff, 1)
 end
 
 function sim.loadModelThumbnail(str)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModelThumbnail"
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelThumbnail"
     return sim.loadModel(str, 1)
 end
 
 function sim.loadImageFromBuffer(buff, opt)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadImageFromBuffer"
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadImage,sim.loadImageFromBuffer"
     return sim.loadImage("@mem" .. buff, opt)
 end
 
