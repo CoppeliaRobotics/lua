@@ -131,16 +131,21 @@ end
 
 function checkargs.checkargsEx(opts, types, ...)
     -- level offset at which we should output the error:
-    opts.level = opts.level or 0
+    local level = opts.level or 0
 
     -- level at which we should output the error (1 is current, 2 parent, etc...)
-    local errorLevel = 2 + opts.level
+    local errorLevel = 2 + level
 
-    function infertype(t)
+    local function infertype(t)
         if t.class ~= nil then return 'object' end
         if t.union ~= nil then return 'union' end
         error('type missing, and could not infer type', errorLevel + 1)
     end
+
+    local function argnum(i)
+        return i + (opts.argoffset or 0)
+    end
+
     local fn = '?: '
     local info = debug.getinfo(2, 'n')
     if info and info.name then fn = info.name .. ': ' end
@@ -184,7 +189,7 @@ function checkargs.checkargsEx(opts, types, ...)
             if ok then
                 arg[i] = err
             else
-                error(fn .. string.format('argument %d %s', i, err or string.format('must be a %s', t.type)), errorLevel)
+                error(fn .. string.format('argument %d %s', argnum(i), err or string.format('must be a %s', t.type)), errorLevel)
             end
         end
     end
