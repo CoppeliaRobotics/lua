@@ -11,32 +11,42 @@ function checkargs.checkarg.any(v, t)
 end
 
 function checkargs.checkarg.float(v, t)
-    assert(type(v) == 'number', 'must be a float')
+    if type(v) ~= 'number' then
+        error('must be a float', 0)
+    end
     return v
 end
 
 function checkargs.checkarg.int(v, t)
-    assert(math.type(v) == 'integer', 'must be an int')
+    if math.type(v) ~= 'integer' then
+        error('must be an int', 0)
+    end
     return v
 end
 
 function checkargs.checkarg.string(v, t)
-    assert(type(v) == 'string', 'must be a string')
+    if type(v) ~= 'string' then
+        error('must be a string', 0)
+    end
     return v
 end
 
 function checkargs.checkarg.bool(v, t)
-    assert(type(v) == 'boolean', 'must be a boolean')
+    if type(v) ~= 'boolean' then
+        error('must be a boolean', 0)
+    end
     return v
 end
 
 function checkargs.checkarg.table(v, t)
-    assert(type(v) == 'table', 'must be a table')
+    if type(v) ~= 'table' then
+        error('must be a table', 0)
+    end
     if #v > 0 and t.item_type ~= nil then
         for _, i in ipairs{1, #v} do
             local ok, err = pcall(checkargs.checkarg[t.item_type], v[i])
             if not ok then
-                error('must be a table, elements ' .. err)
+                error('must be a table, elements ' .. err, 0)
             end
         end
     end
@@ -51,31 +61,35 @@ function checkargs.checkarg.table(v, t)
             minsize = tonumber(t.size)
             maxsize = minsize
             if math.type(minsize) ~= 'integer' then
-                error('incorrect value for size attribute')
+                error('incorrect value for size attribute', 0)
             end
         end
     elseif math.type(t.size) == 'integer' then
         minsize, maxsize = t.size, t.size
     elseif t.size then
-        error('incorrect value for "size" attribute')
+        error('incorrect value for "size" attribute', 0)
     end
     if minsize == maxsize and #v ~= maxsize then
-        error('must have exactly ' .. t.size .. ' elements')
+        error('must have exactly ' .. t.size .. ' elements', 0)
     elseif #v < minsize then
-        error('must have at least ' .. minsize .. ' elements')
+        error('must have at least ' .. minsize .. ' elements', 0)
     elseif #v > maxsize then
-        error('must have at most ' .. maxsize .. ' elements')
+        error('must have at most ' .. maxsize .. ' elements', 0)
     end
     return v
 end
 
 function checkargs.checkarg.func(v, t)
-    assert(type(v) == 'function', 'must be a function')
+    if type(v) ~= 'function' then
+        error('must be a function', 0)
+    end
     return v
 end
 
 function checkargs.checkarg.object(v, t)
-    assert(type(v) == 'table' and v.class ~= nil and v.isInstanceOf(v, t.class), 'must be an object of class ' .. tostring(t.class))
+    if type(v) ~= 'table' or v.class == nil or not v.isInstanceOf(v, t.class) then
+        error('must be an object of class ' .. tostring(t.class), 0)
+    end
     return v
 end
 
@@ -92,35 +106,56 @@ function checkargs.checkarg.union(v, t)
         end
         sep = ', '
     end
-    error('must be any of: ' .. allowedTypes .. '; but ' .. explanation)
+    error('must be any of: ' .. allowedTypes .. '; but ' .. explanation, 0)
 end
 
 function checkargs.checkarg.handle(v, t)
     local sim = require 'sim-2'
+    if math.type(v) ~= 'integer' and not sim.Object:isobject(v) then
+        error('must be an handle', 0)
+    end
     return sim.Object:toobject(v)
 end
 
 function checkargs.checkarg.matrix(v, t)
+    if not simEigen.Matrix:ismatrix(v) then
+        error('must be a matrix', 0)
+    end
     return simEigen.Matrix:tomatrix(v, t.rows, t.cols)
 end
 
 function checkargs.checkarg.vector(v, t)
+    if not simEigen.Vector:isvector(v) then
+        error('must be a vector', 0)
+    end
     return simEigen.Vector:tovector(v, t.size)
 end
 
 function checkargs.checkarg.vector3(v, t)
+    if not simEigen.Vector:isvector(v, 3) then
+        error('must be a vector3', 0)
+    end
     return simEigen.Vector:tovector(v, 3)
 end
 
 function checkargs.checkarg.quaternion(v, t)
+    if not simEigen.Quaternion:isquaternion(v) then
+        error('must be a quaternion', 0)
+    end
     return simEigen.Quaternion:toquaternion(v)
 end
 
 function checkargs.checkarg.pose(v, t)
+    if not simEigen.Pose:ispose(v) then
+        error('must be a pose', 0)
+    end
     return simEigen.Pose:topose(v)
 end
 
 function checkargs.checkarg.color(v, t)
+    if not Color:iscolor(v) then
+        error('must be a color', 0)
+    end
     return Color:tocolor(v)
 end
 
