@@ -142,7 +142,7 @@ function checkargs.checkargsEx(opts, types, ...)
     local defaultArgOffset = 0
     if funcName and __proxyFuncName__ then
         local method = __proxyFuncName__:endswith('@method')
-        local matchFunc, target = __proxyFuncName__:stripsuffix('@method'):split(',')
+        local matchFunc, target = table.unpack(__proxyFuncName__:stripsuffix('@method'):split(','))
         if matchFunc == funcName then
             __proxyFuncName__ = nil
             funcName = target
