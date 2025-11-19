@@ -155,10 +155,6 @@ function checkargs.checkargsEx(opts, types, ...)
         error('type missing, and could not infer type', errorLevel + 1)
     end
 
-    local function argnum(i)
-        return i + (argOffset or 0)
-    end
-
     if funcName == nil then
         local info = debug.getinfo(2, 'n')
         if info and info.name then funcName = info.name end
@@ -204,7 +200,7 @@ function checkargs.checkargsEx(opts, types, ...)
             if ok then
                 arg[i] = err
             else
-                error(fn .. string.format('argument %d %s', argnum(i), err or string.format('must be a %s', t.type)), errorLevel)
+                error(fn .. string.format('argument %d %s', i + argOffset, err or string.format('must be a %s', t.type)), errorLevel)
             end
         end
     end
