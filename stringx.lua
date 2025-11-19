@@ -342,12 +342,16 @@ end
 function string.stripprefix(s, prefix)
     if string.startswith(s, prefix) then
         return s:sub(#prefix + 1)
+    else
+        return s
     end
 end
 
 function string.stripsuffix(s, suffix)
     if string.endswith(s, suffix) then
         return s:sub(1, #s - #suffix)
+    else
+        return s
     end
 end
 
