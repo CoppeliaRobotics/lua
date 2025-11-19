@@ -27,6 +27,12 @@ sim.loadImage = wrap(sim.loadImage, function(origFunc)
     end
 end)
 
+sim.saveImage = wrap(sim.saveImage, function(origFunc)
+    return function(img, res, op, fName, qual)
+        return origFunc(img, res, fName, op, qual) -- in sim-1 input args are ordered differently
+    end
+end)
+
 sim.loadModel = wrap(sim.loadModel, function(origFunc)
     return function(loc, op)
         local opts = 0

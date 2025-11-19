@@ -28,20 +28,73 @@ function sim.removeFromCollection(c, h, w, o)
     return sim.addToCollection(c, h, w, o)
 end
 
-function sim._getAncestors(obj, objType)
-    objType = objType or sim.handle_all
+function sim.getObjectAncestors(obj, objTypes, depth)
+    objTypes = objTypes or {'sceneObject'}
+    local types = {}
+    if table.isarray(objTypes) then
+        for i = 1, #objTypes do
+            types[objTypes[i]] = true
+        end
+    else
+        types = objTypes
+    end
+    depth = depth or 9999
     local retVal = {}
     while obj do
         obj = obj.parent
         if obj then
-            if obj.objectType == objType or objType == sim.handle_all then
+            if types[obj.objectType] or types['sceneObject'] then
                 retVal[#retVal + 1] = obj
             end
         else
             break
         end
+        depth = depth - 1
+        if depth == 0 then
+            break
+        end
     end
     return retVal
+end
+
+function sim.getObjectDescendants(obj, objTypes, depth)
+    objTypes = objTypes or {'sceneObject'}
+    local types = {}
+    if table.isarray(objTypes) then
+        for i = 1, #objTypes do
+            types[objTypes[i]] = true
+        end
+    else
+        types = objTypes
+    end
+    depth = depth or 9999
+    local retVal = {}
+    
+    if depth > 0 then
+        if obj == sim.scene then
+            for i = 1, #obj.orphans do
+                local child = obj.orphans[i]
+                if types[child.objectType] or types['sceneObject'] then
+                    retVal[#retVal + 1] = child
+                end
+                retVal = table.add(retVal, sim.getObjectDescendants(child, types, depth - 1))
+            end
+        else
+            for i = 1, #obj.children do
+                local child = obj.children[i]
+                if types[child.objectType] or types['sceneObject'] then
+                    retVal[#retVal + 1] = child
+                end
+                retVal = table.add(retVal, sim.getObjectDescendants(child, types, depth - 1))
+            end
+        end
+    end
+    return retVal
+end
+
+function sim.loadSceneFromBuffer(buff)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.loadScene,sim.loadSceneFromBuffer"
+    return sim.loadScene(buff)
 end
 
 function sim.loadModelFromBuffer(buff)
@@ -59,9 +112,34 @@ function sim.loadModelThumbnail(str)
     return sim.loadModel(str, 1)
 end
 
+locals.simSaveModel = sim.saveModel
+function sim.saveModelToBuffer(h)
+    __proxyFuncName__ = __proxyFuncName__ or "sim.simSaveModel,sim.saveModelToBuffer"
+    return locals.simSaveModel(h)
+end
+
+function sim.saveModel(h, fn)
+    locals.simSaveModel(h, fn) -- in sim-2, no return value
+end
+
 function sim.loadImageFromBuffer(buff, opt)
     __proxyFuncName__ = __proxyFuncName__ or "sim.loadImage,sim.loadImageFromBuffer"
     return sim.loadImage("@mem" .. buff, opt)
+end
+
+locals.simSaveImage = sim.saveImage
+function sim.saveImageToBuffer(img, res, form, opt, qual)
+    form = form or 'png'
+    opt = opt or 0
+    qual = qual or -1
+    __proxyFuncName__ = __proxyFuncName__ or "sim.saveImage,sim.saveImageToBuffer"
+    return locals.simSaveImage(img, res, '.' .. form, opt, qual)
+end
+
+function sim.saveImage(img, res, filename, opt, qual)
+    opt = opt or 0
+    qual = qual or -1
+    locals.simSaveImage(img, res, filename, opt, qual)
 end
 
 sim.addDrawingObjectItem = wrap(sim.addDrawingObjectItem, function(origFunc)
