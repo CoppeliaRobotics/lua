@@ -134,6 +134,10 @@ function checkargs.checkargsEx(opts, types, ...)
     local level = opts.level or 0
     -- function name displayed in error messages
     local funcName = opts.funcName
+    if funcName == nil then
+        local info = debug.getinfo(2, 'n')
+        if info and info.name then funcName = info.name end
+    end
     -- offset for argument number in error messages:
     local defaultArgOffset = 0
     if funcName and __proxyFuncName__ then
@@ -156,10 +160,6 @@ function checkargs.checkargsEx(opts, types, ...)
         error('type missing, and could not infer type', errorLevel + 1)
     end
 
-    if funcName == nil then
-        local info = debug.getinfo(2, 'n')
-        if info and info.name then funcName = info.name end
-    end
     local fn = (funcName or '?') .. ': '
     local arg = table.pack(...)
     -- check how many arguments are required (default arguments must come last):
