@@ -132,6 +132,19 @@ end
 function checkargs.checkargsEx(opts, types, ...)
     -- level offset at which we should output the error:
     local level = opts.level or 0
+    -- function name displayed in error messages
+    local funcName = opts.funcName
+    -- offset for argument number in error messages:
+    local defaultArgOffset = 0
+    if funcName and __proxyFuncName__ then
+        local method = __proxyFuncName__:endswith('@method')
+        local matchFunc, target = __proxyFuncName__:stripsuffix('@method'):split(',')
+        if matchFunc == funcName then
+            funcName = target
+            if method then defaultArgOffset = 1 end
+        end
+    end
+    local argOffset = opts.argOffset or defaultArgOffset
 
     -- level at which we should output the error (1 is current, 2 parent, etc...)
     local errorLevel = 2 + level
@@ -143,12 +156,14 @@ function checkargs.checkargsEx(opts, types, ...)
     end
 
     local function argnum(i)
-        return i + (opts.argoffset or 0)
+        return i + (argOffset or 0)
     end
 
-    local fn = '?: '
-    local info = debug.getinfo(2, 'n')
-    if info and info.name then fn = info.name .. ': ' end
+    if funcName == nil then
+        local info = debug.getinfo(2, 'n')
+        if info and info.name then funcName = info.name end
+    end
+    local fn = (funcName or '?') .. ': '
     local arg = table.pack(...)
     -- check how many arguments are required (default arguments must come last):
     local minArgs = 0
