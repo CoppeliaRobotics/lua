@@ -5,8 +5,9 @@ local locals = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
-local checkargs = require('checkargs')
-local checkargs2 = require('checkargs-2')
+-- local checkargs = require('checkargs')
+-- local checkargs2 = require('checkargs-2')
+local checkargs = require('checkargs-2')
 require('motion-2').extend(sim)
 
 sim.addLog = addLog
@@ -28,17 +29,21 @@ function sim.removeFromCollection(c, h, w, o)
     return sim.addToCollection(c, h, w, o)
 end
 
-function sim.getObjectAncestors(obj, objTypes, depth)
-    objTypes = objTypes or {'sceneObject'}
+function sim.getObjectAncestors(...)
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({level = 1, funcName = 'sim.getObjectAncestors'}, {
+        {type = 'handle'},
+        {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
+        {type = 'int', default = 9999},
+        {type = 'table', default_nil = true, nullable = true},
+    }, ...)
     local types = {}
-    if table.isarray(objTypes) then
+    if objTypesMap then
+        types = objTypesMap
+    else
         for i = 1, #objTypes do
             types[objTypes[i]] = true
         end
-    else
-        types = objTypes
     end
-    depth = depth or 9999
     local retVal = {}
     while obj do
         obj = obj.parent
@@ -57,19 +62,23 @@ function sim.getObjectAncestors(obj, objTypes, depth)
     return retVal
 end
 
-function sim.getObjectDescendants(obj, objTypes, depth)
-    objTypes = objTypes or {'sceneObject'}
+function sim.getObjectDescendants(...)
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({level = 1, funcName = 'sim.getObjectDescendants'}, {
+        {type = 'handle'},
+        {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
+        {type = 'int', default = 9999},
+        {type = 'table', default_nil = true, nullable = true},
+    }, ...)
     local types = {}
-    if table.isarray(objTypes) then
+    if objTypesMap then
+        types = objTypesMap
+    else
         for i = 1, #objTypes do
             types[objTypes[i]] = true
         end
-    else
-        types = objTypes
     end
-    depth = depth or 9999
     local retVal = {}
-    
+
     if depth > 0 then
         if obj == sim.scene then
             for i = 1, #obj.orphans do
@@ -77,7 +86,7 @@ function sim.getObjectDescendants(obj, objTypes, depth)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim.getObjectDescendants(child, types, depth - 1))
+                retVal = table.add(retVal, sim.getObjectDescendants(child, {}, depth - 1, types))
             end
         else
             for i = 1, #obj.children do
@@ -85,7 +94,7 @@ function sim.getObjectDescendants(obj, objTypes, depth)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim.getObjectDescendants(child, types, depth - 1))
+                retVal = table.add(retVal, sim.getObjectDescendants(child, {}, depth - 1, types))
             end
         end
     end

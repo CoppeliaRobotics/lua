@@ -41,6 +41,12 @@ sim.loadModel = wrap(sim.loadModel, function(origFunc)
     end
 end)
 
+sim.transformBuffer = wrap(sim.transformBuffer, function(origFunc)
+    return function(a, b, c, d, e)
+        return origFunc(a, b, e, c, d) -- in sim-1 input arg order has changed
+    end
+end)
+
 function sim.addItemToCollection(c, w, h, o)
     return sim.addToCollection(c, h, w, o)
 end
