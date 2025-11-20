@@ -1108,6 +1108,7 @@ function sim.getPropertyInfos(target, pname, opts)
             removable = pflags & sim.propertyinfo_removable > 0,
             silent = pflags & sim.propertyinfo_silent > 0,
             large = pflags & sim.propertyinfo_largedata > 0,
+            deprecated = pflags & sim.propertyinfo_deprecated > 0,
         },
         label = label,
         descr = descr,
