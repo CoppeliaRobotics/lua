@@ -124,8 +124,6 @@ float[] pathLengths, float totalLength = sim.getPathLengths(float[] path, int do
 float maxVoxelSize, int maxPtCntPerVoxel, int options, float pointSize = sim.getPointCloudOptions(int pointCloudHandle)
 float[] points = sim.getPointCloudPoints(int pointCloudHandle)
 sim.fastIdleLoop(bool enable)
-string[] names = sim.getLoadedPlugins()
-bool loaded = sim.isPluginLoaded(string name)
 int handle = sim.loadPlugin(string name)
 handle[] referencedHandles = sim.getReferencedHandles(handle objectHandle, string tag='')
 handle referencedHandle = sim.getReferencedHandle(handle objectHandle, string tag='')

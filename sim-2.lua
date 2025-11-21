@@ -415,21 +415,7 @@ function sim.fastIdleLoop(enable)
     sim.setBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
 end
 
-function sim.getLoadedPlugins()
-    local ret = {}
-    local index = 0
-    while true do
-        local moduleName = sim.getPluginName(index)
-        if moduleName then
-            table.insert(ret, moduleName)
-        else
-            break
-        end
-        index = index + 1
-    end
-    return ret
-end
-
+--[[
 function sim.isPluginLoaded(pluginName)
     local index = 0
     local moduleName = ''
@@ -440,6 +426,7 @@ function sim.isPluginLoaded(pluginName)
     end
     return false
 end
+--]]
 
 function sim.throttle(t, func, ...)
     locals.lastExecTime = locals.lastExecTime or {}
