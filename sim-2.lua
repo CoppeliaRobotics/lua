@@ -1084,7 +1084,7 @@ function sim.getPropertyInfos(target, pname, opts)
     if not ptype then return end
     local label
     if opts.label then
-        label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt=true})})[3]
+        label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt = true})})[3]
     end
     return {
         type = ptype,
@@ -1106,9 +1106,9 @@ function sim.getPropertiesInfos(target, opts)
     opts = opts or {}
     local propertiesInfos = {}
     for i = 0, 1e100 do
-        local pname, pclass = sim.getPropertyName(target, i)
+        local pname, pclass = sim.getPropertyName(target, i, {excludeFlags = opts.excludeFlags})
         if not pname then break end
-        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label=true})
+        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label = true})
         propertiesInfos[pname].class = pclass
     end
     return propertiesInfos
