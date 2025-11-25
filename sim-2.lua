@@ -1093,12 +1093,15 @@ function sim.getPropertyInfos(target, pname, opts)
         large = pflags & sim.propertyinfo_largedata > 0,
         deprecated = pflags & sim.propertyinfo_deprecated > 0,
     }
-    if opts.decodeMetaInfo then
-        local json = require 'dkjson'
-        metaInfo = json.decode(metaInfo)
-        for k, v in pairs(metaInfo) do
-            assert(infos[k] == nil)
-            infos[k] = v
+    if opts.decodeMetaInfo ~= false then
+        if metaInfo ~= '' then
+            local json = require 'dkjson'
+            local decodedMetaInfo = json.decode(metaInfo)
+            assert(decodedMetaInfo ~= nil, 'invalid meta info: ' .. metaInfo)
+            for k, v in pairs(decodedMetaInfo) do
+                assert(infos[k] == nil)
+                infos[k] = v
+            end
         end
     else
         infos.metaInfo = metaInfo
@@ -1112,7 +1115,12 @@ function sim.getPropertiesInfos(target, opts)
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i, {excludeFlags = opts.excludeFlags})
         if not pname then break end
-        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {decodeMetaInfo = opts.decodeMetaInfo})
+        local ok, err = pcall(function()
+            propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {decodeMetaInfo = opts.decodeMetaInfo})
+        end)
+        if not ok then
+            error(string.format('property "%s": %s', pname, err))
+        end
         propertiesInfos[pname].class = pclass
     end
     return propertiesInfos
