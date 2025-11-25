@@ -1080,26 +1080,30 @@ end
 
 function sim.getPropertyInfos(target, pname, opts)
     opts = opts or {}
-    local ptype, pflags, descr = sim.getPropertyInfo(target, pname)
+    local infos = {}
+    local ptype, pflags, metaInfo = sim.getPropertyInfo(target, pname, {bitCoded = 1})
     if not ptype then return end
-    local label
-    if opts.label then
-        label = ({sim.getPropertyInfo(target, pname, {shortInfoTxt = true})})[3]
-    end
-    return {
-        type = ptype,
-        flags = {
-            value = pflags,
-            readable = pflags & sim.propertyinfo_notreadable == 0,
-            writable = pflags & sim.propertyinfo_notwritable == 0,
-            removable = pflags & sim.propertyinfo_removable > 0,
-            silent = pflags & sim.propertyinfo_silent > 0,
-            large = pflags & sim.propertyinfo_largedata > 0,
-            deprecated = pflags & sim.propertyinfo_deprecated > 0,
-        },
-        label = label,
-        descr = descr,
+    infos.type = ptype
+    infos.flags = {
+        value = pflags,
+        readable = pflags & sim.propertyinfo_notreadable == 0,
+        writable = pflags & sim.propertyinfo_notwritable == 0,
+        removable = pflags & sim.propertyinfo_removable > 0,
+        silent = pflags & sim.propertyinfo_silent > 0,
+        large = pflags & sim.propertyinfo_largedata > 0,
+        deprecated = pflags & sim.propertyinfo_deprecated > 0,
     }
+    if opts.decodeMetaInfo then
+        local json = require 'dkjson'
+        metaInfo = json.decode(metaInfo)
+        for k, v in pairs(metaInfo) do
+            assert(infos[k] == nil)
+            infos[k] = v
+        end
+    else
+        infos.metaInfo = metaInfo
+    end
+    return infos
 end
 
 function sim.getPropertiesInfos(target, opts)
@@ -1108,7 +1112,7 @@ function sim.getPropertiesInfos(target, opts)
     for i = 0, 1e100 do
         local pname, pclass = sim.getPropertyName(target, i, {excludeFlags = opts.excludeFlags})
         if not pname then break end
-        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {label = true})
+        propertiesInfos[pname] = sim.getPropertyInfos(target, pname, {decodeMetaInfo = opts.decodeMetaInfo})
         propertiesInfos[pname].class = pclass
     end
     return propertiesInfos
