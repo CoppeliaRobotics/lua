@@ -1092,6 +1092,7 @@ function sim.getPropertyInfos(target, pname, opts)
         silent = pflags & sim.propertyinfo_silent > 0,
         large = pflags & sim.propertyinfo_largedata > 0,
         deprecated = pflags & sim.propertyinfo_deprecated > 0,
+        constant = pflags & sim.propertyinfo_constant > 0,
     }
     if opts.decodeMetaInfo ~= false then
         if metaInfo ~= '' then
