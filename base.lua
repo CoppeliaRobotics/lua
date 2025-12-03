@@ -433,7 +433,21 @@ function getAsDisplayString(...)
         table.insert(s, _S.anyToString(a[i], {display = true}))
     end
     setAutoYield(lb)
-    return string.blockhstack(s, 0)
+    if a.n == 1 then -- nothing to h-stack
+        return s[1]
+    end
+    local stacked = string.blockhstack(s, 0)
+    local width = (string.find(stacked, "\n") or (#stacked + 1)) - 1
+    if width > 200 then
+        s = {}
+        for i = 1, a.n do
+            if i > 1 then table.insert(s, ', ') end
+            table.insert(s, _S.anyToString(a[i], {display = false}))
+        end
+        return _S.anyToString(s)
+    else
+        return stacked
+    end
 end
 
 function _S.sysCallBase_init()
