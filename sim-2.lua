@@ -1439,22 +1439,12 @@ function sim.getScriptFunctions(...)
         args[1] = sim.getObject(args[1])
     end
 
-    -- shorthand: first arg can be any object handle
-    -- script will be fetched via sim.getScript, second arg specifies script type
-    local scriptHandle
-    local ok, objType = pcall(sim.getObjectType, args[1])
-    if ok then
-        -- args[1] is a object handle (either new script, or other object)
-        assert(#args <= 2, 'too many args')
-        if objType ~= sim.sceneobject_script then
-            scriptHandle = sim.getScript(args[2] or sim.scripttype_customization, args[1])
-        else
-            scriptHandle = args[1]
-        end
-        args[2] = nil
-    else
-        scriptHandle = args[1]
+    if args[2] then
+        -- previously the constant for script type (int) was passed as second arg; now not needed.
+        sim.addLog(sim.verbosity_warnings, 'ignoring second argument of sim.getScriptFunctions (pass the script handle as the only argument)')
     end
+
+    local scriptHandle = args[1]
 
     -- at this point we have the script handle from every possible overload (scriptHandle)
     return setmetatable({}, {
