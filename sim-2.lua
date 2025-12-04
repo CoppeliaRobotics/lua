@@ -44,7 +44,6 @@ function sim.step(wait)
     sim.yield()
 end
 
-
 function wrap_dummyArg1(originalFunction)
     return function(_, ...) return originalFunction(...) end
 end

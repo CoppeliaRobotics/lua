@@ -62,6 +62,17 @@ sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     end
 end)
 
+sim.executeScriptString = wrap(sim.executeScriptString, function(origFunc)
+    return function(a, b, ...)
+        if type(a) ~= 'number' then
+            local tmp = a
+            a = b
+            b = tmp
+        end
+        return origFunc(a, b, ...)
+    end
+end)
+
 function sim.readCustomBufferData(obj, tag)
     local retVal = sim.readCustomStringData(obj, tag)
     if retVal then
