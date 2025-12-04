@@ -130,7 +130,7 @@ handle referencedHandle = sim.getReferencedHandle(handle objectHandle, string ta
 string[] tags = sim.getReferencedHandlesTags(handle objectHandle)
 buffer imageOut, int[2] effectiveResolutionOut = sim.getScaledImage(buffer imageIn, int[2] resolutionIn, int[2] desiredResolutionOut, int options)
 handle scriptHandle = sim.getScript(int scriptType, string scriptName='')
-map wrapper = sim.getScriptFunctions(int scriptHandle)
+map wrapper = sim.getScriptFunctions(handle scriptHandle)
 float[3] size, float[7] pose = sim.getShapeBB(int shapeHandle)
 float[3] size = sim.getModelBB(int handle)
 buffer data, string dataType = sim.readCustomDataBlockEx(int handle, string tag, map options={})

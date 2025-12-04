@@ -14,6 +14,41 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+function sim.acquireLock()
+    -- needs to be overridden by remote API components
+    setYieldAllowed(false)
+end
+
+function sim.releaseLock()
+    -- needs to be overridden by remote API components
+    setYieldAllowed(true)
+end
+
+function sim.setStepping(enable)
+    -- Convenience function, so that we have the same, more intuitive name also with external clients
+    -- Needs to be overridden by Python wrapper and remote API server code
+    if type(enable) ~= 'number' then enable = not enable end
+    return setAutoYield(enable)
+end
+
+function sim.yield()
+    if getYieldAllowed() then
+        local thread, yieldForbidden = coroutine.running()
+        if not yieldForbidden then coroutine.yield() end
+    end
+end
+
+function sim.step(wait)
+    -- Convenience function, for a more intuitive name, depending on the context
+    -- Needs to be overridden by Python wrapper and remote API server code
+    sim.yield()
+end
+
+
+function wrap_dummyArg1(originalFunction)
+    return function(_, ...) return originalFunction(...) end
+end
+
 locals.simRemoveCollection = sim.destroyCollection
 sim.destroyCollection = nil
 function sim.removeCollection(c)
@@ -225,36 +260,6 @@ sim.announceSceneContentChange = wrap(sim.announceSceneContentChange, function(o
         origFunc(...)
     end
 end)
-
-function sim.setStepping(enable)
-    -- Convenience function, so that we have the same, more intuitive name also with external clients
-    -- Needs to be overridden by Python wrapper and remote API server code
-    if type(enable) ~= 'number' then enable = not enable end
-    return setAutoYield(enable)
-end
-
-function sim.acquireLock()
-    -- needs to be overridden by remote API components
-    setYieldAllowed(false)
-end
-
-function sim.releaseLock()
-    -- needs to be overridden by remote API components
-    setYieldAllowed(true)
-end
-
-function sim.yield()
-    if getYieldAllowed() then
-        local thread, yieldForbidden = coroutine.running()
-        if not yieldForbidden then coroutine.yield() end
-    end
-end
-
-function sim.step(wait)
-    -- Convenience function, for a more intuitive name, depending on the context
-    -- Needs to be overridden by Python wrapper and remote API server code
-    sim.yield()
-end
 
 sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
     return function(wait)
@@ -1448,6 +1453,8 @@ function sim.getScriptFunctions(...)
             scriptHandle = args[1]
         end
         args[2] = nil
+    else
+        scriptHandle = args[1]
     end
 
     -- at this point we have the script handle from every possible overload (scriptHandle)
@@ -1455,7 +1462,7 @@ function sim.getScriptFunctions(...)
         __index = function(self, k)
             return function(self_, ...)
                 assert(self_ == self, 'methods must be called with object:method(args...)')
-                return sim.callScriptFunction(k, scriptHandle, ...)
+                return sim.callScriptFunction(scriptHandle, k, ...)
             end
         end,
     })
