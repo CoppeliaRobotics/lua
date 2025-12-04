@@ -271,5 +271,6 @@ return {
         -- definition of constants / static objects:
         sim.scene = sim.Object(sim.handle_scene)
         sim.app = sim.Object(sim.handle_app)
+        sim.self = sim.Object(sim.handle_self)
     end
 }
