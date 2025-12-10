@@ -118,42 +118,42 @@ function checkargs.checkarg.handle(v, t)
 end
 
 function checkargs.checkarg.matrix(v, t)
-    if not simEigen.Matrix:ismatrix(v) then
+    if t.strict and not simEigen.Matrix:ismatrix(v) then
         error('must be a matrix', 0)
     end
     return simEigen.Matrix:tomatrix(v, t.rows, t.cols)
 end
 
 function checkargs.checkarg.vector(v, t)
-    if not simEigen.Vector:isvector(v) then
+    if t.strict and not simEigen.Vector:isvector(v) then
         error('must be a vector', 0)
     end
     return simEigen.Vector:tovector(v, t.size)
 end
 
 function checkargs.checkarg.vector3(v, t)
-    if not simEigen.Vector:isvector(v, 3) then
+    if t.strict and not simEigen.Vector:isvector(v, 3) then
         error('must be a vector3', 0)
     end
     return simEigen.Vector:tovector(v, 3)
 end
 
 function checkargs.checkarg.quaternion(v, t)
-    if not simEigen.Quaternion:isquaternion(v) then
+    if t.strict and not simEigen.Quaternion:isquaternion(v) then
         error('must be a quaternion', 0)
     end
     return simEigen.Quaternion:toquaternion(v)
 end
 
 function checkargs.checkarg.pose(v, t)
-    if not simEigen.Pose:ispose(v) then
+    if t.strict and not simEigen.Pose:ispose(v) then
         error('must be a pose', 0)
     end
     return simEigen.Pose:topose(v)
 end
 
 function checkargs.checkarg.color(v, t)
-    if not Color:iscolor(v) then
+    if t.strict and not Color:iscolor(v) then
         error('must be a color', 0)
     end
     return Color:tocolor(v)
