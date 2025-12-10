@@ -44,27 +44,138 @@ function sim.step(wait)
     sim.yield()
 end
 
-function wrap_dummyArg1(originalFunction)
-    return function(_, ...) return originalFunction(...) end
+function wrap_dummyArg1(originalFunction, proxyFuncName)
+    return function(_, ...) if proxyFuncName then __proxyFuncName__ = proxyFuncName end; return originalFunction(...) end
 end
 
-locals.simRemoveCollection = sim.destroyCollection
-sim.destroyCollection = nil
-function sim.removeCollection(c)
-    return locals.simRemoveCollection(c)
+sim._handleSandboxScript = wrap_dummyArg1(sim.handleSandboxScript, "sim.handleSandboxScript,handleSandboxScript@method")
+sim._handleAddOnScripts = wrap_dummyArg1(sim.handleAddOnScripts, "sim.handleAddOnScripts,handleAddOnScripts@method")
+sim._handleEmbeddedScripts = wrap_dummyArg1(sim.handleEmbeddedScripts, "sim.handleEmbeddedScripts,handleEmbeddedScripts@method")
+sim._handleSimulationScripts = wrap_dummyArg1(sim.handleSimulationScripts, "sim.handleSimulationScripts,handleSimulationScripts@method")
+
+function sim._loadModel(dummyArg, file)
+    __proxyFuncName__ = "sim.loadModel,loadModel@method"
+    return sim.loadModel(file, 0)
 end
 
-function sim.removeFromCollection(c, h, w, o)
-    w = w or sim.handle_single
-    o = o or 1
-    if type(o) == 'number' then
-        o = o | 1
+function sim._loadModelFromBuffer(buff)
+    __proxyFuncName__ = "sim.loadModel,loadModelFromBuffer@method"
+    return sim.loadModel(buff, 0)
+end
+
+function sim._loadModelThumbnail(str)
+    __proxyFuncName__ = "sim.loadModel,loadModelThumbnail@method"
+    return sim.loadModel(str, 1)
+end
+
+function sim._loadModelThumbnailFromBuffer(buff)
+    __proxyFuncName__ = "sim.loadModel,loadModelThumbnailFromBuffer@method"
+    return sim.loadModel(buff, 1)
+end
+
+function sim._saveModel(h, fn)
+    if fn == nil or fn == '' then
+        fn = '?' -- generate a error
     end
-    return sim.addToCollection(c, h, w, o)
+    __proxyFuncName__ = "sim.saveModel,saveModel@method"
+    sim.saveModel(h, fn)
 end
 
-function sim.getObjectAncestors(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({level = 1, funcName = 'sim.getObjectAncestors'}, {
+function sim._saveModelToBuffer(h)
+    __proxyFuncName__ = "sim.saveModel,saveModelToBuffer@method"
+    return sim.saveModel(h)
+end
+
+sim.__saveModel = wrap_dummyArg1(sim._saveModel) -- no second arg here!
+sim.__saveModelToBuffer = wrap_dummyArg1(sim._saveModelToBuffer) -- no second arg here!
+
+
+locals.simRemoveModel = sim.removeModel
+function sim.removeModel(h, dr)
+    locals.simRemoveModel(h, dr) -- in sim-2, no return value
+end
+sim._removeModel = wrap_dummyArg1(sim.removeModel, "sim.removeModel,removeModel@method")
+
+function sim._removeObject(dummyArg, obj, delayedRemoval)
+    local t = sim.Object(obj).objectType
+    if t == 'app' or t == 'scene' or t == 'mesh' or t == 'detachedScript' then
+        error("in removeObject: object cannot be removed")
+    elseif t == 'collection' then
+        __proxyFuncName__ = "sim.destroyCollection,removeObject@method"
+        sim.destroyCollection(obj)
+    elseif t == 'drawingObject' then
+        __proxyFuncName__ = "sim.removeDrawingObject,removeObject@method"
+        sim.removeDrawingObject(obj)
+    else
+        __proxyFuncName__ = "sim.removeObjects,removeObject@method"
+        sim.removeObjects({obj}, delayedRemoval)
+    end
+end
+
+sim.removeObjects = wrap(sim.removeObjects, function(origFunc)
+    return function(objs, delayedRemoval)
+        local err = false
+        local sceneObjects = {}
+        local otherObjects = {}
+        for i = 1, #objs do
+            local obj = objs[i]
+            local t = sim.Object(obj).objectType
+            if t == 'app' or t == 'scene' or t == 'mesh' or t == 'detachedScript' then
+                err = true
+            elseif t == 'collection' or t == 'drawingObject' then
+                otherObjects[#otherObjects + 1] = obj
+            else
+                sceneObjects[#sceneObjects + 1] = obj
+            end
+        end
+        if err then
+            local nm = 'in sim.removeObjects: '
+            if __proxyFuncName__ then
+                local f1, f2 = __proxyFuncName__:match("([^,]+),([^@]+)@")
+                if f1 == 'sim.removeObjects' then
+                    nm = 'in ' .. f2 .. ': '
+                end
+                __proxyFuncName__ = nil
+            end
+            error(nm .. "detected object that cannot be removed")
+        else
+            for i = 1, #otherObjects do
+                sim._removeObject(-1, otherObjects[i], delayedRemoval)
+            end
+            origFunc(sceneObjects, delayedRemoval)
+        end
+    end
+end)
+
+sim._removeObjects = wrap_dummyArg1(sim.removeObjects, "sim.removeObjects,removeObjects@method")
+
+function sim._duplicateObjects(dummyArg, objs, opts)
+    __proxyFuncName__ = "sim.copyPasteObjects,duplicateObjects@method"
+    return sim.copyPasteObjects(objs, opts)
+end
+
+function sim._removeItem(c, h, w, excludeObj)
+    w = w or sim.handle_single
+    local opt = 1
+    if excludeObj then
+        opt = 3
+    end
+    __proxyFuncName__ = "sim.addToCollection,removeItem@method"
+    return sim.addToCollection(c, h, w, opt)
+end
+
+function sim._addItem(c, h, w, excludeObj)
+    w = w or sim.handle_single
+    local opt = 0
+    if excludeObj then
+        opt = 2
+    end
+    __proxyFuncName__ = "sim.addToCollection,addItem@method"
+    return sim.addToCollection(c, h, w, opt)
+end
+
+function sim._getAncestors(...)
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = 'getAncestors'}, {
         {type = 'handle'},
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
         {type = 'int', default = 9999},
@@ -96,8 +207,8 @@ function sim.getObjectAncestors(...)
     return retVal
 end
 
-function sim.getObjectDescendants(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({level = 1, funcName = 'sim.getObjectDescendants'}, {
+function sim._getDescendants(...)
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = 'getDescendants'}, {
         {type = 'handle'},
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
         {type = 'int', default = 9999},
@@ -120,7 +231,7 @@ function sim.getObjectDescendants(...)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim.getObjectDescendants(child, {}, depth - 1, types))
+                retVal = table.add(retVal, sim._getDescendants(child, {}, depth - 1, types))
             end
         else
             for i = 1, #obj.children do
@@ -128,7 +239,7 @@ function sim.getObjectDescendants(...)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim.getObjectDescendants(child, {}, depth - 1, types))
+                retVal = table.add(retVal, sim._getDescendants(child, {}, depth - 1, types))
             end
         end
     end
@@ -138,31 +249,6 @@ end
 function sim.loadSceneFromBuffer(buff)
     __proxyFuncName__ = __proxyFuncName__ or "sim.loadScene,sim.loadSceneFromBuffer"
     return sim.loadScene(buff)
-end
-
-function sim.loadModelFromBuffer(buff)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelFromBuffer"
-    return sim.loadModel(buff, 0)
-end
-
-function sim.loadModelThumbnailFromBuffer(buff)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelThumbnailFromBuffer"
-    return sim.loadModel(buff, 1)
-end
-
-function sim.loadModelThumbnail(str)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadModel,sim.loadModelThumbnail"
-    return sim.loadModel(str, 1)
-end
-
-locals.simSaveModel = sim.saveModel
-function sim.saveModelToBuffer(h)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.simSaveModel,sim.saveModelToBuffer"
-    return locals.simSaveModel(h)
-end
-
-function sim.saveModel(h, fn)
-    locals.simSaveModel(h, fn) -- in sim-2, no return value
 end
 
 function sim.loadImageFromBuffer(buff, opt)
@@ -185,11 +271,36 @@ function sim.saveImage(img, res, filename, opt, qual)
     locals.simSaveImage(img, res, filename, opt, qual)
 end
 
-sim.addDrawingObjectItem = wrap(sim.addDrawingObjectItem, function(origFunc)
-    return function(...)
-        origFunc(...) -- in sim-2, no return value
+function sim._addDrawingObjectItems(obj, ...)
+    local h = obj.handle | sim.handleflag_addmultiple
+    local matr = checkargs.checkargsEx({funcName = 'addItem'}, { {type = 'matrix'} }, ...)
+    sim.addDrawingObjectItem(h, matr.T:data())
+end
+
+function sim._clearDrawingObjectItems(obj)
+    sim.addDrawingObjectItem(obj.handle, nil)
+end
+
+function sim._addDrawingObjectPackedItems(h, buff)
+    local h = obj.handle | sim.handleflag_addmultiple
+    sim.addDrawingObjectItem(h, buff)
+end
+
+function sim._getObjectPose(...)
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getPose'}, {
+        {type = 'handle'},
+        {type = 'handle', default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
     end
-end)
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    return simEigen.Pose(sim.getObjectPose(h, relObj)) 
+end
 
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
     return function(a, b, ...)
@@ -214,7 +325,7 @@ end)
 sim.checkDistance = wrap(sim.checkDistance, function(origFunc)
     return function(...)
         local r, distData, objPair = origFunc(...)
-        return (r > 0), {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, distData[7], objPair
+        return (r > 0), distData[7], {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, objPair
     end
 end)
 
