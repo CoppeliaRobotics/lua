@@ -111,7 +111,7 @@ end
 
 function checkargs.checkarg.handle(v, t)
     local sim = require 'sim-2'
-    if math.type(v) ~= 'integer' and not sim.Object:isobject(v) then
+    if not (math.type(v) == 'integer' and v >= 0) and not sim.Object:isobject(v) then
         error('must be an handle', 0)
     end
     return sim.Object:toobject(v)
