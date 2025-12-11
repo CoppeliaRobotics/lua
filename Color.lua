@@ -340,7 +340,7 @@ end
 function Color:tocolor(c)
     assert(self == Color, 'class method')
     if Color:iscolor(c) then return c end
-    if type(c) == 'table' and #t == 3 then return Color(c) end
+    if type(c) == 'table' and #c == 3 then return Color(c) end
     error 'bad data'
 end
 
