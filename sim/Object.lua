@@ -215,12 +215,12 @@ return {
             end
             assert(b == f.children[1])
             assert(b.parent == f)
-            d1 = sim.createObject{
+            d1 = sim.scene:createObject{
                 objectType = 'dummy',
                 alias = 'd1',
             }
             assert(sim.Object:isobject(d1))
-            d2 = sim.createObject{
+            d2 = sim.scene:createObject{
                 objectType = 'dummy',
                 alias = 'd2',
                 dummyType = sim.dummytype_dynloopclosure,
@@ -233,9 +233,9 @@ return {
             assert(cbor.encode(ip) == cbor.encode{b})
             assert(b:getPosition(f):norm() < 1e-7)
 
-            a = sim.createObject {objectType = 'dummy', alias = 'a', }
-            b = sim.createObject {objectType = 'dummy', alias = 'b', }
-            c = sim.createObject {objectType = 'dummy', alias = 'c', }
+            a = sim.scene:createObject {objectType = 'dummy', alias = 'a', }
+            b = sim.scene:createObject {objectType = 'dummy', alias = 'b', }
+            c = sim.scene:createObject {objectType = 'dummy', alias = 'c', }
             c.parent = b
             b.parent = a
             a.modelBase = true

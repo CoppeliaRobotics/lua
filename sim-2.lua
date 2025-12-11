@@ -289,7 +289,7 @@ end
 function sim._getObjectPose(...)
     local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getPose'}, {
         {type = 'handle'},
-        {type = 'handle', default = sim.handle_world},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
         {type = 'bool', default = false},
     }, ...)
     local h = obj.handle
@@ -299,7 +299,140 @@ function sim._getObjectPose(...)
     if sim.Object:isobject(relObj) then
         relObj = relObj.handle
     end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectPose,")
     return simEigen.Pose(sim.getObjectPose(h, relObj)) 
+end
+
+function sim._getObjectPosition(...)
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getPosition'}, {
+        {type = 'handle'},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
+    end
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectPosition,")
+    return simEigen.Vector(sim.getObjectPosition(h, relObj)) 
+end
+
+function sim._getObjectQuaternion(...)
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getQuaternion'}, {
+        {type = 'handle'},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
+    end
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectQuaternion,")
+    return simEigen.Quaternion(sim.getObjectQuaternion(h, relObj)) 
+end
+
+function sim._setObjectPose(...)
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setPose'}, {
+        {type = 'handle'},
+        {type = 'pose'},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
+    end
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectPose,")
+    sim.setObjectPose(h, x:data(), relObj) 
+end
+
+function sim._setObjectPosition(...)
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setPosition'}, {
+        {type = 'handle'},
+        {type = 'vector3'},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
+    end
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectPosition,")
+    sim.setObjectPosition(h, x:data(), relObj) 
+end
+
+function sim._setObjectQuaternion(...)
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setQuaternion'}, {
+        {type = 'handle'},
+        {type = 'quaternion'},
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
+        {type = 'bool', default = false},
+    }, ...)
+    local h = obj.handle
+    if relToJointBase then
+        h = h | sim.handleflag_reljointbaseframe
+    end
+    if sim.Object:isobject(relObj) then
+        relObj = relObj.handle
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectQuaternion,")
+    sim.setObjectQuaternion(h, x:data(), relObj) 
+end
+
+function sim._setObjectParent(...)
+    local obj, parent, inPlace = checkargs.checkargsEx({argOffset = -1, funcName = 'setParent'}, {
+        {type = 'handle'},
+        {type = 'handle', default_nil = true, nullable = true},
+        {type = 'bool', default = true},
+    }, ...)
+    local h = obj.handle
+    if parent then
+        parent = parent.handle
+    else
+        parent = -1
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectParent,")
+    sim.setObjectParent(h, parent, inPlace) 
+end
+
+function sim._scaleObject(...)
+    local obj, fact = checkargs.checkargsEx({argOffset = -1, funcName = 'scale'}, {
+        {type = 'handle'},
+        {type = 'vector3'},
+    }, ...)
+    local h = obj.handle
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.scaleObject,")
+    sim.scaleObject(h, fact[1], fact[2], fact[3]) 
+end
+
+function sim._scaleObjects(dummyH, ...)
+    local objs, fact, posToo = checkargs.checkargsEx({funcName = 'scaleObjects'}, {
+        {type = 'table', item_type = 'handle', size = '1..*'},
+        {type = 'float'},
+        {type = 'bool', default = true},
+    }, ...)
+    local hs = {}
+    for i = 1, #objs do
+        if sim.Object:isobject(objs[i]) then
+            hs[i] = objs[i].handle
+        else
+            hs[i] = objs[i]
+        end
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.scaleObjects,")
+    sim.scaleObjects(hs, fact, posToo) 
 end
 
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
@@ -1277,7 +1410,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
     end
 end)
 
-function sim.createObject(initialProperties)
+function sim._createObject(dummyArg, initialProperties)
     local Color = require 'color'
     local p = table.clone(initialProperties or {})
     local h
@@ -1296,10 +1429,37 @@ function sim.createObject(initialProperties)
     assert(objectType ~= nil, 'field "objectType" is required')
     if false then
     elseif objectType == 'collection' then
-        h = sim.createCollection()
-        --h = sim.createCollectionEx()
+        local opts = 0
+        if extractValueOrDefault('override', false) then
+            opts = 1
+        end
+        h = sim.Object(sim.createCollection(opts))
+    elseif objectType == 'drawingObject' then
+        -- local tt = {point = sim.drawing_points, line = sim.drawing_lines, lineStrip = sim.drawing_linestrip, triangle = sim.drawing_triangles, trianglePoint = sim.drawing_trianglepts, quadPoint = sim.drawing_quadpts, discPoint = sim.drawing_discpts, cubePoint = sim.drawing_cubepts, spherePoint = sim.drawing_spherepts}
+        local itemType = extractValueOrDefault('itemType', sim.drawing_spherept)
+        if extractValueOrDefault('cyclic', nil) then
+            itemType = itemType | sim.drawing_cyclic
+        end
+        if extractValueOrDefault('local', nil) then
+            itemType = itemType | sim.drawing_local
+        end
+        if extractValueOrDefault('paint', nil) then
+            itemType = itemType | sim.drawing_painttag
+        end
+        if extractValueOrDefault('overlay', nil) then
+            itemType = itemType | sim.drawing_overlay
+        end
+        local size = extractValueOrDefault('itemSize', 0.005)
+        local duplicateTol = extractValueOrDefault('duplicateTolerance', 0.0)
+        local parentObject = extractValueOrDefault('parentObject', -1)
+        if parentObject ~= -1 then
+            parentObject = parentObject.handle
+        end
+        local cnt = extractValueOrDefault('itemCnt', 0)
+        local col = extractValueOrDefault('color', Color:rgb(1.0, 1.0, 0.0))
+        h = sim.Object(sim.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
     elseif objectType == 'dummy' then
-        h = sim.createDummy(extractValueOrDefault('dummySize', 0.01))
+        h = sim.Object(sim.createDummy(extractValueOrDefault('dummySize', 0.01)))
     elseif objectType == 'forceSensor' then
         local options = 0
         if p.forceThreshold then options = options + 1 end
@@ -1307,20 +1467,39 @@ function sim.createObject(initialProperties)
         local intParams = table.rep(0, 5)
         local floatParams = table.rep(0., 5)
         intParams[1] = extractValueOrDefault('filterType', 0)
-        intParams[2] = extractValueOrDefault('filterSampleSize', 0)
-        intParams[3] = extractValueOrDefault('consecutiveViolationsToTrigger', 0)
-        floatParams[1] = extractValueOrDefault('sensorSize', 0.)
-        floatParams[2] = extractValueOrDefault('forceThreshold', 0.)
-        floatParams[3] = extractValueOrDefault('torqueThreshold', 0.)
-        h = sim.createForceSensor(options, intParams, floatParams)
+        intParams[2] = extractValueOrDefault('filterSampleSize', 1)
+        intParams[3] = extractValueOrDefault('consecutiveViolationsToTrigger', 1)
+        floatParams[1] = extractValueOrDefault('sensorSize', 0.01)
+        floatParams[2] = extractValueOrDefault('forceThreshold', 5.0)
+        floatParams[3] = extractValueOrDefault('torqueThreshold', 5.0)
+        h = sim.Object(sim.createForceSensor(options, intParams, floatParams))
     elseif objectType == 'joint' then
+        --local tt1 = {revolute = sim.joint_revolute, prismatic = sim.joint_prismatic, spherical = sim.joint_spherical}
+        --local tt2 = {kinematic = sim.jointmode_kinematic, dynamic = sim.jointmode_dynamic, dependent = sim.jointmode_dependent}
+        --local tt3 = {free = sim.jointdynctrl_free, force = sim.jointdynctrl_force, velocity = sim.jointdynctrl_velocity, position = sim.jointdynctrl_position, spring = sim.jointdynctrl_spring, callback = sim.jointdynctrl_callback}
         local jointType = extractValueOrDefault('jointType', sim.joint_revolute)
         local jointMode = extractValueOrDefault('jointMode', sim.jointmode_dynamic)
         local jointSize = {
             extractValueOrDefault('jointLength', 0.),
             extractValueOrDefault('jointDiameter', 0.),
         }
-        h = sim.createJoint(jointType, jointMode, 0, jointSize)
+        h = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
+        local interval = extractValueOrDefault('interval', nil)
+        if interval then
+            h.interval = interval
+        end
+        local cyclic = extractValueOrDefault('cyclic', nil)
+        if cyclic ~= nil then
+            h.cyclic = cyclic
+        end
+        local screwLead = extractValueOrDefault('screwLead', nil)
+        if screwLead then
+            h.screwLead = screwLead
+        end
+        local dynCtrlMode = extractValueOrDefault('dynCtrlMode', nil)
+        if dynCtrlMode then
+            h.dynCtrlMode = dynCtrlMode
+        end
     elseif objectType == 'octree' then
         local voxelSize = extractValueOrDefault('voxelSize', 0.01)
         local options = 0
