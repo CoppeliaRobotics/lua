@@ -22,6 +22,8 @@ local function parseRange(r)
         end
     elseif math.type(r) == 'integer' then
         return r, r
+    elseif type(r) == 'table' and #r == 2 and math.type(r[1]) == 'integer' and math.type(r[2]) == 'integer' then
+        return r[1], r[2]
     else
         error('invalid argument type for parseRange(): ' .. type(r))
     end
@@ -38,12 +40,20 @@ function checkargs.checkarg.float(v, t)
     if type(v) ~= 'number' then
         error('must be a float', 0)
     end
+    if t and t.range then
+        local min, max = parseRange(t.range)
+        assert(v >= min and v <= max, 'value not in range')
+    end
     return v
 end
 
 function checkargs.checkarg.int(v, t)
     if math.type(v) ~= 'integer' then
         error('must be an int', 0)
+    end
+    if t and t.range then
+        local min, max = parseRange(t.range)
+        assert(v >= min and v <= max, 'value not in range')
     end
     return v
 end
@@ -329,16 +339,6 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
             val = resultOrErr
         end
 
-        -- C. Check Numeric Range (Extension)
-        -- checkarg.table already handles 'size', but checkarg.int/float does not handle 'range'.
-        if field.range and type(val) == 'number' then
-            local min, max = parseRange(field.range)
-            if val < min or val > max then
-                error(string.format("Error in '%s': Argument '%s' value %s is out of range [%s].",
-                    funcName, field.name, val, field.range), 2)
-            end
-        end
-
         ::continue::
     end
 
@@ -510,6 +510,14 @@ function checkargs.unittest()
         checkargs.checkfields({}, {{name = 'foo', type = 'int', default = 4}}, t, true)
         print(t)
     end)
+    -- check range of checkarg.int
+    test(210, succeed, function() checkargs.checkarg.int(5, {range='*'}) end)
+    test(211, succeed, function() checkargs.checkarg.int(5, {range='0..9'}) end)
+    test(212, succeed, function() checkargs.checkarg.int(5, {range='0..*'}) end)
+    test(213, succeed, function() checkargs.checkarg.int(5, {range='*'}) end)
+    test(220, fail, function() checkargs.checkarg.int(15, {range='0..9'}) end)
+    test(221, fail, function() checkargs.checkarg.int(-15, {range='0..9'}) end)
+    test(222, fail, function() checkargs.checkarg.int(-15, {range='0..*'}) end)
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
