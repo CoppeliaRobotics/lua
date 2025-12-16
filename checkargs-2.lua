@@ -3,6 +3,30 @@ local checkargs = {
     NIL = {},
 }
 
+local function parseRange(r)
+    if r == nil or r == '*' then
+        return -math.huge, math.huge
+    end
+    if type(r) == 'string' then
+        local min, max = r:match("(%d+)%.%.([%d%*]+)")
+        if min and max then
+            min = tonumber(min)
+            if max == "*" then
+                max = math.huge
+            else
+                max = tonumber(max)
+            end
+            return min, max
+        else
+            error('invalid argument format for parseRange(): ' .. r)
+        end
+    elseif math.type(r) == 'integer' then
+        return r, r
+    else
+        error('invalid argument type for parseRange(): ' .. type(r))
+    end
+end
+
 local simEigen = require 'simEigen'
 local Color = require 'Color'
 
@@ -50,25 +74,7 @@ function checkargs.checkarg.table(v, t)
             end
         end
     end
-    local minsize, maxsize = 0, 1 / 0
-    if type(t.size) == 'string' and t.size ~= '' and t.size ~= '*' then
-        i, j = t.size:find('%.%.')
-        if i then
-            minsize, maxsize = t.size:sub(1, i - 1), t.size:sub(j + 1)
-            minsize = tonumber(minsize)
-            maxsize = maxsize == '*' and 1 / 0 or tonumber(maxsize)
-        else
-            minsize = tonumber(t.size)
-            maxsize = minsize
-            if math.type(minsize) ~= 'integer' then
-                error('incorrect value for size attribute', 0)
-            end
-        end
-    elseif math.type(t.size) == 'integer' then
-        minsize, maxsize = t.size, t.size
-    elseif t.size then
-        error('incorrect value for "size" attribute', 0)
-    end
+    local minsize, maxsize = parseRange(t.size)
     if minsize == maxsize and #v ~= maxsize then
         error('must have exactly ' .. t.size .. ' elements', 0)
     elseif #v < minsize then
@@ -255,20 +261,13 @@ setmetatable(checkargs, {
 function checkargs.checkfields(funcInfo, schema, args, strict)
     local funcName = funcInfo.funcName or "?"
     args = args or {}
-    
-    -- Helper to parse numeric range strings "min..max"
-    local function parseRange(rangeStr)
-        local min, max = rangeStr:match("(%d+)%.%.([%d%*]+)")
-        min = tonumber(min) or 0
-        if max == "*" then max = math.huge else max = tonumber(max) end
-        return min, max
-    end
 
-  -- 1. Check for unexpected arguments (Only if strict mode is enabled)
+    -- 1. Strict mode checks
     if strict then
         local validKeys = {}
-        for _, item in ipairs(schema) do validKeys[item.name] = true end
-        
+        for _, item in ipairs(schema) do
+            validKeys[item.name] = true
+        end
         for k, _ in pairs(args) do
             if not validKeys[k] then
                 error(string.format("Error in '%s': Unexpected argument '%s' provided.", funcName, k), 2)
@@ -297,7 +296,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
                 error(string.format("Error in '%s': Missing required argument '%s'.", funcName, field.name), 2)
             end
         end
-        
+
         -- If optional/nullable and still nil after default check, skip validation
         if val == nil and (field.optional or field.nullable) then
             goto continue
@@ -306,7 +305,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
         -- B. Check Type (Reuse existing validators)
         local typeName = field.type
         -- Auto-infer type if missing (same logic as checkargsEx)
-        if typeName == nil then 
+        if typeName == nil then
             if field.class ~= nil then typeName = 'object'
             elseif field.union ~= nil then typeName = 'union'
             else error(string.format("Error in '%s': Schema definition for '%s' missing type.", funcName, field.name), 2) end
@@ -317,10 +316,10 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
             error(string.format("Error in '%s': Unknown type validator '%s' for argument '%s'.", funcName, typeName, field.name), 2)
         end
 
-        -- Call the validator. 
+        -- Call the validator.
         -- Note: checkFunc returns the (potentially converted) value or throws error.
         local ok, resultOrErr = pcall(checkFunc, val, field)
-        
+
         if not ok then
             -- Strip the 'must be a ...' prefix if possible or just append
             error(string.format("Error in '%s': Argument '%s' %s", funcName, field.name, resultOrErr), 2)
@@ -335,7 +334,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
         if field.range and type(val) == 'number' then
             local min, max = parseRange(field.range)
             if val < min or val > max then
-                error(string.format("Error in '%s': Argument '%s' value %s is out of range [%s].", 
+                error(string.format("Error in '%s': Argument '%s' value %s is out of range [%s].",
                     funcName, field.name, val, field.range), 2)
             end
         end
@@ -480,6 +479,37 @@ function checkargs.unittest()
     test(113, fail, function() u {'s', 's'} end)
     test(114, fail, function() u {1} end)
     test(115, succeed, function() assert(u() == 42) end)
+    test(200, succeed, function()
+        local simEigen = require 'simEigen'
+        local fi = {funcName = 'dummyFunc'}
+        local t
+
+        t = {foo = 3}
+        checkargs.checkfields(fi, {{name = 'bar', type = 'matrix', cols = 2, default = simEigen.Matrix(2, 2, {1.0, 0.0, 0.0, 1.0})}}, t)
+        assert(simEigen.Matrix:ismatrix(t.bar, 2, 2))
+
+        t = {bar = simEigen.Matrix(3, 3, {1, 2, 3, 4, 5, 6, 7, 8, 9})}
+        checkargs.checkfields(fi, {{name = 'bar', type = 'matrix', rows = 3, cols = 3, default = simEigen.Matrix(2, 2, {1.0, 0.0, 0.0, 1.0})}}, t)
+        assert(simEigen.Matrix:ismatrix(t.bar, 3, 3))
+    end)
+    test(201, fail, function()
+        local simEigen = require 'simEigen'
+        local fi = {funcName = 'dummyFunc'}
+        local t = {bar = simEigen.Matrix(3, 3, {1, 2, 3, 4, 5, 6, 7, 8, 9})}
+        checkargs.checkfields(fi, {{name = 'bar', type = 'matrix', rows = 4, default = simEigen.Matrix(4, 1, {1.0, 0.0, 0.0, 1.0})}}, t)
+    end)
+    test(202, fail, function()
+        local simEigen = require 'simEigen'
+        local fi = {funcName = 'dummyFunc'}
+        local t = {bar = 'badtype'}
+        checkargs.checkfields(fi, {{name = 'bar', type = 'matrix', rows = 4, default = simEigen.Matrix(4, 1, {1.0, 0.0, 0.0, 1.0})}}, t)
+    end)
+    test(203, fail, function()
+        -- test strict mode (extraneous arg: bar)
+        local t = {bar = 5}
+        checkargs.checkfields({}, {{name = 'foo', type = 'int', default = 4}}, t, true)
+        print(t)
+    end)
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
