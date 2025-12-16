@@ -18,7 +18,13 @@ local function parseRange(r)
             end
             return min, max
         else
-            error('invalid argument format for parseRange(): ' .. r)
+            local minMax = r:match("(%d+)")
+            if minMax then
+                minMax = tonumber(minMax)
+                return minMax, minMax
+            else
+                error('invalid argument format for parseRange(): ' .. r)
+            end
         end
     elseif math.type(r) == 'integer' then
         return r, r
@@ -416,7 +422,7 @@ function checkargs.unittest()
     test(35, succeed, function() assert(h() == false) end)
     test(50, fail, function() z() end)
 
-    test(60, fail, function() y(22) end)
+    test(60, fail, function() y(999999) end) -- delicate test: if an object with handle 999999 exists, the test does not fail
     test(61, succeed, function() y(1) end)
 
     test(70, succeed, function() x(1, {}) end)
