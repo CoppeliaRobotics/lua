@@ -252,6 +252,100 @@ setmetatable(checkargs, {
     end,
 })
 
+function checkargs.checkfields(funcInfo, schema, args, strict)
+    local funcName = funcInfo.funcName or "?"
+    args = args or {}
+    
+    -- Helper to parse numeric range strings "min..max"
+    local function parseRange(rangeStr)
+        local min, max = rangeStr:match("(%d+)%.%.([%d%*]+)")
+        min = tonumber(min) or 0
+        if max == "*" then max = math.huge else max = tonumber(max) end
+        return min, max
+    end
+
+  -- 1. Check for unexpected arguments (Only if strict mode is enabled)
+    if strict then
+        local validKeys = {}
+        for _, item in ipairs(schema) do validKeys[item.name] = true end
+        
+        for k, _ in pairs(args) do
+            if not validKeys[k] then
+                error(string.format("Error in '%s': Unexpected argument '%s' provided.", funcName, k), 2)
+            end
+        end
+    end
+
+    -- 2. Validate Schema
+    for _, field in ipairs(schema) do
+        local val = args[field.name]
+
+        -- A. Check Existence & Defaults
+        if val == nil then
+            local def = checkargs.getdefault(field)
+            if def ~= nil then
+                if def == checkargs.NIL then
+                    args[field.name] = nil
+                    val = nil
+                else
+                    args[field.name] = def
+                    val = def
+                end
+            elseif field.optional == true or field.nullable == true then
+                goto continue
+            else
+                error(string.format("Error in '%s': Missing required argument '%s'.", funcName, field.name), 2)
+            end
+        end
+        
+        -- If optional/nullable and still nil after default check, skip validation
+        if val == nil and (field.optional or field.nullable) then
+            goto continue
+        end
+
+        -- B. Check Type (Reuse existing validators)
+        local typeName = field.type
+        -- Auto-infer type if missing (same logic as checkargsEx)
+        if typeName == nil then 
+            if field.class ~= nil then typeName = 'object'
+            elseif field.union ~= nil then typeName = 'union'
+            else error(string.format("Error in '%s': Schema definition for '%s' missing type.", funcName, field.name), 2) end
+        end
+
+        local checkFunc = checkargs.checkarg[typeName]
+        if not checkFunc then
+            error(string.format("Error in '%s': Unknown type validator '%s' for argument '%s'.", funcName, typeName, field.name), 2)
+        end
+
+        -- Call the validator. 
+        -- Note: checkFunc returns the (potentially converted) value or throws error.
+        local ok, resultOrErr = pcall(checkFunc, val, field)
+        
+        if not ok then
+            -- Strip the 'must be a ...' prefix if possible or just append
+            error(string.format("Error in '%s': Argument '%s' %s", funcName, field.name, resultOrErr), 2)
+        else
+            -- Update arg with converted value (e.g. handle -> object, matrix table -> Matrix)
+            args[field.name] = resultOrErr
+            val = resultOrErr
+        end
+
+        -- C. Check Numeric Range (Extension)
+        -- checkarg.table already handles 'size', but checkarg.int/float does not handle 'range'.
+        if field.range and type(val) == 'number' then
+            local min, max = parseRange(field.range)
+            if val < min or val > max then
+                error(string.format("Error in '%s': Argument '%s' value %s is out of range [%s].", 
+                    funcName, field.name, val, field.range), 2)
+            end
+        end
+
+        ::continue::
+    end
+
+    return true
+end
+
 function checkargs.unittest()
     function f(...)
         local i, s, ti = checkargs({

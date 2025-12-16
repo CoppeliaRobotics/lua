@@ -1411,6 +1411,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
 end)
 
 function sim._createObject(dummyArg, initialProperties)
+    local funcName = __proxyFuncName__:match(",(.-)@")
     local Color = require 'color'
     local p = table.clone(initialProperties or {})
     local h
@@ -1502,36 +1503,43 @@ function sim._createObject(dummyArg, initialProperties)
         end
     elseif objectType == 'octree' then
         local voxelSize = extractValueOrDefault('voxelSize', 0.01)
+        local pointSize = extractValueOrDefault('pointSize', 1)
         local options = 0
-        -- FIXME: bit0 set (1): voxels have random colors
-        -- FIXME: bit1 set (2): show OC tree structure
-        -- FIXME: bit2 set (4): show points instead of voxels
-        -- FIXME: bit3 set (8): reserved. keep unset
-        -- FIXME: bit4 set (16): color is emissive
+            + v(1, extractValueOrDefault('showPoints', false))
         local pointSize = 1
-        h = sim.createOctree(voxelSize, options, pointSize)
+        h = sim.Object(sim.createOctree(voxelSize, options, pointSize))
     elseif objectType == 'path' then
-        local ctrlPts = {}
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'ctrlPts', type = 'matrix', cols = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})},
+            {name = 'hiddenDuringSim', type = 'bool', default = false},
+            {name = 'closed', type = 'bool', default = false},
+            {name = 'subdiv', type = 'int', default = 100},
+            {name = 'smoothness', type = 'float', default = 1.0},
+            {name = 'orientationMode', type = 'int', nullable = true},
+            {name = 'upVector', type = 'vector3', default = simEigen.Vector({0.0, 0.0, 1.0})},
+        }, p)
+        local ctrlPts = extractValueOrDefault('ctrlPts')
         local options = 0
-        local subdiv = 100
-        local smoothness = 1.0
-        local orientationMode = 0
-        local upVector = {0, 0, 1}
-        h = sim.createPath(ctrlPts, options, subdiv, smoothness, orientationMode, upVector)
+            + v(1, extractValueOrDefault('hiddenDuringSim'))
+            + v(2, extractValueOrDefault('closed'))
+        local subdiv = extractValueOrDefault('subdiv')
+        local smoothness = extractValueOrDefault('smoothness')
+        local orientationMode = extractValueOrDefault('orientationMode')
+        local upVector = extractValueOrDefault('upVector')
+        if orientationMode then
+            options = options | 16
+        else
+            orientationMode = 0
+        end
+        h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
     elseif objectType == 'pointCloud' then
         local maxVoxelSize = extractValueOrDefault('cellSize', 0.02)
         local maxPtCntPerVoxel = extractValueOrDefault('maxPointsInCell', 20)
         local options = 0
-        -- FIXME: bit0 set (1): points have random colors
-        -- FIXME: bit1 set (2): show OC tree structure
-        -- FIXME: bit2 set (4): reserved. keep unset
-            + v(8, not extractValueOrDefault('ocTreeStruct', true))
-        -- FIXME: bit4 set (16): color is emissive
-        local pointSize = extractValueOrDefault('pointSize', 0.)
-        h = sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize)
+        local pointSize = extractValueOrDefault('pointSize', 2)
+        h = sim.Object(sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize))
     elseif objectType == 'proximitySensor' then
-        local sensorType = extractValueOrDefault('sensorType', sim.proximitysensor_ray)
-        local subType = 16
+        local sensorType = extractValueOrDefault('sensorType', sim.proximitysensor_cone)
         local options = 0
             + v(1, extractValueOrDefault('explicitHandling', false))
             + v(2, false) -- deprecated, set to 0
@@ -1539,20 +1547,18 @@ function sim._createObject(dummyArg, initialProperties)
             + v(8, not extractValueOrDefault('frontFaceDetection', true))
             + v(16, not extractValueOrDefault('backFaceDetection', true))
             + v(32, not extractValueOrDefault('exactMode', true))
-            + v(512, not extractValueOrDefault('randomizedDetection', false))
-        -- FIXME: bit6 set (64): the normal of the detected surface with the detection ray will have to lie below a specified threshold angle
-        -- FIXME: bit8 set (256): smallest distance threshold will be active
+            + v(512, extractValueOrDefault('randomizedDetection', false))
         local intParams = table.rep(0, 8)
-        local volume_faces = extractValueOrDefault('volume_faces', {32, 0})
+        local volume_faces = extractValueOrDefault('volume_faces', {32, 1})
         intParams[1] = volume_faces[1]
         intParams[2] = volume_faces[2]
-        local volume_subdivisions = extractValueOrDefault('volume_subdivisions', {0, 0})
+        local volume_subdivisions = extractValueOrDefault('volume_subdivisions', {1, 16})
         intParams[3] = volume_subdivisions[1]
         intParams[4] = volume_subdivisions[2]
-        -- FIXME: intParams[i+4]: randomized detection, sample count per reading
-        -- FIXME: intParams[i+5]: randomized detection, individual ray detection count for triggering
+        intParams[5] = 1
+        intParams[6] = 1
         local floatParams = table.rep(0., 15)
-        floatParams[1] = extractValueOrDefault('volume_offset', 0.1)
+        floatParams[1] = extractValueOrDefault('volume_offset', 0.0)
         floatParams[2] = extractValueOrDefault('volume_range', 0.2)
         local xSize = extractValueOrDefault('volume_xSize', {0.2, 0.4})
         local ySize = extractValueOrDefault('volume_ySize', {0.1, 0.2})
@@ -1560,15 +1566,24 @@ function sim._createObject(dummyArg, initialProperties)
         floatParams[4] =  ySize[1]
         floatParams[5] =  xSize[2]
         floatParams[6] =  ySize[2]
-        -- FIXME: floatParams[1+6]: inside gap (volume description)
         local radius = extractValueOrDefault('volume_radius', {0.1, 0.2})
         floatParams[8] = radius[1]
         floatParams[9] = radius[2]
-        -- FIXME: floatParams[1+9]: angle (volume description)
-        floatParams[11] = extractValueOrDefault('angleThreshold', 0.)
-        -- FIXME: floatParams[1+11]: smallest detection distance (see bit 8 above)
-        -- FIXME: floatParams[1+12]: sensing point size
-        h = sim.createProximitySensor(sensorType, subType, options, intParams, floatParams)
+        floatParams[10] = extractValueOrDefault('volume_angle', 90.0 * math.pi / 180.0)
+        floatParams[11] = extractValueOrDefault('angleThreshold', nil)
+        if floatParams[11] then
+            options = options + 64
+        else
+            floatParams[11] = 0.0
+        end
+        floatParams[12] = extractValueOrDefault('closeThreshold', nil)
+        if floatParams[12] then
+            options = options + 256
+        else
+            floatParams[12] = 0.0
+        end
+        floatParams[13] = extractValueOrDefault('sensorPointSize', 0.005)
+        h = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     elseif objectType == 'script' then
         local scriptType = extractValueOrDefault('scriptType', sim.scripttype_simulation)
         local scriptText = extractValueOrDefault('code', '')
