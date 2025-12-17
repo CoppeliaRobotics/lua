@@ -19,7 +19,7 @@ function type_tags.TAG_40(values)
 end
 
 function type_tags.TAG_4294970000(value)
-    local Color = require 'color'
+    local Color = require 'Color'
     return Color(value)
 end
 
