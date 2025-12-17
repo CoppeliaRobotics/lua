@@ -1412,7 +1412,7 @@ end)
 
 function sim._createObject(dummyArg, initialProperties)
     local funcName = __proxyFuncName__:match(",(.-)@")
-    local Color = require 'color'
+    local Color = require 'Color'
     local p = table.clone(initialProperties or {})
     local h
     local function extractValueOrDefault(key, default)
