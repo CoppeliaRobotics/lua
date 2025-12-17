@@ -97,10 +97,17 @@ function callmeta(o, mm, d)
 end
 
 require = wrap(require, function(origRequire)
+    local lfsx = require 'lfsx'
     return function(...)
         local requiredName = table.unpack {...}
         local fl = setYieldAllowed(false) -- important when called from coroutine
         local retVals = {origRequire(...)}
+        if _DEVMODE then
+            local resolved, err = package.searchpath(requiredName, package.path)
+            if resolved and lfs.realpath(resolved) ~= resolved then
+                error(("require('%s'): filename case mismatch (actual file exists with different case)"):format(requiredName))
+            end
+        end
         setYieldAllowed(fl)
         auxFunc('usedmodule', requiredName)
         return table.unpack(retVals)
