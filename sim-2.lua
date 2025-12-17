@@ -1430,83 +1430,119 @@ function sim._createObject(dummyArg, initialProperties)
     assert(objectType ~= nil, 'field "objectType" is required')
     if false then
     elseif objectType == 'collection' then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'override', type = 'bool', default = false},
+        }, p)
         local opts = 0
-        if extractValueOrDefault('override', false) then
+        if extractValueOrDefault('override') then
             opts = 1
         end
         h = sim.Object(sim.createCollection(opts))
     elseif objectType == 'drawingObject' then
-        -- local tt = {point = sim.drawing_points, line = sim.drawing_lines, lineStrip = sim.drawing_linestrip, triangle = sim.drawing_triangles, trianglePoint = sim.drawing_trianglepts, quadPoint = sim.drawing_quadpts, discPoint = sim.drawing_discpts, cubePoint = sim.drawing_cubepts, spherePoint = sim.drawing_spherepts}
-        local itemType = extractValueOrDefault('itemType', sim.drawing_spherept)
-        if extractValueOrDefault('cyclic', nil) then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
+            {name = 'cyclic', type = 'bool', nullable = true},
+            {name = 'local', type = 'bool', nullable = true},
+            {name = 'paint', type = 'bool', nullable = true},
+            {name = 'overlay', type = 'bool', nullable = true},
+            {name = 'size', type = 'float', default = 0.005},
+            {name = 'duplicateTolerance', type = 'float', default = 0.0},
+            {name = 'parentObject', type = 'handle', nullable = true},
+            {name = 'itemCnt', type = 'int', default = 0},
+            {name = 'color', type = 'color', default = Color:rgb(1.0, 1.0, 0.0)},
+        }, p)
+        local itemType = extractValueOrDefault('itemType')
+        if extractValueOrDefault('cyclic') then
             itemType = itemType | sim.drawing_cyclic
         end
-        if extractValueOrDefault('local', nil) then
+        if extractValueOrDefault('local') then
             itemType = itemType | sim.drawing_local
         end
-        if extractValueOrDefault('paint', nil) then
+        if extractValueOrDefault('paint') then
             itemType = itemType | sim.drawing_painttag
         end
-        if extractValueOrDefault('overlay', nil) then
+        if extractValueOrDefault('overlay') then
             itemType = itemType | sim.drawing_overlay
         end
-        local size = extractValueOrDefault('itemSize', 0.005)
-        local duplicateTol = extractValueOrDefault('duplicateTolerance', 0.0)
+        local size = extractValueOrDefault('itemSize')
+        local duplicateTol = extractValueOrDefault('duplicateTolerance')
         local parentObject = extractValueOrDefault('parentObject', -1)
         if parentObject ~= -1 then
             parentObject = parentObject.handle
         end
-        local cnt = extractValueOrDefault('itemCnt', 0)
-        local col = extractValueOrDefault('color', Color:rgb(1.0, 1.0, 0.0))
+        local cnt = extractValueOrDefault('itemCnt')
+        local col = extractValueOrDefault('color')
         h = sim.Object(sim.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
     elseif objectType == 'dummy' then
-        h = sim.Object(sim.createDummy(extractValueOrDefault('dummySize', 0.01)))
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'dummySize', type = 'float', default = 0.01},
+        }, p)
+        h = sim.Object(sim.createDummy(extractValueOrDefault('dummySize')))
     elseif objectType == 'forceSensor' then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'filterType', type = 'int', default = 0},
+            {name = 'filterSampleSize', type = 'int', default = 1},
+            {name = 'consecutiveViolationsToTrigger', type = 'int', default = 1},
+            {name = 'sensorSize', type = 'float', default = 0.01},
+            {name = 'forceThreshold', type = 'float', default = 5.0},
+            {name = 'torqueThreshold', type = 'float', default = 5.0},
+        }, p)
         local options = 0
         if p.forceThreshold then options = options + 1 end
         if p.torqueThreshold then options = options + 2 end
         local intParams = table.rep(0, 5)
+        intParams[1] = extractValueOrDefault('filterType')
+        intParams[2] = extractValueOrDefault('filterSampleSize')
+        intParams[3] = extractValueOrDefault('consecutiveViolationsToTrigger')
         local floatParams = table.rep(0., 5)
-        intParams[1] = extractValueOrDefault('filterType', 0)
-        intParams[2] = extractValueOrDefault('filterSampleSize', 1)
-        intParams[3] = extractValueOrDefault('consecutiveViolationsToTrigger', 1)
-        floatParams[1] = extractValueOrDefault('sensorSize', 0.01)
-        floatParams[2] = extractValueOrDefault('forceThreshold', 5.0)
-        floatParams[3] = extractValueOrDefault('torqueThreshold', 5.0)
+        floatParams[1] = extractValueOrDefault('sensorSize')
+        floatParams[2] = extractValueOrDefault('forceThreshold')
+        floatParams[3] = extractValueOrDefault('torqueThreshold')
         h = sim.Object(sim.createForceSensor(options, intParams, floatParams))
     elseif objectType == 'joint' then
-        --local tt1 = {revolute = sim.joint_revolute, prismatic = sim.joint_prismatic, spherical = sim.joint_spherical}
-        --local tt2 = {kinematic = sim.jointmode_kinematic, dynamic = sim.jointmode_dynamic, dependent = sim.jointmode_dependent}
-        --local tt3 = {free = sim.jointdynctrl_free, force = sim.jointdynctrl_force, velocity = sim.jointdynctrl_velocity, position = sim.jointdynctrl_position, spring = sim.jointdynctrl_spring, callback = sim.jointdynctrl_callback}
-        local jointType = extractValueOrDefault('jointType', sim.joint_revolute)
-        local jointMode = extractValueOrDefault('jointMode', sim.jointmode_dynamic)
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'jointType', type = 'int', default = sim.joint_revolute},
+            {name = 'jointMode', type = 'int', default = sim.jointmode_dynamic},
+            {name = 'jointLength', type = 'float', default = 0.15},
+            {name = 'jointDiameter', type = 'float', default = 0.02},
+            {name = 'interval', type = 'table', item_type = 'float', size = 2, nullable = true},
+            {name = 'cyclic', type = 'bool', nullable = true},
+            {name = 'screwLead', type = 'float', nullable = true},
+            {name = 'dynCtrlMode', type = 'int', nullable = true},
+        }, p)
+        local jointType = extractValueOrDefault('jointType')
+        local jointMode = extractValueOrDefault('jointMode')
         local jointSize = {
-            extractValueOrDefault('jointLength', 0.),
-            extractValueOrDefault('jointDiameter', 0.),
+            extractValueOrDefault('jointLength'),
+            extractValueOrDefault('jointDiameter'),
         }
         h = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
-        local interval = extractValueOrDefault('interval', nil)
+        local interval = extractValueOrDefault('interval')
         if interval then
             h.interval = interval
         end
-        local cyclic = extractValueOrDefault('cyclic', nil)
+        local cyclic = extractValueOrDefault('cyclic')
         if cyclic ~= nil then
             h.cyclic = cyclic
         end
-        local screwLead = extractValueOrDefault('screwLead', nil)
+        local screwLead = extractValueOrDefault('screwLead')
         if screwLead then
             h.screwLead = screwLead
         end
-        local dynCtrlMode = extractValueOrDefault('dynCtrlMode', nil)
+        local dynCtrlMode = extractValueOrDefault('dynCtrlMode')
         if dynCtrlMode then
             h.dynCtrlMode = dynCtrlMode
         end
-    elseif objectType == 'octree' then
-        local voxelSize = extractValueOrDefault('voxelSize', 0.01)
-        local pointSize = extractValueOrDefault('pointSize', 1)
+    elseif objectType == 'ocTree' then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'voxelSize', type = 'float', default = 0.01},
+            {name = 'pointSize', type = 'int', default = 1},
+            {name = 'showPoints', type = 'bool', default = false},
+        }, p)
+        local voxelSize = extractValueOrDefault('voxelSize')
+        local pointSize = extractValueOrDefault('pointSize')
         local options = 0
-            + v(1, extractValueOrDefault('showPoints', false))
-        local pointSize = 1
+            + v(1, extractValueOrDefault('showPoints'))
         h = sim.Object(sim.createOctree(voxelSize, options, pointSize))
     elseif objectType == 'path' then
         checkargs.checkfields({funcName = funcName}, {
@@ -1533,43 +1569,68 @@ function sim._createObject(dummyArg, initialProperties)
         end
         h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
     elseif objectType == 'pointCloud' then
-        local maxVoxelSize = extractValueOrDefault('cellSize', 0.02)
-        local maxPtCntPerVoxel = extractValueOrDefault('maxPointsInCell', 20)
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'cellSize', type = 'float', default = 0.02},
+            {name = 'maxPointsInCell', type = 'int', default = 20},
+            {name = 'pointSize', type = 'int', default = 2},
+        }, p)
+        local maxVoxelSize = extractValueOrDefault('cellSize')
+        local maxPtCntPerVoxel = extractValueOrDefault('maxPointsInCell')
         local options = 0
-        local pointSize = extractValueOrDefault('pointSize', 2)
+        local pointSize = extractValueOrDefault('pointSize')
         h = sim.Object(sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize))
     elseif objectType == 'proximitySensor' then
-        local sensorType = extractValueOrDefault('sensorType', sim.proximitysensor_cone)
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'sensorType', type = 'int', default = sim.proximitysensor_cone},
+            {name = 'explicitHandling', type = 'bool', default = false},
+            {name = 'showVolume', type = 'bool', default = true},
+            {name = 'frontFaceDetection', type = 'bool', default = true},
+            {name = 'backFaceDetection', type = 'bool', default = true},
+            {name = 'exactMode', type = 'bool', default = true},
+            {name = 'randomizedDetection', type = 'bool', default = false},
+            {name = 'volume_faces', type = 'table', item_type = 'int', size = 2, default = {32, 1}},
+            {name = 'volume_subdivisions', type = 'table', item_type = 'int', size = 2, default = {1, 16}},
+            {name = 'volume_offset', type = 'float', default = 0.0},
+            {name = 'volume_range', type = 'float', default = 0.2},
+            {name = 'volume_angle', type = 'float', default = 90.0 * math.pi / 180.0},
+            {name = 'sensorPointSize', type = 'float', default = 0.005},
+            {name = 'angleThreshold', type = 'float', nullable = true},
+            {name = 'closeThreshold', type = 'float', nullable = true},
+            {name = 'volume_xSize', type = 'table', item_type = 'float', size = 2, default = {0.2, 0.4}},
+            {name = 'volume_ySize', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
+            {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
+        }, p)
+        local sensorType = extractValueOrDefault('sensorType')
         local options = 0
-            + v(1, extractValueOrDefault('explicitHandling', false))
+            + v(1, extractValueOrDefault('explicitHandling'))
             + v(2, false) -- deprecated, set to 0
-            + v(4, not extractValueOrDefault('showVolume', true))
-            + v(8, not extractValueOrDefault('frontFaceDetection', true))
-            + v(16, not extractValueOrDefault('backFaceDetection', true))
-            + v(32, not extractValueOrDefault('exactMode', true))
-            + v(512, extractValueOrDefault('randomizedDetection', false))
+            + v(4, not extractValueOrDefault('showVolume'))
+            + v(8, not extractValueOrDefault('frontFaceDetection'))
+            + v(16, not extractValueOrDefault('backFaceDetection'))
+            + v(32, not extractValueOrDefault('exactMode'))
+            + v(512, extractValueOrDefault('randomizedDetection'))
         local intParams = table.rep(0, 8)
-        local volume_faces = extractValueOrDefault('volume_faces', {32, 1})
+        local volume_faces = extractValueOrDefault('volume_faces')
         intParams[1] = volume_faces[1]
         intParams[2] = volume_faces[2]
-        local volume_subdivisions = extractValueOrDefault('volume_subdivisions', {1, 16})
+        local volume_subdivisions = extractValueOrDefault('volume_subdivisions')
         intParams[3] = volume_subdivisions[1]
         intParams[4] = volume_subdivisions[2]
         intParams[5] = 1
         intParams[6] = 1
         local floatParams = table.rep(0., 15)
-        floatParams[1] = extractValueOrDefault('volume_offset', 0.0)
-        floatParams[2] = extractValueOrDefault('volume_range', 0.2)
-        local xSize = extractValueOrDefault('volume_xSize', {0.2, 0.4})
-        local ySize = extractValueOrDefault('volume_ySize', {0.1, 0.2})
+        floatParams[1] = extractValueOrDefault('volume_offset')
+        floatParams[2] = extractValueOrDefault('volume_range')
+        local xSize = extractValueOrDefault('volume_xSize')
+        local ySize = extractValueOrDefault('volume_ySize')
         floatParams[3] =  xSize[1]
         floatParams[4] =  ySize[1]
         floatParams[5] =  xSize[2]
         floatParams[6] =  ySize[2]
-        local radius = extractValueOrDefault('volume_radius', {0.1, 0.2})
+        local radius = extractValueOrDefault('volume_radius')
         floatParams[8] = radius[1]
         floatParams[9] = radius[2]
-        floatParams[10] = extractValueOrDefault('volume_angle', 90.0 * math.pi / 180.0)
+        floatParams[10] = extractValueOrDefault('volume_angle')
         floatParams[11] = extractValueOrDefault('angleThreshold', nil)
         if floatParams[11] then
             options = options + 64
@@ -1582,15 +1643,21 @@ function sim._createObject(dummyArg, initialProperties)
         else
             floatParams[12] = 0.0
         end
-        floatParams[13] = extractValueOrDefault('sensorPointSize', 0.005)
+        floatParams[13] = extractValueOrDefault('sensorPointSize')
         h = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     elseif objectType == 'script' then
-        local scriptType = extractValueOrDefault('scriptType', sim.scripttype_simulation)
-        local scriptText = extractValueOrDefault('code', '')
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'scriptType', type = 'int', default = sim.scripttype_simulation},
+            {name = 'code', type = 'string', default = ''},
+            {name = 'language', type = 'string', default = 'lua'},
+            {name = 'scriptDisabled', type = 'bool', default = false},
+        }, p)
+        local scriptType = extractValueOrDefault('scriptType')
+        local scriptText = extractValueOrDefault('code')
         local options = 0
-            + v(1, extractValueOrDefault('scriptDisabled', true))
-        local lang = extractValueOrDefault('language', 'lua')
-        h = sim.createScript(scriptType, scriptText, options, lang)
+            + v(1, extractValueOrDefault('scriptDisabled'))
+        local lang = extractValueOrDefault('language')
+        h = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
     elseif objectType == 'shape' then
         local t = extractValueOrDefault('type', nil)
         assert(t, '"type" field is required')
@@ -1654,37 +1721,57 @@ function sim._createObject(dummyArg, initialProperties)
         error '"texture" type not supported'
         h = sim.createTexture()
     elseif objectType == 'visionSensor' then
-        local bgCol = extractValueOrDefault('backgroundColor', nil)
+        checkargs.checkfields({funcName = funcName}, {
+--            {name = 'perspective', type = 'bool', default = false},
+            {name = 'explicitHandling', type = 'bool', default = false},
+            {name = 'showFrustum', type = 'bool', default = false},
+            {name = 'useExtImage', type = 'bool', default = false},
+            {name = 'resolution', type = 'table', item_type = 'int', size = 2, default = {256, 256}},
+            {name = 'clippingPlanes', type = 'table', item_type = 'float', size = 2, default = {0.01, 10.0}},
+            {name = 'sensorSize', type = 'float', default = 0.01},
+            {name = 'viewAngle', type = 'float', nullable = true},
+            {name = 'viewSize', type = 'float', nullable = true},
+            {name = 'backgroundColor', type = 'color', nullable = true},
+        }, p)
+        local viewAngle = extractValueOrDefault('viewAngle')
+        local viewSize = extractValueOrDefault('viewSize')
+        local perspective = true
+        if viewAngle or viewSize == nil then
+            if viewAngle == nil then
+                viewAngle = 60.0 * math.pi / 180.0
+            end
+        else
+            perspective = false;
+        end
+        local bgCol = extractValueOrDefault('backgroundColor')
         local options = 0
-            + v(1, extractValueOrDefault('explicitHandling', false))
-            + v(2, extractValueOrDefault('perspective', false))
-            + v(4, extractValueOrDefault('showFrustum', false))
+            + v(1, extractValueOrDefault('explicitHandling'))
+            + v(2, perspective)
+            + v(4, extractValueOrDefault('showFrustum'))
             -- bit 3 set (8): reserved. Set to 0
-            + v(16, extractValueOrDefault('useExtImage', false))
+            + v(16, extractValueOrDefault('useExtImage'))
             + v(128, bgCol)
-        -- FIXME: bit 5 set (32): sensor will use local lights
-        -- FIXME: bit 6 set (64): sensor will not render any fog
         local intParams = table.rep(0, 4)
-        local res = extractValueOrDefault('resolution', {256, 256})
+        local res = extractValueOrDefault('resolution')
         intParams[1] = res[1]
         intParams[2] = res[2]
-        local clipPlanes = extractValueOrDefault('clippingPlanes', {0.01, 10.})
+        local clipPlanes = extractValueOrDefault('clippingPlanes')
         local floatParams = table.rep(0., 11)
         floatParams[1] = clipPlanes[1]
         floatParams[2] = clipPlanes[2]
         if (options & 2) > 0 then
-            floatParams[3] = extractValueOrDefault('viewAngle', 1.0472)
+            floatParams[3] = viewAngle
         else
-            floatParams[3] = extractValueOrDefault('viewSize', 0.1)
+            floatParams[3] = viewSize
         end
-        floatParams[4] = extractValueOrDefault('sensorSize', 0.01)
+        floatParams[4] = extractValueOrDefault('sensorSize')
         if bgCol then
-            bgCol = Color:tocolor(bgCol)
-            floatParams[7] = bgCol:red()
-            floatParams[8] = bgCol:green()
-            floatParams[9] = bgCol:blue()
+            bgCol = bgCol:data()
+            floatParams[7] = bgCol[1]
+            floatParams[8] = bgCol[2]
+            floatParams[9] = bgCol[3]
         end
-        h = sim.createVisionSensor(options, intParams, floatParams)
+        h = sim.Object(sim.createVisionSensor(options, intParams, floatParams))
     else
         error 'unsupported object type'
     end

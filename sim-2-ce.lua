@@ -11,6 +11,8 @@ handle handle = sim.createProximitySensor(int sensorType, int subType = 16, int 
 handle handle = sim.createOctree(float voxelSize = 0.025, int options = 0, float pointSize = 2.0)
 handle handle = sim.createPointCloud(float maxVoxelSize = 0.02, int maxPtCntPerVoxel = 20, int options = 0, float pointSize = 4.0)
 handle handle = sim.createPath(float[] ctrlPts, int options = 0, int subdiv = 100, float smoothness = 1.0, int orientationMode = 0, float[3] upVector = {0, 0, 1})
+handle handle = sim.createScript(int scriptType, string scriptString, int options=0, string lang='')
+handle handle = sim.createVisionSensor(int options = 0, int[4] intParams = nil, float[11] floatParams = nil)
 ]]
 
 local codeEditorInfos = [[
@@ -33,12 +35,10 @@ sim.__saveModel(handle dummyArg, handle modelBase, string filename)
 buffer serializedModel = sim.__saveModelToBuffer(handle dummyArg, handle modelBase)
 sim.setObjectParent(handle objectHandle, handle parentObjectHandle, bool keepInPlace = true)
 
-handle handle = sim.createScript(int scriptType, string scriptString, int options=0, string lang='')
 handle handle = sim.createHeightfieldShape(int options, float shadingAngle, int xPointCount, int yPointCount, float xSize, float[] heights)
 handle handle = sim.createPrimitiveShape(int primitiveType, float[3] sizes, int options=0)
 handle handle = sim.createShape(int options, float shadingAngle, float[] vertices, int[] indices, float[] normals, float[] textureCoordinates, buffer texture, int[2] textureResolution)
 handle handle, int textureId, int[2] resolution = sim.createTexture(string fileName, int options = 0, float[2] planeSizes = {0.1, 0.1}, float[2] scalingUV = nil, float[3] xy_g = {0.0, 0.0, 0.0}, int fixedResolution = 0, int[2] resolution = {512, 512})
-handle handle = sim.createVisionSensor(int options = 0, int[4] intParams = nil, float[11] floatParams = nil)
 
 sim.addToCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
 sim.removeFromCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
