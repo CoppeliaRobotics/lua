@@ -3,19 +3,15 @@ local checkargs = {
     NIL = {},
 }
 
-local function parseRange(r)
+function checkargs.parserange(r)
     if r == nil or r == '*' then
         return -math.huge, math.huge
     end
     if type(r) == 'string' then
-        local min, max = r:match("(%d+)%.%.([%d%*]+)")
+        local min, max = r:match('([%d%.%*]+)%.%.([%d%.%*]+)')
         if min and max then
-            min = tonumber(min)
-            if max == "*" then
-                max = math.huge
-            else
-                max = tonumber(max)
-            end
+            min = min == '*' and -math.huge or tonumber(min)
+            max = max == '*' and math.huge or tonumber(max)
             return min, max
         else
             local minMax = r:match("(%d+)")
@@ -23,16 +19,22 @@ local function parseRange(r)
                 minMax = tonumber(minMax)
                 return minMax, minMax
             else
-                error('invalid argument format for parseRange(): ' .. r)
+                error('invalid argument format for checkargs.parserange(): ' .. r)
             end
         end
     elseif math.type(r) == 'integer' then
         return r, r
-    elseif type(r) == 'table' and #r == 2 and math.type(r[1]) == 'integer' and math.type(r[2]) == 'integer' then
+    elseif type(r) == 'table' and #r == 2 and type(r[1]) == 'number' and type(r[2]) == 'number' then
         return r[1], r[2]
     else
-        error('invalid argument type for parseRange(): ' .. type(r))
+        error('invalid argument type for checkargs.parserange(): ' .. type(r))
     end
+end
+
+function checkargs.infertype(t)
+    if t.type then return t.type end
+    if t.class ~= nil then return 'object' end
+    if t.union ~= nil then return 'union' end
 end
 
 local simEigen = require 'simEigen'
@@ -47,7 +49,7 @@ function checkargs.checkarg.float(v, t)
         error('must be a float', 0)
     end
     if t and t.range then
-        local min, max = parseRange(t.range)
+        local min, max = checkargs.parserange(t.range)
         assert(v >= min and v <= max, 'value not in range')
     end
     return v
@@ -58,7 +60,7 @@ function checkargs.checkarg.int(v, t)
         error('must be an int', 0)
     end
     if t and t.range then
-        local min, max = parseRange(t.range)
+        local min, max = checkargs.parserange(t.range)
         assert(v >= min and v <= max, 'value not in range')
     end
     return v
@@ -90,7 +92,7 @@ function checkargs.checkarg.table(v, t)
             end
         end
     end
-    local minsize, maxsize = parseRange(t.size)
+    local minsize, maxsize = checkargs.parserange(t.size)
     if minsize == maxsize and #v ~= maxsize then
         error('must have exactly ' .. t.size .. ' elements', 0)
     elseif #v < minsize then
@@ -210,12 +212,6 @@ function checkargs.checkargsEx(opts, types, ...)
     -- level at which we should output the error (1 is current, 2 parent, etc...)
     local errorLevel = 2 + level
 
-    local function infertype(t)
-        if t.class ~= nil then return 'object' end
-        if t.union ~= nil then return 'union' end
-        error('type missing, and could not infer type', errorLevel + 1)
-    end
-
     local fn = (funcName or '?') .. ': '
     local arg = table.pack(...)
     -- check how many arguments are required (default arguments must come last):
@@ -248,7 +244,10 @@ function checkargs.checkargsEx(opts, types, ...)
         if t.nullable and arg[i] == nil then
         else
             -- do the type check, using one of the checkargs.checkarg.type() functions
-            if t.type == nil then t.type = infertype(t) end
+            t.type = checkargs.infertype(t)
+            if t.type == nil then
+                error(t.type ~= nil, 'type missing, and could not infer type', errorLevel)
+            end
             local checkFunc = checkargs.checkarg[t.type]
             if checkFunc == nil then
                 error(string.format('function checkargs.checkarg.%s does not exist', t.type), errorLevel)
@@ -319,12 +318,9 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
         end
 
         -- B. Check Type (Reuse existing validators)
-        local typeName = field.type
-        -- Auto-infer type if missing (same logic as checkargsEx)
+        local typeName = checkargs.infertype(field)
         if typeName == nil then
-            if field.class ~= nil then typeName = 'object'
-            elseif field.union ~= nil then typeName = 'union'
-            else error(string.format("Error in '%s': Schema definition for '%s' missing type.", funcName, field.name), 2) end
+            error(string.format("Error in '%s': Schema definition for '%s' missing type.", funcName, field.name), 2)
         end
 
         local checkFunc = checkargs.checkarg[typeName]
@@ -352,49 +348,19 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
 end
 
 function checkargs.unittest()
-    function f(...)
-        local i, s, ti = checkargs({
-            {type = 'int'}, {type = 'string'}, {type = 'table', item_type = 'int', size = 3},
-        }, ...)
-    end
-
-    function g(x)
-        checkargs({{type = 'table', item_type = 'string', size = '3..*'}}, x)
-    end
-
-    function h(...)
-        local b = checkargs({{type = 'bool', default = false}}, ...)
-        return b
-    end
-
-    function z(...)
-        -- test wrong default type: will fail when called without arg
-        checkargs({{type = 'int', default = 3.5}}, ...)
-    end
-
-    function y(...)
-        local handle = checkargs({{type = 'handle'}}, ...)
-    end
-
-    function x(...)
-        local i, t = checkargs({{type = 'int'}, {type = 'table', item_type = 'float', nullable = true}}, ...)
-    end
-
-    function w(...)
-        local i1, cb, i2 = checkargs({{type = 'int'}, {type = 'func', nullable = true, default = checkargs.NIL}, {type = 'int', default = 0}}, ...)
-    end
-
-    function v(...)
-        local t = checkargs({{type = 'table'}}, ...)
-    end
-
     local fail, succeed = false, true
-    function test(name, expectedResult, f)
+    local function test(name, expectedResult, f)
         print(string.format('running test %s...', name))
         local result, err = pcall(f)
         if result ~= expectedResult then
             error(string.format('test %s failed: %s', name, err or '-'))
         end
+    end
+
+    local function f(...)
+        local i, s, ti = checkargs({
+            {type = 'int'}, {type = 'string'}, {type = 'table', item_type = 'int', size = 3},
+        }, ...)
     end
     test(1, succeed, function() f(3, 'a', {1, 2, 3}) end)
     test(2, fail, function() f('x', 'b', {4, 5, 6}) end)
@@ -407,6 +373,10 @@ function checkargs.unittest()
     test(9, fail, function() f(11, 'h', {50, 60, 70}, 56) end)
     test(10, fail, function() f(12, 'i', {80, 90, 100}, nil) end)
     test(11, fail, function() f(12.5, 'i', {80, 90, 100}) end)
+
+    local function g(x)
+        checkargs({{type = 'table', item_type = 'string', size = '3..*'}}, x)
+    end
     test(20, succeed, function() g {'x', 'x', 'x'} end)
     test(21, succeed, function() g {'x', 'y', 'z', 'z', 'z', 'z'} end)
     test(22, fail, function() g {'x'} end)
@@ -414,28 +384,52 @@ function checkargs.unittest()
     test(24, fail, function() g() end)
     test(25, fail, function() g(1) end)
     test(26, fail, function() g(1, 2) end)
+
+    local function h(...)
+        local b = checkargs({{type = 'bool', default = false}}, ...)
+        return b
+    end
     test(30, succeed, function() h() end)
     test(31, succeed, function() h(true) end)
     test(32, succeed, function() h(false) end)
     test(33, fail, function() h(5) end)
     test(34, fail, function() h(nil) end)
     test(35, succeed, function() assert(h() == false) end)
+
+    local function z(...)
+        -- test wrong default type: will fail when called without arg
+        checkargs({{type = 'int', default = 3.5}}, ...)
+    end
     test(50, fail, function() z() end)
 
+    local function y(...)
+        local handle = checkargs({{type = 'handle'}}, ...)
+    end
     test(60, fail, function() y(999999) end) -- delicate test: if an object with handle 999999 exists, the test does not fail
     test(61, succeed, function() y(1) end)
 
+    local function x(...)
+        local i, t = checkargs({{type = 'int'}, {type = 'table', item_type = 'float', nullable = true}}, ...)
+    end
     test(70, succeed, function() x(1, {}) end)
+
+    local function w(...)
+        local i1, cb, i2 = checkargs({{type = 'int'}, {type = 'func', nullable = true, default = checkargs.NIL}, {type = 'int', default = 0}}, ...)
+    end
     test(80, succeed, function() w( 0, function() return 1 end) end)
     test(81, succeed, function() w(0, nil) end)
     test(82, succeed, function() w(0) end)
     test(83, succeed, function() w( 0, function() return 1 end, 1) end)
     test(84, succeed, function() w(0, nil, 1) end)
     test(85, fail, function() w(0, 'f', 1) end)
+
+    local function v(...)
+        local t = checkargs({{type = 'table'}}, ...)
+    end
     test(90, fail, function() v(9) end)
     test(91, succeed, function() v({'a', 1, true, {}}) end)
 
-    function m(...)
+    local function m(...)
         local a, b, c = checkargs({
             {type = 'int', default = 1},
             {type = 'table', default = checkargs.NIL, nullable = true},
@@ -459,21 +453,21 @@ function checkargs.unittest()
     end
     o1 = {}
     o2 = SomeObj:new(3)
-    function useobj(o)
+    local function useobj(o)
         checkargs({{type = 'object', class = SomeObj}}, o)
         local y = o.x
     end
     test(101, fail, function() useobj(o1) end)
     test(102, succeed, function() useobj(o2) end)
     -- test short version (type will be infered by checkargs.infertype)
-    function useobj2(o)
+    local function useobj2(o)
         checkargs({{class = SomeObj}}, o)
         local y = o.x
     end
     test(103, fail, function() useobj2(o1) end)
     test(104, succeed, function() useobj2(o2) end)
 
-    function u(...)
+    local function u(...)
         x = checkargs({
             {union = {{type = 'int'}, {type = 'string'}, {type = 'table', item_type = 'int', size = '2..*'}}, default = 42},
         }, ...)
@@ -485,6 +479,8 @@ function checkargs.unittest()
     test(113, fail, function() u {'s', 's'} end)
     test(114, fail, function() u {1} end)
     test(115, succeed, function() assert(u() == 42) end)
+
+    -- test checkargs.checkfields:
     test(200, succeed, function()
         local simEigen = require 'simEigen'
         local fi = {funcName = 'dummyFunc'}
@@ -516,6 +512,7 @@ function checkargs.unittest()
         checkargs.checkfields({}, {{name = 'foo', type = 'int', default = 4}}, t, true)
         print(t)
     end)
+
     -- check range of checkarg.int
     test(210, succeed, function() checkargs.checkarg.int(5, {range='*'}) end)
     test(211, succeed, function() checkargs.checkarg.int(5, {range='0..9'}) end)
@@ -524,6 +521,7 @@ function checkargs.unittest()
     test(220, fail, function() checkargs.checkarg.int(15, {range='0..9'}) end)
     test(221, fail, function() checkargs.checkarg.int(-15, {range='0..9'}) end)
     test(222, fail, function() checkargs.checkarg.int(-15, {range='0..*'}) end)
+
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
 
