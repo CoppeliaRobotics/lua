@@ -169,6 +169,16 @@ function lfs.gettempdir()
     return temp
 end
 
+function lfs.realpath(path)
+    local dir, file = lfs.pathsplit(path)
+    local lower = file:lower()
+    for entry in lfs.dir(dir) do
+        if entry:lower() == lower then
+            return lfs.pathjoin(dir, entry)
+        end
+    end
+end
+
 function lfs.unittest()
     require 'tablex'
     if lfs.pathsep() == '\\' then
