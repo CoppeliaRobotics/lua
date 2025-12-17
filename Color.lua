@@ -334,7 +334,7 @@ end
 
 function Color:iscolor(c)
     assert(self == Color, 'class method')
-    return Color:isInstanceOf(c, Color)
+    return Color.isInstanceOf(c, Color)
 end
 
 function Color:tocolor(c)
