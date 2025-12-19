@@ -13,6 +13,11 @@ handle handle = sim.createPointCloud(float maxVoxelSize = 0.02, int maxPtCntPerV
 handle handle = sim.createPath(float[] ctrlPts, int options = 0, int subdiv = 100, float smoothness = 1.0, int orientationMode = 0, float[3] upVector = {0, 0, 1})
 handle handle = sim.createScript(int scriptType, string scriptString, int options=0, string lang='')
 handle handle = sim.createVisionSensor(int options = 0, int[4] intParams = nil, float[11] floatParams = nil)
+handle handle = sim.createHeightfieldShape(int options, float shadingAngle, int xPointCount, int yPointCount, float xSize, float[] heights)
+handle handle = sim.createPrimitiveShape(int primitiveType, float[3] sizes, int options=0)
+handle handle = sim.createShape(int options, float shadingAngle, float[] vertices, int[] indices, float[] normals, float[] textureCoordinates, buffer texture, int[2] textureResolution)
+int result = sim.relocateShapeFrame(int shapeHandle, float[7] pose)
+sim.alignShapeBB(handle shapeHandle, pose p)
 ]]
 
 local codeEditorInfos = [[
@@ -35,9 +40,6 @@ sim.__saveModel(handle dummyArg, handle modelBase, string filename)
 buffer serializedModel = sim.__saveModelToBuffer(handle dummyArg, handle modelBase)
 sim.setObjectParent(handle objectHandle, handle parentObjectHandle, bool keepInPlace = true)
 
-handle handle = sim.createHeightfieldShape(int options, float shadingAngle, int xPointCount, int yPointCount, float xSize, float[] heights)
-handle handle = sim.createPrimitiveShape(int primitiveType, float[3] sizes, int options=0)
-handle handle = sim.createShape(int options, float shadingAngle, float[] vertices, int[] indices, float[] normals, float[] textureCoordinates, buffer texture, int[2] textureResolution)
 handle handle, int textureId, int[2] resolution = sim.createTexture(string fileName, int options = 0, float[2] planeSizes = {0.1, 0.1}, float[2] scalingUV = nil, float[3] xy_g = {0.0, 0.0, 0.0}, int fixedResolution = 0, int[2] resolution = {512, 512})
 
 sim.addToCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
@@ -75,7 +77,6 @@ sim.addLog(int verbosityLevel, string logMessage)
 int curveId = sim.addGraphCurve(handle graphHandle, string curveName, int dim, int[2..3] streamIds, float[2..3] defaultValues, string unitStr, int options=0, float[3] color={1, 1, 0}, int curveWidth=2)
 int streamId = sim.addGraphStream(handle graphHandle, string streamName, string unit, int options=0, float[3] color={1, 0, 0}, float cyclicRange=pi)
 sim.addReferencedHandle(handle objectHandle, handle referencedHandle, string tag='', map opts={})
-sim.alignShapeBB(handle shapeHandle, pose p)
 sim.announceSceneContentChange()
 sim.broadcastMsg(map message, int options=0)
 bool result, handle[2] collidingObjects = sim.checkCollision(handle entity1Handle, handle entity2Handle = sim.handle_all)
@@ -226,7 +227,6 @@ sim.pushUserEvent(string event, int handle, int uid, map eventData, int options=
 sim.quitSimulator()
 buffer textureData = sim.readTexture(int textureId, int options, int posX=0, int posY=0, int sizeX=0, int sizeY=0)
 int result = sim.refreshDialogs(int refreshDegree)
-int result = sim.relocateShapeFrame(int shapeHandle, float[7] pose)
 sim.removeDrawingObject(handle drawingObjectHandle)
 sim.removeParticleObject(int particleObjectHandle)
 int totalPointCnt = sim.removePointsFromPointCloud(int pointCloudHandle, int options, float[] points, float tolerance)

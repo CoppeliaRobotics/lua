@@ -48,28 +48,43 @@ function wrap_dummyArg1(originalFunction, proxyFuncName)
     return function(_, ...) if proxyFuncName then __proxyFuncName__ = proxyFuncName end; return originalFunction(...) end
 end
 
-sim._handleSandboxScript = wrap_dummyArg1(sim.handleSandboxScript, "sim.handleSandboxScript,handleSandboxScript@method")
-sim._handleAddOnScripts = wrap_dummyArg1(sim.handleAddOnScripts, "sim.handleAddOnScripts,handleAddOnScripts@method")
-sim._handleEmbeddedScripts = wrap_dummyArg1(sim.handleEmbeddedScripts, "sim.handleEmbeddedScripts,handleEmbeddedScripts@method")
-sim._handleSimulationScripts = wrap_dummyArg1(sim.handleSimulationScripts, "sim.handleSimulationScripts,handleSimulationScripts@method")
+function sim._handleSandboxScript(dummyArg, ...)
+    __proxyFuncName__ = 'sim.handleSandboxScript' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.handleSandboxScript(...)
+end
+
+function sim._handleAddOnScripts(dummyArg, ...)
+    __proxyFuncName__ = 'sim.handleAddOnScripts' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.handleAddOnScripts(...)
+end
+
+function sim._handleEmbeddedScripts(dummyArg, ...)
+    __proxyFuncName__ = 'sim.handleEmbeddedScripts' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.handleEmbeddedScripts(...)
+end
+
+function sim._handleSimulationScripts(dummyArg, ...)
+    __proxyFuncName__ = 'sim.handleSimulationScripts' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.handleSimulationScripts(...)
+end
 
 function sim._loadModel(dummyArg, file)
-    __proxyFuncName__ = "sim.loadModel,loadModel@method"
+    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
     return sim.loadModel(file, 0)
 end
 
 function sim._loadModelFromBuffer(buff)
-    __proxyFuncName__ = "sim.loadModel,loadModelFromBuffer@method"
+    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
     return sim.loadModel(buff, 0)
 end
 
 function sim._loadModelThumbnail(str)
-    __proxyFuncName__ = "sim.loadModel,loadModelThumbnail@method"
+    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
     return sim.loadModel(str, 1)
 end
 
 function sim._loadModelThumbnailFromBuffer(buff)
-    __proxyFuncName__ = "sim.loadModel,loadModelThumbnailFromBuffer@method"
+    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
     return sim.loadModel(buff, 1)
 end
 
@@ -77,12 +92,12 @@ function sim._saveModel(h, fn)
     if fn == nil or fn == '' then
         fn = '?' -- generate a error
     end
-    __proxyFuncName__ = "sim.saveModel,saveModel@method"
+    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
     sim.saveModel(h, fn)
 end
 
 function sim._saveModelToBuffer(h)
-    __proxyFuncName__ = "sim.saveModel,saveModelToBuffer@method"
+    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
     return sim.saveModel(h)
 end
 
@@ -94,20 +109,24 @@ locals.simRemoveModel = sim.removeModel
 function sim.removeModel(h, dr)
     locals.simRemoveModel(h, dr) -- in sim-2, no return value
 end
-sim._removeModel = wrap_dummyArg1(sim.removeModel, "sim.removeModel,removeModel@method")
+
+function sim._removeModel(dummyArg, ...)
+    __proxyFuncName__ = 'sim.removeModel' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.removeModel(...)
+end
 
 function sim._removeObject(dummyArg, obj, delayedRemoval)
     local t = sim.Object(obj).objectType
     if t == 'app' or t == 'scene' or t == 'mesh' or t == 'detachedScript' then
         error("in removeObject: object cannot be removed")
     elseif t == 'collection' then
-        __proxyFuncName__ = "sim.destroyCollection,removeObject@method"
+        __proxyFuncName__ = 'sim.destroyCollection' .. __proxyFuncName__:match('(,.-@method)')
         sim.destroyCollection(obj)
     elseif t == 'drawingObject' then
-        __proxyFuncName__ = "sim.removeDrawingObject,removeObject@method"
+        __proxyFuncName__ = 'sim.removeDrawingObject' .. __proxyFuncName__:match('(,.-@method)')
         sim.removeDrawingObject(obj)
     else
-        __proxyFuncName__ = "sim.removeObjects,removeObject@method"
+        __proxyFuncName__ = 'sim.removeObjects' .. __proxyFuncName__:match('(,.-@method)')
         sim.removeObjects({obj}, delayedRemoval)
     end
 end
@@ -147,10 +166,13 @@ sim.removeObjects = wrap(sim.removeObjects, function(origFunc)
     end
 end)
 
-sim._removeObjects = wrap_dummyArg1(sim.removeObjects, "sim.removeObjects,removeObjects@method")
+function sim._removeObjects(dummyArg, ...)
+    __proxyFuncName__ = 'sim.removeObjects' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.removeObjects(...)
+end
 
 function sim._duplicateObjects(dummyArg, objs, opts)
-    __proxyFuncName__ = "sim.copyPasteObjects,duplicateObjects@method"
+    __proxyFuncName__ = 'sim.copyPasteObjects' .. __proxyFuncName__:match('(,.-@method)')
     return sim.copyPasteObjects(objs, opts)
 end
 
@@ -160,7 +182,7 @@ function sim._removeItem(c, h, w, excludeObj)
     if excludeObj then
         opt = 3
     end
-    __proxyFuncName__ = "sim.addToCollection,removeItem@method"
+    __proxyFuncName__ = 'sim.addToCollection' .. __proxyFuncName__:match('(,.-@method)')
     return sim.addToCollection(c, h, w, opt)
 end
 
@@ -170,12 +192,12 @@ function sim._addItem(c, h, w, excludeObj)
     if excludeObj then
         opt = 2
     end
-    __proxyFuncName__ = "sim.addToCollection,addItem@method"
+    __proxyFuncName__ = 'sim.addToCollection' .. __proxyFuncName__:match('(,.-@method)')
     return sim.addToCollection(c, h, w, opt)
 end
 
 function sim._getAncestors(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = 'getAncestors'}, {
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
         {type = 'int', default = 9999},
@@ -208,7 +230,7 @@ function sim._getAncestors(...)
 end
 
 function sim._getDescendants(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = 'getDescendants'}, {
+    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
         {type = 'int', default = 9999},
@@ -273,7 +295,7 @@ end
 
 function sim._addDrawingObjectItems(obj, ...)
     local h = obj.handle | sim.handleflag_addmultiple
-    local matr = checkargs.checkargsEx({funcName = 'addItem'}, { {type = 'matrix'} }, ...)
+    local matr = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, { {type = 'matrix'} }, ...)
     sim.addDrawingObjectItem(h, matr.T:data())
 end
 
@@ -287,7 +309,7 @@ function sim._addDrawingObjectPackedItems(h, buff)
 end
 
 function sim._getObjectPose(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getPose'}, {
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
         {type = 'bool', default = false},
@@ -304,7 +326,7 @@ function sim._getObjectPose(...)
 end
 
 function sim._getObjectPosition(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getPosition'}, {
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
         {type = 'bool', default = false},
@@ -321,7 +343,7 @@ function sim._getObjectPosition(...)
 end
 
 function sim._getObjectQuaternion(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'getQuaternion'}, {
+    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
         {type = 'bool', default = false},
@@ -338,7 +360,7 @@ function sim._getObjectQuaternion(...)
 end
 
 function sim._setObjectPose(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setPose'}, {
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'pose'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
@@ -356,7 +378,7 @@ function sim._setObjectPose(...)
 end
 
 function sim._setObjectPosition(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setPosition'}, {
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'vector3'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
@@ -374,7 +396,7 @@ function sim._setObjectPosition(...)
 end
 
 function sim._setObjectQuaternion(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = 'setQuaternion'}, {
+    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'quaternion'},
         {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
@@ -392,7 +414,7 @@ function sim._setObjectQuaternion(...)
 end
 
 function sim._setObjectParent(...)
-    local obj, parent, inPlace = checkargs.checkargsEx({argOffset = -1, funcName = 'setParent'}, {
+    local obj, parent, inPlace = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'handle', default_nil = true, nullable = true},
         {type = 'bool', default = true},
@@ -408,7 +430,7 @@ function sim._setObjectParent(...)
 end
 
 function sim._scaleObject(...)
-    local obj, fact = checkargs.checkargsEx({argOffset = -1, funcName = 'scale'}, {
+    local obj, fact = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
         {type = 'vector3'},
     }, ...)
@@ -418,7 +440,7 @@ function sim._scaleObject(...)
 end
 
 function sim._scaleObjects(dummyH, ...)
-    local objs, fact, posToo = checkargs.checkargsEx({funcName = 'scaleObjects'}, {
+    local objs, fact, posToo = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'table', item_type = 'handle', size = '1..*'},
         {type = 'float'},
         {type = 'bool', default = true},
@@ -433,6 +455,37 @@ function sim._scaleObjects(dummyH, ...)
     end
     __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.scaleObjects,")
     sim.scaleObjects(hs, fact, posToo) 
+end
+
+function sim._relocateShapeFrame(...)
+    local shape, pose = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'handle'},
+        {type = 'pose', nullable = true, default_nil = true},
+    }, ...)
+    local h = shape.handle
+    if pose then
+        pose = pose:data()
+    else
+        pose = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.relocateShapeFrame,")
+    sim.relocateShapeFrame(h, pose) 
+end
+
+function sim._alignShapeBB(...)
+    local shape, q = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'handle'},
+        {type = 'quaternion', nullable = true, default_nil = true},
+    }, ...)
+    local h = shape.handle
+    if q then
+        q = q:data()
+        q = {0.0, 0.0, 0.0, q[1], q[2], q[3], q[4]}
+    else
+        q = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
+    end
+    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.alignShapeBB,")
+    sim.alignShapeBB(h, q) 
 end
 
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
@@ -1415,11 +1468,12 @@ function sim._createObject(dummyArg, initialProperties)
     local Color = require 'Color'
     local p = table.clone(initialProperties or {})
     local h
-    local function extractValueOrDefault(key, default)
+    local function extractValueOrDefault(key, default, map)
+        map = map or p
         local v = default
-        if p[key] ~= nil then
-            v = p[key]
-            p[key] = nil
+        if map[key] ~= nil then
+            v = map[key]
+            map[key] = nil
         end
         return v
     end
@@ -1445,7 +1499,7 @@ function sim._createObject(dummyArg, initialProperties)
             {name = 'local', type = 'bool', nullable = true},
             {name = 'paint', type = 'bool', nullable = true},
             {name = 'overlay', type = 'bool', nullable = true},
-            {name = 'size', type = 'float', default = 0.005},
+            {name = 'itemSize', type = 'float', default = 0.005},
             {name = 'duplicateTolerance', type = 'float', default = 0.0},
             {name = 'parentObject', type = 'handle', nullable = true},
             {name = 'itemCnt', type = 'int', default = 0},
@@ -1659,70 +1713,209 @@ function sim._createObject(dummyArg, initialProperties)
         local lang = extractValueOrDefault('language')
         h = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
     elseif objectType == 'shape' then
-        local t = extractValueOrDefault('type', nil)
-        assert(t, '"type" field is required')
-        if t == 'mesh' then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'mesh', type = 'table', nullable = true},
+            {name = 'heightField', type = 'table', nullable = true},
+            {name = 'plane', type = 'table', nullable = true},
+            {name = 'disc', type = 'table', nullable = true},
+            {name = 'cuboid', type = 'table', nullable = true},
+            {name = 'spheroid', type = 'table', nullable = true},
+            {name = 'cylinder', type = 'table', nullable = true},
+            {name = 'cone', type = 'table', nullable = true},
+            {name = 'capsule', type = 'table', nullable = true},
+            {name = 'shadingAngle', type = 'float', default = 0.0},
+            {name = 'culling', type = 'bool', default = false},
+--            {name = 'rawMesh', type = 'bool', default = false},
+            {name = 'dynamic', type = 'bool', default = false},
+            {name = 'showEdges', type = 'bool', default = false},
+            {name = 'color', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
+        }, p)
+        if p.mesh then
+            checkargs.checkfields({funcName = funcName .. ' (mesh field)'}, {
+                {name = 'vertices', type = 'matrix', rows = 3, default = simEigen.Matrix(3, 3, {0.0, 0.0, 0.005, 0.1, 0.0, 0.005, 0.2, 0.1, 0.005}).T},
+                {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
+                {name = 'boundingBoxQuaternion', type = 'quaternion', nullable = true},
+                {name = 'frameOrigin', type = 'pose', nullable = true},
+            }, p.mesh)
+            checkargs.checkfields({funcName = funcName .. ' (mesh field)'}, {
+                {name = 'normals', type = 'matrix', cols = #p.mesh.indices, rows = 3, nullable = true},
+            }, p.mesh)
+            local texture_interpolate = true
+            local texture_decal = false
+            local texture_rgba = false
+            local texture_horizFlip = false
+            local texture_vertFlip = false
+            local texture_res = nil
+            local texture_coord = nil
+            local texture_img = nil
+            if type(p.mesh.texture) == 'table' then
+                checkargs.checkfields({funcName = funcName .. ' (mesh.texture field)'}, {
+                    {name = 'interpolate', type = 'bool', default = true},
+                    {name = 'decal', type = 'bool', default = false},
+                    {name = 'rgba', type = 'bool', default = false},
+                    {name = 'horizFlip', type = 'bool', default = false},
+                    {name = 'vertFlip', type = 'bool', default = false},
+                }, p.mesh.texture)
+                local vals = 3
+                if p.mesh.texture.rgba then
+                    vals = 4
+                end
+                checkargs.checkfields({funcName = funcName .. ' (mesh.texture field)'}, {
+                    {name = 'resolution', type = 'table', item_type = 'int', size = 2},
+                    {name = 'image', type = 'buffer', size = vals * p.mesh.texture.resolution[1] * p.mesh.texture.resolution[2]},
+                    {name = 'coordinates', type = 'matrix', cols = #p.mesh.indices, rows = 2, nullable = true},
+                }, p.mesh.texture)
+
+                texture_interpolate = extractValueOrDefault('interpolate', true, p.mesh.texture)
+                texture_decal = extractValueOrDefault('decal', false, p.mesh.texture)
+                texture_rgba = extractValueOrDefault('rgba', false, p.mesh.texture)
+                texture_horizFlip = extractValueOrDefault('horizFlip', false, p.mesh.texture)
+                texture_vertFlip = extractValueOrDefault('vertFlip', false, p.mesh.texture)
+                texture_res = extractValueOrDefault('resolution', nil, p.mesh.texture)
+                texture_coord = extractValueOrDefault('coordinates', nil, p.mesh.texture)
+                texture_img = extractValueOrDefault('image', nil, p.mesh.texture)
+            end
             local options = 0
-                + v(1, extractValueOrDefault('culling', false))
-                + v(2, extractValueOrDefault('edges', false))
-                + v(4, not extractValueOrDefault('texture.interpolate', true))
-                + v(8, extractValueOrDefault('texture.decal', false))
-                + v(16, extractValueOrDefault('texture.rgba', false))
-                + v(32, extractValueOrDefault('texture.horizFlip', false))
-                + v(64, extractValueOrDefault('texture.vertFlip', false))
-            local res = extractValueOrDefault('texture.resolution', nil)
-            local coord = extractValueOrDefault('texture.coordinates', nil)
-            local img = extractValueOrDefault('texture.image', nil)
-            local shadingAngle = extractValueOrDefault('shadingAngle', 0.)
-            local vertices = extractValueOrDefault('vertices', {})
-            local indices = extractValueOrDefault('indices', {})
-            local normals = extractValueOrDefault('normals', {})
-            h = sim.createShape(options, shadingAngle, vertices, indices, normals, coord, img, res)
-        elseif t == 'heightfield' then
+                + v(1, extractValueOrDefault('culling'))
+                + v(2, extractValueOrDefault('showEdges'))
+                + v(4, not texture_interpolate)
+                + v(8, texture_decal)
+                + v(16, texture_rgba)
+                + v(32, texture_horizFlip)
+                + v(64, texture_vertFlip)
+            local shadingAngle = extractValueOrDefault('shadingAngle')
+            local vertices = extractValueOrDefault('vertices', nil, p.mesh)
+            local indices = extractValueOrDefault('indices', nil, p.mesh)
+            local normals = extractValueOrDefault('normals', nil, p.mesh)
+            if normals then
+                normals = normals.T:data()
+            end
+            h = sim.Object(sim.createShape(options, shadingAngle, vertices.T:data(), indices, normals, texture_coord, texture_img, texture_res))
+            local bbQuat = extractValueOrDefault('boundingBoxQuaternion', nil, p.mesh)
+            if bbQuat then
+                h:alignBoundingBox(bbQuat)
+            else
+                h:alignBoundingBox({0.0, 0.0, 0.0, 0.0}) -- to encompass shape closest
+            end
+            local frameOrigin = extractValueOrDefault('frameOrigin', nil, p.mesh)
+            if frameOrigin then
+                h:relocateFrame(frameOrigin)
+            else
+                h:relocateFrame({0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}) -- to center of shape's BB
+            end
+            p.mesh = nil
+        elseif p.heightField then
+            checkargs.checkfields({funcName = funcName .. ' (heightField field)'}, {
+                {name = 'heights', type = 'matrix', default = simEigen.Matrix(3, 3, {0.0, 0.05, 0.025, 0.03, 0.06, 0.08, 0.01, 0.01, 0.01})},
+                {name = 'cellSize', type = 'float', default = 0.5},
+                {name = 'rawMesh', type = 'bool', default = false},
+            }, p.heightField)
             local options = 0
-                + v(1, extractValueOrDefault('culling', false))
-                + v(2, extractValueOrDefault('edges', false))
-                + v(4, extractValueOrDefault('mesh', false))
-            local shadingAngle = extractValueOrDefault('shadingAngle', 0.)
-            local heights = extractValueOrDefault('heights', nil)
-            assert(height, 'field "heights" is required')
-            heights = Matrix:tomatrix(heights)
-            local cellSize = extractValueOrDefault('cellSize', nil)
-            h = sim.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data())
+                + v(1, extractValueOrDefault('culling'))
+                + v(2, extractValueOrDefault('showEdges'))
+                + v(4, extractValueOrDefault('rawMesh', false, p.heightField))
+            local shadingAngle = extractValueOrDefault('shadingAngle')
+            local heights = extractValueOrDefault('heights', nil, p.heightField)
+            local cellSize = extractValueOrDefault('cellSize', nil, p.heightField)
+            h = sim.Object(sim.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data()))
+            p.heightField = nil
         else
-            local pt = ({
-                plane = sim.primitiveshape_plane,
-                disc = sim.primitiveshape_disc,
-                cuboid = sim.primitiveshape_cuboid,
-                spheroid = sim.primitiveshape_spheroid,
-                cylinder = sim.primitiveshape_cylinder,
-                cone = sim.primitiveshape_cone,
-                capsule = sim.primitiveshape_capsule,
-            })[t]
-            assert(pt, 'invalid value for "type" field')
+            local pt, size, open
+            local ff
+            if p.plane then
+                ff = p.plane
+                p.plane = nil
+                checkargs.checkfields({funcName = funcName .. ' (plane field)'}, {
+                    {name = 'size', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.1}},
+                }, ff)
+                pt = sim.primitiveshape_plane
+                local s = extractValueOrDefault('size', nil, ff)
+                size = {s[1], s[2], 0.0}
+            elseif p.disc then
+                ff = p.disc
+                p.disc = nil
+                checkargs.checkfields({funcName = funcName .. ' (disc field)'}, {
+                    {name = 'radius', type = 'float', default = 0.1},
+                }, ff)
+                pt = sim.primitiveshape_disc
+                local r = extractValueOrDefault('radius', nil, ff)
+                size = {r * 2.0, r * 2.0, 0.0}
+            elseif p.sphere then
+                ff = p.sphere
+                p.sphere = nil
+                checkargs.checkfields({funcName = funcName .. ' (sphere field)'}, {
+                    {name = 'radius', type = 'float', default = 0.1},
+                }, ff)
+                pt = sim.primitiveshape_spheroid
+                local r = extractValueOrDefault('radius', nil, ff)
+                size = {r * 2.0, r * 2.0, r * 2.0}
+            elseif p.cylinder then
+                ff = p.cylinder
+                p.cylinder = nil
+                checkargs.checkfields({funcName = funcName .. ' (cylinder field)'}, {
+                    {name = 'radius', type = 'float', default = 0.1},
+                    {name = 'length', type = 'float', default = 0.1},
+                    {name = 'open', type = 'bool', default = false},
+                }, ff)
+                pt = sim.primitiveshape_cylinder
+                local r = extractValueOrDefault('radius', nil, ff)
+                local l = extractValueOrDefault('length', nil, ff)
+                size = {r * 2.0, r * 2.0, l}
+                open = extractValueOrDefault('open', nil, ff)
+            elseif p.cone then
+                ff = p.cone
+                p.cone = nil
+                checkargs.checkfields({funcName = funcName .. ' (cone field)'}, {
+                    {name = 'radius', type = 'float', default = 0.1},
+                    {name = 'height', type = 'float', default = 0.1},
+                    {name = 'open', type = 'bool', default = false},
+                }, ff)
+                pt = sim.primitiveshape_cone
+                local r = extractValueOrDefault('radius', nil, ff)
+                local l = extractValueOrDefault('height', nil, ff)
+                size = {r * 2.0, r * 2.0, l}
+                open = extractValueOrDefault('open', nil, ff)
+            elseif p.capsule then
+                ff = p.capsule
+                p.capsule = nil
+                checkargs.checkfields({funcName = funcName .. ' (capsule field)'}, {
+                    {name = 'radius', type = 'float', default = 0.025},
+                    {name = 'length', type = 'float', default = 0.1},
+                }, ff)
+                pt = sim.primitiveshape_capsule
+                local r = extractValueOrDefault('radius', nil, ff)
+                local l = extractValueOrDefault('length', nil, ff)
+                size = {r * 2.0, r * 2.0, math.max(l, r * 2.0)}
+            else
+                if p.cube == nil then
+                    p.cube = {}
+                end
+                ff = p.cube
+                p.cube = nil
+                checkargs.checkfields({funcName = funcName .. ' (cube field)'}, {
+                    {name = 'size', type = 'table', item_type = 'float', size = 3, default = {0.1, 0.1, 0.1}},
+                }, ff)
+                pt = sim.primitiveshape_cuboid
+                size = extractValueOrDefault('size', nil, ff)
+            end
             local options = 2
-                + v(1, extractValueOrDefault('culling', false))
-                + v(4, extractValueOrDefault('open', false))
-                + v(8, extractValueOrDefault('mesh', false))
-            local size = extractValueOrDefault('size', nil)
-            assert(size, 'field "size" is required')
-            size = simEigen.Vector:tovector(size, 3)
-            h = sim.createPrimitiveShape(pt, size, options)
-            local shadingAngle = extractValueOrDefault('shadingAngle', nil)
-            if shadingAngle ~= nil then
-                sim.setFloatProperty(h, 'applyShadingAngle', shadingAngle)
-            end
-            local edges = extractValueOrDefault('edges', nil)
-            if edges ~= nil then
-                sim.setFloatProperty(h, 'applyShowEdges', edges)
-            end
+                + v(1, extractValueOrDefault('culling'))
+                + v(4, open)
+                + v(8, extractValueOrDefault('rawMesh', ff))
+            h = sim.Object(sim.createPrimitiveShape(pt, size, options))
+            local shadingAngle = extractValueOrDefault('shadingAngle')
+            sim.setFloatProperty(h, 'applyShadingAngle', shadingAngle)
         end
+        h.dynamic = extractValueOrDefault('dynamic', false)
+        if extractValueOrDefault('showEdges') then
+            h:applyShowEdges(true)
+        end
+        h.applyColor.diffuse = extractValueOrDefault('color')
     elseif objectType == 'texture' then
         error '"texture" type not supported'
         h = sim.createTexture()
     elseif objectType == 'visionSensor' then
         checkargs.checkfields({funcName = funcName}, {
---            {name = 'perspective', type = 'bool', default = false},
             {name = 'explicitHandling', type = 'bool', default = false},
             {name = 'showFrustum', type = 'bool', default = false},
             {name = 'useExtImage', type = 'bool', default = false},
