@@ -126,7 +126,10 @@ return {
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(handle))
 
-            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+            if handle ~= sim.handle_self then
+                -- sim.handle_self is special
+                self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+            end
 
             local json = require 'dkjson'
             local objMetaInfo = json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
