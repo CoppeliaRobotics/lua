@@ -278,7 +278,7 @@ function _S.graph.updateCurves(forceUpdate)
                     data.width = width
                     --]=]
                     local data = {info = 'curve data events disabled as of now. Enable in graph_customization-2.lua'}
-                    sim.pushUserEvent(eventName, uid, uid, data, 0)
+                    -- TODO sim.pushUserEvent(eventName, uid, uid, data, 0)
                 else
                     break
                 end
@@ -287,7 +287,7 @@ function _S.graph.updateCurves(forceUpdate)
                 local uid = _S.graph.allCurves_event[i]
                 if currentCurves[uid] == nil then
                     _S.graph.allIds_event[uid] = nil
-                    sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
+                    -- TODO sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
                 end
             end
         end
@@ -754,7 +754,7 @@ function _S.graph.cleanup()
     _S.graph.removePlot()
     for i = 1, #_S.graph.allCurves_event do
         local uid = _S.graph.allCurves_event[i]
-        sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
+        -- TODO sim.pushUserEvent('objectRemoved', uid, uid, {}, 0)
     end
 end
 
