@@ -117,7 +117,7 @@ end
 
 function sim._removeObject(dummyArg, obj, delayedRemoval)
     local t = sim.Object(obj).objectType
-    if t == 'app' or t == 'scene' or t == 'mesh' or t == 'detachedScript' then
+    if t == 'app' or t == 'scene' or t == 'mesh' then
         error("in removeObject: object cannot be removed")
     elseif t == 'collection' then
         __proxyFuncName__ = 'sim.destroyCollection' .. __proxyFuncName__:match('(,.-@method)')
@@ -125,6 +125,9 @@ function sim._removeObject(dummyArg, obj, delayedRemoval)
     elseif t == 'drawingObject' then
         __proxyFuncName__ = 'sim.removeDrawingObject' .. __proxyFuncName__:match('(,.-@method)')
         sim.removeDrawingObject(obj)
+    elseif t == 'detachedScript' then
+        __proxyFuncName__ = 'sim.removeDetachedScript' .. __proxyFuncName__:match('(,.-@method)')
+        sim.removeDetachedScript(obj)
     else
         __proxyFuncName__ = 'sim.removeObjects' .. __proxyFuncName__:match('(,.-@method)')
         sim.removeObjects({obj}, delayedRemoval)
@@ -139,9 +142,9 @@ sim.removeObjects = wrap(sim.removeObjects, function(origFunc)
         for i = 1, #objs do
             local obj = objs[i]
             local t = sim.Object(obj).objectType
-            if t == 'app' or t == 'scene' or t == 'mesh' or t == 'detachedScript' then
+            if t == 'app' or t == 'scene' or t == 'mesh' then
                 err = true
-            elseif t == 'collection' or t == 'drawingObject' then
+            elseif t == 'collection' or t == 'drawingObject' or t == 'detachedScript' then
                 otherObjects[#otherObjects + 1] = obj
             else
                 sceneObjects[#sceneObjects + 1] = obj
@@ -1492,6 +1495,14 @@ function sim._createObject(dummyArg, initialProperties)
             opts = 1
         end
         h = sim.Object(sim.createCollection(opts))
+    elseif objectType == 'addOn' then
+        checkargs.checkfields({funcName = funcName}, {
+            {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
+            {name = 'lang', type = 'string', default = 'lua'},
+        }, p)
+        local code = extractValueOrDefault('code')
+        local lang = extractValueOrDefault('lang')
+        h = sim.Object(sim.createDetachedScript(sim.scripttype_addon, code, lang))
     elseif objectType == 'drawingObject' then
         checkargs.checkfields({funcName = funcName}, {
             {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
