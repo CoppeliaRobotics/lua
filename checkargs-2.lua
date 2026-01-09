@@ -136,7 +136,7 @@ end
 function checkargs.checkarg.handle(v, t)
     local sim = require 'sim-2'
     if not (math.type(v) == 'integer' and v >= 0) and not sim.Object:isobject(v) then
-        error('must be an handle', 0)
+        error('must be a handle', 0)
     end
     return sim.Object:toobject(v)
 end
@@ -285,7 +285,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
         end
         for k, _ in pairs(args) do
             if not validKeys[k] then
-                error(string.format("Error in '%s': Unexpected argument '%s' provided.", funcName, k), 2)
+                error(string.format("error in '%s': unexpected argument '%s' provided.", funcName, k), 2)
             end
         end
     end
@@ -308,7 +308,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
             elseif field.optional == true or field.nullable == true then
                 goto continue
             else
-                error(string.format("Error in '%s': Missing required argument '%s'.", funcName, field.name), 2)
+                error(string.format("error in '%s': missing required argument '%s'.", funcName, field.name), 2)
             end
         end
 
@@ -320,12 +320,12 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
         -- B. Check Type (Reuse existing validators)
         local typeName = checkargs.infertype(field)
         if typeName == nil then
-            error(string.format("Error in '%s': Schema definition for '%s' missing type.", funcName, field.name), 2)
+            error(string.format("error in '%s': schema definition for '%s' missing type.", funcName, field.name), 2)
         end
 
         local checkFunc = checkargs.checkarg[typeName]
         if not checkFunc then
-            error(string.format("Error in '%s': Unknown type validator '%s' for argument '%s'.", funcName, typeName, field.name), 2)
+            error(string.format("error in '%s': unknown type validator '%s' for argument '%s'.", funcName, typeName, field.name), 2)
         end
 
         -- Call the validator.
@@ -334,7 +334,7 @@ function checkargs.checkfields(funcInfo, schema, args, strict)
 
         if not ok then
             -- Strip the 'must be a ...' prefix if possible or just append
-            error(string.format("Error in '%s': Argument '%s' %s", funcName, field.name, resultOrErr), 2)
+            error(string.format("error in '%s': argument '%s' %s.", funcName, field.name, resultOrErr), 2)
         else
             -- Update arg with converted value (e.g. handle -> object, matrix table -> Matrix)
             args[field.name] = resultOrErr

@@ -44,47 +44,54 @@ function sim.step(wait)
     sim.yield()
 end
 
-function wrap_dummyArg1(originalFunction, proxyFuncName)
-    return function(_, ...) if proxyFuncName then __proxyFuncName__ = proxyFuncName end; return originalFunction(...) end
+function fixProxyFuncName(newFuncName, adjustArgIndexInErrorMsg)
+    local s = __proxyFuncName__
+    local c = s:find(',', 1, true)
+    if adjustArgIndexInErrorMsg then
+        __proxyFuncName__ = newFuncName .. s:sub(c)
+    else
+        local at = s:find('@method', c, true)
+        __proxyFuncName__ = newFuncName .. s:sub(c, at - 1)
+    end
 end
 
 function sim._handleSandboxScript(dummyArg, ...)
-    __proxyFuncName__ = 'sim.handleSandboxScript' .. __proxyFuncName__:match('(,.-@method)')
+    fixProxyFuncName('sim.handleSandboxScript', false)
     return sim.handleSandboxScript(...)
 end
 
 function sim._handleAddOnScripts(dummyArg, ...)
-    __proxyFuncName__ = 'sim.handleAddOnScripts' .. __proxyFuncName__:match('(,.-@method)')
+    fixProxyFuncName('sim.handleAddOnScripts', false)
     return sim.handleAddOnScripts(...)
 end
 
 function sim._handleEmbeddedScripts(dummyArg, ...)
-    __proxyFuncName__ = 'sim.handleEmbeddedScripts' .. __proxyFuncName__:match('(,.-@method)')
+    fixProxyFuncName('sim.handleEmbeddedScripts', false)
     return sim.handleEmbeddedScripts(...)
 end
 
 function sim._handleSimulationScripts(dummyArg, ...)
-    __proxyFuncName__ = 'sim.handleSimulationScripts' .. __proxyFuncName__:match('(,.-@method)')
+    fixProxyFuncName('sim.handleSimulationScripts', false)
     return sim.handleSimulationScripts(...)
 end
 
 function sim._loadModel(dummyArg, file)
-    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
+    fixProxyFuncName('sim.loadModel', false)
     return sim.loadModel(file, 0)
 end
 
-function sim._loadModelFromBuffer(buff)
-    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
+function sim._loadModelFromBuffer(dummyArg, buff)
+    fixProxyFuncName('sim.loadModel', false)
     return sim.loadModel(buff, 0)
 end
 
-function sim._loadModelThumbnail(str)
-    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
+function sim._loadModelThumbnail(dummyArg, str)
+    fixProxyFuncName('sim.loadModel', false)
     return sim.loadModel(str, 1)
 end
 
-function sim._loadModelThumbnailFromBuffer(buff)
-    __proxyFuncName__ = 'sim.loadModel' .. __proxyFuncName__:match('(,.-@method)')
+function sim._loadModelThumbnailFromBuffer(dummyArg, buff)
+    fixProxyFuncName('sim.loadModel', false)
     return sim.loadModel(buff, 1)
 end
 
@@ -101,9 +108,68 @@ function sim._saveModelToBuffer(h)
     return sim.saveModel(h)
 end
 
-sim.__saveModel = wrap_dummyArg1(sim._saveModel) -- no second arg here!
-sim.__saveModelToBuffer = wrap_dummyArg1(sim._saveModelToBuffer) -- no second arg here!
+function sim._saveModel(callerObjHandle, modelOrFilename, filename)
+    if callerObjHandle == sim.handle_scene then
+        if filename == nil or filename == '' then
+            filename = '?' -- generate a error
+        end
+        if sim.Object:isobject(modelOrFilename) then
+            modelOrFilename = modelOrFilename.handle
+        end
+        fixProxyFuncName('sim.saveModel', false)
+        sim.saveModel(modelOrFilename, filename)
+    else
+        if modelOrFilename == nil or modelOrFilename == '' then
+            modelOrFilename = '?' -- generate a error
+        end
+        fixProxyFuncName('sim.saveModel', true)
+        sim.saveModel(callerObjHandle, modelOrFilename)
+    end
+end
 
+function sim._saveModelToBuffer(callerObjHandle, model)
+    local ret
+    if callerObjHandle == sim.handle_scene then
+        if sim.Object:isobject(model) then
+            model = model.handle
+        end
+        fixProxyFuncName('sim.saveModelToBuffer', false)
+        ret = sim.saveModel(model)
+    else
+        fixProxyFuncName('sim.saveModelToBuffer', true)
+        ret = sim.saveModel(callerObjHandle)
+    end
+    return ret
+end
+
+function sim._loadScene(dummyArg, file, newScene)
+    __proxyFuncName__ = 'sim.loadScene' .. __proxyFuncName__:match('(,.-@method)')
+    if newScene then
+        file = file .. '@keepCurrent'
+    end
+    sim.loadScene(file)
+end
+
+function sim._loadSceneFromBuffer(dummyArg, buff, newScene)
+    __proxyFuncName__ = 'sim.loadScene' .. __proxyFuncName__:match('(,.-@method)')
+    if newScene then
+        buff = buff .. '@keepCurrent'
+    end
+    sim.loadScene(buff)
+end
+
+function sim._saveScene(dummyArg, fn)
+    if fn == nil or fn == '' then
+        fn = '?' -- generate a error
+    end
+    __proxyFuncName__ = 'sim.saveScene' .. __proxyFuncName__:match('(,.-@method)')
+    sim.saveScene(fn)
+end
+
+function sim._saveSceneToBuffer(h)
+    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
+    return sim.saveScene()
+end
 
 locals.simRemoveModel = sim.removeModel
 function sim.removeModel(h, dr)
@@ -115,63 +181,65 @@ function sim._removeModel(dummyArg, ...)
     return sim.removeModel(...)
 end
 
-function sim._removeObject(dummyArg, obj, delayedRemoval)
+function sim._removeObject(dummyArg, ...)
+    local obj, delayedRemoval = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'handle'},
+        {type = 'bool', default = false},
+    }, ...)
     local t = sim.Object(obj).objectType
     if t == 'app' or t == 'scene' or t == 'mesh' then
         error("in removeObject: object cannot be removed")
     elseif t == 'collection' then
-        __proxyFuncName__ = 'sim.destroyCollection' .. __proxyFuncName__:match('(,.-@method)')
+        fixProxyFuncName('sim.destroyCollection', false)
         sim.destroyCollection(obj)
     elseif t == 'drawingObject' then
-        __proxyFuncName__ = 'sim.removeDrawingObject' .. __proxyFuncName__:match('(,.-@method)')
+        fixProxyFuncName('sim.removeDrawingObject', false)
         sim.removeDrawingObject(obj)
     elseif t == 'detachedScript' then
-        __proxyFuncName__ = 'sim.removeDetachedScript' .. __proxyFuncName__:match('(,.-@method)')
+        fixProxyFuncName('sim.removeDetachedScript', false)
         sim.removeDetachedScript(obj)
     else
-        __proxyFuncName__ = 'sim.removeObjects' .. __proxyFuncName__:match('(,.-@method)')
+        fixProxyFuncName('sim.removeObjects', false)
         sim.removeObjects({obj}, delayedRemoval)
     end
 end
 
-sim.removeObjects = wrap(sim.removeObjects, function(origFunc)
-    return function(objs, delayedRemoval)
-        local err = false
-        local sceneObjects = {}
-        local otherObjects = {}
-        for i = 1, #objs do
-            local obj = objs[i]
-            local t = sim.Object(obj).objectType
-            if t == 'app' or t == 'scene' or t == 'mesh' then
-                err = true
-            elseif t == 'collection' or t == 'drawingObject' or t == 'detachedScript' then
-                otherObjects[#otherObjects + 1] = obj
-            else
-                sceneObjects[#sceneObjects + 1] = obj
-            end
-        end
-        if err then
-            local nm = 'in sim.removeObjects: '
-            if __proxyFuncName__ then
-                local f1, f2 = __proxyFuncName__:match("([^,]+),([^@]+)@")
-                if f1 == 'sim.removeObjects' then
-                    nm = 'in ' .. f2 .. ': '
-                end
-                __proxyFuncName__ = nil
-            end
-            error(nm .. "detected object that cannot be removed")
+function sim._removeObjects(dummyArg, ...)
+    local objs, delayedRemoval = checkargs.checkargsEx({afuncName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'table', itemType = 'handle'},
+        {type = 'bool', default = false},
+    }, ...)
+    local err = false
+    local sceneObjects = {}
+    local otherObjects = {}
+    for i = 1, #objs do
+        local obj = objs[i]
+        local t = sim.Object(obj).objectType
+        if t == 'app' or t == 'scene' or t == 'mesh' then
+            err = true
+        elseif t == 'collection' or t == 'drawingObject' or t == 'detachedScript' then
+            otherObjects[#otherObjects + 1] = obj
         else
-            for i = 1, #otherObjects do
-                sim._removeObject(-1, otherObjects[i], delayedRemoval)
-            end
-            origFunc(sceneObjects, delayedRemoval)
+            sceneObjects[#sceneObjects + 1] = obj
         end
     end
-end)
-
-function sim._removeObjects(dummyArg, ...)
-    __proxyFuncName__ = 'sim.removeObjects' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.removeObjects(...)
+    if err then
+        local nm = 'in sim.removeObjects: '
+        if __proxyFuncName__ then
+            local f1, f2 = __proxyFuncName__:match("([^,]+),([^@]+)@")
+            if f1 == 'sim.removeObjects' then
+                nm = 'in ' .. f2 .. ': '
+            end
+            __proxyFuncName__ = nil
+        end
+        error(nm .. "detected object that cannot be removed")
+    else
+        for i = 1, #otherObjects do
+            sim._removeObject(-1, otherObjects[i], delayedRemoval)
+        end
+        fixProxyFuncName('sim.removeObjects', false)
+        sim.removeObjects(sceneObjects, delayedRemoval)
+    end
 end
 
 function sim._duplicateObjects(dummyArg, objs, opts)
@@ -179,24 +247,32 @@ function sim._duplicateObjects(dummyArg, objs, opts)
     return sim.copyPasteObjects(objs, opts)
 end
 
-function sim._removeItem(c, h, w, excludeObj)
-    w = w or sim.handle_single
+function sim._removeItem(coll, ...)
+    local obj, what, excludeObj = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'handle'},
+        {type = 'int', default = sim.handle_single},
+        {type = 'bool', default = false},
+    }, ...)
     local opt = 1
     if excludeObj then
         opt = 3
     end
-    __proxyFuncName__ = 'sim.addToCollection' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.addToCollection(c, h, w, opt)
+    fixProxyFuncName('sim.addToCollection', true)
+    return sim.addToCollection(coll.handle, obj.handle, what, opt)
 end
 
-function sim._addItem(c, h, w, excludeObj)
-    w = w or sim.handle_single
+function sim._addItem(coll, ...)
+    local obj, what, excludeObj = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {type = 'handle'},
+        {type = 'int', default = sim.handle_single},
+        {type = 'bool', default = false},
+    }, ...)
     local opt = 0
     if excludeObj then
         opt = 2
     end
-    __proxyFuncName__ = 'sim.addToCollection' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.addToCollection(c, h, w, opt)
+    fixProxyFuncName('sim.addToCollection', true)
+    return sim.addToCollection(coll.handle, obj.handle, what, opt)
 end
 
 function sim._getAncestors(...)
@@ -491,16 +567,35 @@ function sim._alignShapeBB(...)
     sim.alignShapeBB(h, q) 
 end
 
-sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)
-    return function(a, b, ...)
-        if type(a) ~= 'number' then
-            local tmp = a
-            a = b
-            b = tmp
-        end
-        return origFunc(a, b, ...)
-    end
-end)
+function sim._callScriptFunction(script, ...)
+    fixProxyFuncName('sim.callScriptFunction', true)
+    return sim.callScriptFunction(script.handle, ...)
+end
+
+function sim._executeScriptString(script, ...)
+    fixProxyFuncName('sim.executeScriptString', true)
+    return sim.executeScriptString(script.handle, ...)
+end
+
+function sim._getApiInfo(script, ...)
+    fixProxyFuncName('sim.getApiInfo', true)
+    return sim.getApiInfo(script.handle, ...)
+end
+
+function sim._getApiFunc(script, ...)
+    fixProxyFuncName('sim.getApiFunc', true)
+    return sim.getApiFunc(script.handle, ...)
+end
+
+function sim._getStackTraceback(script, ...)
+    fixProxyFuncName('sim.getStackTraceback', true)
+    return sim.getStackTraceback(script.handle, ...)
+end
+
+function sim._initScript(script, ...)
+    fixProxyFuncName('sim.initScript', true)
+    return sim.initScript(script.handle, ...)
+end
 
 sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
     return function(...)
@@ -511,12 +606,18 @@ sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
     end
 end)
 
-sim.checkDistance = wrap(sim.checkDistance, function(origFunc)
-    return function(...)
-        local r, distData, objPair = origFunc(...)
-        return (r > 0), distData[7], {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, objPair
+function sim._checkDistance(origObj, ...)
+    local entity, threshold = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
+        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_all},
+        {type = 'float', default = 0.0},
+    }, ...)
+    fixProxyFuncName('sim.checkDistance', true)
+    if sim.Object:isobject(entity) then
+        entity = entity.handle
     end
-end)
+    local r, distData, objPair = sim.checkDistance(origObj.handle, entity, threshold)
+    return (r > 0), distData[7], {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, objPair
+end
 
 sim.checkCollision = wrap(sim.checkCollision, function(origFunc)
     return function(...)
@@ -1468,6 +1569,7 @@ end)
 
 function sim._createObject(dummyArg, initialProperties)
     local funcName = __proxyFuncName__:match(",(.-)@")
+    __proxyFuncName__ = nil
     local Color = require 'Color'
     local p = table.clone(initialProperties or {})
     local h
@@ -1483,8 +1585,10 @@ function sim._createObject(dummyArg, initialProperties)
     local function v(intValue, booleanValue)
         if booleanValue then return intValue else return 0 end
     end
-    local objectType = extractValueOrDefault('objectType', nil)
-    assert(objectType ~= nil, 'field "objectType" is required')
+    checkargs.checkfields({funcName = funcName}, {
+        {name = 'objectType', type = 'string'},
+    }, p)
+    local objectType = extractValueOrDefault('objectType')
     if false then
     elseif objectType == 'collection' then
         checkargs.checkfields({funcName = funcName}, {
@@ -1495,14 +1599,16 @@ function sim._createObject(dummyArg, initialProperties)
             opts = 1
         end
         h = sim.Object(sim.createCollection(opts))
-    elseif objectType == 'addOn' then
+    elseif objectType == 'detachedScript' then
         checkargs.checkfields({funcName = funcName}, {
+            {name = 'scriptType', type = 'int', default = sim.scripttype_addon},
             {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
             {name = 'lang', type = 'string', default = 'lua'},
         }, p)
+        local tp = extractValueOrDefault('scriptType')
         local code = extractValueOrDefault('code')
         local lang = extractValueOrDefault('lang')
-        h = sim.Object(sim.createDetachedScript(sim.scripttype_addon, code, lang))
+        h = sim.Object(sim.createDetachedScript(tp, code, lang))
     elseif objectType == 'drawingObject' then
         checkargs.checkfields({funcName = funcName}, {
             {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
@@ -1977,7 +2083,7 @@ function sim._createObject(dummyArg, initialProperties)
         end
         h = sim.Object(sim.createVisionSensor(options, intParams, floatParams))
     else
-        error 'unsupported object type'
+        error ("error in '" .. funcName .. "': unsupported object type.")
     end
     sim.setProperties(h, p)
     return h
@@ -2026,28 +2132,15 @@ function sim.getSettingInt32(...)
     return locals.parseInt(sim.getSettingString(key))
 end
 
-function sim.getScriptFunctions(...)
-    local args = {...}
-
-    -- shorthand: first arg can be an object path:
-    if type(args[1]) == 'string' then
-        assert(#args <= 2, 'too many args')
-        args[1] = sim.getObject(args[1])
+function sim._getScriptFunctions(script, ...)
+    if sim.Object:isobject(script) then
+        script = script.handle
     end
-
-    if args[2] then
-        -- previously the constant for script type (int) was passed as second arg; now not needed.
-        sim.addLog(sim.verbosity_warnings, 'ignoring second argument of sim.getScriptFunctions (pass the script handle as the only argument)')
-    end
-
-    local scriptHandle = args[1]
-
-    -- at this point we have the script handle from every possible overload (scriptHandle)
     return setmetatable({}, {
         __index = function(self, k)
             return function(self_, ...)
                 assert(self_ == self, 'methods must be called with object:method(args...)')
-                return sim.callScriptFunction(scriptHandle, k, ...)
+                return sim.callScriptFunction(script, k, ...)
             end
         end,
     })
