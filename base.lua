@@ -451,7 +451,7 @@ function getAsDisplayString(...)
                 if i > 1 then table.insert(s, ', ') end
                 table.insert(s, _S.anyToString(a[i], {display = false}))
             end
-            str = _S.anyToString(s)
+            str = table.concat(s)
         else
             str = stacked
         end
