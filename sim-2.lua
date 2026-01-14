@@ -14,6 +14,83 @@ sim.addLog = addLog
 sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
+function sim.callMethod(target, name, ...)
+    function toSimpleType(arg)
+        local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
+        if arg == nil then
+            t = sim.stackitem_null
+            arg = 0
+        elseif isbuffer(arg) then
+            t = -2 -- stands for buffer
+            arg = tostring(arg)
+        elseif sim.Object:isobject(arg) then
+            t = sim.stackitem_handle
+            arg = arg.handle
+        elseif simEigen.Matrix:ismatrix(arg) then
+            t = 'm' .. tostring(arg:rows()) .. 'x' .. tostring(arg:cols()) -- "m[rows]x[cols]"
+            arg = arg:data()
+        elseif simEigen.Quaternion:isquaternion(arg) then
+            t = sim.stackitem_quaternion
+            arg = arg:data()
+        elseif simEigen.Pose:ispose(arg) then
+            t = sim.stackitem_pose
+            arg = arg:data()
+        elseif type(arg) == 'table' then
+            local narg = {}
+            t = {}
+            for k, v in pairs(arg) do
+                local arg_, t_ = toSimpleType(v)
+                narg[k] = arg_
+                t[k] = t_
+            end
+            arg = narg
+        end
+        return arg, t
+    end
+
+    function toExtendedType(arg, t)
+        if t == -2 then
+            arg = tobuffer(arg)
+        elseif t == sim.stackitem_null then
+            arg = nil
+        elseif t == sim.stackitem_handle then
+            arg = sim.Object(arg)
+        elseif t == sim.stackitem_quaternion then
+            arg = simEigen.Quaternion(arg)
+        elseif t == sim.stackitem_pose then
+            arg = simEigen.Pose(arg)
+        elseif type(t) == 'string' then
+            local rows, cols = t:match("m(%d+)x(%d+)") -- "m[rows]x[cols]"
+            arg = simEigen.Matrix(tonumber(rows), tonumber(cols), arg)
+        elseif type(t) == 'table' then
+            local narg = {}
+            for k, v in pairs(arg) do
+                local arg_ = toExtendedType(v, t[k])
+                narg[k] = arg_
+            end
+            arg = narg
+        end
+        return arg
+    end
+
+    local args = table.pack(...)
+    local types = {}
+    for i = 1, args.n do
+        local arg, t = toSimpleType(args[i])
+        args[i] = arg
+        types[i] = t
+    end
+    args.n = nil -- important!!
+    local retVals = {}
+    local ret = table.pack(sim._callMethod(target, name, args, types))
+    ret.n = nil
+    for i = 1, #ret // 2 do
+        local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
+        retVals[i] = arg
+    end
+    return table.unpack(retVals)
+end
+
 function sim.acquireLock()
     -- needs to be overridden by remote API components
     setYieldAllowed(false)
