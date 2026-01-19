@@ -15,80 +15,111 @@ sim.quitSimulator = quitSimulator
 sim.registerScriptFuncHook = registerScriptFuncHook
 
 function sim.callMethod(target, name, ...)
-    function toSimpleType(arg)
-        local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
-        if arg == nil then
-            t = sim.stackitem_null
-            arg = 0
-        elseif isbuffer(arg) then
-            t = -2 -- stands for buffer
-            arg = tostring(arg)
-        elseif sim.Object:isobject(arg) then
-            t = sim.stackitem_handle
-            arg = arg.handle
-        elseif simEigen.Matrix:ismatrix(arg) then
-            t = 'm' .. tostring(arg:rows()) .. 'x' .. tostring(arg:cols()) -- "m[rows]x[cols]"
-            arg = arg:data()
-        elseif simEigen.Quaternion:isquaternion(arg) then
-            t = sim.stackitem_quaternion
-            arg = arg:data()
-        elseif simEigen.Pose:ispose(arg) then
-            t = sim.stackitem_pose
-            arg = arg:data()
-        elseif type(arg) == 'table' then
-            local narg = {}
-            t = {}
-            for k, v in pairs(arg) do
-                local arg_, t_ = toSimpleType(v)
-                narg[k] = arg_
-                t[k] = t_
+    if locals[name] or (string.sub(name, 1, 1) == "@") then
+        if string.sub(name, 1, 1) == "@" then
+            -- c-side is calling!
+            name = name:sub(2)
+            if type(locals[name]) == 'function' then
+                local res = table.pack(pcall(locals[name], target, name, ...))
+                if res[1] then
+                    return '', table.unpack(res, 2, res.n)
+                else
+                    return res[2] -- error msg
+                end
+            else
+                function dummyFunc() 
+                    error("error in 'sim.callMethod': method '" .. name .. "' does not exist.") 
+                end
+                local ok, err = pcall(dummyFunc)
+                return err -- error msg
             end
-            arg = narg
+        else
+            return locals[name](target, name, ...)
         end
-        return arg, t
-    end
-
-    function toExtendedType(arg, t)
-        if t == -2 then
-            arg = tobuffer(arg)
-        elseif t == sim.stackitem_null then
-            arg = nil
-        elseif t == sim.stackitem_handle then
-            arg = sim.Object(arg)
-        elseif t == sim.stackitem_quaternion then
-            arg = simEigen.Quaternion(arg)
-        elseif t == sim.stackitem_pose then
-            arg = simEigen.Pose(arg)
-        elseif type(t) == 'string' then
-            local rows, cols = t:match("m(%d+)x(%d+)") -- "m[rows]x[cols]"
-            arg = simEigen.Matrix(tonumber(rows), tonumber(cols), arg)
-        elseif type(t) == 'table' then
-            local narg = {}
-            for k, v in pairs(arg) do
-                local arg_ = toExtendedType(v, t[k])
-                narg[k] = arg_
+    else
+        if sim.Object:isobject(target) then
+            target = target.handle
+        end
+        return sim._callMethod(target, name, ...)
+        --[[
+        function toSimpleType(arg)
+            local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
+            if arg == nil then
+                t = sim.stackitem_null
+                arg = 0
+            elseif type(arg) == 'table' then
+                if isbuffer(arg) then
+                    t = -2 -- stands for buffer
+                    arg = tostring(arg)
+                elseif sim.Object:isobject(arg) then
+                    t = sim.stackitem_handle
+                    arg = arg.handle
+                elseif simEigen.Matrix:ismatrix(arg) then
+                    t = 'm' .. tostring(arg:rows()) .. 'x' .. tostring(arg:cols()) -- "m[rows]x[cols]"
+                    arg = arg:data()
+                elseif simEigen.Quaternion:isquaternion(arg) then
+                    t = sim.stackitem_quaternion
+                    arg = arg:data()
+                elseif simEigen.Pose:ispose(arg) then
+                    t = sim.stackitem_pose
+                    arg = arg:data()
+                else 
+                    local narg = {}
+                    t = {}
+                    for k, v in pairs(arg) do
+                        local arg_, t_ = toSimpleType(v)
+                        narg[k] = arg_
+                        t[k] = t_
+                    end
+                    arg = narg
+                end
             end
-            arg = narg
+            return arg, t
         end
-        return arg
-    end
 
-    local args = table.pack(...)
-    local types = {}
-    for i = 1, args.n do
-        local arg, t = toSimpleType(args[i])
-        args[i] = arg
-        types[i] = t
+        function toExtendedType(arg, t)
+            if t == -2 then
+                arg = tobuffer(arg)
+            elseif t == sim.stackitem_null then
+                arg = nil
+            elseif t == sim.stackitem_handle then
+                arg = sim.Object(arg)
+            elseif t == sim.stackitem_quaternion then
+                arg = simEigen.Quaternion(arg)
+            elseif t == sim.stackitem_pose then
+                arg = simEigen.Pose(arg)
+            elseif type(t) == 'string' then
+                local rows, cols = t:match("m(%d+)x(%d+)") -- "m[rows]x[cols]"
+                arg = simEigen.Matrix(tonumber(rows), tonumber(cols), arg)
+            elseif type(t) == 'table' then
+                local narg = {}
+                for k, v in pairs(arg) do
+                    local arg_ = toExtendedType(v, t[k])
+                    narg[k] = arg_
+                end
+                arg = narg
+            end
+            return arg
+        end
+
+        local args = table.pack(...)
+        local types = {}
+        for i = 1, args.n do
+            local arg, t = toSimpleType(args[i])
+            args[i] = arg
+            types[i] = t
+        end
+        args.n = nil -- important!!
+        local retVals = {}
+        local ret = table.pack(sim._callMethod(target, name, args, types))
+        ret.n = nil
+        for i = 1, #ret // 2 do
+            local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
+            retVals[i] = arg
+        end
+        return table.unpack(retVals)
+        --]]
     end
-    args.n = nil -- important!!
-    local retVals = {}
-    local ret = table.pack(sim._callMethod(target, name, args, types))
-    ret.n = nil
-    for i = 1, #ret // 2 do
-        local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
-        retVals[i] = arg
-    end
-    return table.unpack(retVals)
 end
 
 function sim.acquireLock()
@@ -1644,9 +1675,7 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
     end
 end)
 
-function sim._createObject(dummyArg, initialProperties)
-    local funcName = __proxyFuncName__:match(",(.-)@")
-    __proxyFuncName__ = nil
+function locals.createObject(target, methodName, initialProperties)
     local Color = require 'Color'
     local p = table.clone(initialProperties or {})
     local h
@@ -1662,13 +1691,13 @@ function sim._createObject(dummyArg, initialProperties)
     local function v(intValue, booleanValue)
         if booleanValue then return intValue else return 0 end
     end
-    checkargs.checkfields({funcName = funcName}, {
+    checkargs.checkfields({funcName = methodName}, {
         {name = 'objectType', type = 'string'},
     }, p)
     local objectType = extractValueOrDefault('objectType')
     if false then
     elseif objectType == 'collection' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'override', type = 'bool', default = false},
         }, p)
         local opts = 0
@@ -1677,7 +1706,7 @@ function sim._createObject(dummyArg, initialProperties)
         end
         h = sim.Object(sim.createCollection(opts))
     elseif objectType == 'detachedScript' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'scriptType', type = 'int', default = sim.scripttype_addon},
             {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
             {name = 'lang', type = 'string', default = 'lua'},
@@ -1687,7 +1716,7 @@ function sim._createObject(dummyArg, initialProperties)
         local lang = extractValueOrDefault('lang')
         h = sim.Object(sim.createDetachedScript(tp, code, lang))
     elseif objectType == 'drawingObject' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
             {name = 'cyclic', type = 'bool', nullable = true},
             {name = 'local', type = 'bool', nullable = true},
@@ -1722,12 +1751,12 @@ function sim._createObject(dummyArg, initialProperties)
         local col = extractValueOrDefault('color')
         h = sim.Object(sim.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
     elseif objectType == 'dummy' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'dummySize', type = 'float', default = 0.01},
         }, p)
         h = sim.Object(sim.createDummy(extractValueOrDefault('dummySize')))
     elseif objectType == 'forceSensor' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'filterType', type = 'int', default = 0},
             {name = 'filterSampleSize', type = 'int', default = 1},
             {name = 'consecutiveViolationsToTrigger', type = 'int', default = 1},
@@ -1748,7 +1777,7 @@ function sim._createObject(dummyArg, initialProperties)
         floatParams[3] = extractValueOrDefault('torqueThreshold')
         h = sim.Object(sim.createForceSensor(options, intParams, floatParams))
     elseif objectType == 'joint' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'jointType', type = 'int', default = sim.joint_revolute},
             {name = 'jointMode', type = 'int', default = sim.jointmode_dynamic},
             {name = 'jointLength', type = 'float', default = 0.15},
@@ -1782,7 +1811,7 @@ function sim._createObject(dummyArg, initialProperties)
             h.dynCtrlMode = dynCtrlMode
         end
     elseif objectType == 'ocTree' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'voxelSize', type = 'float', default = 0.01},
             {name = 'pointSize', type = 'int', default = 1},
             {name = 'showPoints', type = 'bool', default = false},
@@ -1793,7 +1822,7 @@ function sim._createObject(dummyArg, initialProperties)
             + v(1, extractValueOrDefault('showPoints'))
         h = sim.Object(sim.createOctree(voxelSize, options, pointSize))
     elseif objectType == 'path' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'ctrlPts', type = 'matrix', cols = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})},
             {name = 'hiddenDuringSim', type = 'bool', default = false},
             {name = 'closed', type = 'bool', default = false},
@@ -1817,7 +1846,7 @@ function sim._createObject(dummyArg, initialProperties)
         end
         h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
     elseif objectType == 'pointCloud' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'cellSize', type = 'float', default = 0.02},
             {name = 'maxPointsInCell', type = 'int', default = 20},
             {name = 'pointSize', type = 'int', default = 2},
@@ -1828,7 +1857,7 @@ function sim._createObject(dummyArg, initialProperties)
         local pointSize = extractValueOrDefault('pointSize')
         h = sim.Object(sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize))
     elseif objectType == 'proximitySensor' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'sensorType', type = 'int', default = sim.proximitysensor_cone},
             {name = 'explicitHandling', type = 'bool', default = false},
             {name = 'showVolume', type = 'bool', default = true},
@@ -1894,7 +1923,7 @@ function sim._createObject(dummyArg, initialProperties)
         floatParams[13] = extractValueOrDefault('sensorPointSize')
         h = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     elseif objectType == 'script' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'scriptType', type = 'int', default = sim.scripttype_simulation},
             {name = 'code', type = 'string', default = ''},
             {name = 'language', type = 'string', default = 'lua'},
@@ -1907,7 +1936,7 @@ function sim._createObject(dummyArg, initialProperties)
         local lang = extractValueOrDefault('language')
         h = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
     elseif objectType == 'shape' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'mesh', type = 'table', nullable = true},
             {name = 'heightField', type = 'table', nullable = true},
             {name = 'plane', type = 'table', nullable = true},
@@ -1925,13 +1954,13 @@ function sim._createObject(dummyArg, initialProperties)
             {name = 'color', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
         }, p)
         if p.mesh then
-            checkargs.checkfields({funcName = funcName .. ' (mesh field)'}, {
+            checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
                 {name = 'vertices', type = 'matrix', rows = 3, default = simEigen.Matrix(3, 3, {0.0, 0.0, 0.005, 0.1, 0.0, 0.005, 0.2, 0.1, 0.005}).T},
                 {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
                 {name = 'boundingBoxQuaternion', type = 'quaternion', nullable = true},
                 {name = 'frameOrigin', type = 'pose', nullable = true},
             }, p.mesh)
-            checkargs.checkfields({funcName = funcName .. ' (mesh field)'}, {
+            checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
                 {name = 'normals', type = 'matrix', cols = #p.mesh.indices, rows = 3, nullable = true},
             }, p.mesh)
             local texture_interpolate = true
@@ -1943,7 +1972,7 @@ function sim._createObject(dummyArg, initialProperties)
             local texture_coord = nil
             local texture_img = nil
             if type(p.mesh.texture) == 'table' then
-                checkargs.checkfields({funcName = funcName .. ' (mesh.texture field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (mesh.texture field)'}, {
                     {name = 'interpolate', type = 'bool', default = true},
                     {name = 'decal', type = 'bool', default = false},
                     {name = 'rgba', type = 'bool', default = false},
@@ -1954,7 +1983,7 @@ function sim._createObject(dummyArg, initialProperties)
                 if p.mesh.texture.rgba then
                     vals = 4
                 end
-                checkargs.checkfields({funcName = funcName .. ' (mesh.texture field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (mesh.texture field)'}, {
                     {name = 'resolution', type = 'table', item_type = 'int', size = 2},
                     {name = 'image', type = 'buffer', size = vals * p.mesh.texture.resolution[1] * p.mesh.texture.resolution[2]},
                     {name = 'coordinates', type = 'matrix', cols = #p.mesh.indices, rows = 2, nullable = true},
@@ -1999,7 +2028,7 @@ function sim._createObject(dummyArg, initialProperties)
             end
             p.mesh = nil
         elseif p.heightField then
-            checkargs.checkfields({funcName = funcName .. ' (heightField field)'}, {
+            checkargs.checkfields({funcName = methodName .. ' (heightField field)'}, {
                 {name = 'heights', type = 'matrix', default = simEigen.Matrix(3, 3, {0.0, 0.05, 0.025, 0.03, 0.06, 0.08, 0.01, 0.01, 0.01})},
                 {name = 'cellSize', type = 'float', default = 0.5},
                 {name = 'rawMesh', type = 'bool', default = false},
@@ -2019,7 +2048,7 @@ function sim._createObject(dummyArg, initialProperties)
             if p.plane then
                 ff = p.plane
                 p.plane = nil
-                checkargs.checkfields({funcName = funcName .. ' (plane field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (plane field)'}, {
                     {name = 'size', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.1}},
                 }, ff)
                 pt = sim.primitiveshape_plane
@@ -2028,7 +2057,7 @@ function sim._createObject(dummyArg, initialProperties)
             elseif p.disc then
                 ff = p.disc
                 p.disc = nil
-                checkargs.checkfields({funcName = funcName .. ' (disc field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (disc field)'}, {
                     {name = 'radius', type = 'float', default = 0.1},
                 }, ff)
                 pt = sim.primitiveshape_disc
@@ -2037,7 +2066,7 @@ function sim._createObject(dummyArg, initialProperties)
             elseif p.sphere then
                 ff = p.sphere
                 p.sphere = nil
-                checkargs.checkfields({funcName = funcName .. ' (sphere field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (sphere field)'}, {
                     {name = 'radius', type = 'float', default = 0.1},
                 }, ff)
                 pt = sim.primitiveshape_spheroid
@@ -2046,7 +2075,7 @@ function sim._createObject(dummyArg, initialProperties)
             elseif p.cylinder then
                 ff = p.cylinder
                 p.cylinder = nil
-                checkargs.checkfields({funcName = funcName .. ' (cylinder field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (cylinder field)'}, {
                     {name = 'radius', type = 'float', default = 0.1},
                     {name = 'length', type = 'float', default = 0.1},
                     {name = 'open', type = 'bool', default = false},
@@ -2059,7 +2088,7 @@ function sim._createObject(dummyArg, initialProperties)
             elseif p.cone then
                 ff = p.cone
                 p.cone = nil
-                checkargs.checkfields({funcName = funcName .. ' (cone field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (cone field)'}, {
                     {name = 'radius', type = 'float', default = 0.1},
                     {name = 'height', type = 'float', default = 0.1},
                     {name = 'open', type = 'bool', default = false},
@@ -2072,7 +2101,7 @@ function sim._createObject(dummyArg, initialProperties)
             elseif p.capsule then
                 ff = p.capsule
                 p.capsule = nil
-                checkargs.checkfields({funcName = funcName .. ' (capsule field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (capsule field)'}, {
                     {name = 'radius', type = 'float', default = 0.025},
                     {name = 'length', type = 'float', default = 0.1},
                 }, ff)
@@ -2086,7 +2115,7 @@ function sim._createObject(dummyArg, initialProperties)
                 end
                 ff = p.cube
                 p.cube = nil
-                checkargs.checkfields({funcName = funcName .. ' (cube field)'}, {
+                checkargs.checkfields({funcName = methodName .. ' (cube field)'}, {
                     {name = 'size', type = 'table', item_type = 'float', size = 3, default = {0.1, 0.1, 0.1}},
                 }, ff)
                 pt = sim.primitiveshape_cuboid
@@ -2109,7 +2138,7 @@ function sim._createObject(dummyArg, initialProperties)
         error '"texture" type not supported'
         h = sim.createTexture()
     elseif objectType == 'visionSensor' then
-        checkargs.checkfields({funcName = funcName}, {
+        checkargs.checkfields({funcName = methodName}, {
             {name = 'explicitHandling', type = 'bool', default = false},
             {name = 'showFrustum', type = 'bool', default = false},
             {name = 'useExtImage', type = 'bool', default = false},
@@ -2160,7 +2189,7 @@ function sim._createObject(dummyArg, initialProperties)
         end
         h = sim.Object(sim.createVisionSensor(options, intParams, floatParams))
     else
-        error ("error in '" .. funcName .. "': unsupported object type.")
+        error ("error in '" .. methodName .. "': unsupported object type.")
     end
     sim.setProperties(h, p)
     return h
