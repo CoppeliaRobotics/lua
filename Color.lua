@@ -306,16 +306,14 @@ function Color:__tocbor(sref, stref)
         .. cbor.encode(self:rgb888())
 end
 
-function Color:rgb(r, g, b)
-    assert(self == Color, 'class method')
+function Color.static:rgb(r, g, b)
     for k, v in pairs{red = r, green = g, blue = b} do
         assert(type(v) == 'number' and v >= 0 and v <= 1, k .. ' component must be a number [0..1]')
     end
     return Color{r, g, b}
 end
 
-function Color:hsv(h, s, v)
-    assert(self == Color, 'class method')
+function Color.static:hsv(h, s, v)
     for k, w in pairs{hue = h, saturation = s, value = v} do
         assert(type(w) == 'number' and w >= 0 and w <= 1, k .. ' component must be a number [0..1]')
     end
@@ -336,13 +334,11 @@ function Color:hsv(h, s, v)
     return Color{r, g, b}
 end
 
-function Color:iscolor(c)
-    assert(self == Color, 'class method')
+function Color.static:iscolor(c)
     return Color.isInstanceOf(c, Color)
 end
 
-function Color:tocolor(c)
-    assert(self == Color, 'class method')
+function Color.static:tocolor(c)
     if Color:iscolor(c) then return c end
     if type(c) == 'table' and #c == 3 then return Color(c) end
     error 'bad data'
