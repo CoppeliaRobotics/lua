@@ -250,6 +250,10 @@ function Color:rgb888()
     return (self:r8() << 16) | (self:g8() << 8) | self:b8()
 end
 
+function Color:rgb888table()
+    return {self:r8(), self:g8(), self:b8()}
+end
+
 function Color:data()
     return {self:red(), self:green(), self:blue()}
 end
