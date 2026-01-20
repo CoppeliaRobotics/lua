@@ -109,9 +109,17 @@ return {
             local module = moduleName == 'sim-2' and sim or require(moduleName)
             local func = module
             for _, field in ipairs(fields) do func = (func or {})[field] end
-            return function(...)
-                __proxyFuncName__ = funcNameWithoutVer .. ',' .. methodName .. '@method'
-                return func(...)
+            if func == sim.callMethod then
+                -- new methods, via sim.callMethod interface
+                -- (need first two args: target, methodName)
+                return function(targetObject, ...)
+                    return sim.callMethod(targetObject, methodName, ...)
+                end
+            else
+                return function(...)
+                    __proxyFuncName__ = funcNameWithoutVer .. ',' .. methodName .. '@method'
+                    return func(...)
+                end
             end
         end
 
