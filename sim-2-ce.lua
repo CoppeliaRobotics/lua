@@ -30,14 +30,14 @@ sim.initScript(handle scriptHandle = sim.handle_self)
 sim.addToCollection(handle collectionHandle, handle objectHandle, int what = sim.handle_single, int options = 0)
 bool result, handle[2] collidingObjects = sim.checkCollision(handle entity1Handle, handle entity2Handle = sim.handle_all)
 bool result, float dist, vector3 p1, vector3 p2, handle[2] objectHandlePair = sim.checkDistance(handle entity1Handle, handle entity2Handle = sim.handle_all, float threshold = 0.0)
+handle[] descendants = sim._getDescendants(handle object, string[] objectTypes = {'sceneObject'}, int depth = 9999)
+handle[] ancestors = sim._getAncestors(handle object, string[] objectTypes = {'sceneObject'}, int cnt = 9999)
 ]]
 
 local codeEditorInfos = [[
 sim._removeModel(handle dummyArg, handle objectHandle, bool delayedRemoval = false)
 sim.removeObjects(handle[] objects, bool delayedRemoval = false)
 sim.removeModel(handle objectHandle, bool delayedRemoval = false)
-handle[] descendants = sim._getDescendants(handle object, string[] objectTypes = {'sceneObject'}, int depth = 9999)
-handle[] ancestors = sim._getAncestors(handle object, string[] objectTypes = {'sceneObject'}, int cnt = 9999)
 handle[] copiedObjects = sim._duplicateObjects(handle dummyArg, handle[] objects, int options = 0)
 handle[] copiedObjects = sim.copyPasteObjects(handle[] objects, int options = 0)
 handle object = sim.loadModel(string filename)

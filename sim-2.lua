@@ -18,6 +18,20 @@ function sim.callMethod(target, name, ...)
     if locals[name] or (string.sub(name, 1, 1) == "@") then
         if string.sub(name, 1, 1) == "@" then
             -- c-side is calling!
+            if not sim.Object:isobject(target) then
+                function getTargetObj(t) 
+                    return sim.Object(t)
+                end
+                local ok, err = pcall(getTargetObj, target)
+                if not ok then
+                    function dummyFunc() 
+                        error("error in 'sim.callMethod': target does not exist.") 
+                    end
+                    local ok, err = pcall(dummyFunc)
+                    return err -- error msg
+                end
+            end
+
             name = name:sub(2)
             if type(locals[name]) == 'function' then
                 local res = table.pack(pcall(locals[name], target, name, ...))
@@ -163,198 +177,6 @@ function fixProxyFuncName(newFuncName, adjustArgIndexInErrorMsg)
     end
 end
 
-function sim._handleSandboxScript(dummyArg, ...)
-    fixProxyFuncName('sim.handleSandboxScript', false)
-    return sim.handleSandboxScript(...)
-end
-
-function sim._handleAddOnScripts(dummyArg, ...)
-    fixProxyFuncName('sim.handleAddOnScripts', false)
-    return sim.handleAddOnScripts(...)
-end
-
-function sim._handleEmbeddedScripts(dummyArg, ...)
-    fixProxyFuncName('sim.handleEmbeddedScripts', false)
-    return sim.handleEmbeddedScripts(...)
-end
-
-function sim._handleSimulationScripts(dummyArg, ...)
-    fixProxyFuncName('sim.handleSimulationScripts', false)
-    return sim.handleSimulationScripts(...)
-end
-
-function sim._loadModel(dummyArg, file)
-    fixProxyFuncName('sim.loadModel', false)
-    return sim.loadModel(file, 0)
-end
-
-function sim._loadModelFromBuffer(dummyArg, buff)
-    fixProxyFuncName('sim.loadModel', false)
-    return sim.loadModel(buff, 0)
-end
-
-function sim._loadModelThumbnail(dummyArg, str)
-    fixProxyFuncName('sim.loadModel', false)
-    return sim.loadModel(str, 1)
-end
-
-function sim._loadModelThumbnailFromBuffer(dummyArg, buff)
-    fixProxyFuncName('sim.loadModel', false)
-    return sim.loadModel(buff, 1)
-end
-
-function sim._saveModel(h, fn)
-    if fn == nil or fn == '' then
-        fn = '?' -- generate a error
-    end
-    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
-    sim.saveModel(h, fn)
-end
-
-function sim._saveModelToBuffer(h)
-    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.saveModel(h)
-end
-
-function sim._saveModel(callerObjHandle, modelOrFilename, filename)
-    if callerObjHandle == sim.handle_scene then
-        if filename == nil or filename == '' then
-            filename = '?' -- generate a error
-        end
-        if sim.Object:isobject(modelOrFilename) then
-            modelOrFilename = modelOrFilename.handle
-        end
-        fixProxyFuncName('sim.saveModel', false)
-        sim.saveModel(modelOrFilename, filename)
-    else
-        if modelOrFilename == nil or modelOrFilename == '' then
-            modelOrFilename = '?' -- generate a error
-        end
-        fixProxyFuncName('sim.saveModel', true)
-        sim.saveModel(callerObjHandle, modelOrFilename)
-    end
-end
-
-function sim._saveModelToBuffer(callerObjHandle, model)
-    local ret
-    if callerObjHandle == sim.handle_scene then
-        if sim.Object:isobject(model) then
-            model = model.handle
-        end
-        fixProxyFuncName('sim.saveModelToBuffer', false)
-        ret = sim.saveModel(model)
-    else
-        fixProxyFuncName('sim.saveModelToBuffer', true)
-        ret = sim.saveModel(callerObjHandle)
-    end
-    return ret
-end
-
-function sim._loadScene(dummyArg, file, newScene)
-    __proxyFuncName__ = 'sim.loadScene' .. __proxyFuncName__:match('(,.-@method)')
-    if newScene then
-        file = file .. '@keepCurrent'
-    end
-    sim.loadScene(file)
-end
-
-function sim._loadSceneFromBuffer(dummyArg, buff, newScene)
-    __proxyFuncName__ = 'sim.loadScene' .. __proxyFuncName__:match('(,.-@method)')
-    if newScene then
-        buff = buff .. '@keepCurrent'
-    end
-    sim.loadScene(buff)
-end
-
-function sim._saveScene(dummyArg, fn)
-    if fn == nil or fn == '' then
-        fn = '?' -- generate a error
-    end
-    __proxyFuncName__ = 'sim.saveScene' .. __proxyFuncName__:match('(,.-@method)')
-    sim.saveScene(fn)
-end
-
-function sim._saveSceneToBuffer(h)
-    __proxyFuncName__ = 'sim.saveModel' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.saveScene()
-end
-
-locals.simRemoveModel = sim.removeModel
-function sim.removeModel(h, dr)
-    locals.simRemoveModel(h, dr) -- in sim-2, no return value
-end
-
-function sim._removeModel(dummyArg, ...)
-    __proxyFuncName__ = 'sim.removeModel' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.removeModel(...)
-end
-
-function sim._removeObject(dummyArg, ...)
-    local obj, delayedRemoval = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'bool', default = false},
-    }, ...)
-    local t = sim.Object(obj).objectType
-    if t == 'app' or t == 'scene' or t == 'mesh' then
-        error("in removeObject: object cannot be removed")
-    elseif t == 'collection' then
-        fixProxyFuncName('sim.destroyCollection', false)
-        sim.destroyCollection(obj)
-    elseif t == 'drawingObject' then
-        fixProxyFuncName('sim.removeDrawingObject', false)
-        sim.removeDrawingObject(obj)
-    elseif t == 'detachedScript' then
-        fixProxyFuncName('sim.removeDetachedScript', false)
-        sim.removeDetachedScript(obj)
-    else
-        fixProxyFuncName('sim.removeObjects', false)
-        sim.removeObjects({obj}, delayedRemoval)
-    end
-end
-
-function sim._removeObjects(dummyArg, ...)
-    local objs, delayedRemoval = checkargs.checkargsEx({afuncName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'table', itemType = 'handle'},
-        {type = 'bool', default = false},
-    }, ...)
-    local err = false
-    local sceneObjects = {}
-    local otherObjects = {}
-    for i = 1, #objs do
-        local obj = objs[i]
-        local t = sim.Object(obj).objectType
-        if t == 'app' or t == 'scene' or t == 'mesh' then
-            err = true
-        elseif t == 'collection' or t == 'drawingObject' or t == 'detachedScript' then
-            otherObjects[#otherObjects + 1] = obj
-        else
-            sceneObjects[#sceneObjects + 1] = obj
-        end
-    end
-    if err then
-        local nm = 'in sim.removeObjects: '
-        if __proxyFuncName__ then
-            local f1, f2 = __proxyFuncName__:match("([^,]+),([^@]+)@")
-            if f1 == 'sim.removeObjects' then
-                nm = 'in ' .. f2 .. ': '
-            end
-            __proxyFuncName__ = nil
-        end
-        error(nm .. "detected object that cannot be removed")
-    else
-        for i = 1, #otherObjects do
-            sim._removeObject(-1, otherObjects[i], delayedRemoval)
-        end
-        fixProxyFuncName('sim.removeObjects', false)
-        sim.removeObjects(sceneObjects, delayedRemoval)
-    end
-end
-
-function sim._duplicateObjects(dummyArg, objs, opts)
-    __proxyFuncName__ = 'sim.copyPasteObjects' .. __proxyFuncName__:match('(,.-@method)')
-    return sim.copyPasteObjects(objs, opts)
-end
-
 function sim._removeItem(coll, ...)
     local obj, what, excludeObj = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
@@ -383,9 +205,8 @@ function sim._addItem(coll, ...)
     return sim.addToCollection(coll.handle, obj.handle, what, opt)
 end
 
-function sim._getAncestors(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
+function locals.getAncestors(target, methodName, ...)
+    local objTypes, depth, objTypesMap = checkargs.checkargsEx({funcName = methodName}, {
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
         {type = 'int', default = 9999},
         {type = 'table', default_nil = true, nullable = true},
@@ -399,11 +220,11 @@ function sim._getAncestors(...)
         end
     end
     local retVal = {}
-    while obj do
-        obj = obj.parent
-        if obj then
-            if types[obj.objectType] or types['sceneObject'] then
-                retVal[#retVal + 1] = obj
+    while target do
+        target = target.parent
+        if target then
+            if types[target.objectType] or types['sceneObject'] then
+                retVal[#retVal + 1] = target
             end
         else
             break
@@ -416,13 +237,16 @@ function sim._getAncestors(...)
     return retVal
 end
 
-function sim._getDescendants(...)
-    local obj, objTypes, depth, objTypesMap = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
-        {type = 'int', default = 9999},
-        {type = 'table', default_nil = true, nullable = true},
-    }, ...)
+function locals.getDescendants(target, methodName, ...)
+    local objTypes, depth, objTypesMap = ...
+    if #methodName > 0 then
+        -- Do not verify again with reentrance
+        objTypes, depth, objTypesMap = checkargs.checkargsEx({funcName = methodName}, {
+            {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
+            {type = 'int', default = 9999},
+            {type = 'table', default_nil = true, nullable = true},
+        }, ...)
+    end
     local types = {}
     if objTypesMap then
         types = objTypesMap
@@ -434,21 +258,21 @@ function sim._getDescendants(...)
     local retVal = {}
 
     if depth > 0 then
-        if obj == sim.scene then
-            for i = 1, #obj.orphans do
-                local child = obj.orphans[i]
+        if target == sim.scene then
+            for i = 1, #target.orphans do
+                local child = target.orphans[i]
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim._getDescendants(child, {}, depth - 1, types))
+                retVal = table.add(retVal, locals.getDescendants(child, '', {}, depth - 1, types))
             end
         else
-            for i = 1, #obj.children do
-                local child = obj.children[i]
+            for i = 1, #target.children do
+                local child = target.children[i]
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, sim._getDescendants(child, {}, depth - 1, types))
+                retVal = table.add(retVal, locals.getDescendants(child, '', {}, depth - 1, types))
             end
         end
     end
@@ -493,127 +317,6 @@ end
 function sim._addDrawingObjectPackedItems(h, buff)
     local h = obj.handle | sim.handleflag_addmultiple
     sim.addDrawingObjectItem(h, buff)
-end
-
-function sim._getObjectPose(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectPose,")
-    return simEigen.Pose(sim.getObjectPose(h, relObj)) 
-end
-
-function sim._getObjectPosition(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectPosition,")
-    return simEigen.Vector(sim.getObjectPosition(h, relObj)) 
-end
-
-function sim._getObjectQuaternion(...)
-    local obj, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.getObjectQuaternion,")
-    return simEigen.Quaternion(sim.getObjectQuaternion(h, relObj)) 
-end
-
-function sim._setObjectPose(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'pose'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectPose,")
-    sim.setObjectPose(h, x:data(), relObj) 
-end
-
-function sim._setObjectPosition(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'vector3'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectPosition,")
-    sim.setObjectPosition(h, x:data(), relObj) 
-end
-
-function sim._setObjectQuaternion(...)
-    local obj, x, relObj, relToJointBase = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'quaternion'},
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_world},
-        {type = 'bool', default = false},
-    }, ...)
-    local h = obj.handle
-    if relToJointBase then
-        h = h | sim.handleflag_reljointbaseframe
-    end
-    if sim.Object:isobject(relObj) then
-        relObj = relObj.handle
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectQuaternion,")
-    sim.setObjectQuaternion(h, x:data(), relObj) 
-end
-
-function sim._setObjectParent(...)
-    local obj, parent, inPlace = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'handle', default_nil = true, nullable = true},
-        {type = 'bool', default = true},
-    }, ...)
-    local h = obj.handle
-    if parent then
-        parent = parent.handle
-    else
-        parent = -1
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.setObjectParent,")
-    sim.setObjectParent(h, parent, inPlace) 
 end
 
 function sim._scaleObject(...)
@@ -711,26 +414,6 @@ sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
         if r == 0 then
             error("Failed reorienting bounding box.")
         end
-    end
-end)
-
-function sim._checkDistance(origObj, ...)
-    local entity, threshold = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {union = {{type = 'handle'}, {type = 'int'}}, default = sim.handle_all},
-        {type = 'float', default = 0.0},
-    }, ...)
-    fixProxyFuncName('sim.checkDistance', true)
-    if sim.Object:isobject(entity) then
-        entity = entity.handle
-    end
-    local r, distData, objPair = sim.checkDistance(origObj.handle, entity, threshold)
-    return (r > 0), distData[7], {distData[1], distData[2], distData[3]}, {distData[4], distData[5], distData[6]}, objPair
-end
-
-sim.checkCollision = wrap(sim.checkCollision, function(origFunc)
-    return function(...)
-        local r, objPair = origFunc(...)
-        return (r > 0), objPair
     end
 end)
 
