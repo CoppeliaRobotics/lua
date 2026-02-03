@@ -2,7 +2,7 @@ return function(what)
     what = what:lower()
 
     local mods = {sim = sim}
-    for i, n in ipairs(sim.getProperty(sim.handle_app, 'plugins')) do
+    for i, n in ipairs(sim.getProperty(sim.handle_app, 'pluginNames')) do
         pcall(function() mods[n] = require(n) end)
     end
 
