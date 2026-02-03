@@ -1,8 +1,10 @@
 return function(what)
+    local sim1 = require 'sim-1' -- this was written for sim-1
+
     what = what:lower()
 
-    local mods = {sim = sim}
-    for i, n in ipairs(sim.getProperty(sim.handle_app, 'pluginNames')) do
+    local mods = {sim = sim or sim1}
+    for i, n in ipairs(sim1.getProperty(sim1.handle_app, 'pluginNames')) do
         pcall(function() mods[n] = require(n) end)
     end
 
@@ -16,7 +18,7 @@ return function(what)
                 local info = s
                 if type(v) == 'function' then
                     info = s .. '(...)'
-                    local i = sim.getApiInfo(-1, s)
+                    local i = sim1.getApiInfo(-1, s)
                     if i and i ~= '' then info = (string.split(i, '\n'))[1] end
                 end
                 table.insert(results, {s, info})
@@ -27,16 +29,16 @@ return function(what)
     -- search in object properties:
     local visitedTypes = {}
     local visitedNames = {}
-    local objs = sim.getObjectsInTree(sim.handle_scene)
-    table.insert(objs, sim.handle_scene)
-    table.insert(objs, sim.handle_app)
+    local objs = sim1.getObjectsInTree(sim1.handle_scene)
+    table.insert(objs, sim1.handle_scene)
+    table.insert(objs, sim1.handle_app)
     for _, h in ipairs(objs) do
-        local t = sim.getStringProperty(h, 'objectType')
+        local t = sim1.getStringProperty(h, 'objectType')
         if not visitedTypes[t] then
             visitedTypes[t] = true
             local i = 0
             while true do
-                local pname, pclass = sim.getPropertyName(h, i)
+                local pname, pclass = sim1.getPropertyName(h, i)
                 if pname == nil then break end
                 i = i + 1
                 local fullname = pclass .. '.' .. pname
