@@ -1437,19 +1437,22 @@ function locals.createObject(target, methodName, initialProperties)
         checkargs.checkfields({funcName = methodName}, {
             {name = 'itemType', type = 'int', default = sim.markertype_spheres},
             {name = 'cyclic', type = 'bool', nullable = true},
-            {name = 'localCoords', type = 'bool', nullable = true},
+            {name = 'local', type = 'bool', nullable = true},
             {name = 'overlay', type = 'bool', nullable = true},
-            {name = 'itemSize', type = 'table', item_type = 'float', size = 3, default = {0.005, 0.005, 0.005}},
+            {name = 'itemSize', type = 'vector3', default = simEigen.Vector({0.005, 0.005, 0.005})},
             {name = 'itemColor', type = 'color', default = Color:rgb(1.0, 1.0, 0.0)},
             {name = 'duplicateTolerance', type = 'float', default = 0.0},
             {name = 'itemCnt', type = 'int', default = 0},
         }, p)
+        
+         
+        
         local itemType = extractValueOrDefault('itemType')
         local options = 0
         if extractValueOrDefault('cyclic') then
             options = options | sim.markeropts_cyclic
         end
-        if extractValueOrDefault('localCoords') then
+        if extractValueOrDefault('local') then
             options = options | sim.markeropts_local
         end
         if extractValueOrDefault('overlay') then
@@ -1462,21 +1465,30 @@ function locals.createObject(target, methodName, initialProperties)
         local vertices, indices, normals
         if itemType == sim.markertype_custom then
             local mesh = extractValueOrDefault('mesh')
-            print(type(mesh.vertices),type(mesh.indices))
             if type(mesh) ~= 'table' then
                 mesh = {}
             end
-            if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
-                vertices = {0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1, 0.0}
-                indices = {0, 1, 2}
-            else
-                vertices = mesh.vertices
-                indices = mesh.indices
-                normals = mesh.normals
+            if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:rows() == 3 then
+                mesh.vertices = mesh.vertices.T:data()
             end
+            if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
+                mesh.vertices = nil
+                mesh.indices = nil
+                mesh.normals = nil
+            else
+                if simEigen.Matrix:ismatrix(mesh.normals) and mesh.normals:rows() == 3 then
+                    mesh.normals = mesh.normals.T:data()
+                end
+                if type(mesh.normals) ~= 'table' then
+                    mesh.normals = nil
+                end
+            end
+            vertices = mesh.vertices
+            indices = mesh.indices
+            normals = mesh.normals
         end
         p.mesh = nil
-        h = sim.Object(sim.createMarker(itemType, col:data(), size, cnt, options, duplicateTol, vertices, indices, normals))
+        h = sim.Object(sim.createMarker(itemType, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
     elseif objectType == 'dummy' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'dummySize', type = 'float', default = 0.01},
@@ -2321,7 +2333,10 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
                     error('decoding scheme mismatch.')
                 end
                 return origFunc(data) -- CoppeliaSim's pack format
-            elseif ((string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) then
+            elseif ( (string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or -- 128 & 159: array open (without and with break char)
+                     ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) or -- 160 & 191: map open (without and with break char)
+                     ((string.byte(data, 1) == 216) and ( -- Tag header, followed by array type
+                     (string.byte(data, 2) == 64) or (string.byte(data, 2) == 78) or (string.byte(data, 2) == 79) or (string.byte(data, 2) == 85) or (string.byte(data, 2) == 86)) ) then
                 if scheme and scheme ~= 1 and scheme ~= 2 then
                     error('decoding scheme mismatch.')
                 end
