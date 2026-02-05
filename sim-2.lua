@@ -1433,6 +1433,50 @@ function locals.createObject(target, methodName, initialProperties)
         local cnt = extractValueOrDefault('itemCnt')
         local col = extractValueOrDefault('color')
         h = sim.Object(sim.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
+    elseif objectType == 'marker' then
+        checkargs.checkfields({funcName = methodName}, {
+            {name = 'itemType', type = 'int', default = sim.markertype_spheres},
+            {name = 'cyclic', type = 'bool', nullable = true},
+            {name = 'localCoords', type = 'bool', nullable = true},
+            {name = 'overlay', type = 'bool', nullable = true},
+            {name = 'itemSize', type = 'table', item_type = 'float', size = 3, default = {0.005, 0.005, 0.005}},
+            {name = 'itemColor', type = 'color', default = Color:rgb(1.0, 1.0, 0.0)},
+            {name = 'duplicateTolerance', type = 'float', default = 0.0},
+            {name = 'itemCnt', type = 'int', default = 0},
+        }, p)
+        local itemType = extractValueOrDefault('itemType')
+        local options = 0
+        if extractValueOrDefault('cyclic') then
+            options = options | sim.markeropts_cyclic
+        end
+        if extractValueOrDefault('localCoords') then
+            options = options | sim.markeropts_local
+        end
+        if extractValueOrDefault('overlay') then
+            options = options | sim.markeropts_overlay
+        end
+        local size = extractValueOrDefault('itemSize')
+        local col = extractValueOrDefault('itemColor')
+        local duplicateTol = extractValueOrDefault('duplicateTolerance')
+        local cnt = extractValueOrDefault('itemCnt')
+        local vertices, indices, normals
+        if itemType == sim.markertype_custom then
+            local mesh = extractValueOrDefault('mesh')
+            print(type(mesh.vertices),type(mesh.indices))
+            if type(mesh) ~= 'table' then
+                mesh = {}
+            end
+            if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
+                vertices = {0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.1, 0.0}
+                indices = {0, 1, 2}
+            else
+                vertices = mesh.vertices
+                indices = mesh.indices
+                normals = mesh.normals
+            end
+        end
+        p.mesh = nil
+        h = sim.Object(sim.createMarker(itemType, col:data(), size, cnt, options, duplicateTol, vertices, indices, normals))
     elseif objectType == 'dummy' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'dummySize', type = 'float', default = 0.01},
