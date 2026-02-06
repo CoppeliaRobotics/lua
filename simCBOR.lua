@@ -1,5 +1,6 @@
 local simCBOR = {}
 
+local sim = require 'sim'
 local cbor = require 'org.conman.cbor'
 
 local type_tags = {}
@@ -31,11 +32,6 @@ end
 -- RFC8746 typed-arrays: uint32, little endian, Typed Array
 function type_tags.TAG_70(values)
     return sim.unpackUInt32Table(values)
-end
-
--- RFC8746 typed-arrays: uint64, little endian, Typed Array
-function type_tags.TAG_71(values)
-    return sim.unpackUInt64Table(values)
 end
 
 -- RFC8746 typed-arrays: sint32, little endian, Typed Array
