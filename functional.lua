@@ -22,7 +22,9 @@ function functional.map(f, ...)
             if tbl[i] == nil then return ret end
             table.insert(args, tbl[i])
         end
-        table.insert(ret, f(table.unpack(args)))
+        --table.insert(ret, f(table.unpack(args))) -- table.insert won't allow nil to be returned!
+        ret[i] = f(table.unpack(args))
+        if ret[i] == nil or ret.n then ret.n = i end -- table.pack format
         i = i + 1
     end
     return ret
