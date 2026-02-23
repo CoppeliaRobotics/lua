@@ -52,7 +52,10 @@ return {
         end
 
         local function write_handlearray(v)
-            return map(function(h) return sim.Object(h) end, v)
+            return map(function(h)
+                if h == -1 then return nil end
+                return sim.Object(h)
+            end, v)
         end
 
         local function read_matrix(v, def)
