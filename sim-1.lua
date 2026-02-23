@@ -37,7 +37,7 @@ sim.loadModel = wrap(sim.loadModel, function(origFunc)
     return function(loc, op)
         local opts = 0
         if op then opts = 1 end
-        return origFunc(op, op) -- in sim-1 arg2 is a bool
+        return origFunc(loc, opts) -- in sim-1 arg2 is a bool
     end
 end)
 
