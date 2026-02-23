@@ -8,6 +8,12 @@ return {
             self.__handle = handle
             self.__opts = table.clone(opts or {})
             self.__localProperties = {}
+            if self.__opts.newPropertyForcedType then
+                -- resolve constant value (i.e. 'sim.foo' -> sim.foo)
+                local s = self.__opts.newPropertyForcedType
+                assert(s:startswith 'sim.', 'invalid value for option "newPropertyForcedType": ' .. s)
+                self.__opts.newPropertyForcedType = sim[s:sub(5)]
+            end
         end
 
         function sim.PropertyGroup:__index(k)
