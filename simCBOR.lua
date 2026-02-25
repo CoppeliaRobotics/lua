@@ -71,7 +71,17 @@ end
 
 function type_tags.TAG_4294999999(value)
     local sim = require 'sim-2'
-    return sim.Object(value)
+    if value ~= -1 then
+        return sim.Object(value)
+    end
+end
+
+function type_tags.TAG_4294999998(value)
+    local sim = require 'sim-2'
+    return map(function(h)
+        if h == -1 then return nil end
+        return sim.Object(h)
+    end, value)
 end
 
 function simCBOR.decode(data)
