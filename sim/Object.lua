@@ -1,4 +1,7 @@
 local class = require 'middleclass'
+local json = require 'dkjson'
+
+local objectMetaInfo = {}
 
 return {
     extend = function(sim)
@@ -145,12 +148,13 @@ return {
                 self.__properties:registerLocalProperty('handle', function() return self.__handle end)
             end
 
-            local json = require 'dkjson'
-            local objMetaInfo = json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
-            for ns, opts in pairs(objMetaInfo.namespaces) do
+            local objectType = sim.getStringProperty(handle, 'objectType')
+            objectMetaInfo[objectType] = objectMetaInfo[objectType]
+                or json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
+            for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
                 rawset(self, ns, sim.PropertyGroup(handle, table.update({prefix = ns}, opts)))
             end
-            rawset(self, '__methods', objMetaInfo.methods)
+            rawset(self, '__methods', objectMetaInfo[objectType].methods)
         end
 
         function sim.Object:__copy()
