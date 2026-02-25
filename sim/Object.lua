@@ -138,15 +138,15 @@ return {
             end
 
             assert(math.type(handle) == 'integer', 'invalid argument type')
+            if handle == sim.handle_self then
+                handle = sim.getLongProperty(sim.handle_self, 'handle')
+            end
             rawset(self, '__handle', handle)
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(handle))
 
-            if handle ~= sim.handle_self then
-                -- sim.handle_self is special
-                self.__properties:registerLocalProperty('handle', function() return self.__handle end)
-            end
+            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
             local objectType = sim.getStringProperty(handle, 'objectType')
             objectMetaInfo[objectType] = objectMetaInfo[objectType]
