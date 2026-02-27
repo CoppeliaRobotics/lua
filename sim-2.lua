@@ -177,34 +177,6 @@ function fixProxyFuncName(newFuncName, adjustArgIndexInErrorMsg)
     end
 end
 
-function sim._removeItem(coll, ...)
-    local obj, what, excludeObj = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'int', default = sim.handle_single},
-        {type = 'bool', default = false},
-    }, ...)
-    local opt = 1
-    if excludeObj then
-        opt = 3
-    end
-    fixProxyFuncName('sim.addToCollection', true)
-    return sim.addToCollection(coll.handle, obj.handle, what, opt)
-end
-
-function sim._addItem(coll, ...)
-    local obj, what, excludeObj = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'int', default = sim.handle_single},
-        {type = 'bool', default = false},
-    }, ...)
-    local opt = 0
-    if excludeObj then
-        opt = 2
-    end
-    fixProxyFuncName('sim.addToCollection', true)
-    return sim.addToCollection(coll.handle, obj.handle, what, opt)
-end
-
 function locals.getAncestors(target, methodName, ...)
     local objTypes, depth, objTypesMap = checkargs.checkargsEx({funcName = methodName}, {
         {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
@@ -279,10 +251,17 @@ function locals.getDescendants(target, methodName, ...)
     return retVal
 end
 
-function sim.loadSceneFromBuffer(buff)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadScene,sim.loadSceneFromBuffer"
-    return sim.loadScene(buff)
+function locals.getFunctions(target, methodName, ...)
+    return setmetatable({}, {
+        __index = function(self, k)
+            return function(self_, ...)
+                assert(self_ == self, 'methods must be called with object:method(args...)')
+                return target:callFunction(k, ...)
+            end
+        end,
+    })
 end
+
 
 function sim.loadImageFromBuffer(buff, opt)
     __proxyFuncName__ = __proxyFuncName__ or "sim.loadImage,sim.loadImageFromBuffer"
@@ -376,36 +355,6 @@ function sim._alignShapeBB(...)
     end
     __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.alignShapeBB,")
     sim.alignShapeBB(h, q) 
-end
-
-function sim._callScriptFunction(script, ...)
-    fixProxyFuncName('sim.callScriptFunction', true)
-    return sim.callScriptFunction(script.handle, ...)
-end
-
-function sim._executeScriptString(script, ...)
-    fixProxyFuncName('sim.executeScriptString', true)
-    return sim.executeScriptString(script.handle, ...)
-end
-
-function sim._getApiInfo(script, ...)
-    fixProxyFuncName('sim.getApiInfo', true)
-    return sim.getApiInfo(script.handle, ...)
-end
-
-function sim._getApiFunc(script, ...)
-    fixProxyFuncName('sim.getApiFunc', true)
-    return sim.getApiFunc(script.handle, ...)
-end
-
-function sim._getStackTraceback(script, ...)
-    fixProxyFuncName('sim.getStackTraceback', true)
-    return sim.getStackTraceback(script.handle, ...)
-end
-
-function sim._initScript(script, ...)
-    fixProxyFuncName('sim.initScript', true)
-    return sim.initScript(script.handle, ...)
 end
 
 sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
@@ -1999,20 +1948,6 @@ function sim.getSettingInt32(...)
     return locals.parseInt(sim.getSettingString(key))
 end
 
-function sim._getScriptFunctions(script, ...)
-    if sim.Object:isobject(script) then
-        script = script.handle
-    end
-    return setmetatable({}, {
-        __index = function(self, k)
-            return function(self_, ...)
-                assert(self_ == self, 'methods must be called with object:method(args...)')
-                return sim.callScriptFunction(script, k, ...)
-            end
-        end,
-    })
-end
-
 function sim.getReferencedHandle(...)
     local handles = sim.getReferencedHandles(...)
     assert(#handles > 0, 'no handle found')
@@ -2204,6 +2139,361 @@ sim.setShapeInertia = wrap(sim.setShapeInertia, function(origFunc)
 end)
 
 require('sim-2-typewrappers').extend(sim)
+
+function wrapTypes(sim, func, argType, retType)
+    return wrap(func, function(origFunc)
+        return function(...)
+            local Color = require 'Color'
+            local simEigen = require 'simEigen'
+            local args = {...}
+            for i = 1, #args do
+                local t = argType and argType[i]
+                if t == 'handle' then
+                    if args[i] == nil then args[i] = -1 end
+                    if sim.Object:isobject(args[i]) then args[i] = args[i].handle end
+                elseif t == 'handles' then
+                    args[i] = map(function(x)
+                                    if sim.Object:isobject(x) then x = x.handle end
+                                    return x
+                                end, args[i])
+                elseif t == 'color' then
+                    if Color:iscolor(args[i]) then args[i] = args[i]:data() end
+                elseif t == 'pose' then
+                    if simEigen.Pose:ispose(args[i]) then args[i] = args[i]:data() end
+                elseif t == 'quaternion' then
+                    if simEigen.Quaternion:isquaternion(args[i]) then args[i] = args[i]:data() end
+                elseif t == 'vector3' then
+                    if simEigen.Matrix:ismatrix(args[i]) then assert(args[i]:isvector(3)); args[i] = args[i]:data() end
+                elseif t == 'vector' then
+                    if simEigen.Matrix:ismatrix(args[i]) then assert(args[i]:isvector()); args[i] = args[i]:data() end
+                elseif t == 'matrix' then
+                    if simEigen.Matrix:ismatrix(args[i]) then args[i] = args[i]:data() end
+                end
+            end
+            local ret = {origFunc(table.unpack(args))}
+            for i = 1, #ret do
+                local t = retType and retType[i]
+                if t then
+                    local cls = ({
+                        handle = function(data)
+                            if not sim.Object:isobject(data) then data = sim.Object(data) end
+                            return data
+                        end,
+                        handles = function(data)
+                            for j = 1, #data do
+                                if not sim.Object:isobject(data[j]) then data[j] = sim.Object(data[j]) end
+                            end
+                            return data
+                        end,
+                        vector2 = function(data)
+                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Vector(data) end
+                            return data
+                        end,
+                        vector3 = function(data)
+                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Vector(data) end
+                            return data
+                        end,
+                        matrix3x3 = function(data)
+                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Matrix(3, 3, data) end
+                            return data
+                        end,
+                        matrix4x4 = function(data)
+                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Matrix(4, 4, data) end
+                            return data
+                        end,
+                        quaternion = function(data)
+                            if not simEigen.Quaternion:isquaternion(data) then data = simEigen.Quaternion(data) end
+                            return data
+                        end,
+                        pose = function(data)
+                            if not simEigen.Pose:ispose(data) then data = simEigen.Pose(data) end
+                            return data
+                        end,
+                        color = function(data)
+                            if not Color:iscolor(data) then data = Color(data) end
+                            return data
+                        end,
+                    })[t]
+                    if cls then
+                        ret[i] = cls(ret[i])
+                    end
+                end
+            end
+            return table.unpack(ret)
+        end
+    end)
+end
+
+sim.setBoolProperty = wrapTypes(sim, sim.setBoolProperty, {'handle'}, {})
+sim.getBoolProperty = wrapTypes(sim, sim.getBoolProperty, {'handle'}, {})
+sim.setBufferProperty = wrapTypes(sim, sim.setBufferProperty, {'handle'}, {})
+sim.getBufferProperty = wrapTypes(sim, sim.getBufferProperty, {'handle'}, {})
+sim.setColorProperty = wrapTypes(sim, sim.setColorProperty, {'handle', nil, 'color'}, {})
+sim.getColorProperty = wrapTypes(sim, sim.getColorProperty, {'handle'}, {'color'})
+sim.setFloatArrayProperty = wrapTypes(sim, sim.setFloatArrayProperty, {'handle'}, {})
+sim.getFloatArrayProperty = wrapTypes(sim, sim.getFloatArrayProperty, {'handle'}, {})
+sim.setFloatProperty = wrapTypes(sim, sim.setFloatProperty, {'handle'}, {})
+sim.getFloatProperty = wrapTypes(sim, sim.getFloatProperty, {'handle'}, {})
+sim.setIntArray2Property = wrapTypes(sim, sim.setIntArray2Property, {'handle'}, {})
+sim.getIntArray2Property = wrapTypes(sim, sim.getIntArray2Property, {'handle'}, {})
+sim.setIntArrayProperty = wrapTypes(sim, sim.setIntArrayProperty, {'handle'}, {})
+sim.getIntArrayProperty = wrapTypes(sim, sim.getIntArrayProperty, {'handle'}, {})
+sim.setIntProperty = wrapTypes(sim, sim.setIntProperty, {'handle'}, {})
+sim.getIntProperty = wrapTypes(sim, sim.getIntProperty, {'handle'}, {})
+sim.setLongProperty = wrapTypes(sim, sim.setLongProperty, {'handle'}, {})
+sim.getLongProperty = wrapTypes(sim, sim.getLongProperty, {'handle'}, {})
+sim.setPoseProperty = wrapTypes(sim, sim.setPoseProperty, {'handle', nil, 'pose'}, {})
+sim.getPoseProperty = wrapTypes(sim, sim.getPoseProperty, {'handle'}, {'pose'})
+sim.setQuaternionProperty = wrapTypes(sim, sim.setQuaternionProperty, {'handle', nil, 'quaternion'}, {})
+sim.getQuaternionProperty = wrapTypes(sim, sim.getQuaternionProperty, {'handle'}, {'quaternion'})
+sim.setStringProperty = wrapTypes(sim, sim.setStringProperty, {'handle'}, {})
+sim.getStringProperty = wrapTypes(sim, sim.getStringProperty, {'handle'}, {})
+sim.setTableProperty = wrapTypes(sim, sim.setTableProperty, {'handle'}, {})
+sim.getTableProperty = wrapTypes(sim, sim.getTableProperty, {'handle'}, {})
+sim.setVector2Property = wrapTypes(sim, sim.setVector2Property, {'handle', nil, 'vector2'}, {})
+sim.getVector2Property = wrapTypes(sim, sim.getVector2Property, {'handle'}, {'vector2'})
+sim.setVector3Property = wrapTypes(sim, sim.setVector3Property, {'handle', nil, 'vector3'}, {})
+sim.getVector3Property = wrapTypes(sim, sim.getVector3Property, {'handle'}, {'vector3'})
+sim.setHandleProperty = wrapTypes(sim, sim.setHandleProperty, {'handle', nil, 'handle'}, {})
+sim.getHandleProperty = wrapTypes(sim, sim.getHandleProperty, {'handle'}, {'handle'})
+sim.setHandleArrayProperty = wrapTypes(sim, sim.setHandleArrayProperty, {'handle', nil, 'handles'}, {})
+sim.getHandleArrayProperty = wrapTypes(sim, sim.getHandleArrayProperty, {'handle'}, {'handles'})
+sim.setStringArrayProperty = wrapTypes(sim, sim.setStringArrayProperty, {'handle'}, {})
+sim.getStringArrayProperty = wrapTypes(sim, sim.getStringArrayProperty, {'handle'}, {})
+sim.removeProperty = wrapTypes(sim, sim.removeProperty, {'handle'}, {})
+sim.getPropertyInfo = wrapTypes(sim, sim.getPropertyInfo, {'handle'}, {})
+sim.getPropertyName = wrapTypes(sim, sim.getPropertyName, {'handle'}, {})
+sim.setProperty = wrapTypes(sim, sim.setProperty, {'handle'}, {})
+sim.getProperty = wrapTypes(sim, sim.getProperty, {'handle'}, {})
+sim.setProperties = wrapTypes(sim, sim.setProperties, {'handle'}, {})
+sim.getProperties = wrapTypes(sim, sim.getProperties, {'handle'}, {})
+sim.getPropertiesInfos = wrapTypes(sim, sim.getPropertiesInfos, {'handle'}, {})
+sim.getPropertyTypeString = wrapTypes(sim, sim.getPropertyTypeString, {'handle'}, {})
+
+
+function locals.getBoolProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getBoolProperty,' .. methodName .. '@method'
+    sim.getBoolProperty(target.handle, ...)
+end
+
+function locals.setBoolProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setBoolProperty,' .. methodName .. '@method'
+    sim.setBoolProperty(target.handle, ...)
+end
+
+function locals.setIntProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setIntProperty,' .. methodName .. '@method'
+    sim.setIntProperty(target.handle, ...)
+end
+
+function locals.getIntProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getIntProperty,' .. methodName .. '@method'
+    sim.getIntProperty(target.handle, ...)
+end
+
+function locals.setLongProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setLongProperty,' .. methodName .. '@method'
+    sim.setLongProperty(target.handle, ...)
+end
+
+function locals.getLongProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getLongProperty,' .. methodName .. '@method'
+    sim.getLongProperty(target.handle, ...)
+end
+
+function locals.setFloatProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setFloatProperty,' .. methodName .. '@method'
+    sim.setFloatProperty(target.handle, ...)
+end
+
+function locals.getFloatProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getFloatProperty,' .. methodName .. '@method'
+    sim.getFloatProperty(target.handle, ...)
+end
+
+function locals.setStringProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setStringProperty,' .. methodName .. '@method'
+    sim.setStringProperty(target.handle, ...)
+end
+
+function locals.getStringProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getStringProperty,' .. methodName .. '@method'
+    sim.getStringProperty(target.handle, ...)
+end
+
+function locals.setBufferProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setBufferProperty,' .. methodName .. '@method'
+    sim.setBufferProperty(target.handle, ...)
+end
+
+function locals.getBufferProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getBufferProperty,' .. methodName .. '@method'
+    sim.getBufferProperty(target.handle, ...)
+end
+
+function locals.setTableProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setTableProperty,' .. methodName .. '@method'
+    sim.setTableProperty(target.handle, ...)
+end
+
+function locals.getTableProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getTableProperty,' .. methodName .. '@method'
+    sim.getTableProperty(target.handle, ...)
+end
+
+function locals.setIntArray2Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setIntArray2Property,' .. methodName .. '@method'
+    sim.setIntArray2Property(target.handle, ...)
+end
+
+function locals.getIntArray2Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getIntArray2Property,' .. methodName .. '@method'
+    sim.getIntArray2Property(target.handle, ...)
+end
+
+function locals.setVector2Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setVector2Property,' .. methodName .. '@method'
+    sim.setVector2Property(target.handle, ...)
+end
+
+function locals.getVector2Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getVector2Property,' .. methodName .. '@method'
+    sim.getVector2Property(target.handle, ...)
+end
+
+function locals.setVector3Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setVector3Property,' .. methodName .. '@method'
+    sim.setVector3Property(target.handle, ...)
+end
+
+function locals.getVector3Property(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getVector3Property,' .. methodName .. '@method'
+    sim.getVector3Property(target.handle, ...)
+end
+
+function locals.setQuaternionProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setQuaternionProperty,' .. methodName .. '@method'
+    sim.setQuaternionProperty(target.handle, ...)
+end
+
+function locals.getQuaternionProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getQuaternionProperty,' .. methodName .. '@method'
+    sim.getQuaternionProperty(target.handle, ...)
+end
+
+function locals.setPoseProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setPoseProperty,' .. methodName .. '@method'
+    sim.setPoseProperty(target.handle, ...)
+end
+
+function locals.getPoseProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getPoseProperty,' .. methodName .. '@method'
+    sim.getPoseProperty(target.handle, ...)
+end
+
+function locals.setColorProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setColorProperty,' .. methodName .. '@method'
+    sim.setColorProperty(target.handle, ...)
+end
+
+function locals.getColorProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getColorProperty,' .. methodName .. '@method'
+    sim.getColorProperty(target.handle, ...)
+end
+
+function locals.setFloatArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setFloatArrayProperty,' .. methodName .. '@method'
+    sim.setFloatArrayProperty(target.handle, ...)
+end
+
+function locals.getFloatArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getFloatArrayProperty,' .. methodName .. '@method'
+    sim.getFloatArrayProperty(target.handle, ...)
+end
+
+function locals.setIntArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setIntArrayProperty,' .. methodName .. '@method'
+    sim.setIntArrayProperty(target.handle, ...)
+end
+
+function locals.getIntArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getIntArrayProperty,' .. methodName .. '@method'
+    sim.getIntArrayProperty(target.handle, ...)
+end
+
+function locals.setHandleProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setHandleProperty,' .. methodName .. '@method'
+    sim.setHandleProperty(target.handle, ...)
+end
+
+function locals.getHandleProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getHandleProperty,' .. methodName .. '@method'
+    sim.getHandleProperty(target.handle, ...)
+end
+
+function locals.setHandleArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setHandleArrayProperty,' .. methodName .. '@method'
+    sim.setHandleArrayProperty(target.handle, ...)
+end
+
+function locals.getHandleArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getHandleArrayProperty,' .. methodName .. '@method'
+    sim.getHandleArrayProperty(target.handle, ...)
+end
+
+function locals.setStringArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.setStringArrayProperty,' .. methodName .. '@method'
+    sim.setStringArrayProperty(target.handle, ...)
+end
+
+function locals.getStringArrayProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getStringArrayProperty,' .. methodName .. '@method'
+    sim.getStringArrayProperty(target.handle, ...)
+end
+
+function locals.removeProperty(target, methodName, ...)
+    __proxyFuncName__ = 'sim.removeProperty,' .. methodName .. '@method'
+    sim.removeProperty(target.handle, ...)
+end
+
+function locals.getPropertyInfo(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getPropertyInfo,' .. methodName .. '@method'
+    sim.getPropertyInfo(target.handle, ...)
+end
+
+function locals.getPropertyName(target, methodName, ...)
+    __proxyFuncName__ = 'sim.getPropertyName,' .. methodName .. '@method'
+    sim.getPropertyName(target.handle, ...)
+end
+
+function locals.getProperties(target, methodName, ...)
+    sim.getProperties(target.handle, ...)
+end
+
+function locals.setProperties(target, methodName, ...)
+    sim.setProperties(target.handle, ...)
+end
+
+function locals.getProperty(target, methodName, ...)
+    sim.getProperty(target.handle, ...)
+end
+
+function locals.setProperty(target, methodName, ...)
+    sim.setProperty(target.handle, ...)
+end
+
+function locals.getPropertiesInfos(target, methodName, ...)
+    sim.getPropertiesInfos(target.handle, ...)
+end
+
+function locals.getPropertyTypeString(target, methodName, ...)
+    sim.getPropertyTypeString(target.handle, ...)
+end
+
+
+
+
+
 
 sim.addForce = wrap(sim.addForce, function(origFunc)
     return function(h, fp, ff)
