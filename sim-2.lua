@@ -262,70 +262,6 @@ function locals.getFunctions(target, methodName, ...)
     })
 end
 
-
-function sim.loadImageFromBuffer(buff, opt)
-    __proxyFuncName__ = __proxyFuncName__ or "sim.loadImage,sim.loadImageFromBuffer"
-    return sim.loadImage("@mem" .. buff, opt)
-end
-
-locals.simSaveImage = sim.saveImage
-function sim.saveImageToBuffer(img, res, form, opt, qual)
-    form = form or 'png'
-    opt = opt or 0
-    qual = qual or -1
-    __proxyFuncName__ = __proxyFuncName__ or "sim.saveImage,sim.saveImageToBuffer"
-    return locals.simSaveImage(img, res, '.' .. form, opt, qual)
-end
-
-function sim.saveImage(img, res, filename, opt, qual)
-    opt = opt or 0
-    qual = qual or -1
-    locals.simSaveImage(img, res, filename, opt, qual)
-end
-
-function sim._addDrawingObjectItems(obj, ...)
-    local h = obj.handle | sim.handleflag_addmultiple
-    local matr = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, { {type = 'matrix'} }, ...)
-    sim.addDrawingObjectItem(h, matr.T:data())
-end
-
-function sim._clearDrawingObjectItems(obj)
-    sim.addDrawingObjectItem(obj.handle, nil)
-end
-
-function sim._addDrawingObjectPackedItems(h, buff)
-    local h = obj.handle | sim.handleflag_addmultiple
-    sim.addDrawingObjectItem(h, buff)
-end
-
-function sim._scaleObject(...)
-    local obj, fact = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'vector3'},
-    }, ...)
-    local h = obj.handle
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.scaleObject,")
-    sim.scaleObject(h, fact[1], fact[2], fact[3]) 
-end
-
-function sim._scaleObjects(dummyH, ...)
-    local objs, fact, posToo = checkargs.checkargsEx({funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'table', item_type = 'handle', size = '1..*'},
-        {type = 'float'},
-        {type = 'bool', default = true},
-    }, ...)
-    local hs = {}
-    for i = 1, #objs do
-        if sim.Object:isobject(objs[i]) then
-            hs[i] = objs[i].handle
-        else
-            hs[i] = objs[i]
-        end
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.scaleObjects,")
-    sim.scaleObjects(hs, fact, posToo) 
-end
-
 function sim._relocateShapeFrame(...)
     local shape, pose = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
         {type = 'handle'},
@@ -1329,6 +1265,37 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
     end
 end)
 
+function locals.visitTree(target, methodName, ...)
+    local visitorFunc, objTypes, objTypesMap = ...
+    if #methodName > 0 then
+        -- Do not verify again with reentrance
+        visitorFunc, objTypes, objTypesMap = checkargs({
+            {type = 'func'},
+            {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
+            {type = 'table', default_nil = true, nullable = true},
+        }, ...)
+    end
+
+    local types = {}
+    if objTypesMap then
+        types = objTypesMap
+    else
+        for i = 1, #objTypes do
+            types[objTypes[i]] = true
+        end
+    end
+    
+    if types[target.objectType] or types['sceneObject'] then
+        if visitorFunc(target) == false then
+            return
+        end
+    end
+    
+    for i = 1, #target.children do
+        locals.visitTree(target.children[i], '', visitorFunc, {}, types)
+    end
+end
+
 function locals.createObject(target, methodName, initialProperties)
     local Color = require 'Color'
     local p = table.clone(initialProperties or {})
@@ -1994,23 +1961,6 @@ function sim.removeReferencedObjects(objectHandle, tag, delayedRemoval)
         sim.removeObjects(toRemove, delayedRemoval)
     end
     sim.setReferencedHandles(objectHandle, {}, tag)
-end
-
-function sim.visitTree(...)
-    local rootHandle, visitorFunc, options = checkargs({
-        {type = 'int'},
-        {type = 'func'},
-        {type = 'table', default = {}},
-    }, ...)
-
-    if visitorFunc(rootHandle) == false then return end
-    local i = 0
-    while true do
-        local childHandle = sim.getObjectChild(rootHandle, i)
-        if childHandle == -1 then return end
-        sim.visitTree(childHandle, visitorFunc)
-        i = i + 1
-    end
 end
 
 function sim.getShapeAppearance(handle, opts)
