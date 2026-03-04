@@ -925,7 +925,7 @@ end
 function Matrix:__tocbor(sref, stref)
     local cbor = require 'simCBOR'
     local cbor_c = require 'org.conman.cbor_c'
-    return cbor_c.encode(0xC0, 40) -- RFC8746 multi-dimensional array tag
+    return cbor_c.encode(0xC0, cbor.Tags.Array.Nd) -- RFC8746 multi-dimensional array tag
         .. cbor.TYPE.ARRAY(2)
             .. cbor.encode{self:rows(), self:cols()}
             .. cbor.encode(self:data())

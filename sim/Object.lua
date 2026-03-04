@@ -211,7 +211,7 @@ return {
         function sim.Object:__tocbor()
             local cbor = require 'simCBOR'
             local cbor_c = require 'org.conman.cbor_c'
-            return cbor_c.encode(0xC0, 4294999999)
+            return cbor_c.encode(0xC0, cbor.Tags.Sim.Handle)
                 .. cbor.encode(self.__handle)
         end
 
