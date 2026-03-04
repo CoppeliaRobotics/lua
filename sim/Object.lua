@@ -136,12 +136,17 @@ return {
             if sim.Object:isobject(handle) then
                 handle = handle.handle
             end
-
-            assert(math.type(handle) == 'integer', 'invalid argument type')
             if handle == sim.handle_self then
-                handle = sim.getLongProperty(sim.handle_self, 'handle')
+                handle = sim_script_handle
             end
+            assert(math.type(handle) == 'integer', 'invalid argument type')
             rawset(self, '__handle', handle)
+        end
+
+        function sim.Object:__setupPropertyGroups()
+            if rawget(self, '__properties') then return end
+
+            local handle = rawget(self, '__handle')
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
             rawset(self, '__properties', sim.PropertyGroup(handle))
@@ -158,6 +163,8 @@ return {
         end
 
         function sim.Object:__index(k)
+            self:__setupPropertyGroups()
+
             -- lookup existing properties first:
             local v = rawget(self, k)
             if v then return v end
@@ -179,6 +186,8 @@ return {
         end
 
         function sim.Object:__newindex(k, v)
+            self:__setupPropertyGroups()
+
             self.__properties[k] = v
         end
 
@@ -207,6 +216,8 @@ return {
         end
 
         function sim.Object:__pairs()
+            self:__setupPropertyGroups()
+
             return pairs(self.__properties)
         end
 
