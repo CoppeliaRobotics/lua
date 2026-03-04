@@ -157,15 +157,6 @@ return {
             rawset(self, '__methods', objectMetaInfo[objectType].methods)
         end
 
-        function sim.Object:__copy()
-            local o = self.class(self.__handle)
-            return o
-        end
-
-        function sim.Object:__deepcopy(m)
-            return self:__copy()
-        end
-
         function sim.Object:__index(k)
             -- lookup existing properties first:
             local v = rawget(self, k)
@@ -189,6 +180,15 @@ return {
 
         function sim.Object:__newindex(k, v)
             self.__properties[k] = v
+        end
+
+        function sim.Object:__copy()
+            local o = self.class(self.__handle)
+            return o
+        end
+
+        function sim.Object:__deepcopy(m)
+            return self:__copy()
         end
 
         function sim.Object:__tostring()
