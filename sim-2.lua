@@ -262,46 +262,6 @@ function locals.getFunctions(target, methodName, ...)
     })
 end
 
-function sim._relocateShapeFrame(...)
-    local shape, pose = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'pose', nullable = true, default_nil = true},
-    }, ...)
-    local h = shape.handle
-    if pose then
-        pose = pose:data()
-    else
-        pose = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.relocateShapeFrame,")
-    sim.relocateShapeFrame(h, pose) 
-end
-
-function sim._alignShapeBB(...)
-    local shape, q = checkargs.checkargsEx({argOffset = -1, funcName = __proxyFuncName__:match(",(.-)@")}, {
-        {type = 'handle'},
-        {type = 'quaternion', nullable = true, default_nil = true},
-    }, ...)
-    local h = shape.handle
-    if q then
-        q = q:data()
-        q = {0.0, 0.0, 0.0, q[1], q[2], q[3], q[4]}
-    else
-        q = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}
-    end
-    __proxyFuncName__ = __proxyFuncName__:gsub("^[^,]*,", "sim.alignShapeBB,")
-    sim.alignShapeBB(h, q) 
-end
-
-sim.alignShapeBB = wrap(sim.alignShapeBB, function(origFunc)
-    return function(...)
-        local r = origFunc(...)
-        if r == 0 then
-            error("Failed reorienting bounding box.")
-        end
-    end
-end)
-
 sim.checkProximitySensor = wrap(sim.checkProximitySensor, function(origFunc)
     return function(...)
         local r, dist, p1, h, n = origFunc(...)

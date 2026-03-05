@@ -25,7 +25,13 @@ function sysCall_sensing()
             s:handleSensor()
         end
     end
-    sim.handleVisionSensor(sim.handle_all_except_explicit)
+    local visionSensors = sim.scene:getObjects({'visionSensor'})
+    for i = 1, #visionSensors do
+        local s = visionSensors[i]
+        if not s.explicitHandling then
+            s:handleSensor()
+        end
+    end
     sim.scene:handleSimulationScripts(sim.syscb_sensing)
     sim.scene:handleCustomizationScripts(sim.syscb_sensing)
     sim.app:handleAddOnScripts(sim.syscb_sensing)
@@ -41,7 +47,13 @@ function sysCall_cleanup()
             s:resetSensor()
         end
     end
-    sim.resetVisionSensor(sim.handle_all_except_explicit)
+    local visionSensors = sim.scene:getObjects({'visionSensor'})
+    for i = 1, #visionSensors do
+        local s = visionSensors[i]
+        if not s.explicitHandling then
+            s:resetSensor()
+        end
+    end
 end
 
 function sysCall_suspend()
