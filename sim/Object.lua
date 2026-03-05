@@ -137,7 +137,7 @@ return {
                 handle = handle.handle
             end
             if handle == sim.handle_self then
-                handle = sim_script_handle
+                handle = sim_detachedscript_handle
             end
             assert(math.type(handle) == 'integer', 'invalid argument type')
             rawset(self, '__handle', handle)

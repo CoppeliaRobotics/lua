@@ -5,14 +5,8 @@ local locals = {}
 __2 = {} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
--- local checkargs = require('checkargs')
--- local checkargs2 = require('checkargs-2')
 local checkargs = require('checkargs-2')
 require('motion-2').extend(sim)
-
-sim.addLog = addLog
-sim.quitSimulator = quitSimulator
-sim.registerScriptFuncHook = registerScriptFuncHook
 
 function sim.callMethod(target, name, ...)
     if locals[name] or (string.sub(name, 1, 1) == "@") then
@@ -136,13 +130,31 @@ function sim.callMethod(target, name, ...)
     end
 end
 
-function sim.acquireLock()
-    -- needs to be overridden by remote API components
+function locals.registerFunctionHook(target, methodName, funcNm, func, before)
+    if type(func) == 'string' then
+        registerScriptFuncHook(funcNm, func, before, false)
+    else
+        local str = tostring(func)
+        registerScriptFuncHook(funcNm, '__2.' .. str, before, false)
+        __2[str] = func
+    end
+end
+
+function locals.removeFunctionHook(target, methodName, funcNm, func, before)
+    if type(func) == 'string' then
+        registerScriptFuncHook(funcNm, func, before, true)
+    else
+        local str = tostring(func)
+        registerScriptFuncHook(funcNm, '__2.' .. str, before, true)
+        __2[str] = nil
+    end
+end
+
+function locals.acquireLock(target, methodName)
     setYieldAllowed(false)
 end
 
-function sim.releaseLock()
-    -- needs to be overridden by remote API components
+function locals.releaseLock(target, methodName)
     setYieldAllowed(true)
 end
 
@@ -416,21 +428,6 @@ function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
         if p_bh_ca and p_ca_h then return p_bh_ca .. '/' .. p_ca_h end
     end
 end
-
--- Make sim.registerScriptFuncHook work also with a function as arg 2:
-function locals.registerScriptFuncHook(funcNm, func, before)
-    local retVal
-    if type(func) == 'string' then
-        retVal = locals.registerScriptFuncHookOrig(funcNm, func, before)
-    else
-        local str = tostring(func)
-        retVal = locals.registerScriptFuncHookOrig(funcNm, '__2.' .. str, before)
-        __2[str] = func
-    end
-    return retVal
-end
-locals.registerScriptFuncHookOrig = sim.registerScriptFuncHook
-sim.registerScriptFuncHook = locals.registerScriptFuncHook
 
 function sim.fastIdleLoop(enable)
     local data = sim.getBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
@@ -2521,8 +2518,6 @@ function __2.sysCallEx_init()
     if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
 end
 
-----------------------------------------------------------
-
 sim.packTable = wrap(sim.packTable, function(origFunc)
     return function(data, scheme)
         if type(data) == 'table' then
@@ -2573,9 +2568,8 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
 end)
 
 
-sim.registerScriptFuncHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
-----------------------------------------------------------
-
 require('sim.Object').extend(sim)
+
+sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 
 return sim
