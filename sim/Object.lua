@@ -313,10 +313,11 @@ return {
 
         function sim.ObjectArray:__index(k)
             if type(k) == 'string' then
-                return setmetatable({}, {
-                    __len = function(tb) return #self end,
-                    __index = function(tb, i) return self[i][k] end,
-                })
+                local ret = {}
+                for i = 1, #self do
+                    table.insert(ret, self[i][k])
+                end
+                return ret
             end
 
             assert(math.type(k) == 'integer', 'invalid index type')
