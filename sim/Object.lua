@@ -312,6 +312,13 @@ return {
         end
 
         function sim.ObjectArray:__index(k)
+            if type(k) == 'string' then
+                return setmetatable({}, {
+                    __len = function(tb) return #self end,
+                    __index = function(tb, i) return self[i][k] end,
+                })
+            end
+
             assert(math.type(k) == 'integer', 'invalid index type')
             local object0 = rawget(self, '__object0')
             if object0 then
