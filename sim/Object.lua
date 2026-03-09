@@ -281,23 +281,69 @@ return {
 
         sim.ObjectArray = class 'sim.ObjectArray'
 
-        function sim.ObjectArray:initialize(...)
-            rawset(self, '__object', sim.getObject(...))
-            assert(self[0] == self.__object, 'sim.ObjectArray must point to first object of the array')
+        function sim.ObjectArray:initialize(arg, count)
+            if type(arg) == 'string' then
+                arg = sim.scene:getObject(arg)
+            end
+            if math.type(arg) == 'integer' then
+                arg = sim.Object(arg)
+            end
+            if type(arg) == 'table' and not getmetatable(arg) then
+                local n = count or arg.n or #arg
+                for i = 1, n do
+                    arg[i] = (function(h)
+                        if sim.Object:isobject(h) then return h end
+                        if h == -1 or h == nil then return nil end
+                        return sim.Object(h)
+                    end)(arg[i])
+                end
+                arg.n = n
+            end
+            if sim.Object:isobject(arg) then
+                -- implicit object array (argument = first object of the array)
+                rawset(self, '__object0', arg)
+                assert(self[1] == arg, 'implicit sim.ObjectArray must point to first object of the array')
+            elseif type(arg) == 'table' and not getmetatable(arg) then
+                -- explicit object array
+                rawset(self, '__objects', arg)
+                count = count or arg.n or #arg
+            end
+            rawset(self, '__count', count)
         end
 
         function sim.ObjectArray:__index(k)
             assert(math.type(k) == 'integer', 'invalid index type')
-            if k >= 0 then
-                local parent = self.__object.parent or sim.scene
-                local alias = self.__object.alias
-                for i, child in ipairs(parent.children) do
-                    if child.alias == alias then
-                        k = k - 1
-                        if k < 0 then return child end
+            local object0 = rawget(self, '__object0')
+            if object0 then
+                if k >= 1 then
+                    local siblings = object0.parent and object0.parent.children or sim.scene.orphans
+                    local name = object0.name
+                    for i, child in ipairs(siblings) do
+                        if child.name == name then
+                            k = k - 1
+                            if k <= 0 then return child end
+                        end
                     end
                 end
+            else
+                local objects = rawget(self, '__objects')
+                return objects[k]
             end
+        end
+
+        function sim.ObjectArray:__len()
+            local count = rawget(self, '__count')
+            if count then return count end
+            local count = 0
+            for i = 1, 100000 do
+                if self[i] then
+                    count = count + 1
+                else
+                    break
+                end
+            end
+            rawset(self, '__count', count)
+            return count
         end
 
         -- definition of constants / static objects:
