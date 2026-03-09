@@ -2015,16 +2015,7 @@ function wrapTypes(sim, func, argType, retType)
                             end
                         end,
                         handles = function(data)
-                            local count = data.n or #data
-                            for j = 1, count do
-                                if data[j] == -1 then
-                                    data[j] = nil
-                                else
-                                    data[j] = sim.Object(data[j])
-                                end
-                            end
-                            data.n = count
-                            return data
+                            return sim.ObjectArray(data)
                         end,
                         vector2 = function(data)
                             if not simEigen.Matrix:ismatrix(data) then data = simEigen.Vector(data) end
