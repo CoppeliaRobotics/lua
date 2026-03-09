@@ -52,7 +52,7 @@ function isbuffer(obj)
     if auxFunc('useBuffers') then
         return __buffmetatable__.isinstance(obj)
     else
-        sim.addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
+        addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
     end
 end
 

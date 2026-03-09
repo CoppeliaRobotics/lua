@@ -131,6 +131,7 @@ function sim.callMethod(target, name, ...)
 end
 
 function locals.registerFunctionHook(target, methodName, funcNm, func, before)
+    if before == nil then before = true end
     if type(func) == 'string' then
         registerScriptFuncHook(funcNm, func, before, false)
     else
@@ -141,6 +142,7 @@ function locals.registerFunctionHook(target, methodName, funcNm, func, before)
 end
 
 function locals.removeFunctionHook(target, methodName, funcNm, func, before)
+    if before == nil then before = true end
     if type(func) == 'string' then
         registerScriptFuncHook(funcNm, func, before, true)
     else
@@ -150,43 +152,19 @@ function locals.removeFunctionHook(target, methodName, funcNm, func, before)
     end
 end
 
-function locals.acquireLock(target, methodName)
-    setYieldAllowed(false)
+function locals.lock(target, methodName, acquire)
+    setYieldAllowed(not acquire)
 end
 
-function locals.releaseLock(target, methodName)
-    setYieldAllowed(true)
-end
-
-function sim.setStepping(enable)
-    -- Convenience function, so that we have the same, more intuitive name also with external clients
-    -- Needs to be overridden by Python wrapper and remote API server code
-    if type(enable) ~= 'number' then enable = not enable end
-    return setAutoYield(enable)
-end
-
-function sim.yield()
+function locals.yield(target, methodName)
     if getYieldAllowed() then
         local thread, yieldForbidden = coroutine.running()
         if not yieldForbidden then coroutine.yield() end
     end
 end
 
-function sim.step(wait)
-    -- Convenience function, for a more intuitive name, depending on the context
-    -- Needs to be overridden by Python wrapper and remote API server code
-    sim.yield()
-end
-
-function fixProxyFuncName(newFuncName, adjustArgIndexInErrorMsg)
-    local s = __proxyFuncName__
-    local c = s:find(',', 1, true)
-    if adjustArgIndexInErrorMsg then
-        __proxyFuncName__ = newFuncName .. s:sub(c)
-    else
-        local at = s:find('@method', c, true)
-        __proxyFuncName__ = newFuncName .. s:sub(c, at - 1)
-    end
+function locals.step(target, methodName)
+    locals.yield(target, methodName)
 end
 
 function locals.getAncestors(target, methodName, ...)
@@ -274,17 +252,6 @@ function locals.getFunctions(target, methodName, ...)
     })
 end
 
-sim.checkProximitySensor = wrap(sim.checkProximitySensor, function(origFunc)
-    return function(...)
-        local r, dist, p1, h, n = origFunc(...)
-        if r then
-            return r, dist, p1, h, n
-        else
-            return false, 0.0, {0.0, 0.0, 0.0}, -1, {0.0, 0.0, 0.0}
-        end
-    end
-end)
-
 sim.auxiliaryConsoleClose = wrap(sim.auxiliaryConsoleClose, function(origFunc)
     return function(...)
         origFunc(...)
@@ -300,48 +267,6 @@ end)
 sim.auxiliaryConsoleShow = wrap(sim.auxiliaryConsoleShow, function(origFunc)
     return function(...)
         origFunc(...)
-    end
-end)
-
-sim.announceSceneContentChange = wrap(sim.announceSceneContentChange, function(origFunc)
-    return function(...)
-        origFunc(...)
-    end
-end)
-
-sim.stopSimulation = wrap(sim.stopSimulation, function(origFunc)
-    return function(wait)
-        origFunc()
-        local t = sim.getIntProperty(sim.getScript(sim.handle_self), 'scriptType')
-        if wait and t ~= sim.scripttype_main and t ~= sim.scripttype_simulation and getYieldAllowed() then
-            local cnt = 0
-            while sim.getSimulationState() ~= sim.simulation_stopped and cnt < 20 do -- even if we run in a thread, we might not be able to yield (e.g. across a c-boundary)
-                cnt = cnt + 1
-                sim.step()
-            end
-        end
-    end
-end)
-
-sim.getObject = wrap(sim.getObject, function(origFunc)
-    return function(path, options)
-        options = options or {}
-        local proxy = -1
-        local index = -1
-        local option = 0
-        if options.proxy then proxy = options.proxy end
-        if options.index then index = options.index end
-        if options.noError then option = 1 end
-        return origFunc(path, index, proxy, option)
-    end
-end)
-
-sim.getObjectFromUid = wrap(sim.getObjectFromUid, function(origFunc)
-    return function(path, options)
-        options = options or {}
-        local option = 0
-        if options.noError then option = 1 end
-        return origFunc(path, option)
     end
 end)
 
