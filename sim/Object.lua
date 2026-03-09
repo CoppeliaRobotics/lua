@@ -360,6 +360,10 @@ return {
             end
         end
 
+        function sim.ObjectArray:__todisplay()
+            return _S.anyToString(self:totable())
+        end
+
         function sim.ObjectArray:totable()
             local ret = {}
             for i = 1, #self do
