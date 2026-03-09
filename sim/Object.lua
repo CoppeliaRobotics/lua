@@ -346,6 +346,12 @@ return {
             return count
         end
 
+        function sim.ObjectArray:__newindex(k, v)
+            for i = 1, #self do
+                self[i][k] = v
+            end
+        end
+
         -- definition of constants / static objects:
         sim.scene = sim.Object(sim.handle_scene)
         sim.app = sim.Object(sim.handle_app)
