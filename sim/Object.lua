@@ -361,7 +361,7 @@ return {
         end
 
         function sim.ObjectArray:__todisplay()
-            return _S.anyToString(self:totable())
+            return self.class.name .. _S.anyToString(self:totable())
         end
 
         function sim.ObjectArray:totable()
