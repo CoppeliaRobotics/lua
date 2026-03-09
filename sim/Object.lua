@@ -342,15 +342,15 @@ return {
         function sim.ObjectArray:__len()
             local count = rawget(self, '__count')
             if count then return count end
-            local count = 0
-            for i = 1, 100000 do
-                if self[i] then
+            count = 0
+            local object0 = rawget(self, '__object0')
+            local siblings = object0.parent and object0.parent.children or sim.scene.orphans
+            local name = object0.name
+            for i, child in ipairs(siblings) do
+                if child.name == name then
                     count = count + 1
-                else
-                    break
                 end
             end
-            rawset(self, '__count', count)
             return count
         end
 
