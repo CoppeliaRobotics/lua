@@ -2008,13 +2008,22 @@ function wrapTypes(sim, func, argType, retType)
                 if t then
                     local cls = ({
                         handle = function(data)
-                            if not sim.Object:isobject(data) then data = sim.Object(data) end
-                            return data
+                            if data == -1 then
+                                return nil
+                            else
+                                return sim.Object(data)
+                            end
                         end,
                         handles = function(data)
-                            for j = 1, #data do
-                                if not sim.Object:isobject(data[j]) then data[j] = sim.Object(data[j]) end
+                            local count = data.n or #data
+                            for j = 1, count do
+                                if data[j] == -1 then
+                                    data[j] = nil
+                                else
+                                    data[j] = sim.Object(data[j])
+                                end
                             end
+                            data.n = count
                             return data
                         end,
                         vector2 = function(data)
