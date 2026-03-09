@@ -1977,8 +1977,8 @@ function wrapTypes(sim, func, argType, retType)
         return function(...)
             local Color = require 'Color'
             local simEigen = require 'simEigen'
-            local args = {...}
-            for i = 1, #args do
+            local args = table.pack(...)
+            for i = 1, args.n do
                 local t = argType and argType[i]
                 if t == 'handle' then
                     if args[i] == nil then args[i] = -1 end
