@@ -360,6 +360,14 @@ return {
             end
         end
 
+        function sim.ObjectArray:totable()
+            local ret = {}
+            for i = 1, #self do
+                table.insert(ret, self[i])
+            end
+            return ret
+        end
+
         -- definition of constants / static objects:
         sim.scene = sim.Object(sim.handle_scene)
         sim.app = sim.Object(sim.handle_app)
