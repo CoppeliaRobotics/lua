@@ -225,6 +225,10 @@ return {
             return self.__handle == o.__handle
         end
 
+        function sim.Object:__isobject()
+            return sim.Object:isobject(self)
+        end
+
         function sim.Object:isobject(o)
             assert(self == sim.Object, 'class method')
             return sim.Object.isInstanceOf(o, sim.Object)
@@ -362,6 +366,15 @@ return {
 
         function sim.ObjectArray:__tostring()
             return self.class.name .. _S.anyToString(self:totable())
+        end
+
+        function sim.ObjectArray:__isobjectarray()
+            return sim.ObjectArray:isobjectarray(self)
+        end
+
+        function sim.ObjectArray:isobjectarray(o)
+            assert(self == sim.ObjectArray, 'class method')
+            return sim.ObjectArray.isInstanceOf(o, sim.ObjectArray)
         end
 
         function sim.ObjectArray:totable()
