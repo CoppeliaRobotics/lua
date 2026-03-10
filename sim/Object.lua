@@ -360,7 +360,7 @@ return {
             end
         end
 
-        function sim.ObjectArray:__todisplay()
+        function sim.ObjectArray:__tostring()
             return self.class.name .. _S.anyToString(self:totable())
         end
 
