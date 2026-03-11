@@ -359,6 +359,8 @@ return {
         end
 
         function sim.ObjectArray:__newindex(k, v)
+            assert(type(k) ~= 'number', self.class.name .. ' contents cannot be modified. Use method :totable() to copy into a plain table.')
+            assert(type(k) == 'string', 'invalid index type')
             for i = 1, #self do
                 self[i][k] = v
             end
