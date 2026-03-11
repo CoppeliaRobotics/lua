@@ -1955,21 +1955,6 @@ if not _S.requireWrapped then
     end)
 end
 
-sim.getShapeInertia = wrap(sim.getShapeInertia, function(origFunc)
-    return function(h)
-        local m, comM = origFunc(h)
-        local a, b = table.batched(m, 3), {comM[4], comM[8], comM[12]}
-        return a, b
-    end
-end)
-
-sim.setShapeInertia = wrap(sim.setShapeInertia, function(origFunc)
-    return function(h, m, p)
-        print(h, m ,p)
-        origFunc(h, m, simEigen.Pose(p):totransform():data())
-    end
-end)
-
 require('sim-2-typewrappers').extend(sim)
 
 function wrapTypes(sim, func, argType, retType)
