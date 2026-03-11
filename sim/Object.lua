@@ -374,6 +374,14 @@ return {
             return sim.ObjectArray:isobjectarray(self)
         end
 
+        function sim.ObjectArray:__tocbor()
+            local cbor = require 'simCBOR'
+            local cbor_c = require 'org.conman.cbor_c'
+            local handles = map(function(obj) return obj.handle end, self:totable())
+            return cbor_c.encode(0xC0, cbor.Tags.Sim.HandleArray)
+                .. cbor.encode(handles)
+        end
+
         function sim.ObjectArray:isobjectarray(o)
             assert(self == sim.ObjectArray, 'class method')
             return sim.ObjectArray.isInstanceOf(o, sim.ObjectArray)
