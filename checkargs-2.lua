@@ -73,6 +73,13 @@ function checkargs.checkarg.string(v, t)
     return v
 end
 
+function checkargs.checkarg.buffer(v, t)
+    if type(v) ~= 'string' then
+        error('must be a buffer', 0)
+    end
+    return v
+end
+
 function checkargs.checkarg.bool(v, t)
     if type(v) ~= 'boolean' then
         error('must be a boolean', 0)
