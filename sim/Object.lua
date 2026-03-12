@@ -154,8 +154,11 @@ return {
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
             local objectType = sim.getStringProperty(handle, 'objectType')
-            objectMetaInfo[objectType] = objectMetaInfo[objectType]
-                or json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
+
+            if not objectMetaInfo[objectType] then
+                objectMetaInfo[objectType] = json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
+                assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
+            end
             for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
                 rawset(self, ns, sim.PropertyGroup(handle, table.update({prefix = ns}, opts)))
             end
