@@ -1121,7 +1121,14 @@ sim.getTableProperty = wrap(sim.getTableProperty, function(origFunc)
         }, ...)
         local buf = origFunc(handle, tagName, options)
         if buf then
-            local table = sim.unpackTable(buf)
+            local table = {}
+            if #buf > 0 then
+                if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
+                    table = sim.app:unpackTable(buf)
+                else
+                    table = sim.app:deserialize(buf)
+                end
+            end
             return table
         end
     end
@@ -1138,10 +1145,9 @@ sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
         options.dataType = options.dataType or 'cbor'
         local buf
         if options.dataType == 'cbor' then
-            local cbor = require 'simCBOR'
-            buf = cbor.encode(theTable)
+            buf = sim.app:serialize(theTable)
         else
-            buf = sim.packTable(theTable)
+            buf = sim.app:packTable(theTable)
         end
         return origFunc(handle, tagName, buf, options)
     end
