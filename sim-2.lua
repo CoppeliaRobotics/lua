@@ -2428,6 +2428,17 @@ function __2.sysCallEx_init()
     if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
 end
 
+function locals.serialize(target, methodName, data)
+    local cbor = require 'simCBOR'
+    return tobuffer(cbor.encode(data))
+end
+
+function locals.deserialize(target, methodName, data)
+    local cbor = require 'simCBOR'
+    return cbor.decode(data)
+end
+
+--[[
 sim.packTable = wrap(sim.packTable, function(origFunc)
     return function(data, scheme)
         if type(data) == 'table' then
@@ -2476,7 +2487,7 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
         end
     end
 end)
-
+--]]
 
 require('sim.Object').extend(sim)
 
