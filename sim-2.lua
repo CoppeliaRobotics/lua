@@ -2,7 +2,7 @@ local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
 
 local locals = {}
-__2 = {} -- sometimes globals are needed (but __2 only for sim-2)
+__2 = {locals = locals} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
 local checkargs = require('checkargs-2')
@@ -606,50 +606,6 @@ function sim.getPathInterpolatedConfig(...)
         end
     elseif pathType == 'linear' then
         retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-    end
-    return retVal
-end
-
-function sim.createPath(...)
-    local retVal
-    local attrib, intParams, floatParams, col = ...
-    if type(attrib) == 'number' then
-        retVal = sim._createPath(attrib, intParams, floatParams, col) -- for backward compatibility
-    else
-        local ctrlPts, options, subdiv, smoothness, orientationMode, upVector = checkargs({
-            {type = 'table', item_type = 'float', size = '14..*'},
-            {type = 'int', default = 0},
-            {type = 'int', default = 100},
-            {type = 'float', default = 1.0},
-            {type = 'int', default = 0},
-            {type = 'table', item_type = 'float', size = '3', default = {0, 0, 1}},
-        }, ...)
-        local fl = setYieldAllowed(false)
-        local code = [[function path.shaping(path,pathIsClosed,upVector)
-    local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
-    local color={0.7,0.9,0.9}
-    local options=0
-    if pathIsClosed then
-        options=options|4
-    end
-    local shape=sim.generateShapeFromPath(path,section,options,upVector)
-    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
-    return shape
-end]]
-
-        retVal = sim.createDummy(0.04, {0, 0.68, 0.47, 0, 0, 0, 0, 0, 0, 0, 0, 0})
-        sim.setObjectAlias(retVal, "Path")
-        code = "path = require('models.path_customization-2')\n\n" .. code
-        local scriptHandle = sim.createScript(sim.scripttype_customization, code)
-        sim.setObjectParent(scriptHandle, retVal)
-        local prop = sim.getIntProperty(retVal, 'model.propertyFlags')
-        sim.setIntProperty(retVal, 'model.propertyFlags', (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model)
-        prop = sim.getIntProperty(retVal, 'objectPropertyFlags')
-        sim.setIntProperty(retVal, 'objectPropertyFlags', prop | sim.objectproperty_collapsed)
-        local data = sim.packTable({ctrlPts, options, subdiv, smoothness, orientationMode, upVector})
-        sim.setBufferProperty(retVal, "customData.ABC_PATH_CREATION", data)
-        sim.initScript(scriptHandle)
-        setYieldAllowed(fl)
     end
     return retVal
 end
@@ -1409,7 +1365,33 @@ function locals.createObject(target, methodName, initialProperties)
         else
             orientationMode = 0
         end
-        h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
+        --h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
+        local fl = setYieldAllowed(false)
+        local code = [[function path.shaping(path,pathIsClosed,upVector)
+    local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
+    local color={0.7,0.9,0.9}
+    local options=0
+    if pathIsClosed then
+        options=options|4
+    end
+    local shape=sim.generateShapeFromPath(path,section,options,upVector)
+    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
+    return shape
+end]]
+        code = "path = require('models.path_customization-2')\n\n" .. code
+
+        h = locals.createObject(sim.scene, 'createObject', {objectType = 'dummy', dummySize = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
+        h.name = 'Path'
+        local script = locals.createObject(sim.scene, 'createObject', {objectType = 'script', scriptType = sim.scripttype_customization, code = code})
+        script:setParent(h)
+        local prop = sim.getIntProperty(h, 'model.propertyFlags')
+        sim.setIntProperty(h, 'model.propertyFlags', (prop | sim.modelproperty_not_model) - sim.modelproperty_not_model)
+        prop = sim.getIntProperty(h, 'objectPropertyFlags')
+        sim.setIntProperty(h, 'objectPropertyFlags', prop | sim.objectproperty_collapsed)
+        local data = sim.app:packTable({ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector})
+        sim.setBufferProperty(h, "customData.ABC_PATH_CREATION", data)
+        script.detachedScript:init()
+        setYieldAllowed(fl)
     elseif objectType == 'pointCloud' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'cellSize', type = 'float', default = 0.02},
@@ -1516,7 +1498,9 @@ function locals.createObject(target, methodName, initialProperties)
 --            {name = 'rawMesh', type = 'bool', default = false},
             {name = 'dynamic', type = 'bool', default = false},
             {name = 'showEdges', type = 'bool', default = false},
-            {name = 'color', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
+            {name = 'color.diffuse', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
+            {name = 'color.specular', type = 'color', default = Color:rgb(0.2, 0.2, 0.2)},
+            {name = 'color.emission', type = 'color', default = Color:rgb(0.0, 0.0, 0.0)},
         }, p)
         if p.mesh then
             checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
@@ -1698,7 +1682,9 @@ function locals.createObject(target, methodName, initialProperties)
         if extractValueOrDefault('showEdges') then
             h:applyShowEdges(true)
         end
-        h.applyColor.diffuse = extractValueOrDefault('color')
+        h.applyColor.diffuse = extractValueOrDefault('color.diffuse')
+        h.applyColor.specular = extractValueOrDefault('color.specular')
+        h.applyColor.emission = extractValueOrDefault('color.emission')
     elseif objectType == 'texture' then
         error '"texture" type not supported'
         h = sim.createTexture()
@@ -1753,6 +1739,18 @@ function locals.createObject(target, methodName, initialProperties)
             floatParams[9] = bgCol[3]
         end
         h = sim.Object(sim.createVisionSensor(options, intParams, floatParams))
+    elseif objectType == 'camera' then
+        h = sim.callMethod(target, '_createCamera', p)
+        p.clippingPlanes = nil
+        p.viewAngle = nil
+        p.viewSize = nil
+    elseif objectType == 'light' then
+        h = sim.callMethod(target, '_createLight', p)
+        p.lightType = nil
+    elseif objectType == 'graph' then
+        h = sim.callMethod(target, '_createGraph', p)
+        p.backgroundColor = nil
+        p.foregroundColor = nil
     else
         error ("error in '" .. methodName .. "': unsupported object type.")
     end

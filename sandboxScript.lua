@@ -1,4 +1,4 @@
-if _DEVMODE then addLog(430, "Developer Mode is active") end
+if _DEVMODE then logInfo(430, "Developer Mode is active") end
 
 sim = require('sim-2')
 
@@ -15,7 +15,7 @@ for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 --_setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
-    sim.app:addLog("Simulator launched, welcome! ")
+    sim.app:logInfo("Simulator launched, welcome! ")
     if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
         require('simURLDrop')
         if sim.getBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', {noError = true}) ~= true then
@@ -25,32 +25,32 @@ function s_init()
 end
 
 function s_cleanup()
-    sim.app:addLog("Leaving...")
+    sim.app:logInfo("Leaving...")
 end
 
 function s_beforeSimulation()
-    sim.app:addLog("Simulation started.")
+    sim.app:logInfo("Simulation started.")
 end
 
 function s_afterSimulation()
-    sim.app:addLog("Simulation stopped.")
+    sim.app:logInfo("Simulation stopped.")
     ___m = nil
 end
 
 function s_sensing()
     local s = sim.getSimulationState()
     if s == sim.simulation_advancing_lastbeforestop and not ___m then
-        sim.app:addLog("Simulation stopping...")
+        sim.app:logInfo("Simulation stopping...")
         ___m = true
     end
 end
 
 function s_suspend()
-    sim.app:addLog("Simulation suspended.")
+    sim.app:logInfo("Simulation suspended.")
 end
 
 function s_resume()
-    sim.app:addLog("Simulation resumed.")
+    sim.app:logInfo("Simulation resumed.")
 end
 
 function restart()
