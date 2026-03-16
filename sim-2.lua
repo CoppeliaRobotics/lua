@@ -988,7 +988,9 @@ function sim.convertPropertyValue(value, fromType, toType)
     if fromType == toType then
         return value
     elseif fromType == sim.propertytype_string then
-        local fn, err = loadstring('return ' .. value)
+        local loadModules = {'Color', 'simEigen'}
+        local preamble = table.concat(map(function(m) return string.format('local %s = require "%s"; ', m, m) end, loadModules))
+        local fn, err = loadstring(preamble .. 'return ' .. value)
         if not fn then return nil, err end
         local ok, val = pcall(fn)
         if ok then return val, nil else return nil, val end
