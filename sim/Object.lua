@@ -169,7 +169,7 @@ return {
                 if not pname then break end
                 local ptype = sim.getPropertyInfo(self.__handle, pname)
                 if ptype == sim.propertytype_method then
-                    methods[pname] = function(...) return sim.callMethod(self.handle, pname, ...) end
+                    methods[pname] = function(_, ...) return sim.callMethod(self.handle, pname, ...) end
                 end
             end
             rawset(self, '__methods', methods)
