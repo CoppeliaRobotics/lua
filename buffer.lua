@@ -22,9 +22,9 @@ function Buffer:__index(k)
     return self.__buff__[k]
 end
 
-function Buffer:__newindex(k, v)
-    error('attempt to modify a buffer value')
-end
+--function Buffer:__newindex(k, v)
+--    error('attempt to modify a buffer value')
+--end
 
 function Buffer:__tostring()
     return self.__buff__
