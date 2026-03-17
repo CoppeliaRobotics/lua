@@ -1,56 +1,61 @@
--- 'buffer' metatable:
+local class = require 'middleclass'
 
-__buffmetatable__ = {
-    __concat = function(a, b)
-        return tobuffer(tostring(a) .. tostring(b))
-    end,
-    __len = function(self)
-        return #self.__buff__
-    end,
-    __eq = function(a, b)
-        return isbuffer(a) and isbuffer(b) and a.__buff__ == b.__buff__
-    end,
-    __index = function(self, k)
-        -- Mimic string behavior: return the character at position k if k is a number
-        if type(k) == 'number' then
-            return string.sub(self.__buff__, k, k) -- return a string
-        elseif type(k) == 'string' then
-            -- Allow access to string methods, e.g., bufferObj:find(...)
-            local strFunc = string[k]
-            if strFunc and type(strFunc) == 'function' then
-                -- Return a function that, when called, applies the string function to the buffer's content
-                return function(_, ...)
-                    return strFunc(self.__buff__, ...) -- return a string
-                end
-            end
-        end
-        -- Optional: handle other keys or throw an error
-        error('attempt to index a buffer value with an unsupported key')
-    end,
-    __newindex = function(self, k)
-        error('attempt to modify a buffer value')
-    end,
-    __tostring = function(self)
-        return self.__buff__
-    end,
-    __tocbor = function(self)
-        local cbor = require('simCBOR')
-        return cbor.TYPE.BIN(self.__buff__)
-    end,
-    newobj = function(txt)
-        if __buffmetatable__.isinstance(txt) then return txt end
-        return setmetatable({__buff__ = tostring(txt)}, __buffmetatable__)
-    end,
-    isinstance = function(obj)
-        return getmetatable(obj) == __buffmetatable__
-    end,
-}
+local Buffer = class 'Buffer'
+
+function Buffer:initialize(s)
+    self.__buff__ = tostring(s)
+end
+
+function Buffer:__concat(other)
+    return Buffer(tostring(self) .. tostring(other))
+end
+
+function Buffer:__len()
+    return #self.__buff__
+end
+
+function Buffer:__eq(other)
+    return Buffer:isbuffer(self) and Buffer:isbuffer(other) and self.__buff__ == other.__buff__
+end
+
+function Buffer:__index(k)
+    return self.__buff__[k]
+end
+
+function Buffer:__newindex(k, v)
+    error('attempt to modify a buffer value')
+end
+
+function Buffer:__tostring()
+    return self.__buff__
+end
+
+function Buffer:__tocbor()
+    local cbor = require('simCBOR')
+    return cbor.TYPE.BIN(self.__buff__)
+end
+
+function Buffer:__isbuffer()
+    return Buffer:isbuffer(self)
+end
+
+function Buffer:isbuffer(o)
+    assert(self == Buffer, 'class method')
+    return Buffer.isInstanceOf(o, Buffer)
+end
+
+function Buffer:tobuffer(o)
+    assert(self == Buffer, 'class method')
+    if Buffer:isbuffer(o) then return o end
+    if type(o) == 'string' then return Buffer(o) end
+    error 'bad type'
+end
 
 -- 'buffer' interface:
 
 function isbuffer(obj)
     if auxFunc('useBuffers') then
-        return __buffmetatable__.isinstance(obj)
+        return Buffer:isbuffer(obj)
     else
         addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
     end
@@ -58,7 +63,7 @@ end
 
 function tobuffer(txt)
     if auxFunc('useBuffers') then
-        return __buffmetatable__.newobj(txt)
+        return Buffer:tobuffer(txt)
     else
         return tostring(txt)
     end
@@ -194,3 +199,5 @@ require = wrap(require, function(origRequire)
         return table.unpack(ret)
     end
 end)
+
+return Buffer
