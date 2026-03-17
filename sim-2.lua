@@ -965,6 +965,7 @@ function sim.getPropertyTypeString(ptype)
 end
 
 function sim.getPropertyGetter(ptype, onlyFuncName)
+    if ptype == sim.propertytype_method then return function() end end
     local ptypeStr = sim.getPropertyTypeString(ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
     local n = 'get' .. ptypeStr .. 'Property'
@@ -975,6 +976,7 @@ function sim.getPropertyGetter(ptype, onlyFuncName)
 end
 
 function sim.getPropertySetter(ptype, onlyFuncName)
+    if ptype == sim.propertytype_method then return function() end end
     local ptypeStr = sim.getPropertyTypeString(ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
     local n = 'set' .. ptypeStr .. 'Property'

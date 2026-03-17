@@ -162,7 +162,17 @@ return {
             for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
                 rawset(self, ns, sim.PropertyGroup(handle, table.update({prefix = ns}, opts)))
             end
-            rawset(self, '__methods', objectMetaInfo[objectType].methods)
+
+            local methods = {}
+            for i = 0, 1e9 do
+                local pname = sim.getPropertyName(self.__handle, i, {objectType = prefix})
+                if not pname then break end
+                local ptype = sim.getPropertyInfo(self.__handle, pname)
+                if ptype == sim.propertytype_method then
+                    table.insert(methods, pname)
+                end
+            end
+            rawset(self, '__methods', methods)
         end
 
         function sim.Object:__index(k)
