@@ -51,13 +51,16 @@ end
 
 apidoc.MethodInfo = class 'sim.apidoc.MethodInfo'
 
-function apidoc.MethodInfo:initialize(classInfo, node)
-    assert(node.tag == 'method', 'invalid node tag')
+function apidoc.MethodInfo:initialize(classInfo, node, tag)
+    assert(node.tag == tag, 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     self.classInfo = classInfo
     self.name = node.attr.name
+    self.lang = node.attr.lang
     self.params = {}
     self.returns = {}
+    self.categories = {}
+    self.related = {}
     for _, subNode in ipairs(node) do
         if subNode.tag == 'params' then
             for _, paramNode in ipairs(subNode) do
@@ -73,6 +76,20 @@ function apidoc.MethodInfo:initialize(classInfo, node)
             end
         elseif subNode.tag == 'description' then
             self.description = getChildrenXML(subNode)
+        elseif subNode.tag == 'categories' then
+            for _, categoryNode in ipairs(subNode) do
+                if categoryNode.tag == 'category' then
+                    self.categories[categoryNode.attr.name] = true
+                end
+            end
+        elseif subNode.tag == 'see-also' then
+            for _, refNode in ipairs(subNode) do
+                if refNode.tag == 'function-ref' then
+                    table.insert(self.related, {refNode.tag, refNode.attr.name})
+                elseif refNode.tag == 'link' then
+                    table.insert(self.related, {refNode.tag, refNode.attr.href})
+                end
+            end
         end
     end
 end
@@ -141,7 +158,7 @@ function apidoc.ClassInfo:initialize(classesInfo, node)
     self.methods = {}
     for _, subNode in ipairs(node) do
         if subNode.tag == 'method' then
-            local info = apidoc.MethodInfo(self, subNode)
+            local info = apidoc.MethodInfo(self, subNode, 'method')
             self.methods[info.name] = info
         end
     end
@@ -184,6 +201,18 @@ end
 function apidoc.ClassesInfo:getMethod(className, methodName)
     local c = self:getClass(className)
     if c then return c:getMethod(methodName) end
+end
+
+apidoc.FunctionsInfo = class 'sim.apidoc.FunctionsInfo'
+
+function apidoc.FunctionsInfo:initialize()
+    self.functions = {}
+    for _, node in ipairs(apidoc.xmltree 'functions.xml') do
+        if node.tag == 'function' then
+            local info = apidoc.MethodInfo(nil, node, 'function')
+            self.functions[info.name] = info
+        end
+    end
 end
 
 return apidoc
