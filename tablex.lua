@@ -1,6 +1,6 @@
 local function logDeprecated(what, repl)
     local sim = require('sim-2')
-    sim.app:addLog(what .. ' is deprecated. use ' .. repl .. ' instead', sim.verbosity_warnings | sim.verbosity_once)
+    sim.app:logWarn(what .. ' is deprecated. use ' .. repl .. ' instead', {once = true})
 end
 
 table.getn = table.getn or function(a)
