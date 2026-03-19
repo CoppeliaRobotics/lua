@@ -110,28 +110,6 @@ return {
 
         sim.Object = class 'sim.Object'
 
-        function sim.Object.static:resolveFunction(methodName, funcName)
-            local fields = string.split(funcName, '%.')
-            local moduleName = table.remove(fields, 1)
-            local moduleNameWithoutVer = moduleName:gsub('-.*', '')
-            local funcNameWithoutVer = moduleNameWithoutVer .. '.' .. funcName:gsub('^[^.]+%.', '')
-            local module = moduleName == 'sim-2' and sim or require(moduleName)
-            local func = module
-            for _, field in ipairs(fields) do func = (func or {})[field] end
-            if func == sim.callMethod then
-                -- new methods, via sim.callMethod interface
-                -- (need first two args: target, methodName)
-                return function(targetObject, ...)
-                    return sim.callMethod(targetObject, methodName, ...)
-                end
-            else
-                return function(...)
-                    __proxyFuncName__ = funcNameWithoutVer .. ',' .. methodName .. '@method'
-                    return func(...)
-                end
-            end
-        end
-
         function sim.Object:initialize(handle)
             if sim.Object:isobject(handle) then
                 handle = handle.handle
@@ -184,14 +162,7 @@ return {
 
             -- lookup method:
             local methods = rawget(self, '__methods')
-            if methods[k] then
-                if type(methods[k]) == 'string' then
-                    local funcName = methods[k]
-                    methods[k] = sim.Object:resolveFunction(k, funcName)
-                    assert(methods[k], string.format('sim.Object(%s): method %s: failed to resolve function %s', self.handle, k, funcName))
-                end
-                return methods[k]
-            end
+            if methods[k] then return methods[k] end
 
             -- redirect to default property group otherwise:
             local p = rawget(self, '__properties')[k]
