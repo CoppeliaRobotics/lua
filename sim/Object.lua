@@ -226,8 +226,8 @@ return {
         end
 
         function sim.Object.static.unittest()
-            f = sim.getObject '/Floor'
-            b = sim.getObject '/Floor/box'
+            f = sim.scene:getObject '/Floor'
+            b = sim.scene:getObject '/Floor/box'
             if #sim.scene.orphans > 0 then
                 assert(sim.scene.orphans[1].parent == nil)
             else
@@ -247,7 +247,7 @@ return {
                 linkedDummy = d1,
             }
             assert(d2.linkedDummy == d1)
-            sim.removeObjects{d1, d2}
+            sim.scene:removeObjects{d1, d2}
             cbor = require 'simCBOR'
             ip = table.fromipairs(f.children)
             assert(cbor.encode(ip) == cbor.encode{b})
@@ -262,7 +262,7 @@ return {
             assert(c:getAlias(1) == '/a/c')
             b.modelBase = true
             assert(c:getAlias(1) == '/a/b/c')
-            sim.removeObjects{a, b, c}
+            sim.scene:removeObjects{a, b, c}
 
             print(debug.getinfo(1, 'S').source, 'tests passed')
         end
