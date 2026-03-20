@@ -2190,7 +2190,7 @@ function sim.setHandleProperty(t, ...)
 end
 
 function sim.getHandleArrayProperty(t, ...)
-    return sim.ObjectArray(sim.callMethod(t, 'getHandleArrayProperty', ...))
+    return sim.callMethod(t, 'getHandleArrayProperty', ...)
 end
 
 function sim.setHandleArrayProperty(t, ...)
