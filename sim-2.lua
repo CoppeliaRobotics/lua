@@ -48,7 +48,7 @@ function sim.callMethod(target, name, ...)
         if sim.Object:isobject(target) then
             target = target.handle
         end
-        return sim._callMethod(target, name, ...)
+        return callMethod(target, name, ...)
         --[[
         function toSimpleType(arg)
             local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
@@ -119,7 +119,7 @@ function sim.callMethod(target, name, ...)
         end
         args.n = nil -- important!!
         local retVals = {}
-        local ret = table.pack(sim._callMethod(target, name, args, types))
+        local ret = table.pack(callMethod(target, name, args, types))
         ret.n = nil
         for i = 1, #ret // 2 do
             local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
