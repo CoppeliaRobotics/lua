@@ -362,7 +362,7 @@ return {
         end
 
         function sim.ObjectArray:__tostring()
-            return self.class.name .. _S.anyToString(self:totable())
+            return self.class.name .. _S.anyToString(self.handle)
         end
 
         function sim.ObjectArray:__isobjectarray()
