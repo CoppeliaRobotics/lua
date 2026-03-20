@@ -1072,46 +1072,40 @@ function sim.getPropertiesInfos(target, opts)
     return propertiesInfos
 end
 
-sim.getTableProperty = wrap(sim.getTableProperty, function(origFunc)
-    return function(...)
-        local handle, tagName, options = checkargs({
-            {type = 'int'},
-            {type = 'string'},
-            {type = 'table', default = {}},
-        }, ...)
-        local buf = origFunc(handle, tagName, options)
-        if buf then
-            local table = {}
-            if #buf > 0 then
-                if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
-                    table = sim.app:unpackTable(buf)
-                else
-                    table = sim.app:deserialize(buf)
-                end
+function locals.getTableProperty(target, methodName, ...)
+    local tagName, options = checkargs({
+        {type = 'string'},
+        {type = 'table', default = {}},
+    }, ...)
+    local buf = callMethod(target, '_getTableProperty', tagName, options)
+    if buf then
+        local retVal = {}
+        if #buf > 0 then
+            if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
+                retVal = sim.app:unpackTable(buf)
+            else
+                retVal = sim.app:deserialize(buf)
             end
-            return table
         end
+        return retVal
     end
-end)
+end
 
-sim.setTableProperty = wrap(sim.setTableProperty, function(origFunc)
-    return function(...)
-        local handle, tagName, theTable, options = checkargs({
-            {type = 'int'},
-            {type = 'string'},
-            {type = 'table'},
-            {type = 'table', default = {}},
-        }, ...)
-        options.dataType = options.dataType or 'cbor'
-        local buf
-        if options.dataType == 'cbor' then
-            buf = sim.app:serialize(theTable)
-        else
-            buf = sim.app:packTable(theTable)
-        end
-        return origFunc(handle, tagName, buf, options)
+function locals.setTableProperty(target, methodName, ...)
+    local tagName, theTable, options = checkargs({
+        {type = 'string'},
+        {type = 'table'},
+        {type = 'table', default = {}},
+    }, ...)
+    options.dataType = options.dataType or 'cbor'
+    local buf
+    if options.dataType == 'cbor' then
+        buf = sim.app:serialize(theTable)
+    else
+        buf = sim.app:packTable(theTable)
     end
-end)
+    return callMethod(target, '_setTableProperty', tagName, buf, options)
+end
 
 function locals.visitTree(target, methodName, ...)
     local visitorFunc, objTypes, objTypesMap = ...
@@ -2049,8 +2043,6 @@ function wrapTypes(sim, func, argType, retType)
     end)
 end
 
-sim.setTableProperty = wrapTypes(sim, sim.setTableProperty, {'handle'}, {})
-sim.getTableProperty = wrapTypes(sim, sim.getTableProperty, {'handle'}, {})
 sim.removeProperty = wrapTypes(sim, sim.removeProperty, {'handle'}, {})
 sim.getPropertyInfo = wrapTypes(sim, sim.getPropertyInfo, {'handle'}, {})
 sim.getPropertyName = wrapTypes(sim, sim.getPropertyName, {'handle'}, {})
@@ -2197,14 +2189,12 @@ function sim.setHandleArrayProperty(t, ...)
     sim.callMethod(t, 'setHandleArrayProperty', ...)
 end
 
-function locals.setTableProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setTableProperty,' .. methodName .. '@method'
-    sim.setTableProperty(target, ...)
+function sim.getTableProperty(t, ...)
+    return sim.callMethod(t, 'getTableProperty', ...)
 end
 
-function locals.getTableProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getTableProperty,' .. methodName .. '@method'
-    return sim.getTableProperty(target, ...)
+function sim.setTableProperty(t, ...)
+    sim.callMethod(t, 'setTableProperty', ...)
 end
 
 function locals.removeProperty(target, methodName, ...)
