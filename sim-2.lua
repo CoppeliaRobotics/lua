@@ -2049,42 +2049,8 @@ function wrapTypes(sim, func, argType, retType)
     end)
 end
 
-sim.setBoolProperty = wrapTypes(sim, sim.setBoolProperty, {'handle'}, {})
-sim.getBoolProperty = wrapTypes(sim, sim.getBoolProperty, {'handle'}, {})
-sim.setBufferProperty = wrapTypes(sim, sim.setBufferProperty, {'handle'}, {})
-sim.getBufferProperty = wrapTypes(sim, sim.getBufferProperty, {'handle'}, {})
-sim.setColorProperty = wrapTypes(sim, sim.setColorProperty, {'handle', nil, 'color'}, {})
-sim.getColorProperty = wrapTypes(sim, sim.getColorProperty, {'handle'}, {'color'})
-sim.setFloatArrayProperty = wrapTypes(sim, sim.setFloatArrayProperty, {'handle'}, {})
-sim.getFloatArrayProperty = wrapTypes(sim, sim.getFloatArrayProperty, {'handle'}, {})
-sim.setFloatProperty = wrapTypes(sim, sim.setFloatProperty, {'handle'}, {})
-sim.getFloatProperty = wrapTypes(sim, sim.getFloatProperty, {'handle'}, {})
-sim.setIntArray2Property = wrapTypes(sim, sim.setIntArray2Property, {'handle'}, {})
-sim.getIntArray2Property = wrapTypes(sim, sim.getIntArray2Property, {'handle'}, {})
-sim.setIntArrayProperty = wrapTypes(sim, sim.setIntArrayProperty, {'handle'}, {})
-sim.getIntArrayProperty = wrapTypes(sim, sim.getIntArrayProperty, {'handle'}, {})
-sim.setIntProperty = wrapTypes(sim, sim.setIntProperty, {'handle'}, {})
-sim.getIntProperty = wrapTypes(sim, sim.getIntProperty, {'handle'}, {})
-sim.setLongProperty = wrapTypes(sim, sim.setLongProperty, {'handle'}, {})
-sim.getLongProperty = wrapTypes(sim, sim.getLongProperty, {'handle'}, {})
-sim.setPoseProperty = wrapTypes(sim, sim.setPoseProperty, {'handle', nil, 'pose'}, {})
-sim.getPoseProperty = wrapTypes(sim, sim.getPoseProperty, {'handle'}, {'pose'})
-sim.setQuaternionProperty = wrapTypes(sim, sim.setQuaternionProperty, {'handle', nil, 'quaternion'}, {})
-sim.getQuaternionProperty = wrapTypes(sim, sim.getQuaternionProperty, {'handle'}, {'quaternion'})
-sim.setStringProperty = wrapTypes(sim, sim.setStringProperty, {'handle'}, {})
-sim.getStringProperty = wrapTypes(sim, sim.getStringProperty, {'handle'}, {})
 sim.setTableProperty = wrapTypes(sim, sim.setTableProperty, {'handle'}, {})
 sim.getTableProperty = wrapTypes(sim, sim.getTableProperty, {'handle'}, {})
-sim.setVector2Property = wrapTypes(sim, sim.setVector2Property, {'handle', nil, 'vector2'}, {})
-sim.getVector2Property = wrapTypes(sim, sim.getVector2Property, {'handle'}, {'vector2'})
-sim.setVector3Property = wrapTypes(sim, sim.setVector3Property, {'handle', nil, 'vector3'}, {})
-sim.getVector3Property = wrapTypes(sim, sim.getVector3Property, {'handle'}, {'vector3'})
-sim.setHandleProperty = wrapTypes(sim, sim.setHandleProperty, {'handle', nil, 'handle'}, {})
-sim.getHandleProperty = wrapTypes(sim, sim.getHandleProperty, {'handle'}, {'handle'})
-sim.setHandleArrayProperty = wrapTypes(sim, sim.setHandleArrayProperty, {'handle', nil, 'handles'}, {})
-sim.getHandleArrayProperty = wrapTypes(sim, sim.getHandleArrayProperty, {'handle'}, {'handles'})
-sim.setStringArrayProperty = wrapTypes(sim, sim.setStringArrayProperty, {'handle'}, {})
-sim.getStringArrayProperty = wrapTypes(sim, sim.getStringArrayProperty, {'handle'}, {})
 sim.removeProperty = wrapTypes(sim, sim.removeProperty, {'handle'}, {})
 sim.getPropertyInfo = wrapTypes(sim, sim.getPropertyInfo, {'handle'}, {})
 sim.getPropertyName = wrapTypes(sim, sim.getPropertyName, {'handle'}, {})
@@ -2095,242 +2061,190 @@ sim.getProperties = wrapTypes(sim, sim.getProperties, {'handle'}, {})
 sim.getPropertiesInfos = wrapTypes(sim, sim.getPropertiesInfos, {'handle'}, {})
 sim.getPropertyTypeString = wrapTypes(sim, sim.getPropertyTypeString, {'handle'}, {})
 
-
-function locals.getBoolProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getBoolProperty,' .. methodName .. '@method'
-    sim.getBoolProperty(target.handle, ...)
+function sim.getBoolProperty(t, ...)
+    return sim.callMethod(t, 'getBoolProperty', ...)
 end
 
-function locals.setBoolProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setBoolProperty,' .. methodName .. '@method'
-    sim.setBoolProperty(target.handle, ...)
+function sim.setBoolProperty(t, ...)
+    sim.callMethod(t, 'setBoolProperty', ...)
 end
 
-function locals.setIntProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setIntProperty,' .. methodName .. '@method'
-    sim.setIntProperty(target.handle, ...)
+function sim.getIntProperty(t, ...)
+    return sim.callMethod(t, 'getIntProperty', ...)
 end
 
-function locals.getIntProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getIntProperty,' .. methodName .. '@method'
-    sim.getIntProperty(target.handle, ...)
+function sim.setIntProperty(t, ...)
+    sim.callMethod(t, 'setIntProperty', ...)
 end
 
-function locals.setLongProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setLongProperty,' .. methodName .. '@method'
-    sim.setLongProperty(target.handle, ...)
+function sim.getLongProperty(t, ...)
+    return sim.callMethod(t, 'getLongProperty', ...)
 end
 
-function locals.getLongProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getLongProperty,' .. methodName .. '@method'
-    sim.getLongProperty(target.handle, ...)
+function sim.setLongProperty(t, ...)
+    sim.callMethod(t, 'setLongProperty', ...)
 end
 
-function locals.setFloatProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setFloatProperty,' .. methodName .. '@method'
-    sim.setFloatProperty(target.handle, ...)
+function sim.getFloatProperty(t, ...)
+    return sim.callMethod(t, 'getFloatProperty', ...)
 end
 
-function locals.getFloatProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getFloatProperty,' .. methodName .. '@method'
-    sim.getFloatProperty(target.handle, ...)
+function sim.setFloatProperty(t, ...)
+    sim.callMethod(t, 'setFloatProperty', ...)
 end
 
-function locals.setStringProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setStringProperty,' .. methodName .. '@method'
-    sim.setStringProperty(target.handle, ...)
+function sim.getStringProperty(t, ...)
+    return sim.callMethod(t, 'getStringProperty', ...)
 end
 
-function locals.getStringProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getStringProperty,' .. methodName .. '@method'
-    sim.getStringProperty(target.handle, ...)
+function sim.setStringProperty(t, ...)
+    sim.callMethod(t, 'setStringProperty', ...)
 end
 
-function locals.setBufferProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setBufferProperty,' .. methodName .. '@method'
-    sim.setBufferProperty(target.handle, ...)
+function sim.getBufferProperty(t, ...)
+    return sim.callMethod(t, 'getBufferProperty', ...)
 end
 
-function locals.getBufferProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getBufferProperty,' .. methodName .. '@method'
-    sim.getBufferProperty(target.handle, ...)
+function sim.setBufferProperty(t, ...)
+    sim.callMethod(t, 'setBufferProperty', ...)
+end
+
+function sim.getIntArray2Property(t, ...)
+    return sim.callMethod(t, 'getIntArray2Property', ...)
+end
+
+function sim.setIntArray2Property(t, ...)
+    sim.callMethod(t, 'setIntArray2Property', ...)
+end
+
+function sim.getIntArrayProperty(t, ...)
+    return sim.callMethod(t, 'getIntArrayProperty', ...)
+end
+
+function sim.setIntArrayProperty(t, ...)
+    sim.callMethod(t, 'setIntArrayProperty', ...)
+end
+
+function sim.getFloatArrayProperty(t, ...)
+    return sim.callMethod(t, 'getFloatArrayProperty', ...)
+end
+
+function sim.setFloatArrayProperty(t, ...)
+    sim.callMethod(t, 'setFloatArrayProperty', ...)
+end
+
+function sim.getStringArrayProperty(t, ...)
+    return sim.callMethod(t, 'getStringArrayProperty', ...)
+end
+
+function sim.setStringArrayProperty(t, ...)
+    sim.callMethod(t, 'setStringArrayProperty', ...)
+end
+
+function sim.getVector2Property(t, ...)
+    return sim.callMethod(t, 'getVector2Property', ...)
+end
+
+function sim.setVector2Property(t, ...)
+    sim.callMethod(t, 'setVector2Property', ...)
+end
+
+function sim.getVector3Property(t, ...)
+    return sim.callMethod(t, 'getVector3Property', ...)
+end
+
+function sim.setVector3Property(t, ...)
+    sim.callMethod(t, 'setVector3Property', ...)
+end
+
+function sim.getColorProperty(t, ...)
+    return sim.callMethod(t, 'getColorProperty', ...)
+end
+
+function sim.setColorProperty(t, ...)
+    sim.callMethod(t, 'setColorProperty', ...)
+end
+
+function sim.getPoseProperty(t, ...)
+    return sim.callMethod(t, 'getPoseProperty', ...)
+end
+
+function sim.setPoseProperty(t, ...)
+    sim.callMethod(t, 'setPoseProperty', ...)
+end
+
+function sim.getQuaternionProperty(t, ...)
+    return sim.callMethod(t, 'getQuaternionProperty', ...)
+end
+
+function sim.setQuaternionProperty(t, ...)
+    sim.callMethod(t, 'setQuaternionProperty', ...)
+end
+
+function sim.getHandleProperty(t, ...)
+    return sim.callMethod(t, 'getHandleProperty', ...)
+end
+
+function sim.setHandleProperty(t, ...)
+    sim.callMethod(t, 'setHandleProperty', ...)
+end
+
+function sim.getHandleArrayProperty(t, ...)
+    return sim.ObjectArray(sim.callMethod(t, 'getHandleArrayProperty', ...))
+end
+
+function sim.setHandleArrayProperty(t, ...)
+    sim.callMethod(t, 'setHandleArrayProperty', ...)
 end
 
 function locals.setTableProperty(target, methodName, ...)
     __proxyFuncName__ = 'sim.setTableProperty,' .. methodName .. '@method'
-    sim.setTableProperty(target.handle, ...)
+    sim.setTableProperty(target, ...)
 end
 
 function locals.getTableProperty(target, methodName, ...)
     __proxyFuncName__ = 'sim.getTableProperty,' .. methodName .. '@method'
-    sim.getTableProperty(target.handle, ...)
-end
-
-function locals.setIntArray2Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setIntArray2Property,' .. methodName .. '@method'
-    sim.setIntArray2Property(target.handle, ...)
-end
-
-function locals.getIntArray2Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getIntArray2Property,' .. methodName .. '@method'
-    sim.getIntArray2Property(target.handle, ...)
-end
-
-function locals.setVector2Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setVector2Property,' .. methodName .. '@method'
-    sim.setVector2Property(target.handle, ...)
-end
-
-function locals.getVector2Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getVector2Property,' .. methodName .. '@method'
-    sim.getVector2Property(target.handle, ...)
-end
-
-function locals.setVector3Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setVector3Property,' .. methodName .. '@method'
-    sim.setVector3Property(target.handle, ...)
-end
-
-function locals.getVector3Property(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getVector3Property,' .. methodName .. '@method'
-    sim.getVector3Property(target.handle, ...)
-end
-
-function locals.setQuaternionProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setQuaternionProperty,' .. methodName .. '@method'
-    sim.setQuaternionProperty(target.handle, ...)
-end
-
-function locals.getQuaternionProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getQuaternionProperty,' .. methodName .. '@method'
-    sim.getQuaternionProperty(target.handle, ...)
-end
-
-function locals.setPoseProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setPoseProperty,' .. methodName .. '@method'
-    sim.setPoseProperty(target.handle, ...)
-end
-
-function locals.getPoseProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getPoseProperty,' .. methodName .. '@method'
-    sim.getPoseProperty(target.handle, ...)
-end
-
-function locals.setColorProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setColorProperty,' .. methodName .. '@method'
-    sim.setColorProperty(target.handle, ...)
-end
-
-function locals.getColorProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getColorProperty,' .. methodName .. '@method'
-    sim.getColorProperty(target.handle, ...)
-end
-
-function locals.setFloatArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setFloatArrayProperty,' .. methodName .. '@method'
-    sim.setFloatArrayProperty(target.handle, ...)
-end
-
-function locals.getFloatArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getFloatArrayProperty,' .. methodName .. '@method'
-    sim.getFloatArrayProperty(target.handle, ...)
-end
-
-function locals.setIntArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setIntArrayProperty,' .. methodName .. '@method'
-    sim.setIntArrayProperty(target.handle, ...)
-end
-
-function locals.getIntArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getIntArrayProperty,' .. methodName .. '@method'
-    sim.getIntArrayProperty(target.handle, ...)
-end
-
-function locals.setHandleProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setHandleProperty,' .. methodName .. '@method'
-    sim.setHandleProperty(target.handle, ...)
-end
-
-function locals.getHandleProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getHandleProperty,' .. methodName .. '@method'
-    sim.getHandleProperty(target.handle, ...)
-end
-
-function locals.setHandleArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setHandleArrayProperty,' .. methodName .. '@method'
-    sim.setHandleArrayProperty(target.handle, ...)
-end
-
-function locals.getHandleArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getHandleArrayProperty,' .. methodName .. '@method'
-    sim.getHandleArrayProperty(target.handle, ...)
-end
-
-function locals.setStringArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.setStringArrayProperty,' .. methodName .. '@method'
-    sim.setStringArrayProperty(target.handle, ...)
-end
-
-function locals.getStringArrayProperty(target, methodName, ...)
-    __proxyFuncName__ = 'sim.getStringArrayProperty,' .. methodName .. '@method'
-    sim.getStringArrayProperty(target.handle, ...)
+    return sim.getTableProperty(target, ...)
 end
 
 function locals.removeProperty(target, methodName, ...)
     __proxyFuncName__ = 'sim.removeProperty,' .. methodName .. '@method'
-    sim.removeProperty(target.handle, ...)
+    sim.removeProperty(target, ...)
 end
 
 function locals.getPropertyInfo(target, methodName, ...)
     __proxyFuncName__ = 'sim.getPropertyInfo,' .. methodName .. '@method'
-    sim.getPropertyInfo(target.handle, ...)
+    return sim.getPropertyInfo(target, ...)
 end
 
 function locals.getPropertyName(target, methodName, ...)
     __proxyFuncName__ = 'sim.getPropertyName,' .. methodName .. '@method'
-    sim.getPropertyName(target.handle, ...)
+    return sim.getPropertyName(target, ...)
 end
 
 function locals.getProperties(target, methodName, ...)
-    sim.getProperties(target.handle, ...)
+    return sim.getProperties(target, ...)
 end
 
 function locals.setProperties(target, methodName, ...)
-    sim.setProperties(target.handle, ...)
+    sim.setProperties(target, ...)
 end
 
 function locals.getProperty(target, methodName, ...)
-    sim.getProperty(target.handle, ...)
+    return sim.getProperty(target, ...)
 end
 
 function locals.setProperty(target, methodName, ...)
-    sim.setProperty(target.handle, ...)
+    sim.setProperty(target, ...)
 end
 
 function locals.getPropertiesInfos(target, methodName, ...)
-    sim.getPropertiesInfos(target.handle, ...)
+    return sim.getPropertiesInfos(target, ...)
 end
 
 function locals.getPropertyTypeString(target, methodName, ...)
-    sim.getPropertyTypeString(target.handle, ...)
+    return sim.getPropertyTypeString(target, ...)
 end
-
-
-
-
-
-
-sim.addForce = wrap(sim.addForce, function(origFunc)
-    return function(h, fp, ff)
-        origFunc(h, fp, ff)
-    end
-end)
-
-sim.addForceAndTorque = wrap(sim.addForceAndTorque, function(origFunc)
-    return function(h, force, torque)
-        origFunc(h, force, torque)
-    end
-end)
 
 -- Hidden, internal functions:
 ----------------------------------------------------------
