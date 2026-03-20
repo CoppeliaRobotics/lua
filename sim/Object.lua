@@ -134,10 +134,10 @@ return {
 
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-            local objectType = sim.callMethod(handle, 'getStringProperty', 'objectType')
+            local objectType = self:callMethod('getStringProperty', 'objectType')
 
             if not objectMetaInfo[objectType] then
-                local mi = sim.callMethod(handle, 'getStringProperty', 'objectMetaInfo')
+                local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
                 objectMetaInfo[objectType] = json.decode(mi)
                 assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
             end
@@ -147,12 +147,12 @@ return {
 
             local methods = {}
             for i = 0, 1e9 do
-                local pname = sim.callMethod(handle, 'getPropertyName', i, {objectType = prefix})
+                local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
                 if not pname then break end
-                local ptype = sim.callMethod(handle, 'getPropertyInfo', pname)
+                local ptype = self:callMethod('getPropertyInfo', pname)
                 if ptype == sim.propertytype_method then
                     methods[pname] = function(_, ...)
-                        return sim.callMethod(handle, pname, ...)
+                        return self:callMethod(pname, ...)
                     end
                 end
             end
@@ -222,6 +222,11 @@ return {
         function sim.Object:isobject(o)
             assert(self == sim.Object, 'class method')
             return sim.Object.isInstanceOf(o, sim.Object)
+        end
+
+        function sim.Object:callMethod(method, ...)
+            local handle = rawget(self, '__handle')
+            return sim.callMethod(handle, method, ...)
         end
 
         function sim.Object:toobject(o)
