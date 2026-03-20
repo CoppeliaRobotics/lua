@@ -2411,8 +2411,19 @@ sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
 end)
 --]]
 
-require('sim.Object').extend(sim)
+sim.Object = require 'sim.Object'
+sim.Object.callMethod = function(self, method, ...)
+    local handle = rawget(self, '__handle')
+    return sim.callMethod(handle, method, ...)
+end
+sim.ObjectArray = require 'sim.ObjectArray'
+sim.PropertyGroup = require 'sim.PropertyGroup'
 
-sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
+sim.app = sim.Object.app
+sim.scene = sim.Object.scene
+sim.self = sim.Object.self
+
+--sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
+sim.callMethod(sim.handle_self, 'registerFunctionHook', 'sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 
 return sim

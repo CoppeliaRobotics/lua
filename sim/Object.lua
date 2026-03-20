@@ -1,397 +1,188 @@
 local class = require 'middleclass'
 local json = require 'dkjson'
 
-local objectMetaInfo = {}
+local objectMetaInfo = {} -- cache for objectMetaInfo, by objectType
 
-return {
-    extend = function(sim)
-        sim.PropertyGroup = class 'sim.PropertyGroup'
+local Object = class 'sim.Object'
+local PropertyGroup = require 'sim.PropertyGroup'
 
-        function sim.PropertyGroup:initialize(object, opts)
-            self.__object = sim.Object:toobject(object)
-            self.__opts = table.clone(opts or {})
-            self.__localProperties = {}
-            if self.__opts.newPropertyForcedType then
-                -- resolve constant value (i.e. 'sim.foo' -> sim.foo)
-                local s = self.__opts.newPropertyForcedType
-                assert(s:startswith 'sim.', 'invalid value for option "newPropertyForcedType": ' .. s)
-                self.__opts.newPropertyForcedType = sim[s:sub(5)]
-            end
-        end
-
-        function sim.PropertyGroup:__index(k)
-            assert(type(k) == 'string', 'invalid key type')
-
-            if k:startswith '__' then
-                return rawget(self, k)
-            end
-
-            if self.__localProperties[k] then
-                assert(self.__localProperties[k].get, 'local property "' .. k .. '" can\'t be read')
-                return self.__localProperties[k].get()
-            end
-
-            local prefix = self.__opts.prefix or ''
-            if prefix ~= '' then k = prefix .. '.' .. k end
-
-            local object = rawget(self, '__object')
-            local ptype = object:getPropertyInfo(k)
-            if ptype then
-                return object:getProperty(k)
-            end
-
-            if object:getPropertyName(0, {prefix = k .. '.'}) then
-                return sim.PropertyGroup(object, {prefix = k})
-            end
-        end
-
-        function sim.PropertyGroup:__newindex(k, v)
-            if k:startswith '__' then
-                rawset(self, k, v)
-                return
-            end
-
-            if self.__localProperties[k] then
-                assert(self.__localProperties[k].set, 'local property "' .. k .. '" can\'t be written')
-                return self.__localProperties[k].set(v)
-            end
-
-            local prefix = self.__opts.prefix or ''
-            if prefix ~= '' then k = prefix .. '.' .. k end
-
-            local object = rawget(self, '__object')
-            local ptype = self.__opts.newPropertyForcedType or object:getPropertyInfo(k)
-            if ptype then
-                object:setProperty(k, v, ptype)
-            else
-                object:setProperty(k, v)
-            end
-        end
-
-        function sim.PropertyGroup:__tostring()
-            local s = 'sim.PropertyGroup(' .. self.__object.handle
-            if next(self.__opts) then
-                s = s .. ', ' .. table.tostring(self.__opts)
-            end
-            s = s .. ')'
-            return s
-        end
-
-        function sim.PropertyGroup:__pairs()
-            local object = self.__object
-            local prefix = self.__opts.prefix or ''
-            if prefix ~= '' then prefix = prefix .. '.' end
-            local props = {}
-            local i = 0
-            while true do
-                local pname = object:getPropertyName(i, {prefix = prefix})
-                if pname == nil then break end
-                pname = string.stripprefix(pname, prefix)
-                local pname2 = string.gsub(pname, '%..*$', '')
-                if pname == pname2 then
-                    local ptype, pflags, descr = object:getPropertyInfo(prefix .. pname)
-                    local readable = pflags & 2 == 0
-                    if readable then
-                        props[pname2] = object:getProperty(prefix .. pname)
-                    end
-                elseif props[pname2] == nil then
-                    props[pname2] = sim.PropertyGroup(object, {prefix = prefix .. pname})
-                end
-                i = i + 1
-            end
-            local function stateless_iter(self, k)
-                local v
-                k, v = next(props, k)
-                if v ~= nil then return k, v end
-            end
-            return stateless_iter, self, nil
-        end
-
-        function sim.PropertyGroup:registerLocalProperty(k, getter, setter)
-            self.__localProperties[k] = {get = getter, set = setter}
-        end
-
-        sim.Object = class 'sim.Object'
-
-        function sim.Object:initialize(handle)
-            if sim.Object:isobject(handle) then
-                handle = handle.handle
-            end
-            if handle == sim.handle_self then
-                handle = sim_detachedscript_handle
-            end
-            assert(math.type(handle) == 'integer', 'invalid argument type')
-            rawset(self, '__handle', handle)
-        end
-
-        function sim.Object:__setupPropertyGroups()
-            if rawget(self, '__properties') then return end
-
-            local handle = rawget(self, '__handle')
-
-            -- this property group exposes object's top-level properties as self's table keys (via __index):
-            rawset(self, '__properties', sim.PropertyGroup(self))
-
-            self.__properties:registerLocalProperty('handle', function() return self.__handle end)
-
-            local objectType = self:callMethod('getStringProperty', 'objectType')
-
-            if not objectMetaInfo[objectType] then
-                local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
-                objectMetaInfo[objectType] = json.decode(mi)
-                assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
-            end
-            for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
-                rawset(self, ns, sim.PropertyGroup(self, table.update({prefix = ns}, opts)))
-            end
-
-            local methods = {}
-            for i = 0, 1e9 do
-                local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
-                if not pname then break end
-                local ptype = self:callMethod('getPropertyInfo', pname)
-                if ptype == sim.propertytype_method then
-                    methods[pname] = function(_, ...)
-                        return self:callMethod(pname, ...)
-                    end
-                end
-            end
-            rawset(self, '__methods', methods)
-        end
-
-        function sim.Object:__index(k)
-            self:__setupPropertyGroups()
-
-            -- lookup existing properties first:
-            local v = rawget(self, k)
-            if v then return v end
-
-            -- lookup method:
-            local methods = rawget(self, '__methods')
-            if methods[k] then return methods[k] end
-
-            -- redirect to default property group otherwise:
-            local p = rawget(self, '__properties')[k]
-            if p ~= nil then return p end
-        end
-
-        function sim.Object:__newindex(k, v)
-            self:__setupPropertyGroups()
-
-            self.__properties[k] = v
-        end
-
-        function sim.Object:__copy()
-            local o = self.class(self.__handle)
-            return o
-        end
-
-        function sim.Object:__deepcopy(m)
-            return self:__copy()
-        end
-
-        function sim.Object:__tostring()
-            return 'sim.Object(' .. self.__handle .. ')'
-        end
-
-        function sim.Object:__tohandle()
-            return self.__handle
-        end
-
-        function sim.Object:__tocbor()
-            local cbor = require 'simCBOR'
-            local cbor_c = require 'org.conman.cbor_c'
-            return cbor_c.encode(0xC0, cbor.Tags.Sim.Handle)
-                .. cbor.encode(self.__handle)
-        end
-
-        function sim.Object:__pairs()
-            self:__setupPropertyGroups()
-
-            return pairs(self.__properties)
-        end
-
-        function sim.Object:__eq(o)
-            return self.__handle == o.__handle
-        end
-
-        function sim.Object:__isobject()
-            return sim.Object:isobject(self)
-        end
-
-        function sim.Object:isobject(o)
-            assert(self == sim.Object, 'class method')
-            return sim.Object.isInstanceOf(o, sim.Object)
-        end
-
-        function sim.Object:callMethod(method, ...)
-            local handle = rawget(self, '__handle')
-            return sim.callMethod(handle, method, ...)
-        end
-
-        function sim.Object:toobject(o)
-            assert(self == sim.Object, 'class method')
-            if sim.Object:isobject(o) then return o end
-            if math.type(o) == 'integer' or type(o) == 'string' then return sim.Object(o) end
-            error 'bad type'
-        end
-
-        function sim.Object.static.unittest()
-            f = sim.scene:getObject '/Floor'
-            b = sim.scene:getObject '/Floor/box'
-            if #sim.scene.orphans > 0 then
-                assert(sim.scene.orphans[1].parent == nil)
-            else
-                print 'skipped orphans test'
-            end
-            assert(b == f.children[1])
-            assert(b.parent == f)
-            d1 = sim.scene:createObject{
-                objectType = 'dummy',
-                alias = 'd1',
-            }
-            assert(sim.Object:isobject(d1))
-            d2 = sim.scene:createObject{
-                objectType = 'dummy',
-                alias = 'd2',
-                dummyType = sim.dummytype_dynloopclosure,
-                linkedDummy = d1,
-            }
-            assert(d2.linkedDummy == d1)
-            sim.scene:removeObjects{d1, d2}
-            cbor = require 'simCBOR'
-            ip = table.fromipairs(f.children)
-            assert(cbor.encode(ip) == cbor.encode{b})
-            assert(b:getPosition(f):norm() < 1e-7)
-
-            a = sim.scene:createObject {objectType = 'dummy', alias = 'a', }
-            b = sim.scene:createObject {objectType = 'dummy', alias = 'b', }
-            c = sim.scene:createObject {objectType = 'dummy', alias = 'c', }
-            c.parent = b
-            b.parent = a
-            a.modelBase = true
-            assert(c:getAlias(1) == '/a/c')
-            b.modelBase = true
-            assert(c:getAlias(1) == '/a/b/c')
-            sim.scene:removeObjects{a, b, c}
-
-            print(debug.getinfo(1, 'S').source, 'tests passed')
-        end
-
-        sim.ObjectArray = class 'sim.ObjectArray'
-
-        function sim.ObjectArray:initialize(arg, count)
-            if type(arg) == 'string' then
-                arg = sim.scene:getObject(arg)
-            end
-            if math.type(arg) == 'integer' then
-                arg = sim.Object(arg)
-            end
-            if type(arg) == 'table' and not getmetatable(arg) then
-                local n = count or arg.n or #arg
-                for i = 1, n do
-                    arg[i] = (function(h)
-                        if sim.Object:isobject(h) then return h end
-                        if h == -1 or h == nil then return nil end
-                        return sim.Object(h)
-                    end)(arg[i])
-                end
-                arg.n = n
-            end
-            if sim.Object:isobject(arg) then
-                -- implicit object array (argument = first object of the array)
-                rawset(self, '__object0', arg)
-                assert(self[1] == arg, 'implicit sim.ObjectArray must point to first object of the array')
-            elseif type(arg) == 'table' and not getmetatable(arg) then
-                -- explicit object array
-                rawset(self, '__objects', arg)
-                count = count or arg.n or #arg
-            end
-            rawset(self, '__count', count)
-        end
-
-        function sim.ObjectArray:__index(k)
-            if type(k) == 'string' then
-                local ret = {}
-                for i = 1, #self do
-                    table.insert(ret, self[i][k])
-                end
-                return ret
-            end
-
-            assert(math.type(k) == 'integer', 'invalid index type')
-            local object0 = rawget(self, '__object0')
-            if object0 then
-                if k >= 1 then
-                    local siblings = object0.parent and object0.parent.children or sim.scene.orphans
-                    local name = object0.name
-                    for i, child in ipairs(siblings) do
-                        if child.name == name then
-                            k = k - 1
-                            if k <= 0 then return child end
-                        end
-                    end
-                end
-            else
-                local objects = rawget(self, '__objects')
-                return objects[k]
-            end
-        end
-
-        function sim.ObjectArray:__len()
-            local count = rawget(self, '__count')
-            if count then return count end
-            count = 0
-            local object0 = rawget(self, '__object0')
-            local siblings = object0.parent and object0.parent.children or sim.scene.orphans
-            local name = object0.name
-            for i, child in ipairs(siblings) do
-                if child.name == name then
-                    count = count + 1
-                end
-            end
-            return count
-        end
-
-        function sim.ObjectArray:__newindex(k, v)
-            assert(type(k) ~= 'number', self.class.name .. ' contents cannot be modified. Use method :totable() to copy into a plain table.')
-            assert(type(k) == 'string', 'invalid index type')
-            for i = 1, #self do
-                self[i][k] = v
-            end
-        end
-
-        function sim.ObjectArray:__tostring()
-            return self.class.name .. _S.anyToString(self.handle)
-        end
-
-        function sim.ObjectArray:__isobjectarray()
-            return sim.ObjectArray:isobjectarray(self)
-        end
-
-        function sim.ObjectArray:__tocbor()
-            local cbor = require 'simCBOR'
-            local cbor_c = require 'org.conman.cbor_c'
-            return cbor_c.encode(0xC0, cbor.Tags.Sim.HandleArray)
-                .. cbor.encode(self.handle)
-        end
-
-        function sim.ObjectArray:isobjectarray(o)
-            assert(self == sim.ObjectArray, 'class method')
-            return sim.ObjectArray.isInstanceOf(o, sim.ObjectArray)
-        end
-
-        function sim.ObjectArray:totable()
-            local ret = {}
-            for i = 1, #self do
-                table.insert(ret, self[i])
-            end
-            return ret
-        end
-
-        -- definition of constants / static objects:
-        sim.scene = sim.Object(sim.handle_scene)
-        sim.app = sim.Object(sim.handle_app)
-        sim.self = sim.Object(sim.handle_self)
-    end
+local sim = {
+    callMethod = callMethod,
+    handle_scene = -12,
+    handle_app = -13,
+    handle_self = -4,
+    propertytype_method = 240,
 }
+
+function Object:initialize(handle)
+    if Object:isobject(handle) then
+        handle = handle.handle
+    end
+    if handle == sim.handle_self then
+        handle = sim_detachedscript_handle
+    end
+    assert(math.type(handle) == 'integer', 'invalid argument type')
+    rawset(self, '__handle', handle)
+end
+
+function Object:__setupPropertyGroups()
+    if rawget(self, '__properties') then return end
+
+    local handle = rawget(self, '__handle')
+
+    -- this property group exposes object's top-level properties as self's table keys (via __index):
+    rawset(self, '__properties', PropertyGroup(self))
+
+    self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+
+    local objectType = self:callMethod('getStringProperty', 'objectType')
+
+    if not objectMetaInfo[objectType] then
+        local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
+        objectMetaInfo[objectType] = json.decode(mi)
+        assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
+    end
+    for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
+        rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
+    end
+
+    local methods = {}
+    for i = 0, 1e9 do
+        local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
+        if not pname then break end
+        local ptype = self:callMethod('getPropertyInfo', pname)
+        if ptype == sim.propertytype_method then
+            methods[pname] = function(_, ...)
+                return self:callMethod(pname, ...)
+            end
+        end
+    end
+    rawset(self, '__methods', methods)
+end
+
+function Object:__index(k)
+    self:__setupPropertyGroups()
+
+    -- lookup existing properties first:
+    local v = rawget(self, k)
+    if v then return v end
+
+    -- lookup method:
+    local methods = rawget(self, '__methods')
+    if methods[k] then return methods[k] end
+
+    -- redirect to default property group otherwise:
+    local p = rawget(self, '__properties')[k]
+    if p ~= nil then return p end
+end
+
+function Object:__newindex(k, v)
+    self:__setupPropertyGroups()
+
+    self.__properties[k] = v
+end
+
+function Object:__copy()
+    local o = self.class(self.__handle)
+    return o
+end
+
+function Object:__deepcopy(m)
+    return self:__copy()
+end
+
+function Object:__tostring()
+    return self.class.name .. '(' .. self.__handle .. ')'
+end
+
+function Object:__tohandle()
+    return self.__handle
+end
+
+function Object:__tocbor()
+    local cbor = require 'simCBOR'
+    local cbor_c = require 'org.conman.cbor_c'
+    return cbor_c.encode(0xC0, cbor.Tags.Sim.Handle)
+        .. cbor.encode(self.__handle)
+end
+
+function Object:__pairs()
+    self:__setupPropertyGroups()
+
+    return pairs(self.__properties)
+end
+
+function Object:__eq(o)
+    return self.__handle == o.__handle
+end
+
+function Object:__isobject()
+    return Object:isobject(self)
+end
+
+function Object:isobject(o)
+    assert(self == Object, 'class method')
+    return Object.isInstanceOf(o, Object)
+end
+
+function Object:callMethod(method, ...)
+    local handle = rawget(self, '__handle')
+    return sim.callMethod(handle, method, ...)
+end
+
+function Object:toobject(o)
+    assert(self == Object, 'class method')
+    if Object:isobject(o) then return o end
+    if math.type(o) == 'integer' or type(o) == 'string' then return Object(o) end
+    error 'bad type'
+end
+
+function Object.static.unittest()
+    local scene = sim.Object.scene
+    f = scene:getObject '/Floor'
+    b = scene:getObject '/Floor/box'
+    if #scene.orphans > 0 then
+        assert(scene.orphans[1].parent == nil)
+    else
+        print 'skipped orphans test'
+    end
+    assert(b == f.children[1])
+    assert(b.parent == f)
+    d1 = scene:createObject{
+        objectType = 'dummy',
+        alias = 'd1',
+    }
+    assert(Object:isobject(d1))
+    d2 = scene:createObject{
+        objectType = 'dummy',
+        alias = 'd2',
+        dummyType = 0, -- dummyType = sim.dummytype_dynloopclosure,
+        linkedDummy = d1,
+    }
+    assert(d2.linkedDummy == d1)
+    scene:removeObjects{d1, d2}
+    cbor = require 'simCBOR'
+    ip = table.fromipairs(f.children)
+    assert(cbor.encode(ip) == cbor.encode{b})
+    assert(b:getPosition(f):norm() < 1e-7)
+
+    a = scene:createObject {objectType = 'dummy', alias = 'a', }
+    b = scene:createObject {objectType = 'dummy', alias = 'b', }
+    c = scene:createObject {objectType = 'dummy', alias = 'c', }
+    c.parent = b
+    b.parent = a
+    a.modelBase = true
+    assert(c:getAlias(1) == '/a/c')
+    b.modelBase = true
+    assert(c:getAlias(1) == '/a/b/c')
+    scene:removeObjects{a, b, c}
+
+    print(debug.getinfo(1, 'S').source, 'tests passed')
+end
+
+-- definition of constants / static objects:
+Object.scene = Object(sim.handle_scene)
+Object.app = Object(sim.handle_app)
+Object.self = Object(sim.handle_self)
+
+return Object
