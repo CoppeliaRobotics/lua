@@ -7,8 +7,8 @@ return {
     extend = function(sim)
         sim.PropertyGroup = class 'sim.PropertyGroup'
 
-        function sim.PropertyGroup:initialize(handle, opts)
-            self.__handle = handle
+        function sim.PropertyGroup:initialize(object, opts)
+            self.__object = sim.Object:toobject(object)
             self.__opts = table.clone(opts or {})
             self.__localProperties = {}
             if self.__opts.newPropertyForcedType then
@@ -34,13 +34,14 @@ return {
             local prefix = self.__opts.prefix or ''
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            local ptype = sim.getPropertyInfo(self.__handle, k)
+            local object = rawget(self, '__object')
+            local ptype = object:getPropertyInfo(k)
             if ptype then
-                return sim.getPropertyGetter(ptype)(self.__handle, k)
+                return object:getProperty(k)
             end
 
-            if sim.getPropertyName(self.__handle, 0, {prefix = k .. '.'}) then
-                return sim.PropertyGroup(self.__handle, {prefix = k})
+            if object:getPropertyName(0, {prefix = k .. '.'}) then
+                return sim.PropertyGroup(object, {prefix = k})
             end
         end
 
@@ -58,16 +59,17 @@ return {
             local prefix = self.__opts.prefix or ''
             if prefix ~= '' then k = prefix .. '.' .. k end
 
-            local ptype = self.__opts.newPropertyForcedType or sim.getPropertyInfo(self.__handle, k)
+            local object = rawget(self, '__object')
+            local ptype = self.__opts.newPropertyForcedType or object:getPropertyInfo(k)
             if ptype then
-                sim.getPropertySetter(ptype)(self.__handle, k, v)
+                object:setProperty(k, v, ptype)
             else
-                sim.setProperty(self.__handle, k, v)
+                object:setProperty(k, v)
             end
         end
 
         function sim.PropertyGroup:__tostring()
-            local s = 'sim.PropertyGroup(' .. self.__handle
+            local s = 'sim.PropertyGroup(' .. self.__object.handle
             if next(self.__opts) then
                 s = s .. ', ' .. table.tostring(self.__opts)
             end
@@ -76,23 +78,24 @@ return {
         end
 
         function sim.PropertyGroup:__pairs()
+            local object = self.__object
             local prefix = self.__opts.prefix or ''
             if prefix ~= '' then prefix = prefix .. '.' end
             local props = {}
             local i = 0
             while true do
-                local pname = sim.getPropertyName(self.__handle, i, {prefix = prefix})
+                local pname = object:getPropertyName(i, {prefix = prefix})
                 if pname == nil then break end
                 pname = string.stripprefix(pname, prefix)
                 local pname2 = string.gsub(pname, '%..*$', '')
                 if pname == pname2 then
-                    local ptype, pflags, descr = sim.getPropertyInfo(self.__handle, prefix .. pname)
+                    local ptype, pflags, descr = object:getPropertyInfo(prefix .. pname)
                     local readable = pflags & 2 == 0
                     if readable then
-                        props[pname2] = sim.getPropertyGetter(ptype)(self.__handle, prefix .. pname)
+                        props[pname2] = object:getProperty(prefix .. pname)
                     end
                 elseif props[pname2] == nil then
-                    props[pname2] = sim.PropertyGroup(self.__handle, {prefix = prefix .. pname})
+                    props[pname2] = sim.PropertyGroup(object, {prefix = prefix .. pname})
                 end
                 i = i + 1
             end
@@ -127,27 +130,30 @@ return {
             local handle = rawget(self, '__handle')
 
             -- this property group exposes object's top-level properties as self's table keys (via __index):
-            rawset(self, '__properties', sim.PropertyGroup(handle))
+            rawset(self, '__properties', sim.PropertyGroup(self))
 
             self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-            local objectType = sim.getStringProperty(handle, 'objectType')
+            local objectType = sim.callMethod(handle, 'getStringProperty', 'objectType')
 
             if not objectMetaInfo[objectType] then
-                objectMetaInfo[objectType] = json.decode(sim.getStringProperty(handle, 'objectMetaInfo'))
+                local mi = sim.callMethod(handle, 'getStringProperty', 'objectMetaInfo')
+                objectMetaInfo[objectType] = json.decode(mi)
                 assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
             end
             for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
-                rawset(self, ns, sim.PropertyGroup(handle, table.update({prefix = ns}, opts)))
+                rawset(self, ns, sim.PropertyGroup(self, table.update({prefix = ns}, opts)))
             end
 
             local methods = {}
             for i = 0, 1e9 do
-                local pname = sim.getPropertyName(self.__handle, i, {objectType = prefix})
+                local pname = sim.callMethod(handle, 'getPropertyName', i, {objectType = prefix})
                 if not pname then break end
-                local ptype = sim.getPropertyInfo(self.__handle, pname)
+                local ptype = sim.callMethod(handle, 'getPropertyInfo', pname)
                 if ptype == sim.propertytype_method then
-                    methods[pname] = function(_, ...) return sim.callMethod(self.handle, pname, ...) end
+                    methods[pname] = function(_, ...)
+                        return sim.callMethod(handle, pname, ...)
+                    end
                 end
             end
             rawset(self, '__methods', methods)
