@@ -355,15 +355,18 @@ function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
 end
 
 function sim.fastIdleLoop(enable)
-    local data = sim.getBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
+    locals.fastIdleLoop(-1, '', enable)
+end
+function locals.fastIdleLoop(target, methodName, enable)
+    local data = sim.app:getBufferProperty('signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
     local stage = 0
     local defaultIdleFps
     if data and #data > 0 then
-        data = sim.unpackInt32Table(data)
+        data = sim.app:unpackInt32Table(data)
         stage = data[1]
         defaultIdleFps = data[2]
     else
-        defaultIdleFps = sim.getIntProperty(sim.handle_app, 'idleFps')
+        defaultIdleFps = sim.app:getIntProperty('idleFps')
     end
     if enable then
         stage = stage + 1
@@ -371,32 +374,22 @@ function sim.fastIdleLoop(enable)
         if stage > 0 then stage = stage - 1 end
     end
     if stage > 0 then
-        sim.setIntProperty(sim.handle_app, 'idleFps', 0)
+        sim.app:setIntProperty('idleFps', 0)
     else
-        sim.setIntProperty(sim.handle_app, 'idleFps', defaultIdleFps)
+        sim.app:setIntProperty('idleFps', defaultIdleFps)
     end
-    sim.setBufferProperty(sim.handle_app, 'signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
+    sim.app:setBufferProperty('signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
 end
-
---[[
-function sim.isPluginLoaded(pluginName)
-    local index = 0
-    local moduleName = ''
-    while moduleName do
-        moduleName = sim.getPluginName(index)
-        if moduleName == pluginName then return true end
-        index = index + 1
-    end
-    return false
-end
---]]
 
 function sim.throttle(t, func, ...)
+    locals.throttle(-1, '', t, func, ...)
+end
+function locals.throttle(target, methodName, t, func, ...)
     locals.lastExecTime = locals.lastExecTime or {}
     locals.throttleSched = locals.throttleSched or {}
 
     local h = string.dump(func)
-    local now = sim.getSystemTime()
+    local now = sim.app.systemTime
 
     -- cancel any previous scheduled execution: (see sim.scheduleExecution below)
     if locals.throttleSched[h] then
@@ -427,20 +420,24 @@ function locals.schedulerCallback()
         end
     end
 
-    fn(sim.getSystemTime(), locals.scheduler.rtpq)
+    fn(sim.app.systemTime, locals.scheduler.rtpq)
     if sim.getSimulationState() == sim.simulation_advancing_running then
         fn(sim.getSimulationTime(), locals.scheduler.simpq)
     end
 
     if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, true)
         locals.scheduler.hook = false
     end
 end
 
 function sim.scheduleExecution(func, args, timePoint, simTime)
+    return locals.scheduleExecution(-1, '', timePoint - sim.app.systemTime, simTime, func, table.unpack(args))
+end
+function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
+    local timePoint = sim.app.systemTime + delay
     if not locals.scheduler then
         local priorityqueue = require 'priorityqueue'
         locals.scheduler = {
@@ -463,20 +460,23 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
     pq:push(timePoint, {
         id = id,
         func = func,
-        args = args,
+        args = table.pack(...),
         timePoint = timePoint,
         simTime = simTime,
     })
     if not locals.scheduler.hook then
-        sim.registerScriptFuncHook('sysCall_nonSimulation', locals.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_sensing', locals.schedulerCallback, true)
-        sim.registerScriptFuncHook('sysCall_suspended', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, true)
         locals.scheduler.hook = true
     end
     return id
 end
 
 function sim.cancelScheduledExecution(id)
+    return locals.cancelScheduledExecution(-1, '', id)
+end
+function locals.cancelScheduledExecution(target, methodName, id)
     if not locals.scheduler then return end
     local pq = nil
     if locals.scheduler.simTime[id] then
@@ -782,8 +782,8 @@ function sim.wait(...)
         while sim.getSimulationTime() - st < dt do sim.step() end
         retVal = sim.getSimulationTime() - st - dt
     else
-        local st = sim.getSystemTime()
-        while sim.getSystemTime() - st < dt do sim.step() end
+        local st = sim.app.systemTime
+        while sim.app.systemTime - st < dt do sim.step() end
     end
     return retVal
 end
@@ -815,7 +815,7 @@ function sim.serialRead(...)
 
     local retVal
     if blocking then
-        local st = sim.getSystemTime()
+        local st = sim.app.systemTime
         while true do
             local data = _S.serialPortData[portHandle]
             _S.serialPortData[portHandle] = ''
@@ -842,7 +842,7 @@ function sim.serialRead(...)
                     break
                 end
             end
-            if sim.getSystemTime() - st >= timeout and timeout ~= 0 then
+            if sim.app.systemTime - st >= timeout and timeout ~= 0 then
                 retVal = data
                 break
             end
