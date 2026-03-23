@@ -497,25 +497,44 @@ function _S.sysCallBase_actuation()
     end
 end
 
+function _S.getObject(n)
+    -- shorthand assigned to H, for quick object retrieval in sandbox
+    -- e.g.: H'/Floor'.pose
+    local sim = _G.sim or require 'sim-2' -- typically, global 'sim' will be set in the sandbox
+    assert(sim.version, 'sim.version is not set')
+    if sim.version == 1 then
+        return sim.getObject(n)
+    elseif sim.version == 2 then
+        return sim.scene:getObject(n)
+    end
+    error('unsupported value in sim.version: ' .. sim.version)
+end
+
+function _S.getObjectSel(n)
+    local sim = _G.sim or require 'sim-2' -- typically, global 'sim' will be set in the sandbox
+    assert(sim.version, 'sim.version is not set')
+    if sim.version == 1 then
+        return sim.getObjectSel()
+    elseif sim.version == 2 then
+        return sim.scene.selection
+    end
+    error('unsupported value in sim.version: ' .. sim.version)
+end
+
 function _evalExec(inputStr)
     local sim = require 'sim'
-    local function setConvenienceVars(oldH)
+    local function setConvenienceVars()
         local sim = _G.sim or require 'sim'
-        if oldH ~= nil and H ~= sim.getObject and H ~= oldH then
+        if H ~= nil and H ~= _S.getObject then
             addLog(430 | 0x0f000, "cannot change 'H' variable")
         end
-        oldH = H -- when importing another 'sim' version, sim.getObject changes
-        H = sim.getObject
-        SEL = sim.getObjectSel()
+        H = _S.getObject
+        SEL = _S.getObjectSel()
         SEL1 = SEL[#SEL]
-        return oldH
     end
     local function pfunc(theStr)
         local setCv = sim.getStringProperty(sim.handle_app, 'namedParam.simCmd.setConvenienceVars', {noError = true})
-        local oldH = nil
-        if setCv ~= false then
-            oldH = setConvenienceVars()
-        end
+        if setCv ~= false then setConvenienceVars() end
 
         local func, err = load('return ' .. theStr)
         local rr = true
@@ -537,9 +556,7 @@ function _evalExec(inputStr)
             addLog(420 | 0x0f000, err)
         end
 
-        if setCv ~= false then
-            setConvenienceVars(oldH)
-        end
+        if setCv ~= false then setConvenienceVars() end
     end
     pcall(pfunc, inputStr)
 end
