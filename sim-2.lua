@@ -422,7 +422,7 @@ function locals.schedulerCallback()
 
     fn(sim.app.systemTime, locals.scheduler.rtpq)
     if sim.getSimulationState() == sim.simulation_advancing_running then
-        fn(sim.getSimulationTime(), locals.scheduler.simpq)
+        fn(sim.scene.simulationTime, locals.scheduler.simpq)
     end
 
     if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
@@ -434,10 +434,20 @@ function locals.schedulerCallback()
 end
 
 function sim.scheduleExecution(func, args, timePoint, simTime)
-    return locals.scheduleExecution(-1, '', timePoint - sim.app.systemTime, simTime, func, table.unpack(args))
+    if simTime then
+        timePoint = timePoint - sim.scene.simulationTime
+    else
+        timePoint = timePoint - sim.app.systemTime
+    end
+    return locals.scheduleExecution(-1, '', timePoint, simTime, func, table.unpack(args))
 end
 function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
-    local timePoint = sim.app.systemTime + delay
+    local timePoint
+    if simTime then
+        timePoint = delay + sim.scene.simulationTime
+    else
+        timePoint = delay + sim.app.systemTime
+    end
     if not locals.scheduler then
         local priorityqueue = require 'priorityqueue'
         locals.scheduler = {
@@ -740,16 +750,18 @@ function sim.getPathLengths(...)
     return distancesAlongPath, totDist
 end
 
-function sim.changeEntityColor(...)
-    local entityHandle, color, colorComponent = checkargs({
-        {type = 'int'},
+function sim.changeEntityColor(target, ...)
+    return locals.changeColor(target, '', ...)
+end
+function locals.changeColor(target, methodName, ...)
+    local color, colorComponent = checkargs({
         {type = 'table', size = 3, item_type = 'float'},
         {type = 'int', default = sim.colorcomponent_ambient_diffuse},
     }, ...)
     local colorData = {}
-    local objs = {entityHandle}
-    if sim.isHandle(entityHandle, sim.objecttype_collection) then
-        objs = sim.getCollectionObjects(entityHandle)
+    local objs = {target}
+    if sim.isHandle(target, sim.objecttype_collection) then
+        objs = sim.getCollectionObjects(target)
     end
     for i = 1, #objs, 1 do
         if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
@@ -765,6 +777,9 @@ function sim.changeEntityColor(...)
 end
 
 function sim.restoreEntityColor(...)
+    locals.restoreColor(-1, '', ...)
+end
+function locals.restoreColor(target, methodName, ...)
     local colorData = checkargs({{type = 'table'}, size = '1..*'}, ...)
     for i = 1, #colorData, 1 do
         if sim.isHandle(colorData[i].handle, sim.objecttype_sceneobject) then
@@ -774,119 +789,36 @@ function sim.restoreEntityColor(...)
 end
 
 function sim.wait(...)
+    locals.wait(-1, '', ...)
+end
+function locals.wait(target, methodName, ...)
     local dt, simTime = checkargs({{type = 'float'}, {type = 'bool', default = true}}, ...)
 
-    local retVal = 0
     if simTime then
-        local st = sim.getSimulationTime()
-        while sim.getSimulationTime() - st < dt do sim.step() end
-        retVal = sim.getSimulationTime() - st - dt
+        local st = sim.app.simulationTime
+        while sim.app.simulationTime - st < dt do sim.self:step() end
     else
         local st = sim.app.systemTime
-        while sim.app.systemTime - st < dt do sim.step() end
+        while sim.app.systemTime - st < dt do sim.self:step() end
     end
-    return retVal
 end
 
-function sim.waitForSignal(target, sigName)
-    local retVal
-    if (type(target) == 'number') or sim.Object:isobject(target) then
-        if not sim.Object:isobject(target) then
-            target = sim.Object(target)
+function sim.waitForSignal(item, sigName)
+    locals.waitForSignal(-1, '', sigName, item)
+end
+function locals.waitForSignal(target, methodName, sigName, item)
+    item = item or sim.app
+    if (type(item) == 'number') or sim.Object:isobject(item) then
+        if not sim.Object:isobject(item) then
+            item = sim.Object(item)
         end
         -- Signals via properties
         while true do
-            retVal = target:getProperty('signal.' .. sigName, {noError = true})
+            item:getProperty('signal.' .. sigName, {noError = true})
             if retVal then break end
-            sim.step()
+            sim.self:step()
         end
     end
-    return retVal
-end
-
-function sim.serialRead(...)
-    local portHandle, length, blocking, closingStr, timeout = checkargs({
-        {type = 'int'},
-        {type = 'int'},
-        {type = 'bool', default = false},
-        {type = 'string', default = ''},
-        {type = 'float', default = 0},
-    }, ...)
-
-    local retVal
-    if blocking then
-        local st = sim.app.systemTime
-        while true do
-            local data = _S.serialPortData[portHandle]
-            _S.serialPortData[portHandle] = ''
-            if #data < length then
-                local d = sim._serialRead(portHandle, length - #data)
-                if d then data = data .. d end
-            end
-            if #data >= length then
-                retVal = string.sub(data, 1, length)
-                if #data > length then
-                    data = string.sub(data, length + 1)
-                    _S.serialPortData[portHandle] = data
-                end
-                break
-            end
-            if closingStr ~= '' then
-                local s, e = string.find(data, closingStr, 1, true)
-                if e then
-                    retVal = string.sub(data, 1, e)
-                    if #data > e then
-                        data = string.sub(data, e + 1)
-                        _S.serialPortData[portHandle] = data
-                    end
-                    break
-                end
-            end
-            if sim.app.systemTime - st >= timeout and timeout ~= 0 then
-                retVal = data
-                break
-            end
-            sim.step()
-            _S.serialPortData[portHandle] = data
-        end
-    else
-        local data = _S.serialPortData[portHandle]
-        _S.serialPortData[portHandle] = ''
-        if #data < length then
-            local d = sim._serialRead(portHandle, length - #data)
-            if d then data = data .. d end
-        end
-        if #data > length then
-            retVal = string.sub(data, 1, length)
-            data = string.sub(data, length + 1)
-            _S.serialPortData[portHandle] = data
-        else
-            retVal = data
-        end
-    end
-    return retVal
-end
-
-function sim.serialOpen(...)
-    local portString, baudRate = checkargs({{type = 'string'}, {type = 'int'}}, ...)
-
-    local retVal = sim._serialOpen(portString, baudRate)
-    if not _S.serialPortData then _S.serialPortData = {} end
-    _S.serialPortData[retVal] = ''
-    return retVal
-end
-
-function sim.serialClose(...)
-    local portHandle = checkargs({{type = 'int'}}, ...)
-
-    sim._serialClose(portHandle)
-    if _S.serialPortData then _S.serialPortData[portHandle] = nil end
-end
-
-function sim.setShapeBB(handle, size)
-    local s = sim.getShapeBB(handle)
-    for i = 1, 3, 1 do if math.abs(s[i]) > 0.00001 then s[i] = size[i] / s[i] end end
-    sim.scaleObject(handle, s[1], s[2], s[3], 0)
 end
 
 function locals.visitTree(target, methodName, ...)
