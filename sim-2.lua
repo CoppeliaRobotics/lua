@@ -1986,7 +1986,11 @@ function locals.getProperty(target, methodName, pname, opts)
         assert(ptype, 'no such property: ' .. pname)
     end
     if ptype then
-        retVal = sim.callMethod(target, locals.getPropertyGetterName(-1, '', ptype), pname)
+        assert(ptype ~= sim.propertytype_method, 'cannot read property of type "method"')
+        local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
+        ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
+        local getterMethod = 'get' .. ptypeStr .. 'Property'
+        retVal = sim.callMethod(target, getterMethod, pname)
     end
     return retVal
 end
@@ -1994,18 +1998,27 @@ end
 function sim.setProperty(t, ...)
     return locals.setProperty(t, '', ...)
 end
-function locals.setProperty(target, methodName, pname, pvalue, ptype)
+function locals.setProperty(target, methodName, pname, pvalue, opts)
+    if type(opts) == 'number' or type(opts) == 'string' then
+        sim.app:logWarn('passing a ' .. type(opts) .. ' as the last argument of setProperty: assuming {type = ...}')
+        -- backward compatibility fix: last arg was ptype
+        opts = {type = opts}
+    end
+    local ptype = opts and opts.type
+    if type(ptype) == 'string' then
+        -- if ptype is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
+        ptype = sim['propertytype_' .. ptype]
+        assert(ptype, 'invalid property type string')
+    end
+    assert(math.type(ptype) == 'integer', 'invalid type for option "type"')
+
     if not sim.Object:isobject(target) then
         target = sim.Object(target)
     end
-    if string.startswith(pname, 'customData.') then
-        -- custom data properties need type (param `ptype`, can be string
-        -- e.g.: 'intvector', or can be int, e.g.: sim.propertytype_intvector)
+
+    if string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.') then
+        -- custom data properties need type
         -- if not specified, it will be inferred from lua's variable type
-        if type(ptype) == 'string' then
-            ptype = sim['propertytype_' .. ptype]
-            assert(ptype, 'invalid property type string')
-        end
         if ptype == nil then
             -- ptype not provided -> guess it
             local ltype = type(pvalue)
@@ -2047,28 +2060,15 @@ function locals.setProperty(target, methodName, pname, pvalue, ptype)
                 error('unsupported property type: ' .. ltype)
             end
         end
-    else
-        assert(ptype == nil, 'cannot specify type for static properties')
+    elseif ptype == nil then
         ptype = target:getPropertyInfo(pname)
         assert(ptype ~= nil, 'no such property: ' .. pname)
     end
-    return sim.callMethod(target, locals.getPropertySetterName(-1, '', ptype), pname, pvalue)
-end
-
-function locals.getPropertyGetterName(target, methodName, ptype)
-    if ptype == sim.propertytype_method then return function() end end
+    assert(ptype ~= sim.propertytype_method, 'cannot write property of type "method"')
     local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
-    local n = 'get' .. ptypeStr .. 'Property'
-    return n
-end
-
-function locals.getPropertySetterName(target, methodName, ptype)
-    if ptype == sim.propertytype_method then return function() end end
-    local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
-    ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
-    local n = 'set' .. ptypeStr .. 'Property'
-    return n
+    local setterMethod = 'set' .. ptypeStr .. 'Property'
+    return sim.callMethod(target, setterMethod, pname, pvalue)
 end
 
 function sim.convertPropertyValue(...)
