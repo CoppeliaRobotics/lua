@@ -39,6 +39,8 @@ function PropertyGroup:__index(k)
 end
 
 function PropertyGroup:__newindex(k, v)
+    assert(type(k) == 'string', 'invalid key type')
+
     if k:startswith '__' then
         rawset(self, k, v)
         return
