@@ -17,19 +17,6 @@ end
 
 local apidoc = {}
 
-function apidoc.path(filename)
-    local lfsx = require 'lfsx'
-    return lfsx.pathjoin(sim.app.resourcePath, 'manual', 'apiDoc', filename)
-end
-
-function apidoc.xmltree(filename)
-    local objxmlfile = io.open(apidoc.path(filename), 'r')
-    assert(objxmlfile)
-    local objxml = objxmlfile:read '*a'
-    objxmlfile:close()
-    return xml.parse(objxml)
-end
-
 apidoc.ParamInfo = class 'sim.apidoc.ParamInfo'
 
 function apidoc.ParamInfo:initialize(methodInfo, node, acceptsDefaults)
@@ -182,39 +169,6 @@ function apidoc.ClassInfo:getMethod(methodName)
     end
 end
 
-apidoc.ClassesInfo = class 'sim.apidoc.ClassesInfo'
-
-function apidoc.ClassesInfo:initialize()
-    self.classes = {}
-    for _, node in ipairs(apidoc.xmltree 'objects.xml') do
-        if node.tag == 'object-class' then
-            local info = apidoc.ClassInfo(self, node)
-            self.classes[info.className] = info
-        end
-    end
-end
-
-function apidoc.ClassesInfo:getClass(className)
-    return self.classes[className]
-end
-
-function apidoc.ClassesInfo:getMethod(className, methodName)
-    local c = self:getClass(className)
-    if c then return c:getMethod(methodName) end
-end
-
-apidoc.FunctionsInfo = class 'sim.apidoc.FunctionsInfo'
-
-function apidoc.FunctionsInfo:initialize()
-    self.functions = {}
-    for _, node in ipairs(apidoc.xmltree 'functions.xml') do
-        if node.tag == 'function' then
-            local info = apidoc.MethodInfo(nil, node, 'function')
-            self.functions[info.name] = info
-        end
-    end
-end
-
 apidoc.EnumItemInfo = class 'sim.apidoc.EnumItemInfo'
 
 function apidoc.EnumItemInfo:initialize(node, value)
@@ -242,9 +196,35 @@ function apidoc.EnumInfo:initialize(node)
     end
 end
 
-apidoc.EnumsInfo = class 'sim.apidoc.EnumsInfo'
+apidoc.APIDoc = class 'sim.apidoc.APIDoc'
 
-function apidoc.EnumsInfo:initialize()
+function apidoc.APIDoc:initialize()
+    local function xmltree(filename)
+        local lfsx = require 'lfsx'
+        local filepath = lfsx.pathjoin(sim.app.resourcePath, 'manual', 'apiDoc', filename)
+        local objxmlfile = io.open(filepath, 'r')
+        assert(objxmlfile)
+        local objxml = objxmlfile:read '*a'
+        objxmlfile:close()
+        return xml.parse(objxml)
+    end
+
+    self.classes = {}
+    for _, node in ipairs(xmltree 'objects.xml') do
+        if node.tag == 'object-class' then
+            local info = apidoc.ClassInfo(self, node)
+            self.classes[info.className] = info
+        end
+    end
+
+    self.functions = {}
+    for _, node in ipairs(xmltree 'functions.xml') do
+        if node.tag == 'function' then
+            local info = apidoc.MethodInfo(nil, node, 'function')
+            self.functions[info.name] = info
+        end
+    end
+
     self.enums = {}
     for _, node in ipairs(apidoc.xmltree 'enums.xml') do
         if node.tag == 'enum' then
@@ -252,6 +232,15 @@ function apidoc.EnumsInfo:initialize()
             self.enums[info.name] = info
         end
     end
+end
+
+function apidoc.APIDoc:getClass(className)
+    return self.classes[className]
+end
+
+function apidoc.APIDoc:getMethod(className, methodName)
+    local c = self:getClass(className)
+    if c then return c:getMethod(methodName) end
 end
 
 return apidoc
