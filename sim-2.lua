@@ -2010,7 +2010,7 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
         ptype = sim['propertytype_' .. ptype]
         assert(ptype, 'invalid property type string')
     end
-    assert(math.type(ptype) == 'integer', 'invalid type for option "type"')
+    assert(ptype == nil or math.type(ptype) == 'integer', 'invalid type for option "type"')
 
     if not sim.Object:isobject(target) then
         target = sim.Object(target)
