@@ -2004,6 +2004,7 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
         -- backward compatibility fix: last arg was ptype
         opts = {type = opts}
     end
+    local noError = opts and opts.noError
     local ptype = opts and opts.type
     if type(ptype) == 'string' then
         -- if ptype is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
@@ -2062,7 +2063,9 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
         end
     elseif ptype == nil then
         ptype = target:getPropertyInfo(pname)
-        assert(ptype ~= nil, 'no such property: ' .. pname)
+        if ptype == nil then
+            if noError then return else error('no such property: ' .. pname) end
+        end
     end
     assert(ptype ~= sim.propertytype_method, 'cannot write property of type "method"')
     local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
