@@ -8,17 +8,7 @@ function PropertyGroup:initialize(object, opts)
     self.__opts = table.clone(opts or {})
     self.__localProperties = {}
     if self.__opts.newPropertyForcedType then
-        -- resolve constant value (i.e. 'sim.foo' -> sim.foo)
-        local s = self.__opts.newPropertyForcedType
-        if type(s) == 'string' then
-            print('warning: passed value of "newPropertyForcedType" (objectMetaInfo -> namespaces) as string. use int value!')
-            if s == 'sim.propertytype_handlearray' then s = 22
-            elseif s == 'sim.propertytype_handle' then s = 21
-            else error('unsupported value: ' .. s)
-            end
-        end
-        assert(math.type(s) == 'integer', 'invalid type for option "newPropertyForcedType": ' .. s)
-        self.__opts.newPropertyForcedType = s
+        assert(math.type(self.__opts.newPropertyForcedType) == 'integer', 'invalid type for option "newPropertyForcedType"')
     end
 end
 
