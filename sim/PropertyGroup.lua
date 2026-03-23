@@ -53,9 +53,8 @@ function PropertyGroup:__newindex(k, v)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    local ptype = self.__opts.newPropertyForcedType or object:getPropertyInfo(k)
-    if ptype then
-        object:setProperty(k, v, ptype)
+    if self.__opts.newPropertyForcedType then
+        object:setProperty(k, v, self.__opts.newPropertyForcedType)
     else
         object:setProperty(k, v)
     end
