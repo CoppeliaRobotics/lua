@@ -215,4 +215,43 @@ function apidoc.FunctionsInfo:initialize()
     end
 end
 
+apidoc.EnumItemInfo = class 'sim.apidoc.EnumItemInfo'
+
+function apidoc.EnumItemInfo:initialize(node, value)
+    assert(node.tag == 'item', 'invalid node tag')
+    assert(node.attr.name, 'missing "name" attribute')
+    self.name = node.attr.name
+    self.value = node.attr.value or value
+end
+
+apidoc.EnumInfo = class 'sim.apidoc.EnumInfo'
+
+function apidoc.EnumInfo:initialize(node)
+    assert(node.tag == 'enum', 'invalid node tag')
+    assert(node.attr.name, 'missing "name" attribute')
+    self.name = node.attr.name
+    self.label = node.attr.label
+    self.items = {}
+    local v = 0
+    for _, subNode in ipairs(node) do
+        if subNode.tag == 'item' then
+            local info = apidoc.EnumItemInfo(subNode, v)
+            v = info.value + 1
+            self.items[info.name] = info
+        end
+    end
+end
+
+apidoc.EnumsInfo = class 'sim.apidoc.EnumsInfo'
+
+function apidoc.EnumsInfo:initialize()
+    self.enums = {}
+    for _, node in ipairs(apidoc.xmltree 'enums.xml') do
+        if node.tag == 'enum' then
+            local info = apidoc.EnumInfo(node, 'enum')
+            self.enums[info.name] = info
+        end
+    end
+end
+
 return apidoc
