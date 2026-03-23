@@ -226,7 +226,7 @@ function apidoc.APIDoc:initialize()
     end
 
     self.enums = {}
-    for _, node in ipairs(apidoc.xmltree 'enums.xml') do
+    for _, node in ipairs(xmltree 'enums.xml') do
         if node.tag == 'enum' then
             local info = apidoc.EnumInfo(node, 'enum')
             self.enums[info.name] = info
