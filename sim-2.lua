@@ -1990,7 +1990,7 @@ function locals.getProperty(target, methodName, pname, opts)
         local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
         ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
         local getterMethod = 'get' .. ptypeStr .. 'Property'
-        retVal = sim.callMethod(target, getterMethod, pname)
+        retVal = sim.callMethod(target, getterMethod, pname, opts)
     end
     return retVal
 end
@@ -2068,7 +2068,7 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
     local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
     local setterMethod = 'set' .. ptypeStr .. 'Property'
-    return sim.callMethod(target, setterMethod, pname, pvalue)
+    return sim.callMethod(target, setterMethod, pname, pvalue, opts)
 end
 
 function sim.convertPropertyValue(...)
