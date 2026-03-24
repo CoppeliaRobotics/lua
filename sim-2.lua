@@ -1307,9 +1307,9 @@ function locals.setAppearance(target, methodName, savedData)
 end
 
 function sim.openFile(file)
-    _locals.openFile(-1, '', file)
+    locals.openFile(-1, '', file)
 end
-function _locals.openFile(target, methodName, file)
+function locals.openFile(target, methodName, file)
     local simSubprocess = require 'simSubprocess'
     if sim.app.platform == 0 then
         -- windows
