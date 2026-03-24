@@ -1815,7 +1815,7 @@ function locals.getPropertyInfos(target, methodName, pname, opts)
 end
 
 function locals.getTableProperty(target, methodName, ...)
-    local tagName, options = checkargs({
+    local tagName, options = checkargs.checkargsEx({nilGetsDefault=true}, {
         {type = 'string'},
         {type = 'table', default = {}},
     }, ...)
@@ -1834,7 +1834,7 @@ function locals.getTableProperty(target, methodName, ...)
 end
 
 function locals.setTableProperty(target, methodName, ...)
-    local tagName, theTable, options = checkargs({
+    local tagName, theTable, options = checkargs.checkargsEx({nilGetsDefault=true}, {
         {type = 'string'},
         {type = 'table'},
         {type = 'table', default = {}},
