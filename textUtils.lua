@@ -1,7 +1,7 @@
 local textUtils = {}
 local sim = require 'sim'
 
-function textUtils.generateTextShape(txt, color, height, centered, alphabetModel, parentDummy)
+function textUtils.generateTextShape(txt, color, height, centered, alphabetModel, parentDummy, shapeOnly)
     height = height or 0.1
     color = color or {1, 1, 1}
     alphabetModel = alphabetModel or sim.getStringParam(sim.stringparam_systemdir) .. "/alphabet.ttm"
@@ -76,23 +76,29 @@ function textUtils.generateTextShape(txt, color, height, centered, alphabetModel
         sim.scaleObjects({s}, scaling, true)
         sim.setShapeColor(s, nil, sim.colorcomponent_ambient_diffuse, color)
     end
-    if parentDummy == nil then
-        retVal = sim.createDummy(0.005)
+    local retVal
+    if shapeOnly then
+        retVal = s
     else
-        while true do
-            local c = sim.getObjectChild(parentDummy, 0)
-            if c == -1 then break end
-            sim.removeObjects({c})
+        if parentDummy == nil then
+            retVal = sim.createDummy(0.005)
+        else
+            while true do
+                local c = sim.getObjectChild(parentDummy, 0)
+                if c == -1 then break end
+                sim.removeObjects({c})
+            end
+            retVal = parentDummy
         end
-        retVal = parentDummy
-    end
-    if #shapes > 0 then sim.setObjectParent(s, retVal, false) end
-    sim.setModelProperty(retVal, 0)
-    sim.setObjectProperty(retVal, sim.objectproperty_selectable | sim.objectproperty_collapsed)
-    sim.setObjectInt32Param(retVal, sim.objintparam_visibility_layer, 1024)
+        -- if #shapes > 0 then sim.setObjectParent(s, retVal, false) end
+        sim.setObjectParent(s, retVal, false)
+        sim.setModelProperty(retVal, 0)
+        sim.setObjectProperty(retVal, sim.objectproperty_selectable | sim.objectproperty_collapsed)
+        sim.setObjectInt32Param(retVal, sim.objintparam_visibility_layer, 1024)
+        sim.setObjectSelection({retVal})
+    end    
     if #txt == 0 then txt = "txt" end
     sim.setObjectAlias(retVal, txt)
-    sim.setObjectSelection({retVal})
     return retVal
 end
 

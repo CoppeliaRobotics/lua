@@ -270,88 +270,9 @@ sim.auxiliaryConsoleShow = wrap(sim.auxiliaryConsoleShow, function(origFunc)
     end
 end)
 
-function sim.getObjectAliasRelative(handle, baseHandle, aliasOptions, options)
-    if handle == baseHandle then return '.' end
-
-    aliasOptions = aliasOptions or -1
-    options = options or {}
-
-    local function getPath(h, parent)
-        parent = parent or -1
-        local tmp = h
-        local path = {}
-        while tmp ~= parent do
-            if tmp == -1 then return end
-            table.insert(path, 1, tmp)
-            tmp = sim.getObjectParent(tmp)
-        end
-        return path
-    end
-
-    local path = getPath(handle)
-    local basePath = getPath(baseHandle)
-
-    local commonAncestor = -1
-    local commonAncestorModel = -1
-    for i = 1, math.min(#path, #basePath) do
-        if path[i] == basePath[i] then
-            commonAncestor = path[i]
-            if sim.getBoolProperty(path[i], 'modelBase') then
-                commonAncestorModel = path[i]
-            end
-        else
-            break
-        end
-    end
-
-    local function isAncestor(a, h)
-        -- true iff. h is a (grand-)child of a
-        if a == h then return true end
-        local tmp = h
-        while tmp ~= -1 do
-            tmp = sim.getObjectParent(tmp)
-            if tmp == a then return true end
-        end
-        return false
-    end
-
-    if commonAncestor == -1 then
-        return sim.getObjectAlias(handle, aliasOptions)
-    elseif commonAncestor == baseHandle then
-        -- simple case: handle is a (grand-)child of baseHandle
-        local p = getPath(handle, baseHandle)
-        p = filter(
-                function(h)
-                return sim.getBoolProperty(h, 'modelBase') or h == p[#p]
-            end, p
-            )
-        return (options.noDot and '' or './') .. table.join(map(sim.getObjectAlias, p), '/')
-    elseif commonAncestor == handle then
-        -- reverse case: go upwards in the hierarchy
-        for col = 1, 0, -1 do
-            for up = 0, 30 do
-                for colcol = 0, 30 do
-                    local p = {}
-                    for _ = 1, col do table.insert(p, ':') end
-                    for _ = 1, colcol do table.insert(p, '::') end
-                    for _ = 1, up do table.insert(p, '..') end
-                    p = table.join(p, '/')
-                    if sim.getObject(p, {proxy = baseHandle, noError = true}) == handle then
-                        return p
-                    end
-                end
-            end
-        end
-    else
-        local p_bh_cam = sim.getObjectAliasRelative(commonAncestorModel, baseHandle, aliasOptions)
-        local p_cam_h = sim.getObjectAliasRelative(handle, commonAncestorModel, aliasOptions, {noDot = true} )
-        if commonAncestorModel ~= -1 and p_bh_cam and p_cam_h then
-            return p_bh_cam .. '/' .. p_cam_h
-        end
-        local p_bh_ca = sim.getObjectAliasRelative(commonAncestor, baseHandle, aliasOptions)
-        local p_ca_h = sim.getObjectAliasRelative(handle, commonAncestor, aliasOptions, {noDot = true} )
-        if p_bh_ca and p_ca_h then return p_bh_ca .. '/' .. p_ca_h end
-    end
+function sim.getObjectAliasRelative(...)
+    local sim1 = require('sim-1')
+    return sim1.getObjectAliasRelative(...)
 end
 
 function sim.fastIdleLoop(enable)
@@ -499,255 +420,28 @@ function locals.cancelScheduledExecution(target, methodName, id)
 end
 
 function sim.closePath(...)
-    local path, times = checkargs({
-        {type = 'table', item_type = 'float', size = '2..*'},
-        {type = 'table', item_type = 'float', size = '2..*'},
-    }, ...)
-
-    local confCnt = #times
-    local dof = #path // confCnt
-
-    local firstCp = table.slice(path, 1, dof)
-    local lastCp = table.slice(path, #path - dof + 1, #path)
-    path = table.add(path, firstCp)
-    local nl = sim.getPathLengths(table.add(lastCp, firstCp), dof)
-    times = table.add(times, {times[#times] + nl[2]})
-    confCnt = confCnt + 1
-    return path, times
+    local sim1 = require('sim-1')
+    return sim1.closePath(...)
 end
 
 function sim.getPathInterpolatedConfig(...)
-    local path, times, t, method, types = checkargs({
-        {type = 'table', item_type = 'float', size = '2..*'},
-        {type = 'table', item_type = 'float', size = '2..*'},
-        {type = 'float'},
-        {type = 'table', default = {type = 'linear', strength = 1.0, forceOpen = false}, nullable = true},
-        {type = 'table', item_type = 'int', size = '1..*', default_nil = true, nullable = true},
-    }, ...)
-
-    method = method or {}
-    local pathType = method.type or 'linear'
-    local forceOpen = method.forceOpen == true
-    local closed = method.closed == true
-    local strength = method.strength or 1.
-
-    -- "forceOpen" can be set if not passing "closed", otherwise it's opposite value
-    if method.closed ~= nil then
-        forceOpen = not closed
-    end
-
-    if closed then
-        path, times = sim.closePath(path, times)
-    end
-
-    local confCnt = #times
-    local dof = #path // confCnt
-
-    if (dof * confCnt ~= #path) or (types and dof ~= #types) then error("Bad table size.") end
-
-    if types == nil then
-        types = {}
-        for i = 1, dof, 1 do types[i] = 0 end
-    end
-    local retVal = {}
-    local li = 1
-    local hi = 2
-    if t < 0 then t = 0 end
-    --    if confCnt>2 then
-    if t >= times[#times] then t = times[#times] - 0.00000001 end
-    local ll, hl
-    for i = 2, #times, 1 do
-        li = i - 1
-        hi = i
-        ll = times[li]
-        hl = times[hi]
-        if hl > t then -- >= gives problems with overlapping points
-            break
-        end
-    end
-    t = (t - ll) / (hl - ll)
-    --    else
-    --        if t>1 then t=1 end
-    --    end
-    closed = true -- if path is closed is determined a few lines below
-    if pathType == 'quadraticBezier' then
-        local w = math.max(0.05, strength)
-        for i = 1, dof, 1 do
-            if (path[i] ~= path[(confCnt - 1) * dof + i]) then
-                closed = false
-                break
-            end
-        end
-        if forceOpen then closed = false end
-        local i0, i1, i2
-        if t < 0.5 then
-            if li == 1 and not closed then
-                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-            else
-                if t < 0.5 * w then
-                    i0 = li - 1
-                    i1 = li
-                    i2 = hi
-                    if li == 1 then i0 = confCnt - 1 end
-                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.25 * w + t * 0.5, types)
-                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), 0.25 * w + t * 0.5, types)
-                    retVal = locals.linearInterpolate(a, b, 0.5 + t / w, types)
-                else
-                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-                end
-            end
-        else
-            if hi == confCnt and not closed then
-                retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-            else
-                if t > (1 - 0.5 * w) then
-                    i0 = li
-                    i1 = hi
-                    i2 = hi + 1
-                    if hi == confCnt then i2 = 2 end
-                    t = t - (1 - 0.5 * w)
-                    local a = locals.linearInterpolate(locals.getConfig(path, dof, i0), locals.getConfig(path, dof, i1), 1 - 0.5 * w + t * 0.5, types)
-                    local b = locals.linearInterpolate(locals.getConfig(path, dof, i1), locals.getConfig(path, dof, i2), t * 0.5, types)
-                    retVal = locals.linearInterpolate(a, b, t / w, types)
-                else
-                    retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-                end
-            end
-        end
-    elseif pathType == 'linear' then
-        retVal = locals.linearInterpolate(locals.getConfig(path, dof, li), locals.getConfig(path, dof, hi), t, types)
-    end
-    return retVal
-end
-
-function sim.createCollection(arg)
-    return sim.createCollectionEx(arg or 0)
+    local sim1 = require('sim-1')
+    return sim1.getPathInterpolatedConfig(...)
 end
 
 function sim.resamplePath(...)
-    local path, pathLengths, finalConfigCnt, method, types = checkargs({
-        {type = 'table', item_type = 'float', size = '2..*'},
-        {type = 'table', item_type = 'float', size = '2..*'},
-        {type = 'int'},
-        {type = 'table', default = {type = 'linear', strength = 1.0, forceOpen = false}},
-        {type = 'table', item_type = 'int', size = '1..*', default_nil = true, nullable = true},
-    }, ...)
-
-    method = table.deepcopy(method) or {}
-    local closed = method.closed == true
-
-    local confCnt = #pathLengths
-    local dof = math.floor(#path / confCnt)
-
-    if dof * confCnt ~= #path or (confCnt < 2) or (types and dof ~= #types) then
-        error("Bad table size.")
-    end
-
-    if closed then
-        confCnt = confCnt + 1
-        path, pathLengths = sim.closePath(path, pathLengths)
-        method.closed = nil
-        method.forceOpen = false
-    end
-
-    local retVal = {}
-    for i = 1, finalConfigCnt, 1 do
-        local c = sim.getPathInterpolatedConfig(
-                      path, pathLengths, pathLengths[#pathLengths] * (i - 1) / (finalConfigCnt - 1),
-                      method, types
-                  )
-        for j = 1, dof, 1 do retVal[(i - 1) * dof + j] = c[j] end
-    end
-    return retVal
+    local sim1 = require('sim-1')
+    return sim1.resamplePath(...)
 end
 
 function sim.getConfigDistance(...)
-    local confA, confB, metric, types = checkargs({
-        {type = 'table', item_type = 'float', size = '1..*'},
-        {type = 'table', item_type = 'float', size = '1..*'},
-        {type = 'table', item_type = 'float', default_nil = true, nullable = true},
-        {type = 'table', item_type = 'int', default_nil = true, nullable = true},
-    }, ...)
-
-    if (#confA ~= #confB) or (metric and #confA ~= #metric) or (types and #confA ~= #types) then
-        error("Bad table size.")
-    end
-    return locals.getConfigDistance(confA, confB, metric, types)
-end
-
-function locals.getConfigDistance(confA, confB, metric, types)
-    if metric == nil then
-        metric = {}
-        for i = 1, #confA, 1 do metric[i] = 1 end
-    end
-    if types == nil then
-        types = {}
-        for i = 1, #confA, 1 do types[i] = 0 end
-    end
-
-    local d = 0
-    local qcnt = 0
-    for j = 1, #confA, 1 do
-        local dd = 0
-        if types[j] == 0 then
-            dd = (confB[j] - confA[j]) * metric[j] -- e.g. joint with limits
-        end
-        if types[j] == 1 then
-            local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
-            local v = confA[j] + dx
-            dd = math.atan2(math.sin(v), math.cos(v)) * metric[j] -- cyclic rev. joint (-pi;pi)
-        end
-        if types[j] == 2 then
-            qcnt = qcnt + 1
-            if qcnt == 4 then
-                qcnt = 0
-                local q1 = simEigen.Quaternion({confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
-                local q2 = simEigen.Quaternion({confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
-                local a, angle = q1:axisangle(q2)
-                dd = angle * metric[j - 3]
-            end
-        end
-        d = d + dd * dd
-    end
-    return math.sqrt(d)
+    local sim1 = require('sim-1')
+    return sim1.getConfigDistance(...)
 end
 
 function sim.getPathLengths(...)
-    local simEigen = require('simEigen')
-    local path, dof, cb = checkargs({
-        {type = 'table', item_type = 'float', size = '2..*'}, {type = 'int'},
-        {type = 'any', default_nil = true, nullable = true},
-    }, ...)
-    local confCnt = math.floor(#path / dof)
-    if dof < 1 or (confCnt < 2) then error("Bad table size.") end
-    local distancesAlongPath = {0}
-    local totDist = 0
-    local pM = simEigen.Matrix(confCnt, dof, path)
-    local metric = {}
-    local tt = {}
-    for i = 1, dof, 1 do
-        if i > 3 then
-            metric[#metric + 1] = 0.0
-        else
-            metric[#metric + 1] = 1.0
-        end
-        tt[#tt + 1] = 0
-    end
-    for i = 1, pM:rows() - 1, 1 do
-        local d
-        if cb then
-            if type(cb) == 'string' then
-                d = _G[cb](pM:row(i):data(), pM:row(i + 1):data(), dof)
-            else
-                d = cb(pM:row(i):data(), pM:row(i + 1):data(), dof)
-            end
-        else
-            d = sim.getConfigDistance(pM:row(i):data(), pM:row(i + 1):data(), metric, tt)
-        end
-        totDist = totDist + d
-        distancesAlongPath[i + 1] = totDist
-    end
-    return distancesAlongPath, totDist
+    local sim1 = require('sim-1')
+    return sim1.getPathLengths(...)
 end
 
 function sim.changeEntityColor(target, color, comp)
@@ -829,6 +523,9 @@ function locals.waitForSignal(target, methodName, sigName, item)
 end
 
 function locals.visitTree(target, methodName, ...)
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
     local visitorFunc, objTypes, objTypesMap = ...
     if #methodName > 0 then
         -- Do not verify again with reentrance
@@ -888,7 +585,7 @@ function locals.createObject(target, methodName, initialProperties)
         if extractValueOrDefault('override') then
             opts = 1
         end
-        h = sim.Object(sim.createCollection(opts))
+        h = sim.Object(sim.createCollectionEx(opts))
     elseif objectType == 'detachedScript' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'scriptType', type = 'int', default = sim.scripttype_addon},
@@ -945,9 +642,6 @@ function locals.createObject(target, methodName, initialProperties)
             {name = 'duplicateTolerance', type = 'float', default = 0.0},
             {name = 'itemCnt', type = 'int', default = 0},
         }, p)
-        
-         
-        
         local itemType = extractValueOrDefault('itemType')
         local options = 0
         if extractValueOrDefault('cyclic') then
@@ -1212,9 +906,9 @@ end]]
             {name = 'cylinder', type = 'table', nullable = true},
             {name = 'cone', type = 'table', nullable = true},
             {name = 'capsule', type = 'table', nullable = true},
+            {name = 'text', type = 'table', nullable = true},
             {name = 'shadingAngle', type = 'float', default = 0.0},
             {name = 'culling', type = 'bool', default = false},
---            {name = 'rawMesh', type = 'bool', default = false},
             {name = 'dynamic', type = 'bool', default = false},
             {name = 'showEdges', type = 'bool', default = false},
             {name = 'color.diffuse', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
@@ -1310,6 +1004,21 @@ end]]
             local cellSize = extractValueOrDefault('cellSize', nil, p.heightField)
             h = sim.Object(sim.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data()))
             p.heightField = nil
+        elseif p.string then
+            checkargs.checkfields({funcName = methodName .. ' (text field)'}, {
+                {name = 'text', type = 'string', default = 'Hello'},
+                {name = 'height', type = 'float', default = 0.5},
+                {name = 'center', type = 'bool', default = true},
+            }, p.string)
+            local text = extractValueOrDefault('text', nil, p.string)
+            local height = extractValueOrDefault('height', nil, p.string)
+            local center = extractValueOrDefault('center', nil, p.string)
+            local culling = extractValueOrDefault('culling')
+            extractValueOrDefault('shadingAngle')
+            local textUtils = require('textUtils')
+            h = sim.Object(textUtils.generateTextShape(text, nil, height, center, nil, nil, true))
+            h.applyCulling = culling
+            p.string = nil
         else
             local pt, size, open
             local ff
