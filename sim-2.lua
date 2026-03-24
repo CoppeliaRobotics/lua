@@ -1186,18 +1186,6 @@ end]]
     return h
 end
 
-function sim.generateTextShape(...)
-    local txt, color, height, centered, alphabetModel = checkargs({
-        {type = 'string'},
-        {type = 'table', item_type = 'float', size = 3, default_nil = true, nullable = true},
-        {type = 'float', default_nil = true, nullable = true},
-        {type = 'bool', default_nil = true, nullable = true},
-        {type = 'string', default_nil = true, nullable = true},
-    }, ...)
-    local textUtils = require('textUtils')
-    return textUtils.generateTextShape(txt, color, height, centered, alphabetModel)
-end
-
 function sim.getSimulationStopping()
     local s = sim.getSimulationState()
     return s == sim.simulation_stopped or s == sim.simulation_advancing_lastbeforestop
@@ -1318,18 +1306,20 @@ function locals.setAppearance(target, methodName, savedData)
     target.compoundColors.transparency = savedData.color.transparency
 end
 
-function sim.openFile(f)
-    local platform = sim.getIntProperty(sim.handle_app, 'platform')
+function sim.openFile(file)
+    _locals.openFile(-1, '', file)
+end
+function _locals.openFile(target, methodName, file)
     local simSubprocess = require 'simSubprocess'
-    if platform == 0 then
+    if sim.app.platform == 0 then
         -- windows
-        simSubprocess.exec('cmd', {'/c', 'start', '', f})
-    elseif platform == 1 then
+        simSubprocess.exec('cmd', {'/c', 'start', '', file})
+    elseif sim.app.platform == 1 then
         -- mac
-        simSubprocess.exec('open', {f})
-    elseif platform == 2 then
+        simSubprocess.exec('open', {file})
+    elseif sim.app.platform == 2 then
         -- linux
-        simSubprocess.exec('xdg-open', {f})
+        simSubprocess.exec('xdg-open', {file})
     else
         error('unknown platform: ' .. platform)
     end

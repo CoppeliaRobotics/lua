@@ -99,6 +99,8 @@ function textUtils.generateTextShape(txt, color, height, centered, alphabetModel
     end    
     if #txt == 0 then txt = "txt" end
     sim.setObjectAlias(retVal, txt)
+    sim.alignShapeBB(s, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})
+    sim.relocateShapeFrame(s, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})
     return retVal
 end
 
