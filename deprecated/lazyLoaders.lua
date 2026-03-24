@@ -1,4 +1,4 @@
-if _DEVMODE then addLog(430, 'loaded deprecated.lazyLoaders') end
+if _DEVMODE and false then addLog(430, 'loaded deprecated.lazyLoaders') end
 
 local __lazyLoadModules = {
     'sim', 'simIK', 'simUI', 'simGeom', 'simMujoco', 'simAssimp', 'simBubble', 'simCHAI3D',

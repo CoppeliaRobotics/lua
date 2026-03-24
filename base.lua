@@ -44,30 +44,6 @@ end
 
 pcall(require, 'devmode')
 
-if _DEVMODE then
-    -- DEBUG: print each time global variable "sim" is about to be wrote to:
-    local mt = getmetatable(_G) or {}
-    local old_newindex = mt.__newindex
-    mt.__newindex = function(tbl, key, value)
-        if key == 'sim' or key == 'simIK' or key == 'simUI' or key == 'simGeom' or key == 'simMujoco' or key == 'simAssimp' or key == 'simBubble' or key == 'simCHAI3D' or key == 'simMTB' or key == 'simOMPL' or key == 'simOpenMesh' or key == 'simQHull' or key == 'simRRS1' or key == 'simSDF' or key == 'simSubprocess' or key == 'simSurfRec' or key == 'simURDF' or key == 'simVision' or key == 'simWS' or key == 'simZMQ' or key == 'simIM' or key == 'simEigen' or key == 'simIGL' or key == 'simICP' or key == 'simROS' or key == 'simROS2' or key == 'simEvent' then
-            local info = debug.getinfo(2, "nSl")
-            local sloc = info.short_src .. ':' .. info.currentline
-            if info.name then sloc = info.name .. ' in ' .. sloc end
-            addLog(430, sloc .. ": write to global '" .. key .. "'!")
-        end
-        if old_newindex then
-            if type(old_newindex) == "function" then
-                return old_newindex(tbl, key, value)
-            else
-                rawset(old_newindex, key, value)
-                return
-            end
-        end
-        rawset(tbl, key, value)
-    end
-    setmetatable(_G, mt)
-end
-
 function wrap(originalFunction, wrapperFunctionGenerator)
     --[[
     e.g. a wrapper that print args before calling the original function:
@@ -648,4 +624,28 @@ registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 
 if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) then
     require 'deprecated.lazyLoaders'
+end
+
+if _DEVMODE then
+    -- DEBUG: print each time global variable "sim" is about to be wrote to:
+    local mt = getmetatable(_G) or {}
+    local old_newindex = mt.__newindex
+    mt.__newindex = function(tbl, key, value)
+        if key == 'sim' or key == 'simIK' or key == 'simUI' or key == 'simGeom' or key == 'simMujoco' or key == 'simAssimp' or key == 'simBubble' or key == 'simCHAI3D' or key == 'simMTB' or key == 'simOMPL' or key == 'simOpenMesh' or key == 'simQHull' or key == 'simRRS1' or key == 'simSDF' or key == 'simSubprocess' or key == 'simSurfRec' or key == 'simURDF' or key == 'simVision' or key == 'simWS' or key == 'simZMQ' or key == 'simIM' or key == 'simEigen' or key == 'simIGL' or key == 'simICP' or key == 'simROS' or key == 'simROS2' or key == 'simEvent' then
+            local info = debug.getinfo(2, "nSl")
+            local sloc = info.short_src .. ':' .. info.currentline
+            if info.name then sloc = info.name .. ' in ' .. sloc end
+            addLog(430, sloc .. ": write to global '" .. key .. "'!")
+        end
+        if old_newindex then
+            if type(old_newindex) == "function" then
+                return old_newindex(tbl, key, value)
+            else
+                rawset(old_newindex, key, value)
+                return
+            end
+        end
+        rawset(tbl, key, value)
+    end
+    setmetatable(_G, mt)
 end
