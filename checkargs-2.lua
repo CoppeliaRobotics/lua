@@ -240,7 +240,9 @@ function checkargs.checkargsEx(opts, types, ...)
     for i = 1, #types do
         local t = types[i]
         -- fill default value:
-        if arg.n < i and checkargs.getdefault(t) ~= nil then
+        if arg[i] == nil and opts.nilGetsDefault then
+            arg[i] = checkargs.getdefault(t)
+        elseif arg.n < i and checkargs.getdefault(t) ~= nil then
             if checkargs.getdefault(t) == checkargs.NIL then
                 arg[i] = nil
             else
