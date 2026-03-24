@@ -2,6 +2,7 @@ local class = require 'middleclass'
 local json = require 'dkjson'
 
 local objectMetaInfo = {} -- cache for objectMetaInfo, by objectType
+local objectMethods  = {} -- cache for object methods, by objectType
 
 local Object = class 'sim.Object'
 local PropertyGroup = require 'sim.PropertyGroup'
@@ -46,18 +47,20 @@ function Object:__setupPropertyGroups()
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
     end
 
-    local methods = {}
-    for i = 0, 1e9 do
-        local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
-        if not pname then break end
-        local ptype = self:callMethod('getPropertyInfo', pname)
-        if ptype == sim.propertytype_method then
-            methods[pname] = function(_, ...)
-                return self:callMethod(pname, ...)
+    if not objectMethods[objectType] then
+        objectMethods[objectType] = {}
+        for i = 0, 1e9 do
+            local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
+            if not pname then break end
+            local ptype = self:callMethod('getPropertyInfo', pname)
+            if ptype == sim.propertytype_method then
+                objectMethods[objectType][pname] = function(o, ...)
+                    return o:callMethod(pname, ...)
+                end
             end
         end
     end
-    rawset(self, '__methods', methods)
+    rawset(self, '__methods', objectMethods[objectType])
 end
 
 function Object:__index(k)
