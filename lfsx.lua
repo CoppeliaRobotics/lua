@@ -29,6 +29,7 @@ end
 
 -- Returns the directory part and the file part, similar to Python's os.path.split
 function lfs.pathsplit(p)
+    p = lfs.pathsanitize(p)
     local sep = lfs.pathsep()
     -- Normalize trailing separator (unless it's root '/')
     if #p > 1 and p:sub(-1) == sep then
@@ -68,6 +69,7 @@ end
 
 -- similar to pathlib.Path(...).parts
 function lfs.pathparts(p)
+    p = lfs.pathsanitize(p)
     local result = {}
     local head, tail
     head = p
