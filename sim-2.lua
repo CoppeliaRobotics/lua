@@ -750,40 +750,47 @@ function sim.getPathLengths(...)
     return distancesAlongPath, totDist
 end
 
-function sim.changeEntityColor(target, ...)
-    return locals.changeColor(target, '', ...)
+function sim.changeEntityColor(target, color, comp)
+    return locals.changeColor(target, '', color, comp)
 end
 function locals.changeColor(target, methodName, ...)
-    local color, colorComponent = checkargs({
-        {type = 'table', size = 3, item_type = 'float'},
-        {type = 'int', default = sim.colorcomponent_ambient_diffuse},
+    local color, materialComponent = checkargs({
+        {type = 'color'},
+        {type = 'int', default = sim.materialcomponent_diffuse},
     }, ...)
     local colorData = {}
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
     local objs = {target}
-    if sim.isHandle(target, sim.objecttype_collection) then
-        objs = sim.getCollectionObjects(target)
+    if target.objectType == 'collection' then
+        objs = collection.objects
     end
     for i = 1, #objs, 1 do
-        if sim.getObjectType(objs[i]) == sim.sceneobject_shape then
-            local visible = sim.getBoolProperty(objs[i], 'visible')
-            if visible == 1 then
-                local res, col = sim.getShapeColor(objs[i], '@compound', colorComponent)
-                colorData[#colorData + 1] = {handle = objs[i], data = col, comp = colorComponent}
-                sim.setShapeColor(objs[i], nil, colorComponent, color)
+        local obj = objs[i]
+        if obj.objectType == 'shape' then -- and obj.visible then
+            local colComp = 'diffuse'
+            if materialComponent == sim.materialcomponent_specular then
+                colComp = 'specular'
+            elseif materialComponent == sim.materialcomponent_emission then
+                colComp = 'emission'
             end
+            colorData[#colorData + 1] = {puid = obj.persistentUid, data = obj.compoundColors[colComp], comp = colComp}
+            obj.applyColor[colComp] = color
         end
     end
     return colorData
 end
 
-function sim.restoreEntityColor(...)
-    locals.restoreColor(-1, '', ...)
+function sim.restoreEntityColor(data)
+    locals.restoreColor(-1, '', data)
 end
 function locals.restoreColor(target, methodName, ...)
-    local colorData = checkargs({{type = 'table'}, size = '1..*'}, ...)
+    local colorData = checkargs({{type = 'table'}, size = '0..*'}, ...)
     for i = 1, #colorData, 1 do
-        if sim.isHandle(colorData[i].handle, sim.objecttype_sceneobject) then
-            sim.setShapeColor(colorData[i].handle, '@compound', colorData[i].comp, colorData[i].data)
+        local obj = sim.scene:getObject(colorData[i].puid, {noError = true})
+        if obj then
+            obj.compoundColors[colorData[i].comp] = colorData[i].data
         end
     end
 end
@@ -1561,78 +1568,45 @@ function sim.removeReferencedObjects(objectHandle, tag, delayedRemoval)
     sim.setReferencedHandles(objectHandle, {}, tag)
 end
 
-function sim.getShapeAppearance(handle, opts)
-    assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
-    opts = opts or {}
-    local r = {}
-    if sim.getBoolProperty(handle, 'compound') then
-        r.subShapes = {}
-        local subShapesCopy = sim.ungroupShape((sim.copyPasteObjects{handle})[1])
-        for i, subShape in ipairs(subShapesCopy) do
-            r.subShapes[i] = sim.getShapeAppearance(subShape, opts)
-        end
-        sim.removeObjects(subShapesCopy)
-    else
-        local mesh = sim.getIntArrayProperty(handle, 'meshes')[1]
-        r.edges = sim.getBoolProperty(mesh, 'showEdges')
-        r.wireframe = false
-        r.visibilityLayer = sim.getIntProperty(handle, 'layer')
-        r.culling = sim.getBoolProperty(mesh, 'culling')
-        r.shadingAngle = sim.getFloatProperty(mesh, 'shadingAngle')
-        r.color = {}
-        _, r.color.ambientDiffuse = sim.getShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse)
-        _, r.color.specular = sim.getShapeColor(handle, nil, sim.colorcomponent_specular)
-        _, r.color.emission = sim.getShapeColor(handle, nil, sim.colorcomponent_emission)
-        _, r.color.transparency = sim.getShapeColor(handle, nil, sim.colorcomponent_transparency)
+function sim.getShapeAppearance(target)
+    return locals.getAppearance(target, '') 
+end
+function locals.getAppearance(target, methodName)
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
     end
+    assert(target.objectType == 'shape', 'not a shape')
+    local r = {}
+    r.edges = target.compoundEdges
+    r.wireframe = target.compoundWireframe
+    r.visibilityLayer = target.layer
+    r.culling = target.compoundCullings
+    r.shadingAngle = target.compoundShadingAngles
+    r.color = {}
+    r.color.diffuse = target.compoundColors.diffuse
+    r.color.specular = target.compoundColors.specular
+    r.color.emission = target.compoundColors.emission
+    r.color.transparency = target.compoundColors.transparency
     return r
 end
 
-function sim.setShapeAppearance(handle, savedData, opts)
-    assert(sim.getObjectType(handle) == sim.sceneobject_shape, 'not a shape')
-    opts = opts or {}
-    if sim.getBoolProperty(handle, 'compound') then
-        -- we need to temporarily detach all its children, then attach them again
-        -- otherwise it will mess up poses of dynamic objects
-        local tmp = sim.createDummy(0)
-        local i = 0
-        while true do
-            local h = sim.getObjectChild(handle, i)
-            if h == -1 then break end
-            i = i + 1
-            sim.setObjectParent(h, tmp, true)
-        end
-
-        local subShapes = sim.ungroupShape(handle)
-        for i, subShape in ipairs(subShapes) do
-            sim.setShapeAppearance(subShape, (savedData.subShapes or {})[i] or (savedData.subShapes or {})[1] or savedData, opts)
-        end
-        local newHandle = sim.groupShapes(subShapes)
-
-        -- reattach children
-        i = 0
-        while true do
-            local h = sim.getObjectChild(tmp, i)
-            if h == -1 then break end
-            i = i + 1
-            sim.setObjectParent(h, newHandle, true)
-        end
-        sim.removeObjects{tmp}
-
-        return newHandle
-    else
-        local mesh = sim.getIntArrayProperty(handle, 'meshes')[1]
-        savedData = (savedData.subShapes or {})[1] or savedData
-        sim.setBoolProperty(mesh, 'showEdges', savedData.edges)
-        sim.setIntProperty(handle, 'layer', savedData.visibilityLayer)
-        sim.setBoolProperty(mesh, 'culling', savedData.culling)
-        sim.setFloatProperty(mesh, 'shadingAngle', savedData.shadingAngle)
-        sim.setShapeColor(handle, nil, sim.colorcomponent_ambient_diffuse, savedData.color.ambientDiffuse)
-        sim.setShapeColor(handle, nil, sim.colorcomponent_specular, savedData.color.specular)
-        sim.setShapeColor(handle, nil, sim.colorcomponent_emission, savedData.color.emission)
-        sim.setShapeColor(handle, nil, sim.colorcomponent_transparency, savedData.color.transparency)
-        return handle
+function sim.setShapeAppearance(target, savedData)
+    locals.setAppearance(target, '', savedData)
+end
+function locals.setAppearance(target, methodName, savedData)
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
     end
+    assert(target.objectType == 'shape', 'not a shape')
+    target.compoundEdges = savedData.edges
+    target.compoundWireframe = savedData.wireframe
+    target.compoundCullings = savedData.culling
+    target.compoundShadingAngles = savedData.shadingAngle
+    target.layer = savedData.visibilityLayer
+    target.compoundColors.diffuse = savedData.color.diffuse
+    target.compoundColors.specular = savedData.color.specular
+    target.compoundColors.emission = savedData.color.emission
+    target.compoundColors.transparency = savedData.color.transparency
 end
 
 function sim.openFile(f)
