@@ -270,14 +270,6 @@ sim.auxiliaryConsoleShow = wrap(sim.auxiliaryConsoleShow, function(origFunc)
     end
 end)
 
-function sim.getObjectAliasRelative(...)
-    local sim1 = require('sim-1')
-    return sim1.getObjectAliasRelative(...)
-end
-
-function sim.fastIdleLoop(enable)
-    locals.fastIdleLoop(-1, '', enable)
-end
 function locals.fastIdleLoop(target, methodName, enable)
     local data = sim.app:getBufferProperty('signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
     local stage = 0
@@ -302,9 +294,6 @@ function locals.fastIdleLoop(target, methodName, enable)
     sim.app:setBufferProperty('signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
 end
 
-function sim.throttle(t, func, ...)
-    locals.throttle(-1, '', t, func, ...)
-end
 function locals.throttle(target, methodName, t, func, ...)
     locals.lastExecTime = locals.lastExecTime or {}
     locals.throttleSched = locals.throttleSched or {}
@@ -312,9 +301,9 @@ function locals.throttle(target, methodName, t, func, ...)
     local h = string.dump(func)
     local now = sim.app.systemTime
 
-    -- cancel any previous scheduled execution: (see sim.scheduleExecution below)
+    -- cancel any previous scheduled execution: (see locals.scheduleExecution below)
     if locals.throttleSched[h] then
-        sim.cancelScheduledExecution(locals.throttleSched[h])
+        locals.cancelScheduledExecution(-1, '', locals.throttleSched[h])
         locals.throttleSched[h] = nil
     end
 
@@ -324,10 +313,10 @@ function locals.throttle(target, methodName, t, func, ...)
     else
         -- if skipping the call (i.e. because it exceeds target rate)
         -- schedule the last call in the future:
-        locals.throttleSched[h] = sim.scheduleExecution(function(...)
+        locals.throttleSched[h] = locals.scheduleExecution(-1, '', locals.lastExecTime[h] + t, false, function(...)
             func(...)
             locals.lastExecTime[h] = now
-        end, {...}, locals.lastExecTime[h] + t)
+        end, {...})
     end
 end
 
@@ -354,14 +343,6 @@ function locals.schedulerCallback()
     end
 end
 
-function sim.scheduleExecution(func, args, timePoint, simTime)
-    if simTime then
-        timePoint = timePoint - sim.scene.simulationTime
-    else
-        timePoint = timePoint - sim.app.systemTime
-    end
-    return locals.scheduleExecution(-1, '', timePoint, simTime, func, table.unpack(args))
-end
 function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
     local timePoint
     if simTime then
@@ -404,9 +385,6 @@ function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
     return id
 end
 
-function sim.cancelScheduledExecution(id)
-    return locals.cancelScheduledExecution(-1, '', id)
-end
 function locals.cancelScheduledExecution(target, methodName, id)
     if not locals.scheduler then return end
     local pq = nil
@@ -419,34 +397,6 @@ function locals.cancelScheduledExecution(target, methodName, id)
     return pq:cancel(function(item) return item.id == id end)
 end
 
-function sim.closePath(...)
-    local sim1 = require('sim-1')
-    return sim1.closePath(...)
-end
-
-function sim.getPathInterpolatedConfig(...)
-    local sim1 = require('sim-1')
-    return sim1.getPathInterpolatedConfig(...)
-end
-
-function sim.resamplePath(...)
-    local sim1 = require('sim-1')
-    return sim1.resamplePath(...)
-end
-
-function sim.getConfigDistance(...)
-    local sim1 = require('sim-1')
-    return sim1.getConfigDistance(...)
-end
-
-function sim.getPathLengths(...)
-    local sim1 = require('sim-1')
-    return sim1.getPathLengths(...)
-end
-
-function sim.changeEntityColor(target, color, comp)
-    return locals.changeColor(target, '', color, comp)
-end
 function locals.changeColor(target, methodName, ...)
     local color, materialComponent = checkargs({
         {type = 'color'},
@@ -476,9 +426,6 @@ function locals.changeColor(target, methodName, ...)
     return colorData
 end
 
-function sim.restoreEntityColor(data)
-    locals.restoreColor(-1, '', data)
-end
 function locals.restoreColor(target, methodName, ...)
     local colorData = checkargs({{type = 'table'}, size = '0..*'}, ...)
     for i = 1, #colorData, 1 do
@@ -489,9 +436,6 @@ function locals.restoreColor(target, methodName, ...)
     end
 end
 
-function sim.wait(...)
-    locals.wait(-1, '', ...)
-end
 function locals.wait(target, methodName, ...)
     local dt, simTime = checkargs({{type = 'float'}, {type = 'bool', default = true}}, ...)
 
@@ -504,9 +448,6 @@ function locals.wait(target, methodName, ...)
     end
 end
 
-function sim.waitForSignal(item, sigName)
-    locals.waitForSignal(-1, '', sigName, item)
-end
 function locals.waitForSignal(target, methodName, sigName, item)
     item = item or sim.app
     if (type(item) == 'number') or sim.Object:isobject(item) then
@@ -1193,81 +1134,6 @@ end
 
 sim.getThreadExitRequest = sim.getSimulationStopping
 
-function sim.getSettingString(...)
-    local key = checkargs({{type = 'string'}}, ...)
-    local r = sim.getStringProperty(sim.handle_app, 'namedParam.settings.' .. key, {noError = true}) --sim.getNamedStringParam(key)
-    if r then return r end
-    locals.systemSettings = locals.systemSettings or locals.readSystemSettings() or {}
-    locals.userSettings = locals.userSettings or locals.readUserSettings() or {}
-    return locals.userSettings[key] or locals.systemSettings[key]
-end
-
-function sim.getSettingBool(...)
-    local key = checkargs({{type = 'string'}}, ...)
-    return locals.parseBool(sim.getSettingString(key))
-end
-
-function sim.getSettingFloat(...)
-    local key = checkargs({{type = 'string'}}, ...)
-    return locals.parseFloat(sim.getSettingString(key))
-end
-
-function sim.getSettingInt32(...)
-    local key = checkargs({{type = 'string'}}, ...)
-    return locals.parseInt(sim.getSettingString(key))
-end
-
-function sim.getReferencedHandle(...)
-    local handles = sim.getReferencedHandles(...)
-    assert(#handles > 0, 'no handle found')
-    assert(#handles == 1, 'more than one handle found')
-    return handles[1]
-end
-
-function sim.addReferencedHandle(objectHandle, referencedHandle, tag, options)
-    -- backwards compatibility: arg 'tag' was added at a later point
-    if type(tag) == 'table' and options == nil then
-        options = tag
-        tag = ''
-    end
-    -- .
-
-    tag = tag or ''
-    options = options or {}
-    local refHandles = sim.getReferencedHandles(objectHandle, tag)
-    local handlesToAdd = {referencedHandle}
-    if options.wholeTree then
-        handlesToAdd = sim.getObjectsInTree(referencedHandle)
-    end
-    for _, handle in ipairs(handlesToAdd) do
-        table.insert(refHandles, handle)
-    end
-    sim.setReferencedHandles(objectHandle, refHandles, tag)
-end
-
-function sim.removeReferencedObjects(objectHandle, tag, delayedRemoval)
-    tag = tag or ''
-    local refHandles = sim.getReferencedHandles(objectHandle, tag)
-    local toRemove = {}
-    -- remove models with sim.removeModel, the rest with sim.removeObjects:
-    for _, h in ipairs(refHandles) do
-        if sim.isHandle(h) then
-            if sim.getBoolProperty(h, 'modelBase') then
-                sim.removeModel(h, delayedRemoval)
-            else
-                table.insert(toRemove, h)
-            end
-        end
-    end
-    if #toRemove > 0 then
-        sim.removeObjects(toRemove, delayedRemoval)
-    end
-    sim.setReferencedHandles(objectHandle, {}, tag)
-end
-
-function sim.getShapeAppearance(target)
-    return locals.getAppearance(target, '') 
-end
 function locals.getAppearance(target, methodName)
     if not sim.Object:isobject(target) then
         target = sim.Object(target)
@@ -1287,9 +1153,6 @@ function locals.getAppearance(target, methodName)
     return r
 end
 
-function sim.setShapeAppearance(target, savedData)
-    locals.setAppearance(target, '', savedData)
-end
 function locals.setAppearance(target, methodName, savedData)
     if not sim.Object:isobject(target) then
         target = sim.Object(target)
@@ -1306,9 +1169,6 @@ function locals.setAppearance(target, methodName, savedData)
     target.compoundColors.transparency = savedData.color.transparency
 end
 
-function sim.openFile(file)
-    locals.openFile(-1, '', file)
-end
 function locals.openFile(target, methodName, file)
     local simSubprocess = require 'simSubprocess'
     if sim.app.platform == 0 then
@@ -1344,93 +1204,379 @@ if not _S.requireWrapped then
     end)
 end
 
---[[
-require('sim-2-typewrappers').extend(sim)
-
-function wrapTypes(sim, func, argType, retType)
-    return wrap(func, function(origFunc)
-        return function(...)
-            local Color = require 'Color'
-            local simEigen = require 'simEigen'
-            local args = table.pack(...)
-            for i = 1, args.n do
-                local t = argType and argType[i]
-                if t == 'handle' then
-                    if args[i] == nil then args[i] = -1 end
-                    if sim.Object:isobject(args[i]) then args[i] = args[i].handle end
-                elseif t == 'handles' then
-                    args[i] = map(function(x)
-                                    if sim.Object:isobject(x) then x = x.handle end
-                                    return x
-                                end, args[i])
-                elseif t == 'color' then
-                    if Color:iscolor(args[i]) then args[i] = args[i]:data() end
-                elseif t == 'pose' then
-                    if simEigen.Pose:ispose(args[i]) then args[i] = args[i]:data() end
-                elseif t == 'quaternion' then
-                    if simEigen.Quaternion:isquaternion(args[i]) then args[i] = args[i]:data() end
-                elseif t == 'vector3' then
-                    if simEigen.Matrix:ismatrix(args[i]) then assert(args[i]:isvector(3)); args[i] = args[i]:data() end
-                elseif t == 'vector' then
-                    if simEigen.Matrix:ismatrix(args[i]) then assert(args[i]:isvector()); args[i] = args[i]:data() end
-                elseif t == 'matrix' then
-                    if simEigen.Matrix:ismatrix(args[i]) then args[i] = args[i]:data() end
-                end
-            end
-            local ret = {origFunc(table.unpack(args))}
-            for i = 1, #ret do
-                local t = retType and retType[i]
-                if t then
-                    local cls = ({
-                        handle = function(data)
-                            if data == -1 then
-                                return nil
-                            else
-                                return sim.Object(data)
-                            end
-                        end,
-                        handles = function(data)
-                            return sim.ObjectArray(data)
-                        end,
-                        vector2 = function(data)
-                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Vector(data) end
-                            return data
-                        end,
-                        vector3 = function(data)
-                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Vector(data) end
-                            return data
-                        end,
-                        matrix3x3 = function(data)
-                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Matrix(3, 3, data) end
-                            return data
-                        end,
-                        matrix4x4 = function(data)
-                            if not simEigen.Matrix:ismatrix(data) then data = simEigen.Matrix(4, 4, data) end
-                            return data
-                        end,
-                        quaternion = function(data)
-                            if not simEigen.Quaternion:isquaternion(data) then data = simEigen.Quaternion(data) end
-                            return data
-                        end,
-                        pose = function(data)
-                            if not simEigen.Pose:ispose(data) then data = simEigen.Pose(data) end
-                            return data
-                        end,
-                        color = function(data)
-                            if not Color:iscolor(data) then data = Color(data) end
-                            return data
-                        end,
-                    })[t]
-                    if cls then
-                        ret[i] = cls(ret[i])
-                    end
-                end
-            end
-            return table.unpack(ret)
-        end
-    end)
+function locals.serialize(target, methodName, data)
+    local cbor = require 'simCBOR'
+    return tobuffer(cbor.encode(data))
 end
---]]
+
+function locals.deserialize(target, methodName, data)
+    local cbor = require 'simCBOR'
+    return cbor.decode(data)
+end
+
+function locals.getPropertyTypeString(target, methodName, ptype)
+    if not locals.propertytypeToStringMap then
+        locals.propertytypeToStringMap = table.invert(table.filter(sim, {matchKeyPrefix = 'propertytype_', stripKeyPrefix = true}))
+    end
+    return locals.propertytypeToStringMap[ptype]
+end
+
+function locals.getPropertiesInfos(target, methodName, opts)
+    opts = opts or {}
+    local propertiesInfos = {}
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
+    for i = 0, 1e100 do
+        local pname, pclass = target:getPropertyName(i, {excludeFlags = opts.excludeFlags})
+        if not pname then break end
+        local ok, err = pcall(function()
+            propertiesInfos[pname] = locals.getPropertyInfos(target, '', pname, {decodeMetaInfo = opts.decodeMetaInfo})
+        end)
+        if not ok then
+            error(string.format('property "%s": %s', pname, err))
+        end
+        propertiesInfos[pname].class = pclass
+    end
+    return propertiesInfos
+end
+
+function locals.getProperties(target, methodName, opts)
+    opts = opts or {}
+    local propertiesValues = {}
+    for pname, pinfos in pairs(target:getPropertiesInfos(opts)) do
+        if pinfos.flags.readable then
+            if not opts.skipLarge or not pinfos.flags.large then
+                propertiesValues[pname] = target:getProperty(pname)
+            end
+        end
+    end
+    return propertiesValues
+end
+
+function locals.setProperties(target, methodName, props)
+    for k, v in pairs(props) do
+        target:setProperty(k, v)
+    end
+end
+
+function locals.getProperty(target, methodName, pname, opts)
+    local retVal
+    local noError = opts and opts.noError
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
+    local ptype, pflags, descr = target:getPropertyInfo(pname, opts)
+    if not noError then
+        assert(ptype, 'no such property: ' .. pname)
+    end
+    if ptype then
+        assert(ptype ~= sim.propertytype_method, 'cannot read property of type "method"')
+        local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
+        ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
+        local getterMethod = 'get' .. ptypeStr .. 'Property'
+        retVal = sim.callMethod(target, getterMethod, pname, opts)
+    end
+    return retVal
+end
+
+function locals.setProperty(target, methodName, pname, pvalue, opts)
+    if type(opts) == 'number' or type(opts) == 'string' then
+        sim.app:logWarn('passing a ' .. type(opts) .. ' as the last argument of setProperty: assuming {type = ...}')
+        -- backward compatibility fix: last arg was ptype
+        opts = {type = opts}
+    end
+    local noError = opts and opts.noError
+    local ptype = opts and opts.type
+    if type(ptype) == 'string' then
+        -- if ptype is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
+        ptype = sim['propertytype_' .. ptype]
+        assert(ptype, 'invalid property type string')
+    end
+    assert(ptype == nil or math.type(ptype) == 'integer', 'invalid type for option "type"')
+
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
+
+    if string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.') then
+        -- custom data properties need type
+        -- if not specified, it will be inferred from lua's variable type
+        if ptype == nil then
+            -- ptype not provided -> guess it
+            local ltype = type(pvalue)
+            if ltype == 'number' then
+                if math.type(pvalue) == 'integer' then
+                    ptype = sim.propertytype_int
+                else
+                    ptype = sim.propertytype_float
+                end
+            elseif ltype == 'string' then
+                ptype = sim.propertytype_string
+            elseif ltype == 'boolean' then
+                ptype = sim.propertytype_bool
+            elseif ltype == 'table' then
+                local Color = require 'Color'
+                local simEigen = require 'simEigen'
+                if Color:iscolor(pvalue) then
+                    ptype = sim.propertytype_color
+                elseif sim.Object:isobject(pvalue) then
+                    ptype = sim.propertytype_handle
+                elseif simEigen.Vector:isvector(pvalue, 2) then
+                    ptype = sim.propertytype_vector2
+                elseif simEigen.Vector:isvector(pvalue, 3) then
+                    ptype = sim.propertytype_vector3
+                elseif simEigen.Quaternion:isquaternion(pvalue) then
+                    ptype = sim.propertytype_quaternion
+                elseif simEigen.Pose:ispose(pvalue) then
+                    ptype = sim.propertytype_pose
+                elseif simEigen.Matrix:ismatrix(pvalue, 3, 3) then
+                    ptype = sim.propertytype_matrix3x3
+                elseif simEigen.Matrix:ismatrix(pvalue, 4, 4) then
+                    ptype = sim.propertytype_matrix4x4
+                elseif simEigen.Matrix:ismatrix(pvalue) then
+                    ptype = sim.propertytype_matrix
+                else
+                    ptype = sim.propertytype_table
+                end
+            else
+                error('unsupported property type: ' .. ltype)
+            end
+        end
+    elseif ptype == nil then
+        ptype = target:getPropertyInfo(pname)
+        if ptype == nil then
+            if noError then return else error('no such property: ' .. pname) end
+        end
+    end
+    assert(ptype ~= sim.propertytype_method, 'cannot write property of type "method"')
+    local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
+    ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
+    local setterMethod = 'set' .. ptypeStr .. 'Property'
+    return sim.callMethod(target, setterMethod, pname, pvalue, opts)
+end
+
+function locals.convertPropertyValue(target, methodName, value, fromType, toType)
+    if fromType == toType then
+        return value
+    elseif fromType == sim.propertytype_string then
+        local loadModules = {'Color', 'simEigen'}
+        local preamble = table.concat(map(function(m) return string.format('local %s = require "%s"; ', m, m) end, loadModules))
+        local fn, err = loadstring(preamble .. 'return ' .. value)
+        if not fn then return nil, err end
+        local ok, val = pcall(fn)
+        if ok then return val, nil else return nil, val end
+    elseif toType == sim.propertytype_string then
+        return _S.anyToString(value)
+    end
+    error 'unsupported type of conversion'
+end
+
+function locals.getPropertyInfos(target, methodName, pname, opts)
+    opts = opts or {}
+    local infos = {}
+    if not sim.Object:isobject(target) then
+        target = sim.Object(target)
+    end
+    local ptype, pflags, metaInfo = target:getPropertyInfo(pname, {bitCoded = 1})
+    if not ptype then return end
+    infos.type = ptype
+    infos.flags = {
+        value = pflags,
+        readable = pflags & sim.propertyinfo_notreadable == 0,
+        writable = pflags & sim.propertyinfo_notwritable == 0,
+        removable = pflags & sim.propertyinfo_removable > 0,
+        silent = pflags & sim.propertyinfo_silent > 0,
+        large = pflags & sim.propertyinfo_largedata > 0,
+        deprecated = pflags & sim.propertyinfo_deprecated > 0,
+        constant = pflags & sim.propertyinfo_constant > 0,
+    }
+    if opts.decodeMetaInfo ~= false then
+        if metaInfo ~= '' then
+            local json = require 'dkjson'
+            local decodedMetaInfo = json.decode(metaInfo)
+            assert(decodedMetaInfo ~= nil, 'invalid meta info: ' .. metaInfo)
+            for k, v in pairs(decodedMetaInfo) do
+                assert(infos[k] == nil)
+                infos[k] = v
+            end
+        end
+    else
+        infos.metaInfo = metaInfo
+    end
+    return infos
+end
+
+function locals.getTableProperty(target, methodName, ...)
+    local tagName, options = checkargs.checkargsEx({nilGetsDefault=true}, {
+        {type = 'string'},
+        {type = 'table', default = {}},
+    }, ...)
+    local buf = callMethod(target, '_getTableProperty', tagName, options)
+    if buf then
+        local retVal = {}
+        if #buf > 0 then
+            if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
+                retVal = sim.app:unpackTable(buf)
+            else
+                retVal = sim.app:deserialize(buf)
+            end
+        end
+        return retVal
+    end
+end
+
+function locals.setTableProperty(target, methodName, ...)
+    local tagName, theTable, options = checkargs.checkargsEx({nilGetsDefault=true}, {
+        {type = 'string'},
+        {type = 'table'},
+        {type = 'table', default = {}},
+    }, ...)
+    options.dataType = options.dataType or 'cbor'
+    local buf
+    if options.dataType == 'cbor' then
+        buf = sim.app:serialize(theTable)
+    else
+        buf = sim.app:packTable(theTable)
+    end
+    return callMethod(target, '_setTableProperty', tagName, buf, options)
+end
+
+function __2.sysCallEx_init()
+    -- Hook function, registered further down
+    if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
+end
+
+sim.Object = require 'sim.Object'
+sim.Object.callMethod = function(self, method, ...)
+    local handle = rawget(self, '__handle')
+    return sim.callMethod(handle, method, ...)
+end
+sim.ObjectArray = require 'sim.ObjectArray'
+sim.PropertyGroup = require 'sim.PropertyGroup'
+
+sim.app = sim.Object.app
+sim.scene = sim.Object.scene
+sim.self = sim.Object.self
+
+sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
+
+-- Backward compatibility functions, to be eventually removed:
+--------------------------------------------------------------
+function sim.getReferencedHandle(...)
+    local sim1 = require('sim-1')
+    return sim1.getReferencedHandle(...)
+end
+
+function sim.addReferencedHandle(...)
+    local sim1 = require('sim-1')
+    return sim1.addReferencedHandle(...)
+end
+
+function sim.removeReferencedObjects(...)
+    local sim1 = require('sim-1')
+    return sim1.removeReferencedObjects(...)
+end
+
+function sim.getObjectAliasRelative(...)
+    local sim1 = require('sim-1')
+    return sim1.getObjectAliasRelative(...)
+end
+
+function sim.fastIdleLoop(enable)
+    locals.fastIdleLoop(-1, '', enable)
+end
+
+function sim.throttle(t, func, ...)
+    locals.throttle(-1, '', t, func, ...)
+end
+
+function sim.scheduleExecution(func, args, timePoint, simTime)
+    if simTime then
+        timePoint = timePoint - sim.scene.simulationTime
+    else
+        timePoint = timePoint - sim.app.systemTime
+    end
+    return locals.scheduleExecution(-1, '', timePoint, simTime, func, table.unpack(args))
+end
+
+function sim.cancelScheduledExecution(id)
+    return locals.cancelScheduledExecution(-1, '', id)
+end
+
+function sim.closePath(...)
+    local sim1 = require('sim-1')
+    return sim1.closePath(...)
+end
+
+function sim.getPathInterpolatedConfig(...)
+    local sim1 = require('sim-1')
+    return sim1.getPathInterpolatedConfig(...)
+end
+
+function sim.resamplePath(...)
+    local sim1 = require('sim-1')
+    return sim1.resamplePath(...)
+end
+
+function sim.getConfigDistance(...)
+    local sim1 = require('sim-1')
+    return sim1.getConfigDistance(...)
+end
+
+function sim.getPathLengths(...)
+    local sim1 = require('sim-1')
+    return sim1.getPathLengths(...)
+end
+
+function sim.changeEntityColor(target, color, comp)
+    return locals.changeColor(target, '', color, comp)
+end
+
+function sim.restoreEntityColor(data)
+    locals.restoreColor(-1, '', data)
+end
+
+function sim.wait(...)
+    locals.wait(-1, '', ...)
+end
+
+function sim.waitForSignal(item, sigName)
+    locals.waitForSignal(-1, '', sigName, item)
+end
+
+function sim.getSettingString(...)
+    local sim1 = require('sim-1')
+    return sim1.getSettingString(...)
+end
+
+function sim.getSettingBool(...)
+    local sim1 = require('sim-1')
+    return sim1.getSettingBool(...)
+end
+
+function sim.getSettingFloat(...)
+    local sim1 = require('sim-1')
+    return sim1.getSettingFloat(...)
+end
+
+function sim.getSettingInt32(...)
+    local sim1 = require('sim-1')
+    return sim1.getSettingInt32(...)
+end
+
+function sim.setShapeAppearance(target, savedData)
+    locals.setAppearance(target, '', savedData)
+end
+
+function sim.openFile(file)
+    locals.openFile(-1, '', file)
+end
+
+function sim.getShapeAppearance(target)
+    return locals.getAppearance(target, '') 
+end
+
 function sim.getBoolProperty(t, ...)
     return sim.callMethod(t, 'getBoolProperty', ...)
 end
@@ -1590,433 +1736,34 @@ end
 function sim.getPropertyTypeString(...)
     return locals.getPropertyTypeString(-1, '', ...)
 end
-function locals.getPropertyTypeString(target, methodName, ptype)
-    if not locals.propertytypeToStringMap then
-        locals.propertytypeToStringMap = table.invert(table.filter(sim, {matchKeyPrefix = 'propertytype_', stripKeyPrefix = true}))
-    end
-    return locals.propertytypeToStringMap[ptype]
-end
 
 function sim.getPropertiesInfos(t, ...)
     return locals.getPropertiesInfos(t, '', ...)
-end
-function locals.getPropertiesInfos(target, methodName, opts)
-    opts = opts or {}
-    local propertiesInfos = {}
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
-    for i = 0, 1e100 do
-        local pname, pclass = target:getPropertyName(i, {excludeFlags = opts.excludeFlags})
-        if not pname then break end
-        local ok, err = pcall(function()
-            propertiesInfos[pname] = locals.getPropertyInfos(target, '', pname, {decodeMetaInfo = opts.decodeMetaInfo})
-        end)
-        if not ok then
-            error(string.format('property "%s": %s', pname, err))
-        end
-        propertiesInfos[pname].class = pclass
-    end
-    return propertiesInfos
 end
 
 function sim.getProperties(t, ...)
     return locals.getProperties(t, '', ...)
 end
-function locals.getProperties(target, methodName, opts)
-    opts = opts or {}
-    local propertiesValues = {}
-    for pname, pinfos in pairs(target:getPropertiesInfos(opts)) do
-        if pinfos.flags.readable then
-            if not opts.skipLarge or not pinfos.flags.large then
-                propertiesValues[pname] = target:getProperty(pname)
-            end
-        end
-    end
-    return propertiesValues
-end
 
 function sim.setProperties(t, ...)
     locals.setProperties(t, '', ...)
-end
-function locals.setProperties(target, methodName, props)
-    for k, v in pairs(props) do
-        target:setProperty(k, v)
-    end
 end
 
 function sim.getProperty(t, ...)
     return locals.getProperty(t, '', ...)
 end
-function locals.getProperty(target, methodName, pname, opts)
-    local retVal
-    local noError = opts and opts.noError
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
-    local ptype, pflags, descr = target:getPropertyInfo(pname, opts)
-    if not noError then
-        assert(ptype, 'no such property: ' .. pname)
-    end
-    if ptype then
-        assert(ptype ~= sim.propertytype_method, 'cannot read property of type "method"')
-        local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
-        ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
-        local getterMethod = 'get' .. ptypeStr .. 'Property'
-        retVal = sim.callMethod(target, getterMethod, pname, opts)
-    end
-    return retVal
-end
 
 function sim.setProperty(t, ...)
     return locals.setProperty(t, '', ...)
-end
-function locals.setProperty(target, methodName, pname, pvalue, opts)
-    if type(opts) == 'number' or type(opts) == 'string' then
-        sim.app:logWarn('passing a ' .. type(opts) .. ' as the last argument of setProperty: assuming {type = ...}')
-        -- backward compatibility fix: last arg was ptype
-        opts = {type = opts}
-    end
-    local noError = opts and opts.noError
-    local ptype = opts and opts.type
-    if type(ptype) == 'string' then
-        -- if ptype is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
-        ptype = sim['propertytype_' .. ptype]
-        assert(ptype, 'invalid property type string')
-    end
-    assert(ptype == nil or math.type(ptype) == 'integer', 'invalid type for option "type"')
-
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
-
-    if string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.') then
-        -- custom data properties need type
-        -- if not specified, it will be inferred from lua's variable type
-        if ptype == nil then
-            -- ptype not provided -> guess it
-            local ltype = type(pvalue)
-            if ltype == 'number' then
-                if math.type(pvalue) == 'integer' then
-                    ptype = sim.propertytype_int
-                else
-                    ptype = sim.propertytype_float
-                end
-            elseif ltype == 'string' then
-                ptype = sim.propertytype_string
-            elseif ltype == 'boolean' then
-                ptype = sim.propertytype_bool
-            elseif ltype == 'table' then
-                local Color = require 'Color'
-                local simEigen = require 'simEigen'
-                if Color:iscolor(pvalue) then
-                    ptype = sim.propertytype_color
-                elseif sim.Object:isobject(pvalue) then
-                    ptype = sim.propertytype_handle
-                elseif simEigen.Vector:isvector(pvalue, 2) then
-                    ptype = sim.propertytype_vector2
-                elseif simEigen.Vector:isvector(pvalue, 3) then
-                    ptype = sim.propertytype_vector3
-                elseif simEigen.Quaternion:isquaternion(pvalue) then
-                    ptype = sim.propertytype_quaternion
-                elseif simEigen.Pose:ispose(pvalue) then
-                    ptype = sim.propertytype_pose
-                elseif simEigen.Matrix:ismatrix(pvalue, 3, 3) then
-                    ptype = sim.propertytype_matrix3x3
-                elseif simEigen.Matrix:ismatrix(pvalue, 4, 4) then
-                    ptype = sim.propertytype_matrix4x4
-                elseif simEigen.Matrix:ismatrix(pvalue) then
-                    ptype = sim.propertytype_matrix
-                else
-                    ptype = sim.propertytype_table
-                end
-            else
-                error('unsupported property type: ' .. ltype)
-            end
-        end
-    elseif ptype == nil then
-        ptype = target:getPropertyInfo(pname)
-        if ptype == nil then
-            if noError then return else error('no such property: ' .. pname) end
-        end
-    end
-    assert(ptype ~= sim.propertytype_method, 'cannot write property of type "method"')
-    local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
-    ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
-    local setterMethod = 'set' .. ptypeStr .. 'Property'
-    return sim.callMethod(target, setterMethod, pname, pvalue, opts)
 end
 
 function sim.convertPropertyValue(...)
     return locals.convertPropertyValue(-1, '', ...)
 end
-function locals.convertPropertyValue(target, methodName, value, fromType, toType)
-    if fromType == toType then
-        return value
-    elseif fromType == sim.propertytype_string then
-        local loadModules = {'Color', 'simEigen'}
-        local preamble = table.concat(map(function(m) return string.format('local %s = require "%s"; ', m, m) end, loadModules))
-        local fn, err = loadstring(preamble .. 'return ' .. value)
-        if not fn then return nil, err end
-        local ok, val = pcall(fn)
-        if ok then return val, nil else return nil, val end
-    elseif toType == sim.propertytype_string then
-        return _S.anyToString(value)
-    end
-    error 'unsupported type of conversion'
-end
 
 function sim.getPropertyInfos(t, ...)
     return locals.getPropertyInfos(t, '', ...)
 end
-function locals.getPropertyInfos(target, methodName, pname, opts)
-    opts = opts or {}
-    local infos = {}
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
-    local ptype, pflags, metaInfo = target:getPropertyInfo(pname, {bitCoded = 1})
-    if not ptype then return end
-    infos.type = ptype
-    infos.flags = {
-        value = pflags,
-        readable = pflags & sim.propertyinfo_notreadable == 0,
-        writable = pflags & sim.propertyinfo_notwritable == 0,
-        removable = pflags & sim.propertyinfo_removable > 0,
-        silent = pflags & sim.propertyinfo_silent > 0,
-        large = pflags & sim.propertyinfo_largedata > 0,
-        deprecated = pflags & sim.propertyinfo_deprecated > 0,
-        constant = pflags & sim.propertyinfo_constant > 0,
-    }
-    if opts.decodeMetaInfo ~= false then
-        if metaInfo ~= '' then
-            local json = require 'dkjson'
-            local decodedMetaInfo = json.decode(metaInfo)
-            assert(decodedMetaInfo ~= nil, 'invalid meta info: ' .. metaInfo)
-            for k, v in pairs(decodedMetaInfo) do
-                assert(infos[k] == nil)
-                infos[k] = v
-            end
-        end
-    else
-        infos.metaInfo = metaInfo
-    end
-    return infos
-end
-
-function locals.getTableProperty(target, methodName, ...)
-    local tagName, options = checkargs.checkargsEx({nilGetsDefault=true}, {
-        {type = 'string'},
-        {type = 'table', default = {}},
-    }, ...)
-    local buf = callMethod(target, '_getTableProperty', tagName, options)
-    if buf then
-        local retVal = {}
-        if #buf > 0 then
-            if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
-                retVal = sim.app:unpackTable(buf)
-            else
-                retVal = sim.app:deserialize(buf)
-            end
-        end
-        return retVal
-    end
-end
-
-function locals.setTableProperty(target, methodName, ...)
-    local tagName, theTable, options = checkargs.checkargsEx({nilGetsDefault=true}, {
-        {type = 'string'},
-        {type = 'table'},
-        {type = 'table', default = {}},
-    }, ...)
-    options.dataType = options.dataType or 'cbor'
-    local buf
-    if options.dataType == 'cbor' then
-        buf = sim.app:serialize(theTable)
-    else
-        buf = sim.app:packTable(theTable)
-    end
-    return callMethod(target, '_setTableProperty', tagName, buf, options)
-end
-
-
--- Hidden, internal functions:
-----------------------------------------------------------
-
-function locals.readSettings(path)
-    local f = io.open(path, 'r')
-    if f == nil then return nil end
-    local cfg = {}
-    for line in f:lines() do
-        line = line:gsub('//.*$', '')
-        key, value = line:match('^(%S+)%s*=%s*(.*%S)%s*$')
-        if key then cfg[key] = value end
-    end
-    return cfg
-end
-
-function locals.readSystemSettings()
-    local sysDir = sim.getStringProperty(sim.handle_app, 'systemPath')
-    local psep = package.config:sub(1, 1)
-    local usrSet = sysDir .. psep .. 'usrset.txt'
-    return locals.readSettings(usrSet)
-end
-
-function locals.readUserSettings()
-    local usrDir = sim.getStringProperty(sim.handle_app, 'settingsPath')
-    local psep = package.config:sub(1, 1)
-    local usrSet = usrDir .. psep .. 'usrset.txt'
-    return locals.readSettings(usrSet)
-end
-
-function locals.parseBool(v)
-    if v == nil then return nil end
-    if isbuffer(v) then
-        v = tostring(v)
-    end
-    if v == 'true' then return true end
-    if v == 'false' then return false end
-    if v == 'on' then return true end
-    if v == 'off' then return false end
-    if v == '1' then return true end
-    if v == '0' then return false end
-    error('bool value expected')
-end
-
-function locals.parseFloat(v)
-    if v == nil then return nil end
-    return tonumber(v)
-end
-
-function locals.parseInt(v)
-    if v == nil then return nil end
-    v = tonumber(v)
-    if math.type(v) == 'integer' then return v end
-    error('integer value expected')
-end
-
-function locals.paramValueToString(v)
-    if v == nil then return '' end
-    return tostring(v)
-end
-
-function locals.linearInterpolate(conf1, conf2, t, types)
-    local retVal = {}
-    local qcnt = 0
-    for i = 1, #conf1, 1 do
-        if types[i] == 0 then
-            retVal[i] = conf1[i] * (1 - t) + conf2[i] * t -- e.g. joint with limits
-        end
-        if types[i] == 1 then
-            local dx = math.atan2(math.sin(conf2[i] - conf1[i]), math.cos(conf2[i] - conf1[i]))
-            local v = conf1[i] + dx * t
-            retVal[i] = math.atan2(math.sin(v), math.cos(v)) -- cyclic rev. joint (-pi;pi)
-        end
-        if types[i] == 2 then
-            qcnt = qcnt + 1
-            if qcnt == 4 then
-                qcnt = 0
-                local q1 = simEigen.Quaternion({conf1[i - 3], conf1[i - 2], conf1[i - 1], conf1[i - 0]})
-                local q2 = simEigen.Quaternion({conf2[i - 3], conf2[i - 2], conf2[i - 1], conf2[i - 0]})
-                local q = q1:interp(t, q2)
-                retVal[i - 3] = q[1]
-                retVal[i - 2] = q[2]
-                retVal[i - 1] = q[3]
-                retVal[i - 0] = q[4]
-            end
-        end
-    end
-    return retVal
-end
-
-function locals.getConfig(path, dof, index)
-    local retVal = {}
-    for i = 1, dof, 1 do retVal[#retVal + 1] = path[(index - 1) * dof + i] end
-    return retVal
-end
-
-function locals.comparableTables(t1, t2)
-    return (isArray(t1) == isArray(t2)) or (isArray(t1) and #t1 == 0) or (isArray(t2) and #t2 == 0)
-end
-
-function __2.sysCallEx_init()
-    -- Hook function, registered further down
-    if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
-end
-
-function locals.serialize(target, methodName, data)
-    local cbor = require 'simCBOR'
-    return tobuffer(cbor.encode(data))
-end
-
-function locals.deserialize(target, methodName, data)
-    local cbor = require 'simCBOR'
-    return cbor.decode(data)
-end
-
---[[
-sim.packTable = wrap(sim.packTable, function(origFunc)
-    return function(data, scheme)
-        if type(data) == 'table' then
-            scheme = scheme or 0
-            if scheme == 0 then
-                return origFunc(data, scheme) -- CoppeliaSim's pack format
-            elseif scheme == 1 or scheme == 2 then
-                local cbor = require 'simCBOR'
-                local buff = tobuffer(cbor.encode(data))
-                return buff
-            else
-                error('invalid packing scheme.')
-            end
-        else
-            return tobuffer('')
-        end
-    end
-end)
-
-sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
-    return function(data, scheme)
-        if isbuffer(data) then
-            data = tostring(data)
-        end
-        if #data == 0 then
-            return {} -- since 20.03.2024: empty buffer results in an empty table
-        else
-            if string.byte(data, 1) == 0 or string.byte(data, 1) == 5 then
-                if scheme and scheme ~= 0 then
-                    error('decoding scheme mismatch.')
-                end
-                return origFunc(data) -- CoppeliaSim's pack format
-            elseif ( (string.byte(data, 1) >= 128) and (string.byte(data, 1) <= 155)) or -- 128 & 159: array open (without and with break char)
-                     ((string.byte(data, 1) >= 159) and (string.byte(data, 1) <= 187)) or (string.byte(data, 1) == 191) or -- 160 & 191: map open (without and with break char)
-                     ((string.byte(data, 1) == 216) and ( -- Tag header, followed by array type
-                     (string.byte(data, 2) == 64) or (string.byte(data, 2) == 78) or (string.byte(data, 2) == 79) or (string.byte(data, 2) == 85) or (string.byte(data, 2) == 86)) ) then
-                if scheme and scheme ~= 1 and scheme ~= 2 then
-                    error('decoding scheme mismatch.')
-                end
-                local cbor = require 'simCBOR'
-                local tbl = cbor.decode(data)
-                return tbl
-            else
-                error('invalid input data.')
-            end
-        end
-    end
-end)
---]]
-
-sim.Object = require 'sim.Object'
-sim.Object.callMethod = function(self, method, ...)
-    local handle = rawget(self, '__handle')
-    return sim.callMethod(handle, method, ...)
-end
-sim.ObjectArray = require 'sim.ObjectArray'
-sim.PropertyGroup = require 'sim.PropertyGroup'
-
-sim.app = sim.Object.app
-sim.scene = sim.Object.scene
-sim.self = sim.Object.self
-
-sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
+--------------------------------------------------------------
 
 return sim
