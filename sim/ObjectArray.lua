@@ -34,10 +34,19 @@ function ObjectArray:initialize(arg, count)
 end
 
 function ObjectArray:__index(k)
+    -- object-array property access (return a list of values)
     if type(k) == 'string' then
         local ret = {}
         for i = 1, #self do
-            table.insert(ret, self[i][k])
+            local obj = self[i]
+            local v
+            if obj ~= nil then
+                v = obj[k]
+            elseif obj == nil and k == 'handle' then
+                -- handle is special: replace nil with -1
+                v = -1
+            end
+            ret[i] = v
         end
         return ret
     end
