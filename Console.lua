@@ -35,7 +35,7 @@ function Console:initialize(opts)
     end
     
      local xml = string.format([[
-        <ui title="%s" closeable="%s" resizable="%s" on-close="__2.consoles.onClose" placement="relative" position="%d,%d" width="%d" height="%d">
+        <ui title="%s" closeable="%s" resizable="%s" on-close="__2.consoles.onClose" placement="relative" position="%d,%d" width="%d" height="%d" activate="false">
             <text-browser id="1" style="%s" read-only="true" />
         </ui>
     ]],
@@ -66,7 +66,7 @@ end
 function __2.consoles.onClose(ui)
     local self = __2.consoles.map[ui]
     if self then
-        self:close()
+        self:remove()
     end
 end
 
@@ -144,7 +144,7 @@ function Console:clear()
     simUI.setText(self.ui, 1, "")
 end
 
-function Console:close()
+function Console:remove()
     if self.ui then
         simUI.destroy(self.ui)
         __2.consoles.map[self.ui] = nil
@@ -154,9 +154,9 @@ end
 
 function Console:__gc()
     if self.ui then
-        -- Log a warning: this means someone forgot to call :close()
+        -- Log a warning: this means someone forgot to call :remove()
         io.stderr:write("WARNING: Console garbage collected without being closed!\n")
-        self:close()
+        self:remove()
     end
 end
 

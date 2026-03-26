@@ -130,6 +130,14 @@ function sim.callMethod(target, name, ...)
     end
 end
 
+function locals.remove(target, methodName, delayed)
+    return sim.callMethod(target, '_remove', delayed)
+end
+
+function locals.removeObjects(target, methodName, objects, delayed)
+    return sim.callMethod(target, '_removeObjects', objects, delayed)
+end
+
 function locals.registerFunctionHook(target, methodName, funcNm, func, before)
     if before == nil then before = true end
     if type(func) == 'string' then
@@ -527,6 +535,22 @@ function locals.createObject(target, methodName, initialProperties)
             opts = 1
         end
         h = sim.Object(sim.createCollectionEx(opts))
+    elseif objectType == 'console' then
+        checkargs.checkfields({funcName = methodName}, {
+            {name = 'title', type = 'string', default = "Console"},
+            {name = 'size', type = 'table', item_type = 'int', size = 2, default = {800, 600}},
+            {name = 'position', type = 'table', item_type = 'int', size = 2, default = {50, 50}},
+            {name = 'fontSize', type = 'int', default = 12},
+            {name = 'closeable', type = 'bool', default = true},
+            {name = 'hiddenInSimulation', type = 'bool', default = false},
+            {name = 'resizable', type = 'bool', default = true},
+            {name = 'style', type = 'string', nullable = true},
+            {name = 'color', type = 'color', default = Color:rgb(0.0, 0.0, 0.0)},
+            {name = 'background', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
+        }, p)
+        local Console = require'Console'
+        h = Console(p)
+        p = {}
     elseif objectType == 'detachedScript' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'scriptType', type = 'int', default = sim.scripttype_addon},
