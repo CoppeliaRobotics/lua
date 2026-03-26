@@ -22,6 +22,7 @@ coppeliasim_add_lua_directory("utils")
 coppeliasim_add_lua_directory("sim")
 coppeliasim_add_lua_directory("sha1")
 
+if(false)
 set(PYTHON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../python")
 set(LUA_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 add_custom_command(
@@ -41,3 +42,4 @@ add_custom_command(
 )
 add_custom_target(generate_typewrappers ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/sim-2-typewrappers.lua")
 coppeliasim_add_lua("${CMAKE_CURRENT_BINARY_DIR}/sim-2-typewrappers.lua")
+endif()
