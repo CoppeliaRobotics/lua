@@ -195,9 +195,9 @@ function string.isprintable(s)
     if #s == 0 then return true end
 
     -- Check if the string is valid UTF-8
-    if not pcall(utf8.len, s) then
-        return false  -- Invalid UTF-8 sequence
-    end
+    local ok, val = pcall(utf8.len, s)
+    if not ok then return false end -- e.g.: "invalid UTF-8 sequence" error (?)
+    if val == nil then return false end -- utf8.len returns nil for invalid seq
 
     -- Check for non-printable ASCII control characters (0-31, 127)
     if s:match("[%c]") then
