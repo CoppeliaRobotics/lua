@@ -178,6 +178,22 @@ function Object.static.unittest()
     assert(c:getName(1) == '/a/c')
     b.modelBase = true
     assert(c:getName(1) == '/a/b/c')
+
+    a.customData.buf1 = Buffer '\x00\x01\x02'
+    assert(Buffer:isbuffer(a.customData.buf1))
+    assert(isbuffer(a.customData.buf1))
+    a:setBufferProperty('customData.buf2', Buffer '\x00\x01\x02')
+    assert(Buffer:isbuffer(a.customData.buf2))
+    assert(isbuffer(a.customData.buf2))
+    a:setProperty('customData.buf3', Buffer '\x00\x01\x02')
+    assert(Buffer:isbuffer(a.customData.buf3))
+    assert(isbuffer(a.customData.buf3))
+
+    a:setProperties {
+        ['color.diffuse'] = {0, 1, 1}
+    }
+    assert(a.color.diffuse:html() == '#00ffff')
+
     scene:removeObjects{a, b, c}
 
     print(debug.getinfo(1, 'S').source, 'tests passed')
