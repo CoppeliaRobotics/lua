@@ -1286,6 +1286,7 @@ function locals.getProperties(target, methodName, opts)
 end
 
 function locals.setProperties(target, methodName, props)
+    target = sim.Object:toobject(target)
     for k, v in pairs(props) do
         target:setProperty(k, v)
     end
