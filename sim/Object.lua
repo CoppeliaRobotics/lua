@@ -179,15 +179,37 @@ function Object.static.unittest()
     b.modelBase = true
     assert(c:getName(1) == '/a/b/c')
 
-    a.customData.buf1 = Buffer '\x00\x01\x02'
-    assert(Buffer:isbuffer(a.customData.buf1))
-    assert(isbuffer(a.customData.buf1))
     a:setBufferProperty('customData.buf2', Buffer '\x00\x01\x02')
     assert(Buffer:isbuffer(a.customData.buf2))
     assert(isbuffer(a.customData.buf2))
     a:setProperty('customData.buf3', Buffer '\x00\x01\x02')
     assert(Buffer:isbuffer(a.customData.buf3))
     assert(isbuffer(a.customData.buf3))
+
+    local function testCustomData(o, n, v, t, tm, ...)
+        o.customData[n] = v
+        local errMsg = 'value ' .. tostring(v) .. ' not ' .. tostring(t) .. (tm and (' ' .. tostring(tm)) or '')
+        if type(t) == 'string' then
+            local tf = t == 'integer' and math.type or type
+            assert(tf(o.customData[n]) == t, errMsg)
+        else
+            assert(t[tm](t, v, ...), errMsg)
+        end
+    end
+    local simEigen = require 'simEigen'
+    testCustomData(a, 'i', 2, 'integer')
+    testCustomData(a, 'f', 2.5, 'number')
+    testCustomData(a, 'b', true, 'boolean')
+    testCustomData(a, 'str', '\x00\x01\x02', 'string')
+    testCustomData(a, 'buf', Buffer '\x00\x01\x02', Buffer, 'isbuffer')
+    testCustomData(a, 'col', Color 'red', Color, 'iscolor')
+    testCustomData(a, 'v2', simEigen.Vector(2), simEigen.Vector, 'isvector', 2)
+    testCustomData(a, 'v3', simEigen.Vector(3), simEigen.Vector, 'isvector', 3)
+    testCustomData(a, 'm3x3', simEigen.Matrix(3, 3), simEigen.Matrix, 'ismatrix', 3, 3)
+    testCustomData(a, 'm4x4', simEigen.Matrix(4, 4), simEigen.Matrix, 'ismatrix', 4, 4)
+    --testCustomData(a, 'm', simEigen.Matrix(2, 2), simEigen.Matrix, 'ismatrix')
+    testCustomData(a, 'q', simEigen.Quaternion{0, 1, 0, 0}, simEigen.Quaternion, 'isquaternion')
+    testCustomData(a, 'p', simEigen.Pose{0, 0, 0, 0, 0, 0, 1}, simEigen.Pose, 'ispose')
 
     a:setProperties {
         ['color.diffuse'] = {0, 1, 1}
