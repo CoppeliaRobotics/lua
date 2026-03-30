@@ -506,6 +506,9 @@ function locals.visitTree(target, methodName, ...)
 end
 
 function locals.createObject(target, methodName, initialProperties)
+    local objectInit = require 'objectInit'
+    return objectInit.init(methodName, initialProperties)
+--[=[    
     local Color = require 'Color'
     local p = table.clone(initialProperties or {})
     local h
@@ -527,6 +530,8 @@ function locals.createObject(target, methodName, initialProperties)
     local objectType = extractValueOrDefault('objectType')
     if false then
     elseif objectType == 'collection' then
+        return objectInit[objectType](methodName, p)
+        --[[
         checkargs.checkfields({funcName = methodName}, {
             {name = 'override', type = 'bool', default = false},
         }, p)
@@ -535,6 +540,7 @@ function locals.createObject(target, methodName, initialProperties)
             opts = 1
         end
         h = sim.Object(sim.createCollectionEx(opts))
+        --]]
     elseif objectType == 'console' then
         checkargs.checkfields({funcName = methodName}, {
             {name = 'title', type = 'string', default = "Console"},
@@ -1149,6 +1155,7 @@ end]]
     end
     sim.setProperties(h, p)
     return h
+    --]=]
 end
 
 function sim.getSimulationStopping()
