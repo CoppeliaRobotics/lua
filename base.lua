@@ -610,7 +610,8 @@ end
 
 -- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
-require('buffer')
+Buffer = require('Buffer')
+Color = require('Color')
 require('mathx')
 require('stringx')
 require('tablex')

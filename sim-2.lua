@@ -704,8 +704,6 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
             elseif ltype == 'boolean' then
                 ptype = sim.propertytype_bool
             elseif ltype == 'table' then
-                local Color = require 'Color'
-                local Buffer = require 'buffer'
                 local simEigen = require 'simEigen'
                 if Buffer:isbuffer(pvalue) then
                     ptype = sim.propertytype_buffer
