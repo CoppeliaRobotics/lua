@@ -711,20 +711,12 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
                     ptype = sim.propertytype_color
                 elseif sim.Object:isobject(pvalue) then
                     ptype = sim.propertytype_handle
-                elseif simEigen.Vector:isvector(pvalue, 2) then
-                    ptype = sim.propertytype_vector2
-                elseif simEigen.Vector:isvector(pvalue, 3) then
-                    ptype = sim.propertytype_vector3
                 elseif simEigen.Quaternion:isquaternion(pvalue) then
                     ptype = sim.propertytype_quaternion
-                elseif simEigen.Pose:ispose(pvalue) then
-                    ptype = sim.propertytype_pose
-                elseif simEigen.Matrix:ismatrix(pvalue, 3, 3) then
-                    ptype = sim.propertytype_matrix3x3
-                elseif simEigen.Matrix:ismatrix(pvalue, 4, 4) then
-                    ptype = sim.propertytype_matrix4x4
                 elseif simEigen.Matrix:ismatrix(pvalue) then
                     ptype = sim.propertytype_matrix
+                elseif simEigen.Pose:ispose(pvalue) then
+                    ptype = sim.propertytype_pose
                 else
                     ptype = sim.propertytype_table
                 end
