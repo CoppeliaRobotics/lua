@@ -169,6 +169,10 @@ function Object.static.unittest()
     assert(cbor.encode(ip) == cbor.encode{b})
     assert(b:getPosition(f):norm() < 1e-7)
 
+    -- remove any leftover object from a previously failed test:
+    local olda = scene:getObject('/a', {noError = true})
+    if olda then olda:remove() end
+
     a = scene:createObject {objectType = 'dummy', name = 'a', }
     b = scene:createObject {objectType = 'dummy', name = 'b', }
     c = scene:createObject {objectType = 'dummy', name = 'c', }
@@ -179,37 +183,75 @@ function Object.static.unittest()
     b.modelBase = true
     assert(c:getName(1) == '/a/b/c')
 
-    a:setBufferProperty('customData.buf2', Buffer '\x00\x01\x02')
+    a.customData.i = 2
+    assert(math.type(a.customData.i) == 'integer')
+
+    a.customData.f = 2.5
+    assert(type(a.customData.f) == 'number')
+
+    a.customData.b = true
+    assert(type(a.customData.b) == 'boolean')
+
+    a.customData.str = 'abc'
+    assert(type(a.customData.str) == 'string')
+
+    a.customData.buf = Buffer 'abc'
+    assert(Buffer:isbuffer(a.customData.buf))
+    a:setBufferProperty('customData.buf2', Buffer 'abc')
     assert(Buffer:isbuffer(a.customData.buf2))
     assert(isbuffer(a.customData.buf2))
-    a:setProperty('customData.buf3', Buffer '\x00\x01\x02')
+    a:setProperty('customData.buf3', Buffer 'abc')
     assert(Buffer:isbuffer(a.customData.buf3))
     assert(isbuffer(a.customData.buf3))
 
-    local function testCustomData(o, n, v, t, tm, ...)
-        o.customData[n] = v
-        local errMsg = 'value ' .. tostring(v) .. ' not ' .. tostring(t) .. (tm and (' ' .. tostring(tm)) or '')
-        if type(t) == 'string' then
-            local tf = t == 'integer' and math.type or type
-            assert(tf(o.customData[n]) == t, errMsg)
-        else
-            assert(t[tm](t, v, ...), errMsg)
-        end
-    end
+    a.customData.col = Color 'red'
+    assert(Color:iscolor(a.customData.col))
+
     local simEigen = require 'simEigen'
-    testCustomData(a, 'i', 2, 'integer')
-    testCustomData(a, 'f', 2.5, 'number')
-    testCustomData(a, 'b', true, 'boolean')
-    testCustomData(a, 'str', '\x00\x01\x02', 'string')
-    testCustomData(a, 'buf', Buffer '\x00\x01\x02', Buffer, 'isbuffer')
-    testCustomData(a, 'col', Color 'red', Color, 'iscolor')
-    testCustomData(a, 'v2', simEigen.Vector(2), simEigen.Vector, 'isvector', 2)
-    testCustomData(a, 'v3', simEigen.Vector(3), simEigen.Vector, 'isvector', 3)
-    testCustomData(a, 'm3x3', simEigen.Matrix(3, 3), simEigen.Matrix, 'ismatrix', 3, 3)
-    testCustomData(a, 'm4x4', simEigen.Matrix(4, 4), simEigen.Matrix, 'ismatrix', 4, 4)
-    --testCustomData(a, 'm', simEigen.Matrix(2, 2), simEigen.Matrix, 'ismatrix')
-    testCustomData(a, 'q', simEigen.Quaternion{0, 1, 0, 0}, simEigen.Quaternion, 'isquaternion')
-    testCustomData(a, 'p', simEigen.Pose{0, 0, 0, 0, 0, 0, 1}, simEigen.Pose, 'ispose')
+
+    a.customData.vec2 = simEigen.Vector(2) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.vec2') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vec2, 2))
+    a:setVector2Property('customData.vec2', simEigen.Vector(2)) -- this writes as "vector2" type
+    assert(a:getPropertyInfo('customData.vec2') == sim.propertytype_vector2)
+    assert(simEigen.Vector:isvector(a.customData.vec2, 2))
+
+    a.customData.vec3 = simEigen.Vector(3) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vec3, 3))
+    a:setVector3Property('customData.vec3', simEigen.Vector(3)) -- this writes as "vector3" type
+    assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_vector3)
+    assert(simEigen.Vector:isvector(a.customData.vec3, 3))
+
+    a.customData.vec = simEigen.Vector(10)
+    assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vec))
+
+    a.customData.mat3x3 = simEigen.Matrix(3, 3) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.mat3x3') == sim.propertytype_matrix)
+    assert(simEigen.Matrix:ismatrix(a.customData.mat3x3, 3, 3))
+    a:setMatrix3x3Property('customData.mat3x3', simEigen.Matrix(3, 3)) -- this writes as "matrix3x3" type
+    assert(a:getPropertyInfo('customData.mat3x3') == sim.propertytype_matrix3x3)
+    assert(simEigen.Matrix:ismatrix(a.customData.mat3x3, 3, 3))
+
+    a.customData.mat4x4 = simEigen.Matrix(4, 4) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.mat4x4') == sim.propertytype_matrix)
+    assert(simEigen.Matrix:ismatrix(a.customData.mat4x4, 4, 4))
+    a:setMatrix4x4Property('customData.mat4x4', simEigen.Matrix(4, 4)) -- this writes as "matrix4x4" type
+    assert(a:getPropertyInfo('customData.mat4x4') == sim.propertytype_matrix4x4)
+    assert(simEigen.Matrix:ismatrix(a.customData.mat4x4, 4, 4))
+
+    a.customData.mat = simEigen.Matrix(2, 2)
+    assert(a:getPropertyInfo('customData.mat') == sim.propertytype_matrix)
+    assert(simEigen.Matrix:ismatrix(a.customData.mat, 2, 2))
+
+    a.customData.quat = simEigen.Quaternion{0, 1, 0, 0}
+    assert(a:getPropertyInfo('customData.quat') == sim.propertytype_quaternion)
+    assert(simEigen.Quaternion:isquaternion(a.customData.quat))
+
+    a.customData.pose = simEigen.Pose{0, 0, 0, 0, 0, 0, 1}
+    assert(a:getPropertyInfo('customData.pose') == sim.propertytype_pose)
+    assert(simEigen.Pose:ispose(a.customData.pose))
 
     a:setProperties {
         ['color.diffuse'] = {0, 1, 1}
