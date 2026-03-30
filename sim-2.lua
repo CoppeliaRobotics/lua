@@ -13,13 +13,13 @@ function sim.callMethod(target, name, ...)
         if string.sub(name, 1, 1) == "@" then
             -- c-side is calling!
             if not sim.Object:isobject(target) then
-                function getTargetObj(t) 
+                function getTargetObj(t)
                     return sim.Object(t)
                 end
                 local ok, err = pcall(getTargetObj, target)
                 if not ok then
-                    function dummyFunc() 
-                        error("error in 'sim.callMethod': target does not exist.") 
+                    function dummyFunc()
+                        error("error in 'sim.callMethod': target does not exist.")
                     end
                     local ok, err = pcall(dummyFunc)
                     return err -- error msg
@@ -35,8 +35,8 @@ function sim.callMethod(target, name, ...)
                     return res[2] -- error msg
                 end
             else
-                function dummyFunc() 
-                    error("error in 'sim.callMethod': method '" .. name .. "' does not exist.") 
+                function dummyFunc()
+                    error("error in 'sim.callMethod': method '" .. name .. "' does not exist.")
                 end
                 local ok, err = pcall(dummyFunc)
                 return err -- error msg
@@ -71,7 +71,7 @@ function sim.callMethod(target, name, ...)
                 elseif simEigen.Pose:ispose(arg) then
                     t = sim.stackitem_pose
                     arg = arg:data()
-                else 
+                else
                     local narg = {}
                     t = {}
                     for k, v in pairs(arg) do
@@ -493,13 +493,13 @@ function locals.visitTree(target, methodName, ...)
             types[objTypes[i]] = true
         end
     end
-    
+
     if types[target.objectType] or types['sceneObject'] then
         if visitorFunc(target) == false then
             return
         end
     end
-    
+
     for i = 1, #target.children do
         locals.visitTree(target.children[i], '', visitorFunc, {}, types)
     end
@@ -955,7 +955,7 @@ function sim.openFile(file)
 end
 
 function sim.getShapeAppearance(target)
-    return locals.getAppearance(target, '') 
+    return locals.getAppearance(target, '')
 end
 
 function sim.getBoolProperty(t, ...)
