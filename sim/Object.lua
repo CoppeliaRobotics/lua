@@ -141,7 +141,7 @@ function Object:toobject(o)
 end
 
 function Object.static.unittest()
-    local scene = sim.Object.scene
+    local scene = Object.scene
     f = scene:getObject '/Floor'
     b = scene:getObject '/Floor/box'
     if #scene.orphans > 0 then
@@ -153,12 +153,12 @@ function Object.static.unittest()
     assert(b.parent == f)
     d1 = scene:createObject{
         objectType = 'dummy',
-        alias = 'd1',
+        name = 'd1',
     }
     assert(Object:isobject(d1))
     d2 = scene:createObject{
         objectType = 'dummy',
-        alias = 'd2',
+        name = 'd2',
         dummyType = 0, -- dummyType = sim.dummytype_dynloopclosure,
         linkedDummy = d1,
     }
@@ -169,15 +169,15 @@ function Object.static.unittest()
     assert(cbor.encode(ip) == cbor.encode{b})
     assert(b:getPosition(f):norm() < 1e-7)
 
-    a = scene:createObject {objectType = 'dummy', alias = 'a', }
-    b = scene:createObject {objectType = 'dummy', alias = 'b', }
-    c = scene:createObject {objectType = 'dummy', alias = 'c', }
+    a = scene:createObject {objectType = 'dummy', name = 'a', }
+    b = scene:createObject {objectType = 'dummy', name = 'b', }
+    c = scene:createObject {objectType = 'dummy', name = 'c', }
     c.parent = b
     b.parent = a
     a.modelBase = true
-    assert(c:getAlias(1) == '/a/c')
+    assert(c:getName(1) == '/a/c')
     b.modelBase = true
-    assert(c:getAlias(1) == '/a/b/c')
+    assert(c:getName(1) == '/a/b/c')
     scene:removeObjects{a, b, c}
 
     print(debug.getinfo(1, 'S').source, 'tests passed')
