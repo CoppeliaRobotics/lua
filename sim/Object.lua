@@ -141,6 +141,7 @@ function Object:toobject(o)
 end
 
 function Object.static.unittest()
+    local sim = require 'sim-2'
     local scene = Object.scene
     f = scene:getObject '/Floor'
     b = scene:getObject '/Floor/box'
