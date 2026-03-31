@@ -172,7 +172,7 @@ function Object.static.unittest()
 
     -- remove any leftover object from a previously failed test:
     local olda = scene:getObject('/a', {noError = true})
-    if olda then olda:remove() end
+    if olda then olda:removeModel() end
 
     a = scene:createObject {objectType = 'dummy', name = 'a', }
     b = scene:createObject {objectType = 'dummy', name = 'b', }
