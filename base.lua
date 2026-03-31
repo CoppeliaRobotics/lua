@@ -521,7 +521,10 @@ function _evalExec(inputStr)
         end
         if func then
             local ret = nil
-            local success, err = pcall(function() ret = table.pack(func()) end)
+            local success, err = xpcall(
+                function() ret = table.pack(func()) end,
+                function(e) return debug.traceback(e, 2) end
+            )
             if success then
                 if ret.n > 0 and rr then
                     print(getAsDisplayString(table.unpack(ret, 1, ret.n)))
