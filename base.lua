@@ -523,7 +523,13 @@ function _evalExec(inputStr)
             local ret = nil
             local success, err = xpcall(
                 function() ret = table.pack(func()) end,
-                function(e) return debug.traceback(e, 2) end
+                function(e)
+                    if sim.getBoolProperty(sim.handle_app, 'customData.simCmd.showFullStackTrace', {noError = true}) then
+                        return debug.traceback(e, 2)
+                    else
+                        return tostring(e)
+                    end
+                end
             )
             if success then
                 if ret.n > 0 and rr then
