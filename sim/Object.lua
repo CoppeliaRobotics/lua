@@ -210,23 +210,23 @@ function Object.static.unittest()
 
     local simEigen = require 'simEigen'
 
-    a.customData.vec2 = simEigen.Vector(2) -- this writes as "matrix" type
-    assert(a:getPropertyInfo('customData.vec2') == sim.propertytype_matrix)
-    assert(simEigen.Vector:isvector(a.customData.vec2, 2))
+    a.customData.vec2m = simEigen.Vector(2) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.vec2m') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vec2m, 2))
     a:setVector2Property('customData.vec2', simEigen.Vector(2)) -- this writes as "vector2" type
     assert(a:getPropertyInfo('customData.vec2') == sim.propertytype_vector2)
     assert(simEigen.Vector:isvector(a.customData.vec2, 2))
 
-    a.customData.vec3 = simEigen.Vector(3) -- this writes as "matrix" type
-    assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_matrix)
-    assert(simEigen.Vector:isvector(a.customData.vec3, 3))
+    a.customData.vec3m = simEigen.Vector(3) -- this writes as "matrix" type
+    assert(a:getPropertyInfo('customData.vec3m') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vec3m, 3))
     a:setVector3Property('customData.vec3', simEigen.Vector(3)) -- this writes as "vector3" type
     assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_vector3)
     assert(simEigen.Vector:isvector(a.customData.vec3, 3))
 
-    a.customData.vec = simEigen.Vector(10)
-    assert(a:getPropertyInfo('customData.vec3') == sim.propertytype_matrix)
-    assert(simEigen.Vector:isvector(a.customData.vec))
+    a.customData.vecm = simEigen.Vector(10)
+    assert(a:getPropertyInfo('customData.vecm') == sim.propertytype_matrix)
+    assert(simEigen.Vector:isvector(a.customData.vecm))
 
     a.customData.mat3x3 = simEigen.Matrix(3, 3) -- this writes as "matrix" type
     assert(a:getPropertyInfo('customData.mat3x3') == sim.propertytype_matrix)
