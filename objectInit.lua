@@ -17,7 +17,7 @@ local function v(intValue, booleanValue)
     if booleanValue then return intValue else return 0 end
 end
 
-function objInit.init(methodName, initialProperties)
+function objInit.init(methodName, initialProperties, customClasses)
     local retVal = nil
     local saved = objInit.p
     objInit.p = table.clone(initialProperties or {})
@@ -25,8 +25,17 @@ function objInit.init(methodName, initialProperties)
         {name = 'objectType', type = 'string'},
     }, objInit.p)
     local objectType = objInit.extractValueOrDefault('objectType')
-    if objectType and objInit[objectType] then
-        retVal = objInit[objectType](methodName)
+    if objectType then
+        if objInit[objectType] then
+            retVal = objInit[objectType](methodName)
+        elseif customClasses[objectType] then
+            retVal = sim.Object(sim.app:createCustomObject(objectType, '{"superclass": "custom"}'))
+            if customClasses[objectType].methods.initialize then
+                customClasses[objectType].methods.initialize(retVal)
+            end
+        else
+            error('unknown type: ' .. objectType)
+        end
     end
     objInit.p = saved
     return retVal
@@ -45,6 +54,7 @@ function objInit.collection(methodName)
     return retVal
 end
 
+--[[
 function objInit.console(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'title', type = 'string', default = "Console"},
@@ -63,6 +73,7 @@ function objInit.console(methodName)
     -- retVal:setProperties(objInit.p)
     return retVal
 end
+]]--
 
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {

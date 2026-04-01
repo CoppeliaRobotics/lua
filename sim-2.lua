@@ -2,7 +2,7 @@ local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
 
 local locals = {}
-locals.customMethods = {}
+locals.customClasses = {}
 __2 = {locals = locals} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
@@ -17,9 +17,12 @@ function sim.callMethod(target, name, ...)
     if h >= sim.object_customstart and h <= sim.object_customend then
         local t = callMethod(app, 'getCustomObjectType', target)
         if t then
-            local d = locals.customMethods[t .. '__' .. name]
-            if d then
-                return d(...)
+            local c = locals.customClasses[t]
+            if c then
+                local m = c.methods[name]
+                if m then
+                    return m(...)
+                end
             end
         end
         error("error in 'sim.callMethod': custom method does not exist.")
@@ -146,13 +149,13 @@ function sim.callMethod(target, name, ...)
     end
 end
 
-function locals.registerCustomMethod(target, methodName, ...)
-    local objType, method, func = checkargs.checkargsEx({funcName = methodName}, {
-        {type = 'string' },
-        {type = 'string', size = '1..*'},
-        {type = 'func'},
+function locals.registerClass(target, methodName, ...)
+    local objType, methods = checkargs.checkargsEx({funcName = methodName}, {
+        {type = 'string'},
+        {type = 'table'},
     }, ...)
-    locals.customMethods[objType .. '__' .. method] = func
+    assert(locals.customClasses[objType] == nil, 'class ' .. objType .. ' already exists')
+    locals.customClasses[objType] = {methods = methods}
 end
 
 function locals.remove(target, methodName, delayed)
@@ -168,10 +171,10 @@ function locals.removeObjects(target, methodName, objects, delayed)
             h = h.handle
         end
         if h >= sim.object_customstart and h <= sim.object_customend then
-            sim.callMethod(h, 'remove') 
+            sim.callMethod(h, 'remove')
         else
             list[#list + 1] = obj
-        end    
+        end
     end
     sim.callMethod(target, '_removeObjects', list, delayed)
 end
@@ -541,7 +544,7 @@ end
 
 function locals.createObject(target, methodName, initialProperties)
     local objectInit = require 'objectInit'
-    local retVal = objectInit.init(methodName, initialProperties)
+    local retVal = objectInit.init(methodName, initialProperties, locals.customClasses)
     if retVal == nil then
         error ("error in '" .. methodName .. "': unsupported object type.")
     end
