@@ -36,7 +36,12 @@ function Object:__setupPropertyGroups()
 
     self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-    local objectType = self:callMethod('getStringProperty', 'objectType')
+    local objectType
+    if not pcall(function()
+        objectType = self:callMethod('getStringProperty', 'objectType')
+    end) then
+        error('invalid handle', 4)
+    end
 
     if not objectMetaInfo[objectType] then
         local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
