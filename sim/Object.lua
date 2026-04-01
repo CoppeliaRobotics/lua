@@ -259,6 +259,13 @@ function Object.static.unittest()
     }
     assert(a.color.diffuse:html() == '#00ffff')
 
+    local oa = sim.ObjectArray{b, c}
+    local t = oa:totable()
+    assert(#t == 2 and t[1] == b.handle and t[2] == c.handle)
+    a.refs.foo = oa
+    assert(a.refs.foo[1] == b)
+    assert(a.refs.foo[2] == c)
+
     scene:removeObjects{a, b, c}
 
     print(debug.getinfo(1, 'S').source, 'tests passed')
