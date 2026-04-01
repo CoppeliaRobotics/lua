@@ -46,7 +46,6 @@ function objInit.collection(methodName)
 end
 
 function objInit.console(methodName)
-    local Color = require 'Color'
     checkargs.checkfields({funcName = methodName}, {
         {name = 'title', type = 'string', default = "Console"},
         {name = 'size', type = 'table', item_type = 'int', size = 2, default = {800, 600}},
@@ -80,7 +79,6 @@ function objInit.detachedScript(methodName)
 end
 
 function objInit.drawingObject(methodName)
-    local Color = require 'Color'
     checkargs.checkfields({funcName = methodName}, {
         {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
         {name = 'cyclic', type = 'bool', nullable = true},
@@ -120,7 +118,6 @@ function objInit.drawingObject(methodName)
 end
 
 function objInit.marker(methodName)
-    local Color = require 'Color'
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
         {name = 'itemType', type = 'int', default = sim.markertype_spheres},
@@ -421,7 +418,6 @@ function objInit.proximitySensor(methodName)
 end
 
 function objInit.visionSensor(methodName)
-    local Color = require 'Color'
     checkargs.checkfields({funcName = methodName}, {
         {name = 'explicitHandling', type = 'bool', default = false},
         {name = 'showFrustum', type = 'bool', default = false},
@@ -501,7 +497,6 @@ function objInit.graph(methodName)
 end
 
 function objInit.shape(methodName)
-    local Color = require 'Color'
     local simEigen = require 'simEigen'
     local retVal = nil
     checkargs.checkfields({funcName = methodName}, {

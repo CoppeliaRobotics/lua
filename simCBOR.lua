@@ -103,7 +103,6 @@ registerTag(simCBOR.Tags.Array.F64LE)(function(values)
 end)
 
 registerTag(simCBOR.Tags.Sim.Color)(function(value)
-    local Color = require 'Color'
     return Color(value)
 end)
 

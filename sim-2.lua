@@ -781,7 +781,6 @@ function locals.convertPropertyValue(target, methodName, value, fromType, toType
     elseif fromType == sim.propertytype_string then
         local fn, err = loadstring(
             'local sim = require "sim-2"; ' ..
-            'local Color = require "Color"; ' ..
             'local simEigen = require "simEigen"; ' ..
             'return ' .. value
         )

@@ -38,7 +38,6 @@ function checkargs.infertype(t)
 end
 
 local simEigen = require 'simEigen'
-local Color = require 'Color'
 
 function checkargs.checkarg.any(v, t)
     return v

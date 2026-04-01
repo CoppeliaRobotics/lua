@@ -20,7 +20,6 @@ if __name__ == '__main__':
 return {
     extend = function(sim)
         local simEigen = require 'simEigen'
-        local Color = require 'Color'
 
         local function write_matrix(v)
             return simEigen.Matrix(v)

@@ -1,6 +1,5 @@
 local class = require 'middleclass'
 local sim = require 'sim-2'
-local Color = require 'Color'
 local simUI = require 'simUI'
 
 local Console = class 'Console'
@@ -33,7 +32,7 @@ function Console:initialize(opts)
     if style == nil then
         style = string.format("font-family: 'Courier New', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono'; font-size: %dpt; background-color: %s; color: %s;", fontSize, background:html(), self.defaultColor:html())
     end
-    
+
      local xml = string.format([[
         <ui title="%s" closeable="%s" resizable="%s" on-close="__2.consoles.onClose" placement="relative" position="%d,%d" width="%d" height="%d" activate="false">
             <text-browser id="1" style="%s" read-only="true" />
@@ -55,7 +54,7 @@ function Console:initialize(opts)
 
     sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', '__2.consoles.beforeInstanceSwitch', false)
     sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', '__2.consoles.afterInstanceSwitch', false)
-    
+
     if sim.self.scriptType ~= sim.scripttype_simulation and sim.self.scriptType ~= sim.scripttype_main then
         sim.self:registerFunctionHook('sysCall_beforeSimulation', '__2.consoles.beforeSimulation', false)
         sim.self:registerFunctionHook('sysCall_afterSimulation', '__2.consoles.afterSimulation', false)
@@ -124,7 +123,7 @@ function Console:print(text, color)
     if not Color:iscolor(color) then
         color = Color(color)
     end
-    
+
     self.text = self.text .. text
 
     local escaped = text:gsub("&", "&amp;")
