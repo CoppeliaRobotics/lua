@@ -43,7 +43,7 @@ function Object:__setupPropertyGroups()
         objectMetaInfo[objectType] = json.decode(mi)
         assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
     end
-    for ns, opts in pairs(objectMetaInfo[objectType].namespaces) do
+    for ns, opts in pairs(objectMetaInfo[objectType].namespaces or {}) do
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
     end
 
