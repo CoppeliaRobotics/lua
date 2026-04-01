@@ -138,6 +138,11 @@ function Object:callMethod(method, ...)
     return sim.callMethod(handle, method, ...)
 end
 
+function Object:isValid()
+    local handle = rawget(self, '__handle')
+    return sim.callMethod(handle, 'isValid')
+end
+
 function Object:toobject(o)
     assert(self == Object, 'class method')
     if Object:isobject(o) then return o end
