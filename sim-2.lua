@@ -14,7 +14,7 @@ function sim.callMethod(target, name, ...)
     if sim.Object:isobject(h) then
         h = h.handle
     end
-    if h >= 8000000 and h < 9999999 then -- hard-coded for speed, for now (TODO)
+    if h >= sim.object_customstart and h <= sim.object_customend then
         local t = callMethod(app, 'getCustomObjectType', target)
         if t then
             local d = locals.customMethods[t .. '__' .. name]
@@ -146,7 +146,12 @@ function sim.callMethod(target, name, ...)
     end
 end
 
-function locals.registerCustomMethod(target, methodName, objType, method, func)
+function locals.registerCustomMethod(target, methodName, ...)
+    local objType, method, func = checkargs.checkargsEx({funcName = methodName}, {
+        {type = 'string' },
+        {type = 'string', size = '1..*'},
+        {type = 'func'},
+    }, ...)
     locals.customMethods[objType .. '__' .. method] = func
 end
 
