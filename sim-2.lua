@@ -2,6 +2,7 @@ local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
 
 local locals = {}
+locals.customMethods = {}
 __2 = {locals = locals} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
@@ -9,125 +10,144 @@ local checkargs = require('checkargs-2')
 require('motion-2').extend(sim)
 
 function sim.callMethod(target, name, ...)
-    if locals[name] or (string.sub(name, 1, 1) == "@") then
-        if string.sub(name, 1, 1) == "@" then
-            -- c-side is calling!
-            if not sim.Object:isobject(target) then
-                function getTargetObj(t)
-                    return sim.Object(t)
+    local h = target
+    if sim.Object:isobject(h) then
+        h = h.handle
+    end
+    if h >= 8000000 and h < 9999999 then -- hard-coded for speed, for now (TODO)
+        local t = callMethod(app, 'getCustomObjectType', target)
+        if t then
+            local d = locals.customMethods[t .. '__' .. name]
+            if d then
+                return d(...)
+            end
+        end
+        error("error in 'sim.callMethod': custom method does not exist.")
+    else
+        if locals[name] or (string.sub(name, 1, 1) == "@") then
+            if string.sub(name, 1, 1) == "@" then
+                -- c-side is calling!
+                if not sim.Object:isobject(target) then
+                    function getTargetObj(t)
+                        return sim.Object(t)
+                    end
+                    local ok, err = pcall(getTargetObj, target)
+                    if not ok then
+                        function dummyFunc()
+                            error("error in 'sim.callMethod': target does not exist.")
+                        end
+                        local ok, err = pcall(dummyFunc)
+                        return err -- error msg
+                    end
                 end
-                local ok, err = pcall(getTargetObj, target)
-                if not ok then
+
+                name = name:sub(2)
+                if type(locals[name]) == 'function' then
+                    local res = table.pack(pcall(locals[name], target, name, ...))
+                    if res[1] then
+                        return '', table.unpack(res, 2, res.n)
+                    else
+                        return res[2] -- error msg
+                    end
+                else
                     function dummyFunc()
-                        error("error in 'sim.callMethod': target does not exist.")
+                        error("error in 'sim.callMethod': method '" .. name .. "' does not exist.")
                     end
                     local ok, err = pcall(dummyFunc)
                     return err -- error msg
                 end
-            end
-
-            name = name:sub(2)
-            if type(locals[name]) == 'function' then
-                local res = table.pack(pcall(locals[name], target, name, ...))
-                if res[1] then
-                    return '', table.unpack(res, 2, res.n)
-                else
-                    return res[2] -- error msg
-                end
             else
-                function dummyFunc()
-                    error("error in 'sim.callMethod': method '" .. name .. "' does not exist.")
-                end
-                local ok, err = pcall(dummyFunc)
-                return err -- error msg
+                return locals[name](target, name, ...)
             end
         else
-            return locals[name](target, name, ...)
-        end
-    else
-        if sim.Object:isobject(target) then
-            target = target.handle
-        end
-        return callMethod(target, name, ...)
-        --[[
-        function toSimpleType(arg)
-            local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
-            if arg == nil then
-                t = sim.stackitem_null
-                arg = 0
-            elseif type(arg) == 'table' then
-                if isbuffer(arg) then
-                    t = -2 -- stands for buffer
-                    arg = tostring(arg)
-                elseif sim.Object:isobject(arg) then
-                    t = sim.stackitem_handle
-                    arg = arg.handle
-                elseif simEigen.Matrix:ismatrix(arg) then
-                    t = 'm' .. tostring(arg:rows()) .. 'x' .. tostring(arg:cols()) -- "m[rows]x[cols]"
-                    arg = arg:data()
-                elseif simEigen.Quaternion:isquaternion(arg) then
-                    t = sim.stackitem_quaternion
-                    arg = arg:data()
-                elseif simEigen.Pose:ispose(arg) then
-                    t = sim.stackitem_pose
-                    arg = arg:data()
-                else
+            if sim.Object:isobject(target) then
+                target = h
+            end
+            return callMethod(target, name, ...)
+            --[[
+            function toSimpleType(arg)
+                local t = -1 -- stands for simple types directly supported (e.g. sim.stackitem_double, sim.stackitem_table, etc.)
+                if arg == nil then
+                    t = sim.stackitem_null
+                    arg = 0
+                elseif type(arg) == 'table' then
+                    if isbuffer(arg) then
+                        t = -2 -- stands for buffer
+                        arg = tostring(arg)
+                    elseif sim.Object:isobject(arg) then
+                        t = sim.stackitem_handle
+                        arg = arg.handle
+                    elseif simEigen.Matrix:ismatrix(arg) then
+                        t = 'm' .. tostring(arg:rows()) .. 'x' .. tostring(arg:cols()) -- "m[rows]x[cols]"
+                        arg = arg:data()
+                    elseif simEigen.Quaternion:isquaternion(arg) then
+                        t = sim.stackitem_quaternion
+                        arg = arg:data()
+                    elseif simEigen.Pose:ispose(arg) then
+                        t = sim.stackitem_pose
+                        arg = arg:data()
+                    else
+                        local narg = {}
+                        t = {}
+                        for k, v in pairs(arg) do
+                            local arg_, t_ = toSimpleType(v)
+                            narg[k] = arg_
+                            t[k] = t_
+                        end
+                        arg = narg
+                    end
+                end
+                return arg, t
+            end
+
+            function toExtendedType(arg, t)
+                if t == -2 then
+                    arg = tobuffer(arg)
+                elseif t == sim.stackitem_null then
+                    arg = nil
+                elseif t == sim.stackitem_handle then
+                    arg = sim.Object(arg)
+                elseif t == sim.stackitem_quaternion then
+                    arg = simEigen.Quaternion(arg)
+                elseif t == sim.stackitem_pose then
+                    arg = simEigen.Pose(arg)
+                elseif type(t) == 'string' then
+                    local rows, cols = t:match("m(%d+)x(%d+)") -- "m[rows]x[cols]"
+                    arg = simEigen.Matrix(tonumber(rows), tonumber(cols), arg)
+                elseif type(t) == 'table' then
                     local narg = {}
-                    t = {}
                     for k, v in pairs(arg) do
-                        local arg_, t_ = toSimpleType(v)
+                        local arg_ = toExtendedType(v, t[k])
                         narg[k] = arg_
-                        t[k] = t_
                     end
                     arg = narg
                 end
+                return arg
             end
-            return arg, t
-        end
 
-        function toExtendedType(arg, t)
-            if t == -2 then
-                arg = tobuffer(arg)
-            elseif t == sim.stackitem_null then
-                arg = nil
-            elseif t == sim.stackitem_handle then
-                arg = sim.Object(arg)
-            elseif t == sim.stackitem_quaternion then
-                arg = simEigen.Quaternion(arg)
-            elseif t == sim.stackitem_pose then
-                arg = simEigen.Pose(arg)
-            elseif type(t) == 'string' then
-                local rows, cols = t:match("m(%d+)x(%d+)") -- "m[rows]x[cols]"
-                arg = simEigen.Matrix(tonumber(rows), tonumber(cols), arg)
-            elseif type(t) == 'table' then
-                local narg = {}
-                for k, v in pairs(arg) do
-                    local arg_ = toExtendedType(v, t[k])
-                    narg[k] = arg_
-                end
-                arg = narg
+            local args = table.pack(...)
+            local types = {}
+            for i = 1, args.n do
+                local arg, t = toSimpleType(args[i])
+                args[i] = arg
+                types[i] = t
             end
-            return arg
+            args.n = nil -- important!!
+            local retVals = {}
+            local ret = table.pack(callMethod(target, name, args, types))
+            ret.n = nil
+            for i = 1, #ret // 2 do
+                local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
+                retVals[i] = arg
+            end
+            return table.unpack(retVals)
+            --]]
         end
-
-        local args = table.pack(...)
-        local types = {}
-        for i = 1, args.n do
-            local arg, t = toSimpleType(args[i])
-            args[i] = arg
-            types[i] = t
-        end
-        args.n = nil -- important!!
-        local retVals = {}
-        local ret = table.pack(callMethod(target, name, args, types))
-        ret.n = nil
-        for i = 1, #ret // 2 do
-            local arg = toExtendedType(ret[2 * (i - 1) + 1], ret[2 * (i - 1) + 2])
-            retVals[i] = arg
-        end
-        return table.unpack(retVals)
-        --]]
     end
+end
+
+function locals.registerCustomMethod(target, methodName, objType, method, func)
+    locals.customMethods[objType .. '__' .. method] = func
 end
 
 function locals.remove(target, methodName, delayed)
