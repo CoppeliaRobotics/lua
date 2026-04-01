@@ -406,14 +406,12 @@ function locals.cancelScheduledExecution(target, methodName, id)
 end
 
 function locals.changeColor(target, methodName, ...)
+    target = sim.Object:toobject(target)
     local color, materialComponent = checkargs({
         {type = 'color'},
         {type = 'int', default = sim.materialcomponent_diffuse},
     }, ...)
     local colorData = {}
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
     local objs = {target}
     if target.objectType == 'collection' then
         objs = collection.objects
@@ -472,9 +470,7 @@ function locals.waitForSignal(target, methodName, sigName, item)
 end
 
 function locals.visitTree(target, methodName, ...)
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
+    target = sim.Object:toobject(target)
     local visitorFunc, objTypes, objTypesMap = ...
     if #methodName > 0 then
         -- Do not verify again with reentrance
@@ -522,9 +518,7 @@ end
 sim.getThreadExitRequest = sim.getSimulationStopping
 
 function locals.getAppearance(target, methodName)
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
+    target = sim.Object:toobject(target)
     assert(target.objectType == 'shape', 'not a shape')
     local r = {}
     r.edges = target.compoundEdges
@@ -541,9 +535,7 @@ function locals.getAppearance(target, methodName)
 end
 
 function locals.setAppearance(target, methodName, savedData)
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
+    target = sim.Object:toobject(target)
     assert(target.objectType == 'shape', 'not a shape')
     target.compoundEdges = savedData.edges
     target.compoundWireframe = savedData.wireframe
@@ -593,7 +585,21 @@ end
 
 function locals.serialize(target, methodName, data)
     local cbor = require 'simCBOR'
-    return tobuffer(cbor.encode(data))
+    function fixTable(v)
+        local mt = getmetatable(v)
+        if type(v) == 'function' or (mt and not mt.__tocbor) then
+            return tostring(v)
+        elseif type(v) == 'table' and not mt then
+            local t = {}
+            for k, v in pairs(v) do
+                t[k] = fixTable(v)
+            end
+            return t
+        else
+            return v
+        end
+    end
+    return tobuffer(cbor.encode(fixTable(data)))
 end
 
 function locals.deserialize(target, methodName, data)
@@ -609,11 +615,9 @@ function locals.getPropertyTypeString(target, methodName, ptype)
 end
 
 function locals.getPropertiesInfos(target, methodName, opts)
+    target = sim.Object:toobject(target)
     opts = opts or {}
     local propertiesInfos = {}
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
     for i = 0, 1e100 do
         local pname, pclass = target:getPropertyName(i, {excludeFlags = opts.excludeFlags})
         if not pname then break end
@@ -629,6 +633,7 @@ function locals.getPropertiesInfos(target, methodName, opts)
 end
 
 function locals.getProperties(target, methodName, opts)
+    target = sim.Object:toobject(target)
     opts = opts or {}
     local propertiesValues = {}
     for pname, pinfos in pairs(target:getPropertiesInfos(opts)) do
@@ -649,11 +654,9 @@ function locals.setProperties(target, methodName, props)
 end
 
 function locals.getProperty(target, methodName, pname, opts)
+    target = sim.Object:toobject(target)
     local retVal
     local noError = opts and opts.noError
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
     local ptype, pflags, descr = target:getPropertyInfo(pname, opts)
     if not noError then
         assert(ptype, 'no such property: ' .. pname)
@@ -669,6 +672,7 @@ function locals.getProperty(target, methodName, pname, opts)
 end
 
 function locals.setProperty(target, methodName, pname, pvalue, opts)
+    target = sim.Object:toobject(target)
     if type(opts) == 'number' or type(opts) == 'string' then
         sim.app:logWarn('passing a ' .. type(opts) .. ' as the last argument of setProperty: assuming {type = ...}')
         -- backward compatibility fix: last arg was ptype
@@ -682,10 +686,6 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
         assert(ptype, 'invalid property type string')
     end
     assert(ptype == nil or math.type(ptype) == 'integer', 'invalid type for option "type"')
-
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
 
     if string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.') then
         -- custom data properties need type
@@ -754,11 +754,9 @@ function locals.convertPropertyValue(target, methodName, value, fromType, toType
 end
 
 function locals.getPropertyInfos(target, methodName, pname, opts)
+    target = sim.Object:toobject(target)
     opts = opts or {}
     local infos = {}
-    if not sim.Object:isobject(target) then
-        target = sim.Object(target)
-    end
     local ptype, pflags, metaInfo = target:getPropertyInfo(pname, {bitCoded = 1})
     if not ptype then return end
     infos.type = ptype
@@ -798,7 +796,7 @@ function locals.getTableProperty(target, methodName, ...)
         local retVal = {}
         if #buf > 0 then
             if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
-                retVal = sim.app:unpackTable(buf)
+                retVal = sim.app:unpack(buf)
             else
                 retVal = sim.app:deserialize(buf)
             end
@@ -818,7 +816,7 @@ function locals.setTableProperty(target, methodName, ...)
     if options.dataType == 'cbor' then
         buf = sim.app:serialize(theTable)
     else
-        buf = sim.app:packTable(theTable)
+        buf = sim.app:pack(theTable)
     end
     return callMethod(target, '_setTableProperty', tagName, buf, options)
 end

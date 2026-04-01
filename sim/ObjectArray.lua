@@ -118,7 +118,12 @@ end
 function ObjectArray:totable()
     local ret = {}
     for i = 1, #self do
-        table.insert(ret, self[i])
+        -- TODO: check also is self[i] is a valid object
+        if self[i] then
+            table.insert(ret, self[i].handle)
+        else
+            table.insert(ret, -1)
+        end
     end
     return ret
 end
