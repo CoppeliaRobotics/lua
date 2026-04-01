@@ -741,9 +741,12 @@ function locals.convertPropertyValue(target, methodName, value, fromType, toType
     if fromType == toType then
         return value
     elseif fromType == sim.propertytype_string then
-        local loadModules = {'Color', 'simEigen'}
-        local preamble = table.concat(map(function(m) return string.format('local %s = require "%s"; ', m, m) end, loadModules))
-        local fn, err = loadstring(preamble .. 'return ' .. value)
+        local fn, err = loadstring(
+            'local sim = require "sim-2"; ' ..
+            'local Color = require "Color"; ' ..
+            'local simEigen = require "simEigen"; ' ..
+            'return ' .. value
+        )
         if not fn then return nil, err end
         local ok, val = pcall(fn)
         if ok then return val, nil else return nil, val end
