@@ -31,12 +31,18 @@ function Object:__setupPropertyGroups()
 
     local handle = rawget(self, '__handle')
 
-    -- this property group exposes object's top-level properties as self's table keys (via __index):
-    rawset(self, '__properties', PropertyGroup(self))
+    local objectType
+    -- temp. workaround for custom objects:
+    if handle >= 8000000 and handle <= 9999999 then
+        objectType = sim.callMethod(sim.handle_app, 'getCustomObjectType', handle)
+    else
+        -- this property group exposes object's top-level properties as self's table keys (via __index):
+        rawset(self, '__properties', PropertyGroup(self))
 
-    self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+        self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-    local objectType = self:callMethod('getStringProperty', 'objectType')
+        objectType = self:callMethod('getStringProperty', 'objectType')
+    end
 
     if not objectMetaInfo[objectType] then
         local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
@@ -45,6 +51,16 @@ function Object:__setupPropertyGroups()
     end
     for ns, opts in pairs(objectMetaInfo[objectType].namespaces or {}) do
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
+    end
+
+    if not objectMethods[objectType] and objectMetaInfo[objectType].methods then
+        objectMethods[objectType] = {}
+        for methodName, methodInfo in pairs(objectMetaInfo[objectType].methods) do
+            local module = methodInfo.module or _G
+            local func = module[methodName]
+            assert(type(func) == 'function')
+            objectMethods[objectType][methodName] = func
+        end
     end
 
     if not objectMethods[objectType] then
@@ -75,7 +91,7 @@ function Object:__index(k)
     if methods[k] then return methods[k] end
 
     -- redirect to default property group otherwise:
-    local p = rawget(self, '__properties')[k]
+    local p = (rawget(self, '__properties') or {})[k]
     if p ~= nil then return p end
 end
 

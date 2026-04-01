@@ -1,5 +1,6 @@
 local sim = require 'sim-2'
 local checkargs = require('checkargs-2')
+local CustomClass = require 'sim.CustomClass'
 
 local objInit = {}
 
@@ -28,11 +29,8 @@ function objInit.init(methodName, initialProperties, customClasses)
     if objectType then
         if objInit[objectType] then
             retVal = objInit[objectType](methodName)
-        elseif customClasses[objectType] then
-            retVal = sim.Object(sim.app:createCustomObject(objectType, '{"superclass": "custom"}'))
-            if customClasses[objectType].methods.initialize then
-                customClasses[objectType].methods.initialize(retVal)
-            end
+        elseif CustomClass:isRegistered(objectType) then
+            retVal = CustomClass:createObject(objectType, objInit.p)
         else
             error('unknown type: ' .. objectType)
         end
