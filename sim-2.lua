@@ -156,11 +156,24 @@ function locals.registerCustomMethod(target, methodName, ...)
 end
 
 function locals.remove(target, methodName, delayed)
-    return sim.callMethod(target, '_remove', delayed)
+    sim.callMethod(target, '_remove', delayed)
 end
 
 function locals.removeObjects(target, methodName, objects, delayed)
-    return sim.callMethod(target, '_removeObjects', objects, delayed)
+    local list = {}
+    for i = 1, #objects do
+        local obj = objects[i]
+        local h = obj
+        if sim.Object:isobject(h) then
+            h = h.handle
+        end
+        if h >= sim.object_customstart and h <= sim.object_customend then
+            sim.callMethod(h, 'remove') 
+        else
+            list[#list + 1] = obj
+        end    
+    end
+    sim.callMethod(target, '_removeObjects', list, delayed)
 end
 
 function locals.registerFunctionHook(target, methodName, funcNm, func, before)
