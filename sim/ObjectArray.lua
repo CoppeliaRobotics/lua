@@ -96,7 +96,7 @@ function ObjectArray:__newindex(k, v)
 end
 
 function ObjectArray:__tostring()
-    return self.class.name .. _S.anyToString(self.handle)
+    return self.class.name .. _S.anyToString(self:totable())
 end
 
 function ObjectArray:__isobjectarray()
@@ -118,9 +118,8 @@ end
 function ObjectArray:totable()
     local ret = {}
     for i = 1, #self do
-        -- TODO: check also is self[i] is a valid object
         if self[i] then
-            table.insert(ret, self[i].handle)
+            table.insert(ret, self[i].__handle)
         else
             table.insert(ret, -1)
         end
