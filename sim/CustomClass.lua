@@ -33,6 +33,7 @@ end
 function CustomClass.static:createObject(objectType, initialProperties)
     local cls = CustomClass.static.registeredClasses[objectType]
     assert(cls ~= nil, 'invalid objectType')
+    local sim = require 'sim-2'
     local json = require 'dkjson'
     local objectMetaInfo = json.encode(cls:objectMetaInfo())
     local obj = sim.Object(sim.app:createCustomObject(objectType, objectMetaInfo))
