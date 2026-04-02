@@ -510,7 +510,7 @@ function _evalExec(inputStr)
         app, scene, self = sim.app, sim.scene, sim.self
     end
     local function pfunc(theStr)
-        local setCv = sim.getStringProperty(sim.handle_app, 'customData.simCmd.setConvenienceVars', {noError = true})
+        local setCv = sim.getBoolProperty(sim.handle_app, 'customData.simCmd.setConvenienceVars', {noError = true})
         if setCv ~= false then setConvenienceVars() end
 
         local func, err = load('return ' .. theStr)
