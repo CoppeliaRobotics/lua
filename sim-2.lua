@@ -2,7 +2,6 @@ local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
 
 local locals = {}
-local CustomClass = require 'sim.CustomClass'
 __2 = {locals = locals} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
@@ -13,15 +12,6 @@ function sim.callMethod(target, name, ...)
     local targetHandle = target
     if type(target) ~= 'number' then
         targetHandle = target.__handle -- cannot call target.handle, target:isValid, etc.
-    end
-
-    -- handling of custom methods
-    if targetHandle >= sim.object_customstart and targetHandle <= sim.object_customend and callMethod(targetHandle, 'isValid') then
-        local m = CustomClass:getMethod(callMethod(targetHandle, 'getStringProperty', 'objectType'), name)
-        if m then
-            return m(...) -- calling custom Lua method
-        end
-        -- custom method not found, continue with searching standard methods below:
     end
 
     if locals[name] or (string.sub(name, 1, 1) == "@") then
@@ -62,14 +52,6 @@ function sim.callMethod(target, name, ...)
     else
         return callMethod(target, name, ...) -- calling c method
     end
-end
-
-function locals.registerClass(target, methodName, ...)
-    local objectType, objectMetaInfo = checkargs.checkargsEx({funcName = methodName}, {
-        {type = 'string'},
-        {union = {{type = 'string'}, {type = 'table'}}},
-    }, ...)
-    CustomClass:register(objectType, objectMetaInfo)
 end
 
 function locals.remove(target, methodName, delayed)
@@ -458,7 +440,7 @@ end
 
 function locals.createObject(target, methodName, initialProperties)
     local objectInit = require 'objectInit'
-    local retVal = objectInit.init(methodName, initialProperties, locals.customClasses)
+    local retVal = objectInit.init(methodName, initialProperties)
     if retVal == nil then
         error ("error in '" .. methodName .. "': unsupported object type.")
     end

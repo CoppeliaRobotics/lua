@@ -1,6 +1,5 @@
 local sim = require 'sim-2'
 local checkargs = require('checkargs-2')
-local CustomClass = require 'sim.CustomClass'
 
 local objInit = {}
 
@@ -18,7 +17,7 @@ local function v(intValue, booleanValue)
     if booleanValue then return intValue else return 0 end
 end
 
-function objInit.init(methodName, initialProperties, customClasses)
+function objInit.init(methodName, initialProperties)
     local retVal = nil
     local saved = objInit.p
     objInit.p = table.clone(initialProperties or {})
@@ -29,8 +28,6 @@ function objInit.init(methodName, initialProperties, customClasses)
     if objectType then
         if objInit[objectType] then
             retVal = objInit[objectType](methodName)
-        elseif CustomClass:isRegistered(objectType) then
-            retVal = CustomClass:createObject(objectType, objInit.p)
         else
             error('unknown type: ' .. objectType)
         end
