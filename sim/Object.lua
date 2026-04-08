@@ -31,18 +31,11 @@ function Object:__setupPropertyGroups()
 
     local handle = rawget(self, '__handle')
 
-    local objectType
-    -- temp. workaround for custom objects:
-    if handle >= 8000000 and handle <= 9999999 then
-        objectType = sim.callMethod(sim.handle_app, 'getCustomObjectType', handle)
-    else
-        -- this property group exposes object's top-level properties as self's table keys (via __index):
-        rawset(self, '__properties', PropertyGroup(self))
+    rawset(self, '__properties', PropertyGroup(self))
 
-        self.__properties:registerLocalProperty('handle', function() return self.__handle end)
+    self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
-        objectType = self:callMethod('getStringProperty', 'objectType')
-    end
+    local objectType = self:callMethod('getStringProperty', 'objectType')
 
     if not objectMetaInfo[objectType] then
         local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
