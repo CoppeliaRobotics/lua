@@ -48,6 +48,13 @@ local cbor = require 'org.conman.cbor'
 
 local type_tags = {}
 
+type_tags.BIN = function(value, iskey)
+    if not iskey then
+        value = Buffer(value)
+    end
+    return value
+end
+
 local function registerTag(tagNumber)
     return function(fn)
         type_tags["TAG_" .. tagNumber] = fn
