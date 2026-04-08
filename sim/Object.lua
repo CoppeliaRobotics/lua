@@ -42,18 +42,9 @@ function Object:__setupPropertyGroups()
         objectMetaInfo[objectType] = json.decode(mi)
         assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
     end
+
     for ns, opts in pairs(objectMetaInfo[objectType].namespaces or {}) do
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
-    end
-
-    if not objectMethods[objectType] and objectMetaInfo[objectType].methods then
-        objectMethods[objectType] = {}
-        for methodName, methodInfo in pairs(objectMetaInfo[objectType].methods) do
-            local module = methodInfo.module or _G
-            local func = module[methodName]
-            assert(type(func) == 'function')
-            objectMethods[objectType][methodName] = func
-        end
     end
 
     if not objectMethods[objectType] then
@@ -68,7 +59,22 @@ function Object:__setupPropertyGroups()
                 end
             end
         end
+
+        for methodName, methodInfo in pairs(objectMetaInfo[objectType].methods or {}) do
+            local module = _G
+            if methodInfo.module then
+                module = require(methodInfo.module)
+            end
+            local moduleFuncName = methodName
+            if methodInfo.func then
+                moduleFuncName = methodInfo.func
+            end
+            local func = module[moduleFuncName]
+            assert(type(func) == 'function')
+            objectMethods[objectType][methodName] = func
+        end
     end
+
     rawset(self, '__methods', objectMethods[objectType])
 end
 
