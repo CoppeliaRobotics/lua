@@ -28,7 +28,7 @@ function PropertyGroup:__index(k)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    local ptype = object:getPropertyInfo(k)
+    local ptype = object:getPropertyInfo(k, {noError = true})
     if ptype then
         return object:getProperty(k)
     end
