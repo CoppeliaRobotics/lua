@@ -740,7 +740,7 @@ function locals.getTableProperty(target, methodName, ...)
         {type = 'string'},
         {type = 'table', default = {}},
     }, ...)
-    local buf = callMethod(target, '_getTableProperty', tagName, options)
+    local buf = callMethod(target, 'getTableProperty', tagName, options)
     if buf then
         local retVal = {}
         if #buf > 0 then
@@ -767,7 +767,7 @@ function locals.setTableProperty(target, methodName, ...)
     else
         buf = sim.app:pack(theTable)
     end
-    return callMethod(target, '_setTableProperty', tagName, buf, options)
+    return callMethod(target, 'setTableProperty', tagName, buf, options)
 end
 
 function __2.sysCallEx_init()

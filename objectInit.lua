@@ -479,7 +479,7 @@ function objInit.visionSensor(methodName)
 end
 
 function objInit.camera(methodName)
-    local retVal = sim.callMethod(sim.scene, '_createCamera', objInit.p)
+    local retVal = callMethod(sim.scene, 'createCamera', objInit.p)
     objInit.p.clippingPlanes = nil
     objInit.p.viewAngle = nil
     objInit.p.viewSize = nil
@@ -488,14 +488,14 @@ function objInit.camera(methodName)
 end
 
 function objInit.light(methodName)
-    local retVal = sim.callMethod(sim.scene, '_createLight', objInit.p)
+    local retVal = callMethod(sim.scene, 'createLight', objInit.p)
     objInit.p.lightType = nil
     retVal:setProperties(objInit.p)
     return retVal
 end
 
 function objInit.graph(methodName)
-    local retVal = sim.callMethod(sim.scene, '_createGraph', objInit.p)
+    local retVal = callMethod(sim.scene, 'createGraph', objInit.p)
     objInit.p.backgroundColor = nil
     objInit.p.foregroundColor = nil
     retVal:setProperties(objInit.p)
