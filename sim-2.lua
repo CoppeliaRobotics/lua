@@ -54,8 +54,18 @@ function sim.callMethod(target, name, ...)
     end
 end
 
+function locals.setMethodProperty(target, methodName, mName, func)
+    assert(type(func) == "function", "expected a function")
+    return callMethod(target, methodName, mName, string.dump(func))
+end
+
+function locals.getMethodProperty(target, methodName, mName)
+    local bytecode = callMethod(target, methodName, mName)
+    return load(bytecode)
+end
+
 function locals.remove(target, methodName, delayed)
-    sim.callMethod(target, '_remove', delayed)
+    return callMethod(target, methodName, delayed)
 end
 
 function locals.removeObjects(target, methodName, objects, delayed)
@@ -72,7 +82,7 @@ function locals.removeObjects(target, methodName, objects, delayed)
             list[#list + 1] = obj
         end
     end
-    sim.callMethod(target, '_removeObjects', list, delayed)
+    callMethod(target, methodName, list, delayed)
 end
 
 function locals.registerFunctionHook(target, methodName, funcNm, func, before)
