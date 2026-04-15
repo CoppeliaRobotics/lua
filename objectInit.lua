@@ -32,7 +32,7 @@ function objInit.init(methodName, initialProperties)
             retVal = sim.Object(sim.app:createCustomObject(objectType))
             retVal:setProperties(objInit.p)
             if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
-                retVal:callMethod('init')
+                retVal:getMethodProperty('init')(retVal)
             end
         else
             error('unknown type: ' .. objectType)
