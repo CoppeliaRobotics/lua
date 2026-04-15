@@ -31,6 +31,9 @@ function objInit.init(methodName, initialProperties)
         elseif table.find(sim.app.customClasses, objectType) or table.find(sim.scene.customClasses, objectType) then
             retVal = sim.Object(sim.app:createCustomObject(objectType))
             retVal:setProperties(objInit.p)
+            if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
+                retVal:callMethod('init')
+            end
         else
             error('unknown type: ' .. objectType)
         end

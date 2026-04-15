@@ -59,20 +59,6 @@ function Object:__setupPropertyGroups()
                 end
             end
         end
-
-        for methodName, methodInfo in pairs(objectMetaInfo[objectType].methods or {}) do
-            local module = _G
-            if methodInfo.module then
-                module = require(methodInfo.module)
-            end
-            local moduleFuncName = methodName
-            if methodInfo.func then
-                moduleFuncName = methodInfo.func
-            end
-            local func = module[moduleFuncName]
-            assert(type(func) == 'function')
-            objectMethods[objectType][methodName] = func
-        end
     end
 
     rawset(self, '__methods', objectMethods[objectType])
