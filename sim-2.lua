@@ -609,7 +609,6 @@ function locals.getProperty(target, methodName, pname, opts)
         assert(ptype, 'no such property: ' .. pname)
     end
     if ptype then
-        assert(ptype ~= sim.propertytype_method, 'cannot read property of type "method"')
         local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
         ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
         local getterMethod = 'get' .. ptypeStr .. 'Property'
@@ -677,7 +676,6 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
             if noError then return else error('no such property: ' .. pname) end
         end
     end
-    assert(ptype ~= sim.propertytype_method, 'cannot write property of type "method"')
     local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
     local setterMethod = 'set' .. ptypeStr .. 'Property'
