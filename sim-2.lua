@@ -571,11 +571,10 @@ function locals.getPropertyTypeString(target, methodName, ptype)
 end
 
 function locals.getPropertiesInfos(target, methodName, opts)
-    target = sim.Object:toobject(target)
     opts = opts or {}
     local propertiesInfos = {}
     for i = 0, 1e100 do
-        local pname, pclass = target:getPropertyName(i, {excludeFlags = opts.excludeFlags})
+        local pname, pclass = sim.callMethod(target, 'getPropertyName', i, {excludeFlags = opts.excludeFlags})
         if not pname then break end
         local ok, err = pcall(function()
             propertiesInfos[pname] = locals.getPropertyInfos(target, '', pname, {decodeMetaInfo = opts.decodeMetaInfo})
@@ -589,13 +588,12 @@ function locals.getPropertiesInfos(target, methodName, opts)
 end
 
 function locals.getProperties(target, methodName, opts)
-    target = sim.Object:toobject(target)
     opts = opts or {}
     local propertiesValues = {}
-    for pname, pinfos in pairs(target:getPropertiesInfos(opts)) do
+    for pname, pinfos in pairs(sim.callMethod(target, 'getPropertiesInfos', opts)) do
         if pinfos.flags.readable then
             if not opts.skipLarge or not pinfos.flags.large then
-                propertiesValues[pname] = target:getProperty(pname)
+                propertiesValues[pname] = sim.callMethod(target, 'getProperty', pname)
             end
         end
     end
@@ -603,17 +601,15 @@ function locals.getProperties(target, methodName, opts)
 end
 
 function locals.setProperties(target, methodName, props)
-    target = sim.Object:toobject(target)
     for k, v in pairs(props) do
-        target:setProperty(k, v)
+        locals.setProperty(target, 'setProperty', k, v)
     end
 end
 
 function locals.getProperty(target, methodName, pname, opts)
-    target = sim.Object:toobject(target)
     local retVal
     local noError = opts and opts.noError
-    local ptype, pflags, descr = target:getPropertyInfo(pname, opts)
+    local ptype, pflags, descr = sim.callMethod(target, 'getPropertyInfo', pname, opts)
     if not noError then
         assert(ptype, 'no such property: ' .. pname)
     end
@@ -627,7 +623,6 @@ function locals.getProperty(target, methodName, pname, opts)
 end
 
 function locals.setProperty(target, methodName, pname, pvalue, opts)
-    target = sim.Object:toobject(target)
     if type(opts) == 'number' or type(opts) == 'string' then
         sim.app:logWarn('passing a ' .. type(opts) .. ' as the last argument of setProperty: assuming {type = ...}')
         -- backward compatibility fix: last arg was ptype
@@ -680,7 +675,7 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
             end
         end
     elseif ptype == nil then
-        ptype = target:getPropertyInfo(pname)
+        ptype = sim.callMethod(target, 'getPropertyInfo', pname)
         if ptype == nil then
             if noError then return else error('no such property: ' .. pname) end
         end
@@ -710,10 +705,9 @@ function locals.convertPropertyValue(target, methodName, value, fromType, toType
 end
 
 function locals.getPropertyInfos(target, methodName, pname, opts)
-    target = sim.Object:toobject(target)
     opts = opts or {}
     local infos = {}
-    local ptype, pflags, metaInfo = target:getPropertyInfo(pname, {bitCoded = 1})
+    local ptype, pflags, metaInfo = sim.callMethod(target, 'getPropertyInfo', pname, {bitCoded = 1})
     if not ptype then return end
     infos.type = ptype
     infos.flags = {
