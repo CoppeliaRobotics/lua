@@ -47,21 +47,23 @@ function Object:__setupPropertyGroups()
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
     end
 
-    if not objectMethods[objectType] then
-        objectMethods[objectType] = {}
-        for i = 0, 1e9 do
-            local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
-            if not pname then break end
-            local ptype = self:callMethod('getPropertyInfo', pname)
-            if ptype == sim.propertytype_method then
-                objectMethods[objectType][pname] = function(o, ...)
-                    return o:callMethod(pname, ...)
+    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods') ~= '1' then
+        if not objectMethods[objectType] then
+            objectMethods[objectType] = {}
+            for i = 0, 1e9 do
+                local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
+                if not pname then break end
+                local ptype = self:callMethod('getPropertyInfo', pname)
+                if ptype == sim.propertytype_method then
+                    objectMethods[objectType][pname] = function(o, ...)
+                        return o:callMethod(pname, ...)
+                    end
                 end
             end
         end
-    end
 
-    rawset(self, '__methods', objectMethods[objectType])
+        rawset(self, '__methods', objectMethods[objectType])
+    end
 end
 
 function Object:__index(k)
@@ -71,9 +73,11 @@ function Object:__index(k)
     local v = rawget(self, k)
     if v then return v end
 
-    -- lookup method:
-    local methods = rawget(self, '__methods')
-    if methods[k] then return methods[k] end
+    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods') ~= '1' then
+        -- lookup method:
+        local methods = rawget(self, '__methods')
+        if methods[k] then return methods[k] end
+    end
 
     -- redirect to default property group otherwise:
     local p = (rawget(self, '__properties') or {})[k]
