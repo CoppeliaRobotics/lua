@@ -55,13 +55,22 @@ function sim.callMethod(target, name, ...)
 end
 
 function locals.setMethodProperty(target, methodName, mName, func)
-    assert(type(func) == "function", "expected a function")
-    return callMethod(target, methodName, mName, string.dump(func))
+    local fArg = func
+    assert((type(func) == "function") or (func == nil), "expected a function or nil")
+    if func ~= nil then
+        func = string.dump(func)
+    end
+    return callMethod(target, methodName, mName, func)
 end
 
 function locals.getMethodProperty(target, methodName, mName)
     local bytecode = callMethod(target, methodName, mName)
-    return load(tostring(bytecode))
+    if #bytecode == 0 then
+        bytecode = nil
+    else
+        bytecode = load(tostring(bytecode))
+    end
+    return bytecode
 end
 
 function locals.remove(target, methodName, delayed)
