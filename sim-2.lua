@@ -61,7 +61,7 @@ end
 
 function locals.getMethodProperty(target, methodName, mName)
     local bytecode = callMethod(target, methodName, mName)
-    return load(bytecode)
+    return load(tostring(bytecode))
 end
 
 function locals.remove(target, methodName, delayed)
