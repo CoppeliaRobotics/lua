@@ -125,13 +125,11 @@ function Object:isobject(o)
 end
 
 function Object:callMethod(method, ...)
-    local handle = rawget(self, '__handle')
-    return sim.callMethod(handle, method, ...)
+    return sim.callMethod(self, method, ...)
 end
 
 function Object:isValid()
-    local handle = rawget(self, '__handle')
-    return sim.callMethod(handle, 'isValid')
+    return sim.callMethod(self, 'isValid')
 end
 
 function Object:toobject(o)
