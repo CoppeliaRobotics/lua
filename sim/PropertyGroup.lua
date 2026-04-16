@@ -13,7 +13,6 @@ function PropertyGroup:initialize(object, opts)
 end
 
 function PropertyGroup:__index(k)
-    local Object = require 'sim.Object'
     local sim = {propertytype_method = 240}
     assert(type(k) == 'string', 'invalid key type')
 
@@ -26,22 +25,21 @@ function PropertyGroup:__index(k)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    local ptype = Object.callMethod(object, 'getPropertyInfo', k, {noError = true})
+    local ptype = object:callMethod('getPropertyInfo', k, {noError = true})
     if ptype == sim.propertytype_method then
-        return function(self_, ...)
-            return Object.callMethod(self_, k, ...)
+        return function(o, ...)
+            return o:callMethod(k, ...)
         end
     elseif ptype then
-        return Object.callMethod(object, 'getProperty', k)
+        return object:callMethod('getProperty', k)
     end
 
-    if Object.callMethod(object, 'getPropertyName', 0, {prefix = k .. '.'}) then
+    if object:callMethod('getPropertyName', 0, {prefix = k .. '.'}) then
         return PropertyGroup(object, {prefix = k})
     end
 end
 
 function PropertyGroup:__newindex(k, v)
-    local Object = require 'sim.Object'
     assert(type(k) == 'string', 'invalid key type')
 
     if k:startswith '__' then
@@ -58,7 +56,7 @@ function PropertyGroup:__newindex(k, v)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    Object.callMethod(object, 'setProperty', k, v, {type = self.__opts.newPropertyForcedType})
+    object:callMethod('setProperty', k, v, {type = self.__opts.newPropertyForcedType})
 end
 
 function PropertyGroup:__tostring()
@@ -71,22 +69,21 @@ function PropertyGroup:__tostring()
 end
 
 function PropertyGroup:__pairs()
-    local Object = require 'sim.Object'
     local object = self.__object
     local prefix = self.__opts.prefix or ''
     if prefix ~= '' then prefix = prefix .. '.' end
     local props = {}
     local i = 0
     while true do
-        local pname = Object.callMethod(object, 'getPropertyName', i, {prefix = prefix})
+        local pname = object:callMethod('getPropertyName', i, {prefix = prefix})
         if pname == nil then break end
         pname = string.stripprefix(pname, prefix)
         local pname2 = string.gsub(pname, '%..*$', '')
         if pname == pname2 then
-            local ptype, pflags, descr = Object.callMethod(object, 'getPropertyInfo', prefix .. pname)
+            local ptype, pflags, descr = object:callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
             if readable then
-                props[pname2] = Object.callMethod(object, 'getProperty', prefix .. pname)
+                props[pname2] = object:callMethod('getProperty', prefix .. pname)
             end
         elseif props[pname2] == nil then
             props[pname2] = PropertyGroup(object, {prefix = prefix .. pname})
