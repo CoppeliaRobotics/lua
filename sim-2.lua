@@ -16,7 +16,7 @@ function sim.callMethod(target, name, ...)
 
     if callMethod(target, 'getMethodProperty', name, {noError = true}) then
         -- Lua calling custom property Lua method:
-        return locals.getMethodProperty(target, 'getMethodProperty', name)(...) 
+        return locals.getMethodProperty(target, 'getMethodProperty', name)(target, ...) 
     elseif locals[name] then
         -- Lua calling built-in Lua method:
         return locals[name](target, name, ...) 
