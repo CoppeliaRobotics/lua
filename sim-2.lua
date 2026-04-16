@@ -17,8 +17,7 @@ function sim.callMethod(target, name, ...)
         return locals[name](target, name, ...)
     elseif (string.sub(name, 1, 1) == "@") then
         -- C-side calling:
-        name = name:sub(2)
-        local res = table.pack(pcall(sim.callMethod, target, name, ...))
+        local res = table.pack(pcall(sim.callMethod, target, name:sub(2), ...)) -- sim.callMethod and not callMethod here!
         if res[1] then
             return '', table.unpack(res, 2, res.n)
         else
@@ -56,14 +55,12 @@ function locals.removeObjects(target, methodName, objects, delayed)
     local list = {}
     for i = 1, #objects do
         local obj = objects[i]
-        local h = obj
-        if sim.Object:isobject(h) then
-            h = h.handle
-        end
-        if h >= sim.object_customstart and h <= sim.object_customend then
-            sim.callMethod(h, 'remove')
-        else
-            list[#list + 1] = obj
+        if obj:isValid() then
+            if obj.isCustomObject then
+                sim.callMethod(obj, 'remove')
+            else
+                list[#list + 1] = obj
+            end
         end
     end
     callMethod(target, methodName, list, delayed)
@@ -382,21 +379,6 @@ function locals.wait(target, methodName, ...)
     else
         local st = sim.app.systemTime
         while sim.app.systemTime - st < dt do sim.self:step() end
-    end
-end
-
-function locals.waitForSignal(target, methodName, sigName, item)
-    item = item or sim.app
-    if (type(item) == 'number') or sim.Object:isobject(item) then
-        if not sim.Object:isobject(item) then
-            item = sim.Object(item)
-        end
-        -- Signals via properties
-        while true do
-            item:getProperty('signal.' .. sigName, {noError = true})
-            if retVal then break end
-            sim.self:step()
-        end
     end
 end
 
@@ -840,10 +822,6 @@ end
 
 function sim.wait(...)
     locals.wait(-1, '', ...)
-end
-
-function sim.waitForSignal(item, sigName)
-    locals.waitForSignal(-1, '', sigName, item)
 end
 
 function sim.getSettingString(...)
