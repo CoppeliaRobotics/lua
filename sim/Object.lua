@@ -232,16 +232,22 @@ function Object.static.unittest()
     a.customData.mat3x3 = simEigen.Matrix(3, 3) -- this writes as "matrix" type
     assert(a:getPropertyInfo('customData.mat3x3') == sim.propertytype_matrix)
     assert(simEigen.Matrix:ismatrix(a.customData.mat3x3, 3, 3))
+    --[[
+    (matrix3x3 type has been removed)
     a:setMatrix3x3Property('customData.mat3x3', simEigen.Matrix(3, 3)) -- this writes as "matrix3x3" type
     assert(a:getPropertyInfo('customData.mat3x3') == sim.propertytype_matrix3x3)
     assert(simEigen.Matrix:ismatrix(a.customData.mat3x3, 3, 3))
+    ]]
 
     a.customData.mat4x4 = simEigen.Matrix(4, 4) -- this writes as "matrix" type
     assert(a:getPropertyInfo('customData.mat4x4') == sim.propertytype_matrix)
     assert(simEigen.Matrix:ismatrix(a.customData.mat4x4, 4, 4))
+    --[[
+    (matrix4x4 type has been removed)
     a:setMatrix4x4Property('customData.mat4x4', simEigen.Matrix(4, 4)) -- this writes as "matrix4x4" type
     assert(a:getPropertyInfo('customData.mat4x4') == sim.propertytype_matrix4x4)
     assert(simEigen.Matrix:ismatrix(a.customData.mat4x4, 4, 4))
+    ]]
 
     a.customData.mat = simEigen.Matrix(2, 2)
     assert(a:getPropertyInfo('customData.mat') == sim.propertytype_matrix)
