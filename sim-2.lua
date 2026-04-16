@@ -585,61 +585,70 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
         -- backward compatibility fix: last arg was ptype
         opts = {type = opts}
     end
-    local noError = opts and opts.noError
-    local ptype = opts and opts.type
-    if type(ptype) == 'string' then
-        -- if ptype is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
-        ptype = sim['propertytype_' .. ptype]
-        assert(ptype, 'invalid property type string')
-    end
-    assert(ptype == nil or math.type(ptype) == 'integer', 'invalid type for option "type"')
+    opts = opts or {}
+    assert(type(opts) == 'table', 'opts must be a table')
 
-    if string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.') then
-        -- custom data properties need type
-        -- if not specified, it will be inferred from lua's variable type
-        if ptype == nil then
-            -- ptype not provided -> guess it
-            local ltype = type(pvalue)
-            if ltype == 'number' then
-                if math.type(pvalue) == 'integer' then
-                    ptype = sim.propertytype_int
-                else
-                    ptype = sim.propertytype_float
-                end
-            elseif ltype == 'string' then
-                ptype = sim.propertytype_string
-            elseif ltype == 'boolean' then
-                ptype = sim.propertytype_bool
-            elseif ltype == 'table' then
-                local simEigen = require 'simEigen'
-                if Buffer:isbuffer(pvalue) then
-                    ptype = sim.propertytype_buffer
-                elseif Color:iscolor(pvalue) then
-                    ptype = sim.propertytype_color
-                elseif sim.Object:isobject(pvalue) then
-                    ptype = sim.propertytype_handle
-                elseif simEigen.Quaternion:isquaternion(pvalue) then
-                    ptype = sim.propertytype_quaternion
-                elseif simEigen.Matrix:ismatrix(pvalue) then
-                    ptype = sim.propertytype_matrix
-                elseif simEigen.Pose:ispose(pvalue) then
-                    ptype = sim.propertytype_pose
-                else
-                    ptype = sim.propertytype_table
-                end
+    -- if opts.type is a string, e.g.: 'intvector', it will be resolved to int, e.g.: sim.propertytype_intvector
+    if type(opts.type) == 'string' then
+        opts.type = sim['propertytype_' .. opts.type]
+        assert(opts.type, 'invalid property type string')
+    end
+    assert(opts.type == nil or math.type(opts.type) == 'integer', 'invalid type for option "type"')
+    local ptype = opts.type
+
+    -- opts.inferType:
+    --     for customData.*/signal.* properties:
+    --        defaults to true if opts.type not provided
+    --        defaults to false otherwise
+    --     otherwise defaults to false
+    -- (can be overridden)
+    local inferType = (string.startswith(pname, 'customData.') or string.startswith(pname, 'signal.')) and opts.type == nil
+    if opts.inferType ~= nil then inferType = opts.inferType end
+
+    if inferType then
+        -- infer property type from the type of lua variable
+        local ltype = type(pvalue)
+        if ltype == 'number' then
+            if math.type(pvalue) == 'integer' then
+                ptype = sim.propertytype_int
             else
-                error('unsupported property type: ' .. ltype)
+                ptype = sim.propertytype_float
             end
+        elseif ltype == 'string' then
+            ptype = sim.propertytype_string
+        elseif ltype == 'boolean' then
+            ptype = sim.propertytype_bool
+        elseif ltype == 'table' then
+            local simEigen = require 'simEigen'
+            if Buffer:isbuffer(pvalue) then
+                ptype = sim.propertytype_buffer
+            elseif Color:iscolor(pvalue) then
+                ptype = sim.propertytype_color
+            elseif sim.Object:isobject(pvalue) then
+                ptype = sim.propertytype_handle
+            elseif simEigen.Quaternion:isquaternion(pvalue) then
+                ptype = sim.propertytype_quaternion
+            elseif simEigen.Matrix:ismatrix(pvalue) then
+                ptype = sim.propertytype_matrix
+            elseif simEigen.Pose:ispose(pvalue) then
+                ptype = sim.propertytype_pose
+            else
+                ptype = sim.propertytype_table
+            end
+        else
+            error('unsupported property type: ' .. ltype)
         end
     elseif ptype == nil then
         ptype = sim.callMethod(target, 'getPropertyInfo', pname)
         if ptype == nil then
-            if noError then return else error('no such property: ' .. pname) end
+            if opts.noError then return else error('no such property: ' .. pname) end
         end
     end
+
     local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
     ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))
     local setterMethod = 'set' .. ptypeStr .. 'Property'
+
     return sim.callMethod(target, setterMethod, pname, pvalue, opts)
 end
 
