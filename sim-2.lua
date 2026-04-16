@@ -782,10 +782,7 @@ function __2.sysCallEx_init()
 end
 
 sim.Object = require 'sim.Object'
-sim.Object.callMethod = function(self, method, ...)
-    local handle = rawget(self, '__handle')
-    return sim.callMethod(handle, method, ...)
-end
+sim.Object.callMethod = sim.callMethod -- replace [C]callMethod with [Lua]sim.callMethod
 sim.ObjectArray = require 'sim.ObjectArray'
 sim.PropertyGroup = require 'sim.PropertyGroup'
 

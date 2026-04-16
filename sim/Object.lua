@@ -125,6 +125,8 @@ function Object:isobject(o)
 end
 
 function Object:callMethod(method, ...)
+    -- note: this method will be overwritten by sim-2.lua, thus changing from
+    --       sim.callMethod==[C]callMethod, to [Lua]sim.callMethod
     return sim.callMethod(self, method, ...)
 end
 
