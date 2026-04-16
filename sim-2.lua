@@ -17,42 +17,12 @@ function sim.callMethod(target, name, ...)
         return locals[name](target, name, ...)
     elseif (string.sub(name, 1, 1) == "@") then
         -- C-side calling:
-        if not sim.Object:isobject(target) then
-            function getTargetObj(t)
-                return sim.Object(t)
-            end
-            local ok, err = pcall(getTargetObj, target)
-            if not ok then
-                function dummyFunc()
-                    error("error in 'sim.callMethod': target does not exist.")
-                end
-                local ok, err = pcall(dummyFunc)
-                return err -- error msg
-            end
-        end
         name = name:sub(2)
-        if type(locals[name]) == 'function' then
-            -- C calling built-in Lua method:
-            local res = table.pack(pcall(locals[name], target, name, ...))
-            if res[1] then
-                return '', table.unpack(res, 2, res.n)
-            else
-                return res[2] -- error msg
-            end
-        elseif callMethod(target, 'getMethodProperty', name, {noError = true}) then
-            -- C calling custom property Lua method:
-            local res = table.pack(pcall(locals.getMethodProperty(target, 'getMethodProperty', name), ...))
-            if res[1] then
-                return '', table.unpack(res, 2, res.n)
-            else
-                return res[2] -- error msg
-            end
+        local res = table.pack(pcall(sim.callMethod, target, name, ...))
+        if res[1] then
+            return '', table.unpack(res, 2, res.n)
         else
-            function dummyFunc()
-                error("error in 'sim.callMethod': method '" .. name .. "' does not exist.")
-            end
-            local ok, err = pcall(dummyFunc)
-            return err -- error msg
+            return res[2] -- error msg
         end
     else
         -- Lua calling C method:
