@@ -14,11 +14,8 @@ end
 
 function PropertyGroup:__index(k)
     local Object = require 'sim.Object'
+    local sim = {propertytype_method = 240}
     assert(type(k) == 'string', 'invalid key type')
-
-    if k:startswith '__' then
-        return rawget(self, k)
-    end
 
     if self.__localProperties[k] then
         assert(self.__localProperties[k].get, 'local property "' .. k .. '" can\'t be read')
@@ -30,7 +27,11 @@ function PropertyGroup:__index(k)
 
     local object = rawget(self, '__object')
     local ptype = Object.callMethod(object, 'getPropertyInfo', k, {noError = true})
-    if ptype then
+    if ptype == sim.propertytype_method then
+        return function(self_, ...)
+            return Object.callMethod(self_, k, ...)
+        end
+    elseif ptype then
         return Object.callMethod(object, 'getProperty', k)
     end
 

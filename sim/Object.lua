@@ -35,6 +35,21 @@ function Object:__setupPropertyGroups()
 
     self.__properties:registerLocalProperty('handle', function() return self.__handle end)
 
+    self.__properties:registerLocalProperty('__methods', function()
+        local methods = {}
+        for i = 0, 1e9 do
+            local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
+            if not pname then break end
+            local ptype = self:callMethod('getPropertyInfo', pname)
+            if ptype == sim.propertytype_method then
+                methods[pname] = function(o, ...)
+                    return o:callMethod(pname, ...)
+                end
+            end
+        end
+        return methods
+    end)
+
     local objectType = self:callMethod('getStringProperty', 'objectType')
 
     if not objectMetaInfo[objectType] then
@@ -46,24 +61,6 @@ function Object:__setupPropertyGroups()
     for ns, opts in pairs(objectMetaInfo[objectType].namespaces or {}) do
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
     end
-
-    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods', {noError=true}) ~= '1' then
-        if not objectMethods[objectType] then
-            objectMethods[objectType] = {}
-            for i = 0, 1e9 do
-                local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
-                if not pname then break end
-                local ptype = self:callMethod('getPropertyInfo', pname)
-                if ptype == sim.propertytype_method then
-                    objectMethods[objectType][pname] = function(o, ...)
-                        return o:callMethod(pname, ...)
-                    end
-                end
-            end
-        end
-
-        rawset(self, '__methods', objectMethods[objectType])
-    end
 end
 
 function Object:__index(k)
@@ -72,12 +69,6 @@ function Object:__index(k)
     -- lookup existing properties first:
     local v = rawget(self, k)
     if v then return v end
-
-    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods', {noError=true}) ~= '1' then
-        -- lookup method:
-        local methods = rawget(self, '__methods')
-        if methods[k] then return methods[k] end
-    end
 
     -- redirect to default property group otherwise:
     local p = (rawget(self, '__properties') or {})[k]
