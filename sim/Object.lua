@@ -137,7 +137,7 @@ end
 function Object:toobject(o)
     assert(self == Object, 'class method')
     if Object:isobject(o) then return o end
-    if math.type(o) == 'integer' or type(o) == 'string' then return Object(o) end
+    if math.type(o) == 'integer' then return Object(o) end
     error 'bad type'
 end
 
