@@ -47,7 +47,7 @@ function Object:__setupPropertyGroups()
         rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
     end
 
-    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods') ~= '1' then
+    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods', {noError=true}) ~= '1' then
         if not objectMethods[objectType] then
             objectMethods[objectType] = {}
             for i = 0, 1e9 do
@@ -73,7 +73,7 @@ function Object:__index(k)
     local v = rawget(self, k)
     if v then return v end
 
-    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods') ~= '1' then
+    if sim.callMethod(sim.handle_app, 'getStringProperty', 'namedParam.dynamicMethods', {noError=true}) ~= '1' then
         -- lookup method:
         local methods = rawget(self, '__methods')
         if methods[k] then return methods[k] end
