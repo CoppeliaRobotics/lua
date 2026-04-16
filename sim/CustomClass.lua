@@ -3,20 +3,26 @@ local class = require 'middleclass'
 local CustomClass = class 'sim.CustomClass'
 
 function CustomClass:initialize(name, props, opts)
-    opts = opts or {}
-    opts.classMetaInfo = '{"superclass": "object"}'
     rawset(self, 'objectType', name)
-    local Object = require 'sim.Object'
-    local cls = Object(Object.app:createCustomObject(name, opts))
-    for k, v in pairs(props) do
-        cls:setProperty(k, v, {inferType=true})
+    local sim = require 'sim-2'
+    if table.find(sim.app.customClasses, name) then
+        rawset(self, 'alreadyRegistered', true)
+    else
+        opts = opts or {}
+        opts.classMetaInfo = '{"superclass": "object"}'
+        local Object = require 'sim.Object'
+        local cls = Object(Object.app:createCustomObject(name, opts))
+        for k, v in pairs(props) do
+            cls:setProperty(k, v, {inferType=true})
+        end
+        rawset(self, 'simClass', cls)
     end
-    rawset(self, 'simClass', cls)
 end
 
 function CustomClass:__newindex(k, v)
     assert(type(k) == 'string', 'bad key type')
     assert(type(v) == 'function', 'expecting a method declaration only')
+    if self.alreadyRegistered then return end
     self.simClass:setMethodProperty(k, v)
 end
 
