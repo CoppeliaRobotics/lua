@@ -9,17 +9,12 @@ local checkargs = require('checkargs-2')
 require('motion-2').extend(sim)
 
 function sim.callMethod(target, name, ...)
-    local targetHandle = target
-    if type(target) ~= 'number' then
-        targetHandle = target.__handle -- cannot call target.handle, target:isValid, etc.
-    end
-
     if callMethod(target, 'getMethodProperty', name, {noError = true}) then
         -- Lua calling custom property Lua method:
-        return locals.getMethodProperty(target, 'getMethodProperty', name)(target, ...) 
+        return locals.getMethodProperty(target, 'getMethodProperty', name)(target, ...)
     elseif locals[name] then
         -- Lua calling built-in Lua method:
-        return locals[name](target, name, ...) 
+        return locals[name](target, name, ...)
     elseif (string.sub(name, 1, 1) == "@") then
         -- C-side calling:
         if not sim.Object:isobject(target) then
@@ -38,7 +33,7 @@ function sim.callMethod(target, name, ...)
         name = name:sub(2)
         if type(locals[name]) == 'function' then
             -- C calling built-in Lua method:
-            local res = table.pack(pcall(locals[name], target, name, ...)) 
+            local res = table.pack(pcall(locals[name], target, name, ...))
             if res[1] then
                 return '', table.unpack(res, 2, res.n)
             else
@@ -46,7 +41,7 @@ function sim.callMethod(target, name, ...)
             end
         elseif callMethod(target, 'getMethodProperty', name, {noError = true}) then
             -- C calling custom property Lua method:
-            local res = table.pack(pcall(locals.getMethodProperty(target, 'getMethodProperty', name), ...)) 
+            local res = table.pack(pcall(locals.getMethodProperty(target, 'getMethodProperty', name), ...))
             if res[1] then
                 return '', table.unpack(res, 2, res.n)
             else
@@ -61,7 +56,7 @@ function sim.callMethod(target, name, ...)
         end
     else
         -- Lua calling C method:
-        return callMethod(target, name, ...) 
+        return callMethod(target, name, ...)
     end
 end
 
