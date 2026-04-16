@@ -14,12 +14,12 @@ function sim.callMethod(target, name, ...)
         targetHandle = target.__handle -- cannot call target.handle, target:isValid, etc.
     end
 
-    if locals[name] then
-        -- Lua calling built-in Lua method:
-        return locals[name](target, name, ...) 
-    elseif callMethod(target, 'getMethodProperty', name, {noError = true}) then
+    if callMethod(target, 'getMethodProperty', name, {noError = true}) then
         -- Lua calling custom property Lua method:
         return locals.getMethodProperty(target, 'getMethodProperty', name)(...) 
+    elseif locals[name] then
+        -- Lua calling built-in Lua method:
+        return locals[name](target, name, ...) 
     elseif (string.sub(name, 1, 1) == "@") then
         -- C-side calling:
         if not sim.Object:isobject(target) then
