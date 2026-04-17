@@ -14,84 +14,58 @@ local Console = CustomClass('console', function(cls)
     cls:setBoolProperty('closeable', true)
     cls:setBoolProperty('resizable', true)
     cls:setIntProperty('fontSize', 12)
+    cls:setIntProperty('sceneUid', -1)
     --cls:setIntProperty('notVisible', 0)
     cls:setStringProperty('text', '')
     cls:setStringProperty('html', '')
 end)
 
-if not __2.consoles then
-    __2.consoles = {}
-end
-
 function Console:init()
-    local style = string.format(
-        "font-family: 'Courier New', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono'; " ..
-        "font-size: %dpt; " ..
-        "background-color: %s; " ..
-        "color: %s;",
-        self.fontSize,
-        self.background:html(),
-        self.defaultColor:html())
     local xml = string.format(
         [[<ui
                 title="%s"
                 closeable="%s"
                 resizable="%s"
-                on-close="__2.consoles.onClose"
+                on-close="%d:onClose"
                 placement="relative"
                 position="%d,%d"
                 width="%d"
                 height="%d"
                 activate="false"
         >
-            <text-browser id="1" style="%s" read-only="true" />
+            <text-browser
+                id="1"
+                style="font-family: %s; font-size: %dpt; background-color: %s; color: %s;"
+                read-only="true"
+            />
         </ui>]],
         self.title,
         tostring(self.closeable),
         tostring(self.resizable),
+        self.handle,
         self.position.x, self.position.y,
         self.size.width, self.size.height,
-        style
+        "'Courier New', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono'",
+        self.fontSize,
+        self.background:html(),
+        self.defaultColor:html()
     )
     local simUI = require 'simUI'
     self.ui = simUI.create(xml)
 
     local sim = require 'sim-2'
-    sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', '__2.consoles.beforeInstanceSwitch', false)
-    sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', '__2.consoles.afterInstanceSwitch', false)
+    sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
+    sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 
     if sim.self.scriptType ~= sim.scripttype_simulation and sim.self.scriptType ~= sim.scripttype_main then
-        sim.self:registerFunctionHook('sysCall_beforeSimulation', '__2.consoles.beforeSimulation', false)
-        sim.self:registerFunctionHook('sysCall_afterSimulation', '__2.consoles.afterSimulation', false)
+        sim.self:registerFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
+        sim.self:registerFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
     end
 end
 
-function __2.consoles.onClose(ui)
-    local sim = require 'sim-2'
-    for _, o in ipairs(sim.app.customObjects) do
-        if o.objectType == 'console' and o.ui == ui then
-            o:remove()
-        end
-    end
+function Console:onClose(ui)
+    self:remove()
 end
-
---[[
-function Console:setVisible(v)
-    if v then
-        if self.notVisible > 0 then
-            self.notVisible = self.notVisible - 1
-            if self.notVisible == 0 then
-                simUI.show(self.ui)
-            end
-        end
-    else
-        self.notVisible = self.notVisible + 1
-        if self.notVisible == 1 then
-            simUI.hide(self.ui)
-        end
-    end
-end
-]]
 
 function Console:setVisible(v)
     local simUI = require 'simUI'
@@ -103,39 +77,28 @@ function Console:setVisible(v)
     end
 end
 
-function __2.consoles.beforeInstanceSwitch()
-    if sim.self.scriptType == sim.scripttype_customization then
-        for _, o in ipairs(sim.app.customObjects) do
-            if o.objectType == 'console' then
-                o:setVisible(false)
-            end
-        end
+function Console:beforeInstanceSwitch()
+    if self.sceneUid ~= -1 then
+        self:setVisible(false)
     end
 end
 
-function __2.consoles.afterInstanceSwitch()
-    if sim.self.scriptType == sim.scripttype_customization then
-        for _, o in ipairs(sim.app.customObjects) do
-            if o.objectType == 'console' then
-                o:setVisible(true)
-            end
-        end
+function Console:afterInstanceSwitch()
+    local sim = require 'sim-2'
+    if self.sceneUid ~= -1 and sim.scene.sceneUid == self.sceneUid then
+        o:setVisible(true)
     end
 end
 
-function __2.consoles.beforeSimulation()
-    for _, o in ipairs(sim.app.customObjects) do
-        if o.objectType == 'console' and o.hiddenInSimulation then
-            o:setVisible(false)
-        end
+function Console:beforeSimulation()
+    if self.hiddenInSimulation then
+        o:setVisible(false)
     end
 end
 
-function __2.consoles.afterSimulation()
-    for _, o in ipairs(sim.app.customObjects) do
-        if o.objectType == 'console' and o.hiddenInSimulation then
-            o:setVisible(true)
-        end
+function Console:afterSimulation()
+    if self.hiddenInSimulation then
+        o:setVisible(true)
     end
 end
 
