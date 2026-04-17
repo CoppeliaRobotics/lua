@@ -2,7 +2,7 @@ local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
 
 local locals = {}
-__2 = {locals = locals} -- sometimes globals are needed (but __2 only for sim-2)
+__2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only for sim-2)
 
 local simEigen = require 'simEigen'
 local checkargs = require('checkargs-2')
