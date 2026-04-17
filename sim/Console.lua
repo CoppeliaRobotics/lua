@@ -86,19 +86,19 @@ end
 function Console:afterInstanceSwitch()
     local sim = require 'sim-2'
     if self.sceneUid ~= -1 and sim.scene.sceneUid == self.sceneUid then
-        o:setVisible(true)
+        self:setVisible(true)
     end
 end
 
 function Console:beforeSimulation()
     if self.hiddenInSimulation then
-        o:setVisible(false)
+        self:setVisible(false)
     end
 end
 
 function Console:afterSimulation()
     if self.hiddenInSimulation then
-        o:setVisible(true)
+        self:setVisible(true)
     end
 end
 
