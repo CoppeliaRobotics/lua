@@ -21,35 +21,34 @@ local Console = CustomClass('console', function(cls)
 end)
 
 function Console:init()
-    local xml = string.format(
-        [[<ui
-                title="%s"
-                closeable="%s"
-                resizable="%s"
-                on-close="%d:onClose"
-                placement="relative"
-                position="%d,%d"
-                width="%d"
-                height="%d"
-                activate="false"
-        >
-            <text-browser
-                id="1"
-                style="font-family: %s; font-size: %dpt; background-color: %s; color: %s;"
-                read-only="true"
-            />
-        </ui>]],
-        self.title,
-        tostring(self.closeable),
-        tostring(self.resizable),
-        self.handle,
-        self.position.x, self.position.y,
-        self.size.width, self.size.height,
-        "'Courier New', 'Consolas', 'Liberation Mono', 'DejaVu Sans Mono'",
-        self.fontSize,
-        self.background:html(),
-        self.defaultColor:html()
-    )
+    local xml = string.renderxml{
+        tag = 'ui',
+        attrs = {
+            title = self.title,
+            closeable = self.closeable,
+            resizable = self.resizable,
+            ['on-close'] = self.handle .. ':onClose',
+            placement = 'relative',
+            position = self.position.x .. ',' .. self.position.y,
+            width = self.size.width,
+            height = self.size.height,
+            activate = false,
+        },
+        children = {
+            {
+                tag = 'text-browser',
+                attrs = {
+                    id = 1,
+                    style = ''
+                        .. 'font-family: "Courier New", "Consolas", "Liberation Mono", "DejaVu Sans Mono"; '
+                        .. 'font-size: ' .. self.fontSize .. 'pt; '
+                        .. 'background-color: ' .. self.background:html() .. '; '
+                        .. 'color: ' .. self.defaultColor:html() .. ';',
+                    ['read-only'] = true,
+                }
+            },
+        },
+    }
     local simUI = require 'simUI'
     self.ui = simUI.create(xml)
 
