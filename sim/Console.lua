@@ -1,23 +1,23 @@
 local CustomClass = require 'sim.CustomClass'
 
-local Console = CustomClass('console', {
-    background = Color 'white',
-    defaultColor = Color 'black',
-    hiddenInSimulation = false,
-    visible = true,
-    ui = '',
-    title = 'console',
-    ['size.width'] = 800,
-    ['size.height'] = 600,
-    ['position.x'] = 50,
-    ['position.y'] = 50,
-    closeable = true,
-    resizable = true,
-    fontSize = 12,
-    --notVisible = 0,
-    text = '',
-    html = '',
-})
+local Console = CustomClass('console', function(cls)
+    cls:setColorProperty('background', Color 'white')
+    cls:setColorProperty('defaultColor', Color 'black')
+    cls:setBoolProperty('hiddenInSimulation', false)
+    cls:setBoolProperty('visible', true)
+    cls:setStringProperty('ui', '')
+    cls:setStringProperty('title', 'console')
+    cls:setIntProperty('size.width', 800)
+    cls:setIntProperty('size.height', 600)
+    cls:setIntProperty('position.x', 50)
+    cls:setIntProperty('position.y', 50)
+    cls:setBoolProperty('closeable', true)
+    cls:setBoolProperty('resizable', true)
+    cls:setIntProperty('fontSize', 12)
+    --cls:setIntProperty('notVisible', 0)
+    cls:setStringProperty('text', '')
+    cls:setStringProperty('html', '')
+end)
 
 if not __2.consoles then
     __2.consoles = {}
