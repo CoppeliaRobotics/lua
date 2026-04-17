@@ -945,14 +945,6 @@ function sim.setStringArrayProperty(t, ...)
     sim.callMethod(t, 'setStringArrayProperty', ...)
 end
 
-function sim.getVector2Property(t, ...)
-    return sim.callMethod(t, 'getVector2Property', ...)
-end
-
-function sim.setVector2Property(t, ...)
-    sim.callMethod(t, 'setVector2Property', ...)
-end
-
 function sim.getVector3Property(t, ...)
     return sim.callMethod(t, 'getVector3Property', ...)
 end
