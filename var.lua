@@ -5,17 +5,29 @@ require 'tablex'
 
 function var.getvar(n, tblctx)
     tblctx = tblctx or _G
-    local ns = string.split(n, '.', true)
-    if #ns > 1 then return var.getvar(table.join(table.slice(ns, 2), '.'), tblctx[ns[1]]) end
-    local is = string.split(n, '[', true)
-    if #is == 1 then return tblctx[n] end
-    assert(#is == 2, 'unsupported syntax')
-    local it = string.split(is[2], ']', true)
-    assert(#it == 2, 'unsupported syntax')
-    assert(it[2] == '', 'unsupported syntax')
-    local i = it[1]
-    i = tonumber(i)
-    return tblctx[is[1]][i]
+
+    -- dotted name -> nested field access:
+    local dotPos = string.find(n, '%.')
+    if dotPos then
+        assert(dotPos > 1, 'unsupported syntax')
+        local n1 = n:sub(1, dotPos - 1)
+        n = n:sub(dotPos + 1)
+        assert(n ~= '', 'unsupported syntax')
+        tblctx = tblctx[n1]
+        if tblctx == nil then return nil end
+        return var.getvar(n, tblctx, opts)
+    end
+
+    -- square-brackets index operator:
+    local base, idx = n:match('^(.-)%[(%d+)%]$')
+    if base then
+        local i = tonumber(idx)
+        tblctx = tblctx[base]
+        return tblctx and tblctx[i] or nil
+    end
+
+    -- simple field access:
+    return tblctx[n]
 end
 
 function var.setvar(n, v, tblctx)
