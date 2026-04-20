@@ -3,19 +3,27 @@ local class = require 'middleclass'
 local CustomClass = class 'sim.CustomClass'
 
 function CustomClass:initialize(name, props, opts)
-    local sim = require 'sim-2'
+    local Object = require 'sim.Object'
 
     rawset(self, 'objectType', name)
 
-    if table.find(sim.app.customClasses, name) then
+    if table.find(Object.app.customClasses, name) then
+        rawset(self, 'storageLocation', Object.app)
+        rawset(self, 'alreadyRegistered', true)
+        return
+    elseif table.find(Object.scene.customClasses, name) then
+        rawset(self, 'storageLocation', Object.scene)
         rawset(self, 'alreadyRegistered', true)
         return
     end
 
     opts = opts or {}
+    opts.scriptPersistent = opts.scriptPersistent == true
+    opts.volatile = opts.volatile ~= false
     opts.classMetaInfo = opts.classMetaInfo or '{"superclass": "object"}'
-    local Object = require 'sim.Object'
-    local cls = Object(Object.app:createCustomObject(name, opts))
+    assert(opts.storageLocation == nil or opts.storageLocation == Object.app or opts.storageLocation == Object.scene, 'invalid value for "storageLocation"')
+    rawset(self, 'storageLocation', opts.storageLocation or Object.app)
+    local cls = Object(self.storageLocation:createCustomObject(name, opts))
     if type(props) == 'function' then
         -- class setup function:
         props(cls)
@@ -46,7 +54,7 @@ function CustomClass:__call(initialProps)
         self.simClass = nil
     end
     local Object = require 'sim.Object'
-    local o = Object(Object.app:createCustomObject(self.objectType))
+    local o = Object(self.storageLocation:createCustomObject(self.objectType))
     if initialProps then
         assert(type(initialProps) == 'table')
         o:setProperties(initialProps)
