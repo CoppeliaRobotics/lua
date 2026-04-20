@@ -113,10 +113,12 @@ function import(moduleName, ...)
         if not opts.keepVersionSuffix then
             moduleName = moduleName:gsub('[-%d]+$', '')
         end
-        if _G[moduleName] ~= nil and _G[moduleName] ~= mod and not opts.silent then
+        local var = require 'var'
+        local modG = var.getvar(moduleName)
+        if modG ~= nil and modG ~= mod and not opts.silent then
             addLog(300, 'import "' .. origModuleName .. '": overwriting global variable "' .. moduleName .. '"')
         end
-        _G[moduleName] = mod
+        var.setvar(moduleName, mod)
     elseif #names == 1 and names[1] == '*' then
         -- modules can optionally define a __all key and/or a __all_exclude key
         -- to specify which names to [not] import when doing a star-import
