@@ -3,16 +3,13 @@ local class = require 'middleclass'
 local CustomClass = class 'sim.CustomClass'
 
 function CustomClass:initialize(name, props, opts)
-    local Object = require 'sim.Object'
+    local sim = require 'sim-2'
 
     rawset(self, 'objectType', name)
 
-    if table.find(Object.app.customClasses, name) then
-        rawset(self, 'storageLocation', Object.app)
-        rawset(self, 'alreadyRegistered', true)
-        return
-    elseif table.find(Object.scene.customClasses, name) then
-        rawset(self, 'storageLocation', Object.scene)
+    local cont = CustomClass:find(name)
+    if cont then
+        rawset(self, 'storageLocation', cont)
         rawset(self, 'alreadyRegistered', true)
         return
     end
@@ -21,9 +18,9 @@ function CustomClass:initialize(name, props, opts)
     opts.scriptPersistent = opts.scriptPersistent == true
     opts.volatile = opts.volatile ~= false
     opts.classMetaInfo = opts.classMetaInfo or '{"superclass": "object"}'
-    assert(opts.storageLocation == nil or opts.storageLocation == Object.app or opts.storageLocation == Object.scene, 'invalid value for "storageLocation"')
-    rawset(self, 'storageLocation', opts.storageLocation or Object.app)
-    local cls = Object(self.storageLocation:createCustomObject(name, opts))
+    assert(opts.storageLocation == nil or opts.storageLocation == sim.app or opts.storageLocation == sim.scene, 'invalid value for "storageLocation"')
+    rawset(self, 'storageLocation', opts.storageLocation or sim.app)
+    local cls = sim.Object(self.storageLocation:createCustomObject(name, opts))
     if type(props) == 'function' then
         -- class setup function:
         props(cls)
@@ -53,17 +50,28 @@ function CustomClass:__call(initialProps)
         self.simClass.__configDone__ = true
         self.simClass = nil
     end
-    local Object = require 'sim.Object'
-    local o = Object(self.storageLocation:createCustomObject(self.objectType))
+    local sim = require 'sim-2'
+    local o = sim.Object(self.storageLocation:createCustomObject(self.objectType))
     if initialProps then
         assert(type(initialProps) == 'table')
         o:setProperties(initialProps)
     end
-    local sim = {propertytype_method = 240}
     if o:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
         o:getMethodProperty('init')(o)
     end
     return o
+end
+
+function CustomClass.static:find(name)
+    local sim = require 'sim-2'
+    local function eq(c)
+        return c.objectType == name
+    end
+    if table.find(sim.app.customClasses, name, eq) then
+        return sim.app
+    elseif table.find(sim.scene.customClasses, name, eq) then
+        return sim.scene
+    end
 end
 
 return CustomClass
