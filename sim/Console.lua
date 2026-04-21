@@ -66,38 +66,43 @@ function Console:onClose(ui)
     self:remove()
 end
 
-function Console:setVisible(v)
+function Console:visible_get_(pname, currentValue)
     local simUI = require 'simUI'
-    self.visible = v
-    if self.visible then
+    return simUI.isVisible(self.ui)
+end
+
+function Console:visible_set_(pname, setValue)
+    local simUI = require 'simUI'
+    if setValue then
         simUI.show(self.ui)
     else
         simUI.hide(self.ui)
     end
+    return setValue
 end
 
 function Console:beforeInstanceSwitch()
     if self.sceneUid ~= -1 then
-        self:setVisible(false)
+        self.visible = false
     end
 end
 
 function Console:afterInstanceSwitch()
     local sim = require 'sim-2'
     if self.sceneUid ~= -1 and sim.scene.sceneUid == self.sceneUid then
-        self:setVisible(true)
+        self.visible = true
     end
 end
 
 function Console:beforeSimulation()
     if self.hiddenInSimulation then
-        self:setVisible(false)
+        self.visible = false
     end
 end
 
 function Console:afterSimulation()
     if self.hiddenInSimulation then
-        self:setVisible(true)
+        self.visible = true
     end
 end
 
