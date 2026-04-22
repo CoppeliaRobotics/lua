@@ -14,9 +14,7 @@ function CustomClass:initialize(name, props, opts)
             break
         end
     end
-    if cls then
-        rawset(self, 'alreadyRegistered', true)
-    else
+    if not cls then
         opts = opts or {}
         opts.scriptPersistent = opts.scriptPersistent == true
         opts.volatile = opts.volatile ~= false
@@ -43,7 +41,6 @@ end
 function CustomClass:__newindex(k, v)
     assert(type(k) == 'string', 'bad key type')
     assert(type(v) == 'function', 'expecting a method declaration only')
-    if self.alreadyRegistered then return end
     self.simClass:setMethodProperty(k, v)
 end
 
