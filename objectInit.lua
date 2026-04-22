@@ -17,7 +17,7 @@ local function v(intValue, booleanValue)
     if booleanValue then return intValue else return 0 end
 end
 
-function objInit.init(methodName, initialProperties)
+function objInit.init(target, methodName, initialProperties)
     local retVal = nil
     local saved = objInit.p
     objInit.p = table.clone(initialProperties or {})
@@ -28,14 +28,22 @@ function objInit.init(methodName, initialProperties)
     if objectType then
         if objInit[objectType] then
             retVal = objInit[objectType](methodName)
-        elseif table.find(sim.app.customClasses, objectType) or table.find(sim.scene.customClasses, objectType) then
-            retVal = sim.Object(sim.app:createCustomObject(objectType))
+        else
+            -- try custom class...
+            local cls = nil
+            for i, clsi in ipairs(sim.app.customClasses) do
+                if clsi.objectType == objectType then
+                    cls = clsi
+                    break
+                end
+            end
+            assert(cls ~= nil, 'unknown type: ' .. objectType)
+            assert(target == sim.app or target == sim.scene, 'target can only be app or scene')
+            retVal = sim.Object(target:createCustomObject(objectType))
             retVal:setProperties(objInit.p)
             if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
                 retVal:getMethodProperty('init')(retVal)
             end
-        else
-            error('unknown type: ' .. objectType)
         end
     end
     objInit.p = saved

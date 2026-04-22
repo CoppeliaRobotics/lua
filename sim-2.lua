@@ -416,7 +416,7 @@ end
 
 function locals.createObject(target, methodName, initialProperties)
     local objectInit = require 'objectInit'
-    local retVal = objectInit.init(methodName, initialProperties)
+    local retVal = objectInit.init(target, methodName, initialProperties)
     if retVal == nil then
         error ("error in '" .. methodName .. "': unsupported object type.")
     end
