@@ -32,7 +32,7 @@ function objInit.init(target, methodName, initialProperties)
             -- try custom class...
             local cls = nil
             for i, clsi in ipairs(sim.app.customClasses) do
-                if clsi.objectType == objectType then
+                if clsi.name == objectType then
                     cls = clsi
                     break
                 end
