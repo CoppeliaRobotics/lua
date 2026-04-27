@@ -32,14 +32,14 @@ function objInit.init(target, methodName, initialProperties)
             -- try custom class...
             local cls = nil
             for i, clsi in ipairs(sim.app.customClasses) do
-                if clsi.name == objectType then
+                if clsi.objectType == objectType then
                     cls = clsi
                     break
                 end
             end
             assert(cls ~= nil, 'unknown type: ' .. objectType)
             assert(target == sim.app or target == sim.scene, 'target can only be app or scene')
-            retVal = sim.Object(target:createCustomObject(objectType))
+            retVal = sim.Object(cls:makeObject{appScope = (target == sim.app)})
             retVal:setProperties(objInit.p)
             if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
                 retVal:getMethodProperty('init')(retVal)

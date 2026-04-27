@@ -5,7 +5,7 @@ local CustomClass = class 'sim.CustomClass'
 function CustomClass:initialize(name, opts)
     local sim = require 'sim-2'
     for i, c in ipairs(sim.app.customClasses) do
-        if c.name == name then
+        if c.objectType == name then
             rawset(self, '__class', c)
             return
         end
