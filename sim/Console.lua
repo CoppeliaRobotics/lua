@@ -131,28 +131,13 @@ function Console:clear()
     simUI.setText(self.ui, 1, "")
 end
 
-function Console:remove()
+function Console:cleanup()
     assert(self.ui ~= '')
 
     local simUI = require 'simUI'
 
     simUI.destroy(self.ui)
     self.ui = ''
-
-    sim.app:removeCustomObject(self.handle)
 end
-
---[[
-function Console:__gc()
-    if self.ui ~= '' then
-        -- Log a warning: this means someone forgot to call :remove()
-        io.stderr:write("WARNING: Console garbage collected without being closed!\n")
-        self:remove()
-    end
-end
-
--- Ensure __gc is in the metatable early (Lua 5.2+)
-Console.__instanceDict.__gc = Console.__instanceDict.__gc or function() end
-]]
 
 return Console
