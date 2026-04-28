@@ -509,7 +509,6 @@ function _evalExec(inputStr)
         H = _S.getObject
         SEL = _S.getObjectSel()
         SEL1 = SEL[#SEL]
-        app, scene, self = sim.app, sim.scene, sim.self
     end
     local function pfunc(theStr)
         local setCv = sim.getBoolProperty(sim.handle_app, 'customData.simCmd.setConvenienceVars', {noError = true})

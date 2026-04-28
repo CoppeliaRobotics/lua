@@ -1,4 +1,6 @@
-sim = require('sim-2')
+import 'sim-2'
+import 'sim-2.*' -- for global 'app', 'scene', 'self'
+
 if _DEVMODE then sim.app:logInfo("Developer Mode is active") end
 
 pythonFailWarnOnly = true -- error msg can be read via sim.getNamedBoolParam("pythonSandboxInitFailMsg")

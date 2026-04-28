@@ -1,5 +1,6 @@
 local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
+sim.__all = {'app', 'scene', 'self'}
 
 local locals = {}
 __2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only for sim-2)
