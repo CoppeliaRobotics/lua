@@ -194,7 +194,7 @@ function print(...)
     local a = table.pack(...)
     local s = ''
     for i = 1, a.n do
-        s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i], {omitQuotes = true})
+        s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i], {omitQuotes = true, escapeNewline = false})
     end
     _S.printAsync(s)
     setAutoYield(lb)
@@ -252,6 +252,7 @@ function _S.tableToString(tt, opts)
     opts.indentString = opts.indentString or '    '
     opts.maxLevel = opts.maxLevel - 1
     opts.omitQuotes = false
+    opts.escapeNewline = true
     opts.longStringThreshold = 160
 
     if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
@@ -360,8 +361,9 @@ end
 
 function _S.getShortString(x, opts)
     opts = opts or {}
-    opts.omitQuotes = opts.omitQuotes or false
-    opts.allowBinary = opts.allowBinary or false
+    opts.omitQuotes = opts.omitQuotes == true
+    opts.escapeNewline = opts.escapeNewline ~= false
+    opts.allowBinary = opts.allowBinary == true
     opts.allowBinary = true
 
     if type(x) == 'string' then
@@ -374,7 +376,9 @@ function _S.getShortString(x, opts)
         if not opts.omitQuotes then
             x = "'" .. string.escapequotes(x, '\'') .. "'"
         end
-        x = x:gsub('\n', '\\n')
+        if opts.escapeNewline then
+            x = x:gsub('\n', '\\n')
+        end
         return x
     end
     return "[not a string]"
