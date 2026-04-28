@@ -116,6 +116,7 @@ function apidoc.MethodInfo:getCallTip(types)
 end
 
 function apidoc.MethodInfo:getParamsDoc(params)
+    if #params == 0 then return '' end
     local x = '<ul>'
     for i, p in ipairs(params) do
         x = x .. '<li>'
