@@ -371,11 +371,11 @@ function _S.getShortString(x, opts)
         if opts.longStringThreshold and #x > opts.longStringThreshold then
             return string.format('[long string (%s bytes)]', #x)
         end
-        if opts.omitQuotes then
-            return string.format('%s', x)
-        else
-            return string.format("'%s'", string.escapequotes(x, '\''))
+        if not opts.omitQuotes then
+            x = "'" .. string.escapequotes(x, '\'') .. "'"
         end
+        x = x:gsub('\n', '\\n')
+        return x
     end
     return "[not a string]"
 end
