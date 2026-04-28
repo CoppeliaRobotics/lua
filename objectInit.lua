@@ -204,6 +204,15 @@ function objInit.dummy(methodName)
     return retVal
 end
 
+function objInit.customSceneObject(methodName)
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'objectSize', type = 'float', default = 0.04},
+    }, objInit.p)
+    local retVal = sim.Object(callMethod(sim.scene, 'createCustomSceneObject'))
+    retVal:setProperties(objInit.p)
+    return retVal
+end
+
 function objInit.forceSensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'filterType', type = 'int', default = 0},
