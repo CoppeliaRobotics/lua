@@ -2,7 +2,6 @@ local class = require 'middleclass'
 local json = require 'dkjson'
 
 local objectMetaInfo = {} -- cache for objectMetaInfo, by objectType
-local objectMethods  = {} -- cache for object methods, by objectType
 
 local Object = class 'sim.Object'
 local PropertyGroup = require 'sim.PropertyGroup'
