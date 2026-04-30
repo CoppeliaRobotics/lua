@@ -213,9 +213,12 @@ function Object.static.unittest()
     a.customData.vec2m = simEigen.Vector(2) -- this writes as "matrix" type
     assert(a:getPropertyInfo('customData.vec2m') == sim.propertytype_matrix)
     assert(simEigen.Vector:isvector(a.customData.vec2m, 2))
+    --[[
+    (getPropertyInfo type has been removed)
     a:setVector2Property('customData.vec2', simEigen.Vector(2)) -- this writes as "vector2" type
     assert(a:getPropertyInfo('customData.vec2') == sim.propertytype_vector2)
     assert(simEigen.Vector:isvector(a.customData.vec2, 2))
+    ]]
 
     a.customData.vec3m = simEigen.Vector(3) -- this writes as "matrix" type
     assert(a:getPropertyInfo('customData.vec3m') == sim.propertytype_matrix)
