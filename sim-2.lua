@@ -568,12 +568,12 @@ function locals.setProperties(target, methodName, props)
 end
 
 function locals.getProperty(target, methodName, pname, opts)
-    local retVal
-    local noError = opts and opts.noError
-    local ptype, pflags, descr = sim.callMethod(target, 'getPropertyInfo', pname, opts)
-    if not noError then
+    opts = opts or {}
+    local ptype = opts.type or sim.callMethod(target, 'getPropertyInfo', pname, opts)
+    if not opts.noError then
         assert(ptype, 'no such property: ' .. pname)
     end
+    local retVal
     if ptype then
         local ptypeStr = locals.getPropertyTypeString(-1, '', ptype)
         ptypeStr = string.capitalize(string.gsub(ptypeStr, 'array', 'Array'))

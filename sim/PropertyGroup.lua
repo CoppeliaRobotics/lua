@@ -33,7 +33,7 @@ function PropertyGroup:__index(k)
     elseif ptype == 'group' then
         return PropertyGroup(object, {prefix = k})
     elseif ptype then
-        return object:callMethod('getProperty', k)
+        return object:callMethod('getProperty', k, {type = ptype})
     end
 end
 
@@ -81,7 +81,7 @@ function PropertyGroup:__pairs()
             local ptype, pflags, descr = object:callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
             if readable then
-                props[pname2] = object:callMethod('getProperty', prefix .. pname)
+                props[pname2] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
             end
         elseif props[pname2] == nil then
             props[pname2] = PropertyGroup(object, {prefix = prefix .. pname})
