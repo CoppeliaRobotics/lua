@@ -30,12 +30,10 @@ function PropertyGroup:__index(k)
         return function(_, ...)
             return object:callMethod(k, ...)
         end
+    elseif ptype == 'group' then
+        return PropertyGroup(object, {prefix = k})
     elseif ptype then
         return object:callMethod('getProperty', k)
-    end
-
-    if object:callMethod('getPropertyName', 0, {prefix = k .. '.'}) then
-        return PropertyGroup(object, {prefix = k})
     end
 end
 

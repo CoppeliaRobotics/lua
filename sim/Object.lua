@@ -136,13 +136,24 @@ function Object:isValid()
 end
 
 function Object:getPropertyInfo(pname, opts)
-    propertyInfo[self.objectType] = propertyInfo[self.objectType] or {}
-    if propertyInfo[self.objectType][pname] then
-        return table.unpack(propertyInfo[self.objectType][pname])
+    if propertyInfo[self.objectType] == nil then
+        propertyInfo[self.objectType] = {}
     end
-    local ptype, pflags = self:callMethod('getPropertyInfo', pname, opts)
-    if ptype then
-        propertyInfo[self.objectType][pname] = {ptype, pflags}
+    propertyInfo[self.objectType] = propertyInfo[self.objectType] or {}
+    local ptype, pflags
+    if propertyInfo[self.objectType][pname] then
+        ptype, pflags = table.unpack(propertyInfo[self.objectType][pname])
+    else
+        ptype, pflags = self:callMethod('getPropertyInfo', pname, opts)
+        if ptype then
+        elseif self:callMethod('getPropertyName', 0, {prefix = pname .. '.'}) then
+            ptype, pflags = 'group', 0
+        else
+            ptype, pflags = nil, nil
+        end
+        if ptype then
+            propertyInfo[self.objectType][pname] = {ptype, pflags}
+        end
     end
     return ptype, pflags
 end
