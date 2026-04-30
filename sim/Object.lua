@@ -13,6 +13,7 @@ local sim = {
     handle_app = -13,
     handle_self = -4,
     propertytype_method = 240,
+    propertyinfo_removable = 4,
 }
 
 function Object:initialize(handle)
@@ -145,6 +146,9 @@ function Object:getPropertyInfo(pname, opts)
         ptype, pflags = table.unpack(propertyInfo[self.objectType][pname])
     else
         ptype, pflags = self:callMethod('getPropertyInfo', pname, opts)
+        if pflags and (pflags & sim.propertyinfo_removable) > 0 then
+            return ptype, pflags
+        end
         if ptype then
         elseif self:callMethod('getPropertyName', 0, {prefix = pname .. '.'}) then
             ptype, pflags = 'group', 0
