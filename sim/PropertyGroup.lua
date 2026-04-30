@@ -27,8 +27,8 @@ function PropertyGroup:__index(k)
     local object = rawget(self, '__object')
     local ptype = object:callMethod('getPropertyInfo', k, {noError = true})
     if ptype == sim.propertytype_method then
-        return function(o, ...)
-            return o:callMethod(k, ...)
+        return function(_, ...)
+            return object:callMethod(k, ...)
         end
     elseif ptype then
         return object:callMethod('getProperty', k)
