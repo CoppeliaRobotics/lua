@@ -25,7 +25,7 @@ function PropertyGroup:__index(k)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    local ptype = object:callMethod('getPropertyInfo', k, {noError = true})
+    local ptype = object:getPropertyInfo(k, {noError = true})
     if ptype == sim.propertytype_method then
         return function(_, ...)
             return object:callMethod(k, ...)

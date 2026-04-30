@@ -2,6 +2,7 @@ local class = require 'middleclass'
 local json = require 'dkjson'
 
 local objectMetaInfo = {} -- cache for objectMetaInfo, by objectType
+local propertyInfo   = {} -- cache for property info, by objectType
 
 local Object = class 'sim.Object'
 local PropertyGroup = require 'sim.PropertyGroup'
@@ -50,6 +51,7 @@ function Object:__setupPropertyGroups()
     end)
 
     local objectType = self:callMethod('getStringProperty', 'objectType')
+    rawset(self, 'objectType', objectType)
 
     if not objectMetaInfo[objectType] then
         local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
@@ -131,6 +133,18 @@ end
 
 function Object:isValid()
     return sim.callMethod(self, 'isValid')
+end
+
+function Object:getPropertyInfo(pname, opts)
+    propertyInfo[self.objectType] = propertyInfo[self.objectType] or {}
+    if propertyInfo[self.objectType][pname] then
+        return table.unpack(propertyInfo[self.objectType][pname])
+    end
+    local ptype, pflags = self:callMethod('getPropertyInfo', pname, opts)
+    if ptype then
+        propertyInfo[self.objectType][pname] = {ptype, pflags}
+    end
+    return ptype, pflags
 end
 
 function Object:toobject(o)
