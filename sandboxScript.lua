@@ -10,14 +10,14 @@ base64 = require('base64')
 
 require('base-ce')
 
-local l = auxFunc('getfiles', sim.getStringProperty(sim.handle_app, 'luaPath'), '*-ce', 'lua')
+local l = auxFunc('getfiles', sim.app.paths.lua, '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
 --_setupLazyLoaders() -- because those were cleared out by our explicit requires
 
 function s_init()
     sim.app:logInfo("Simulator launched, welcome! ")
-    if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
+    if sim.app.headlessMode == 0 then
         require('simURLDrop')
         if sim.getBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', {noError = true}) ~= true then
             require('pythonLuaSetupAssistant')
@@ -39,8 +39,7 @@ function s_afterSimulation()
 end
 
 function s_sensing()
-    local s = sim.getSimulationState()
-    if s == sim.simulation_advancing_lastbeforestop and not ___m then
+    if sim.scene.simulation.state == sim.simulation_advancing_lastbeforestop and not ___m then
         sim.app:logInfo("Simulation stopping...")
         ___m = true
     end
