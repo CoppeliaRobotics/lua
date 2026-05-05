@@ -88,7 +88,7 @@ end
 
 function Console:afterInstanceSwitch()
     local sim = require 'sim-2'
-    if self.sceneUid ~= -1 and sim.scene.sceneUid == self.sceneUid then
+    if self.sceneUid ~= -1 and sim.scene.uid == self.sceneUid then
         self.visible = true
     end
 end
