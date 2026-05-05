@@ -55,7 +55,7 @@ function Console:init()
     sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
     sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 
-    if sim.self.scriptType ~= sim.scripttype_simulation and sim.self.scriptType ~= sim.scripttype_main then
+    if sim.self.type ~= sim.scripttype_simulation and sim.self.type ~= sim.scripttype_main then
         sim.self:registerFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
         sim.self:registerFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
     end

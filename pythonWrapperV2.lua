@@ -1061,7 +1061,7 @@ function initPython(prog)
                      "/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
     
-    if sim.getIntProperty(sim.handle_self, 'scriptType') == sim.scripttype_sandbox then
+    if sim.getIntProperty(sim.handle_self, 'type') == sim.scripttype_sandbox then
         sim.setBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', errMsg ~= nil)
     end
 
