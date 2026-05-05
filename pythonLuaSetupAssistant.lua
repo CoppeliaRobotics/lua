@@ -25,7 +25,7 @@ local function main()
         return
     end
 
-    local resourcesDir = sim.getStringProperty(sim.handle_app, 'resourcePath')
+    local resourcesDir = sim.getStringProperty(sim.handle_app, 'paths.resources')
     local imagesDir = resourcesDir .. '/manual/en/images/usedByScripts/'
 
     local imgStyle =

@@ -202,7 +202,7 @@ apidoc.APIDoc = class 'sim.apidoc.APIDoc'
 function apidoc.APIDoc:initialize()
     local function xmltree(filename)
         local lfsx = require 'lfsx'
-        local filepath = lfsx.pathjoin(sim.app.resourcePath, 'programming', 'include', 'sim', filename)
+        local filepath = lfsx.pathjoin(sim.app.paths.resources, 'programming', 'include', 'sim', filename)
         local objxmlfile = io.open(filepath, 'r')
         assert(objxmlfile)
         local objxml = objxmlfile:read '*a'
