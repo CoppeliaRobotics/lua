@@ -86,11 +86,11 @@ end
 
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'scriptType', type = 'int', default = sim.scripttype_addon},
+        {name = 'type', type = 'int', default = sim.scripttype_addon},
         {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
         {name = 'lang', type = 'string', default = 'lua'},
     }, objInit.p)
-    local tp = objInit.extractValueOrDefault('scriptType')
+    local tp = objInit.extractValueOrDefault('type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('lang')
     local retVal = sim.Object(sim.createDetachedScript(tp, code, lang))
@@ -240,20 +240,20 @@ end
 
 function objInit.joint(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'jointType', type = 'int', default = sim.joint_revolute},
-        {name = 'jointMode', type = 'int', default = sim.jointmode_dynamic},
-        {name = 'jointLength', type = 'float', default = 0.15},
-        {name = 'jointDiameter', type = 'float', default = 0.02},
+        {name = 'type', type = 'int', default = sim.joint_revolute},
+        {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
+        {name = 'length', type = 'float', default = 0.15},
+        {name = 'diameter', type = 'float', default = 0.02},
         {name = 'interval', type = 'table', item_type = 'float', size = 2, nullable = true},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'screwLead', type = 'float', nullable = true},
         {name = 'dynCtrlMode', type = 'int', nullable = true},
     }, objInit.p)
-    local jointType = objInit.extractValueOrDefault('jointType')
-    local jointMode = objInit.extractValueOrDefault('jointMode')
+    local jointType = objInit.extractValueOrDefault('type')
+    local jointMode = objInit.extractValueOrDefault('mode')
     local jointSize = {
-        objInit.extractValueOrDefault('jointLength'),
-        objInit.extractValueOrDefault('jointDiameter'),
+        objInit.extractValueOrDefault('length'),
+        objInit.extractValueOrDefault('diameter'),
     }
     local retVal = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
     local interval = objInit.extractValueOrDefault('interval')
@@ -270,7 +270,7 @@ function objInit.joint(methodName)
     end
     local dynCtrlMode = objInit.extractValueOrDefault('dynCtrlMode')
     if dynCtrlMode then
-        retVal.dynCtrlMode = dynCtrlMode
+        retVal.dynamics.ctrlMode = dynCtrlMode
     end
     retVal:setProperties(objInit.p)
     return retVal
@@ -378,7 +378,7 @@ end
 
 function objInit.proximitySensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'sensorType', type = 'int', default = sim.proximitysensor_cone},
+        {name = 'type', type = 'int', default = sim.proximitysensor_cone},
         {name = 'explicitHandling', type = 'bool', default = false},
         {name = 'showVolume', type = 'bool', default = true},
         {name = 'frontFaceDetection', type = 'bool', default = true},
@@ -390,14 +390,14 @@ function objInit.proximitySensor(methodName)
         {name = 'volume_offset', type = 'float', default = 0.0},
         {name = 'volume_range', type = 'float', default = 0.2},
         {name = 'volume_angle', type = 'float', default = 90.0 * math.pi / 180.0},
-        {name = 'sensorPointSize', type = 'float', default = 0.005},
+        {name = 'pointSize', type = 'float', default = 0.005},
         {name = 'angleThreshold', type = 'float', nullable = true},
         {name = 'closeThreshold', type = 'float', nullable = true},
         {name = 'volume_xSize', type = 'table', item_type = 'float', size = 2, default = {0.2, 0.4}},
         {name = 'volume_ySize', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
         {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
-    local sensorType = objInit.extractValueOrDefault('sensorType')
+    local sensorType = objInit.extractValueOrDefault('type')
     local options = 0
         + v(1, objInit.extractValueOrDefault('explicitHandling'))
         + v(2, false) -- deprecated, set to 0
@@ -440,7 +440,7 @@ function objInit.proximitySensor(methodName)
     else
         floatParams[12] = 0.0
     end
-    floatParams[13] = objInit.extractValueOrDefault('sensorPointSize')
+    floatParams[13] = objInit.extractValueOrDefault('pointSize')
     local retVal = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
@@ -667,7 +667,7 @@ function objInit.shape(methodName)
             ff = objInit.p.disc
             objInit.p.disc = nil
             checkargs.checkfields({funcName = methodName .. ' (disc field)'}, {
-                {name = 'radius', type = 'float', default = 0.1},
+                {name = 'radius', type = 'float', default = 0.05},
             }, ff)
             pt = sim.primitiveshape_disc
             local r = objInit.extractValueOrDefault('radius', nil, ff)
@@ -676,7 +676,7 @@ function objInit.shape(methodName)
             ff = objInit.p.sphere
             objInit.p.sphere = nil
             checkargs.checkfields({funcName = methodName .. ' (sphere field)'}, {
-                {name = 'radius', type = 'float', default = 0.1},
+                {name = 'radius', type = 'float', default = 0.05},
             }, ff)
             pt = sim.primitiveshape_spheroid
             local r = objInit.extractValueOrDefault('radius', nil, ff)
@@ -685,7 +685,7 @@ function objInit.shape(methodName)
             ff = objInit.p.cylinder
             objInit.p.cylinder = nil
             checkargs.checkfields({funcName = methodName .. ' (cylinder field)'}, {
-                {name = 'radius', type = 'float', default = 0.1},
+                {name = 'radius', type = 'float', default = 0.05},
                 {name = 'length', type = 'float', default = 0.1},
                 {name = 'open', type = 'bool', default = false},
             }, ff)
@@ -698,7 +698,7 @@ function objInit.shape(methodName)
             ff = objInit.p.cone
             objInit.p.cone = nil
             checkargs.checkfields({funcName = methodName .. ' (cone field)'}, {
-                {name = 'radius', type = 'float', default = 0.1},
+                {name = 'radius', type = 'float', default = 0.05},
                 {name = 'height', type = 'float', default = 0.1},
                 {name = 'open', type = 'bool', default = false},
             }, ff)
@@ -711,8 +711,8 @@ function objInit.shape(methodName)
             ff = objInit.p.capsule
             objInit.p.capsule = nil
             checkargs.checkfields({funcName = methodName .. ' (capsule field)'}, {
-                {name = 'radius', type = 'float', default = 0.025},
-                {name = 'length', type = 'float', default = 0.1},
+                {name = 'radius', type = 'float', default = 0.05},
+                {name = 'length', type = 'float', default = 0.2},
             }, ff)
             pt = sim.primitiveshape_capsule
             local r = objInit.extractValueOrDefault('radius', nil, ff)
