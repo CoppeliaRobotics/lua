@@ -75,7 +75,7 @@ function locals.registerFunctionHook(target, methodName, funcNm, func, before)
     if type(func) == 'string' then
         registerScriptFuncHook(funcNm, func, before, false)
     else
-        local str = tostring(func)
+        local str = tostring(func):gsub("[%s:]", "_") -- typical tostring(func) typically produces: "function: xxxxxxx", and : is reserved
         registerScriptFuncHook(funcNm, '__2.' .. str, before, false)
         __2[str] = func
     end
@@ -86,7 +86,7 @@ function locals.removeFunctionHook(target, methodName, funcNm, func, before)
     if type(func) == 'string' then
         registerScriptFuncHook(funcNm, func, before, true)
     else
-        local str = tostring(func)
+        local str = tostring(func):gsub("[%s:]", "_") -- typical tostring(func) typically produces: "function: xxxxxxx", and : is reserved
         registerScriptFuncHook(funcNm, '__2.' .. str, before, true)
         __2[str] = nil
     end
@@ -107,55 +107,48 @@ function locals.step(target, methodName)
     locals.yield(target, methodName)
 end
 
-function locals.getAncestors(target, methodName, ...)
-    local objTypes, depth, objTypesMap = checkargs.checkargsEx({funcName = methodName}, {
-        {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
-        {type = 'int', default = 9999},
-        {type = 'table', default_nil = true, nullable = true},
-    }, ...)
+function locals.getAncestors(target, methodName, options, objTypesMap)
     local types = {}
+    options = options or {}
+    options.types = options.types or {'sceneObject'}
+    options.count = options.count or 9999
     if objTypesMap then
         types = objTypesMap
     else
-        for i = 1, #objTypes do
-            types[objTypes[i]] = true
+        for i = 1, #options.types do
+            types[options.types[i]] = true
         end
     end
     local retVal = {}
-    while target do
-        target = target.parent
-        if target then
-            if types[target.objectType] or types['sceneObject'] then
-                retVal[#retVal + 1] = target
+    if options.count > 0 then
+        while target do
+            target = target.parent
+            if target then
+                if types[target.objectType] or types['sceneObject'] then
+                    retVal[#retVal + 1] = target
+                end
+            else
+                break
             end
-        else
-            break
-        end
-        depth = depth - 1
-        if depth == 0 then
-            break
+            options.count = options.count - 1
+            if options.count == 0 then
+                break
+            end
         end
     end
     return retVal
 end
 
-function locals.getDescendants(target, methodName, ...)
-    local objTypes, depth, objTypesMap = ...
+function locals.getDescendants(target, methodName, options, types, depth)
     if #methodName > 0 then
-        -- Do not verify again with reentrance
-        objTypes, depth, objTypesMap = checkargs.checkargsEx({funcName = methodName}, {
-            {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
-            {type = 'int', default = 9999},
-            {type = 'table', default_nil = true, nullable = true},
-        }, ...)
-    end
-    local types = {}
-    if objTypesMap then
-        types = objTypesMap
-    else
-        for i = 1, #objTypes do
-            types[objTypes[i]] = true
+        options = options or {}
+        options.types = options.types or {'sceneObject'}
+        options.depth = options.depth or 9999
+        types = {}
+        for i = 1, #options.types do
+            types[options.types[i]] = true
         end
+        depth = options.depth
     end
     local retVal = {}
 
@@ -166,7 +159,7 @@ function locals.getDescendants(target, methodName, ...)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, locals.getDescendants(child, '', {}, depth - 1, types))
+                retVal = table.add(retVal, locals.getDescendants(child, '', {}, types, depth - 1))
             end
         else
             for i = 1, #target.children do
@@ -174,7 +167,7 @@ function locals.getDescendants(target, methodName, ...)
                 if types[child.objectType] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
-                retVal = table.add(retVal, locals.getDescendants(child, '', {}, depth - 1, types))
+                retVal = table.add(retVal, locals.getDescendants(child, '', {}, types, depth - 1))
             end
         end
     end
@@ -191,24 +184,6 @@ function locals.getFunctions(target, methodName, ...)
         end,
     })
 end
-
-sim.auxiliaryConsoleClose = wrap(sim.auxiliaryConsoleClose, function(origFunc)
-    return function(...)
-        origFunc(...)
-    end
-end)
-
-sim.auxiliaryConsolePrint = wrap(sim.auxiliaryConsolePrint, function(origFunc)
-    return function(...)
-        origFunc(...)
-    end
-end)
-
-sim.auxiliaryConsoleShow = wrap(sim.auxiliaryConsoleShow, function(origFunc)
-    return function(...)
-        origFunc(...)
-    end
-end)
 
 function locals.fastIdleLoop(target, methodName, enable)
     local data = sim.app:getBufferProperty('signal.__IDLEFPSSTACKSIZE__', {noError = true}) -- sim-1 uses buffers too, stay compatible!
@@ -234,7 +209,9 @@ function locals.fastIdleLoop(target, methodName, enable)
     sim.app:setBufferProperty('signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
 end
 
-function locals.throttle(target, methodName, t, func, ...)
+function locals.throttle(target, methodName, func, interval, options)
+    options = options or {}
+    options.args = options.args or {}
     locals.lastExecTime = locals.lastExecTime or {}
     locals.throttleSched = locals.throttleSched or {}
 
@@ -247,16 +224,16 @@ function locals.throttle(target, methodName, t, func, ...)
         locals.throttleSched[h] = nil
     end
 
-    if locals.lastExecTime[h] == nil or locals.lastExecTime[h] + t < now then
-        func(...)
+    if locals.lastExecTime[h] == nil or locals.lastExecTime[h] + interval < now then
+        func(table.unpack(options.args))
         locals.lastExecTime[h] = now
     else
         -- if skipping the call (i.e. because it exceeds target rate)
         -- schedule the last call in the future:
-        locals.throttleSched[h] = locals.scheduleExecution(-1, '', locals.lastExecTime[h] + t, false, function(...)
-            func(...)
-            locals.lastExecTime[h] = now
-        end, {...})
+        locals.throttleSched[h] = locals.scheduleExecution(-1, '', function()
+            func(table.unpack(options.args))
+            locals.lastExecTime[h] = sim.app.systemTime
+        end, interval - now + locals.lastExecTime[h], {simulationTime = false, args = options.args})
     end
 end
 
@@ -283,9 +260,12 @@ function locals.schedulerCallback()
     end
 end
 
-function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
+function locals.scheduleExecution(target, methodName, func, delay, options)
+    options = options or {}
+    options.simulationTime = options.simulationTime or false
+    options.args = options.args or {}
     local timePoint
-    if simTime then
+    if options.simulationTime then
         timePoint = delay + sim.scene.simulationTime
     else
         timePoint = delay + sim.app.systemTime
@@ -303,7 +283,7 @@ function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
     local id = locals.scheduler.nextId
     locals.scheduler.nextId = id + 1
     local pq
-    if simTime then
+    if options.simulationTime then
         pq = locals.scheduler.simpq
         locals.scheduler.simTime[id] = true
     else
@@ -312,9 +292,9 @@ function locals.scheduleExecution(target, methodName, delay, simTime, func, ...)
     pq:push(timePoint, {
         id = id,
         func = func,
-        args = table.pack(...),
+        args = options.args,
         timePoint = timePoint,
-        simTime = simTime,
+        simTime = options.simulationTime,
     })
     if not locals.scheduler.hook then
         sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, true)
@@ -339,9 +319,9 @@ end
 
 function locals.changeColor(target, methodName, ...)
     target = sim.Object:toobject(target)
-    local color, materialComponent = checkargs({
+    local color, options = checkargs({
         {type = 'color'},
-        {type = 'int', default = sim.materialcomponent_diffuse},
+        {type = 'table', default = {component = sim.materialcomponent_diffuse}},
     }, ...)
     local colorData = {}
     local objs = {target}
@@ -352,9 +332,9 @@ function locals.changeColor(target, methodName, ...)
         local obj = objs[i]
         if obj.objectType == 'shape' then -- and obj.visible then
             local colComp = 'diffuse'
-            if materialComponent == sim.materialcomponent_specular then
+            if options.component == sim.materialcomponent_specular then
                 colComp = 'specular'
-            elseif materialComponent == sim.materialcomponent_emission then
+            elseif options.component == sim.materialcomponent_emission then
                 colComp = 'emission'
             end
             colorData[#colorData + 1] = {puid = obj.persistentUid, data = obj.compoundColors[colComp], comp = colComp}
@@ -391,9 +371,9 @@ function locals.visitTree(target, methodName, ...)
     local visitorFunc, objTypes, objTypesMap = ...
     if #methodName > 0 then
         -- Do not verify again with reentrance
-        visitorFunc, objTypes, objTypesMap = checkargs({
+        visitorFunc, options, objTypesMap = checkargs({
             {type = 'func'},
-            {type = 'table', item_type = 'string', size = '0..*', default = {'sceneObject'}},
+            {type = 'table', default = {types = {'sceneObject'}}},
             {type = 'table', default_nil = true, nullable = true},
         }, ...)
     end
@@ -402,8 +382,8 @@ function locals.visitTree(target, methodName, ...)
     if objTypesMap then
         types = objTypesMap
     else
-        for i = 1, #objTypes do
-            types[objTypes[i]] = true
+        for i = 1, #options.types do
+            types[options.types[i]] = true
         end
     end
 
@@ -786,7 +766,7 @@ function sim.fastIdleLoop(enable)
 end
 
 function sim.throttle(t, func, ...)
-    locals.throttle(-1, '', t, func, ...)
+    locals.throttle(-1, '', func, t, {args = table.pack(...)})
 end
 
 function sim.scheduleExecution(func, args, timePoint, simTime)
@@ -795,7 +775,7 @@ function sim.scheduleExecution(func, args, timePoint, simTime)
     else
         timePoint = timePoint - sim.app.systemTime
     end
-    return locals.scheduleExecution(-1, '', timePoint, simTime, func, table.unpack(args))
+    return locals.scheduleExecution(-1, '', func, timePoint, {simulationTime = simTime, args = args})
 end
 
 function sim.cancelScheduledExecution(id)
