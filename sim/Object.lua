@@ -1,7 +1,6 @@
 local class = require 'middleclass'
 local json = require 'dkjson'
 
-local objectMetaInfo = {} -- cache for objectMetaInfo, by objectType
 local propertyInfo   = {} -- cache for property info, by objectType
 
 local Object = class 'sim.Object'
@@ -51,19 +50,12 @@ function Object:__setupPropertyGroups()
         return methods
     end)
 
-    self.__properties:registerLocalProperty('objectMetaInfoCached', function() return objectMetaInfo[self.objectType] end)
-
     local objectType = self:callMethod('getStringProperty', 'objectType')
     rawset(self, 'objectType', objectType)
 
-    if not objectMetaInfo[objectType] then
-        local mi = self:callMethod('getStringProperty', 'objectMetaInfo')
-        objectMetaInfo[objectType] = json.decode(mi)
-        assert(objectMetaInfo[objectType], 'invalid JSON in objectMetaInfo of ' .. handle)
-    end
-
-    for ns, opts in pairs(objectMetaInfo[objectType].namespaces or {}) do
-        rawset(self, ns, PropertyGroup(self, table.update({prefix = ns}, opts)))
+    local namespaces = self:callMethod('getStringArrayProperty', 'metaInfo.namespaces')
+    for _, ns in pairs(namespaces) do
+        rawset(self, ns, PropertyGroup(self, {prefix = ns, newPropertyForcedType = (ns == 'refs' or ns == 'origRefs') and 22 or nil}))
     end
 end
 
