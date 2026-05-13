@@ -51,6 +51,8 @@ function Object:__setupPropertyGroups()
         return methods
     end)
 
+    self.__properties:registerLocalProperty('objectMetaInfoCached', function() return objectMetaInfo[self.objectType] end)
+
     local objectType = self:callMethod('getStringProperty', 'objectType')
     rawset(self, 'objectType', objectType)
 
