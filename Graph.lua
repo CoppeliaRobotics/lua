@@ -402,4 +402,35 @@ function Graph:tographviz(opts)
     return table.concat(lines, '\n')
 end
 
+-- Get sources and sinks
+function Graph:getSourcesAndSinks()
+    assert(self.directed, "getSourcesAndSinks only makes sense for directed graphs")
+
+    local sources = {}
+    local sinks = {}
+
+    for vertex, _ in pairs(self.vertices) do
+        -- Check for incoming edges (sources have none)
+        local hasIncoming = false
+        for source, targets in pairs(self.adjacency) do
+            if targets[vertex] then
+                hasIncoming = true
+                break
+            end
+        end
+
+        -- Check for outgoing edges (sinks have none)
+        local hasOutgoing = next(self.adjacency[vertex]) ~= nil
+
+        if not hasIncoming then
+            table.insert(sources, vertex)
+        end
+        if not hasOutgoing then
+            table.insert(sinks, vertex)
+        end
+    end
+
+    return sources, sinks
+end
+
 return Graph
