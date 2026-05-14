@@ -10,7 +10,8 @@ function CustomClass:initialize(name, opts)
             return
         end
     end
-    rawset(self, '__class', sim.Object(sim.app:createCustomObjectClass(name, opts or {metaInfo = '{"superclass": "object"}'})))
+    opts = table.update({metaInfo = {superClass = {'customObject'}}}, opts)
+    rawset(self, '__class', sim.Object(sim.app:createCustomObjectClass(name, opts)))
 end
 
 function CustomClass:__index(k)
