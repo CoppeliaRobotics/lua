@@ -2,6 +2,10 @@ local class = require 'middleclass'
 
 local Graph = class 'Graph'
 
+local function check_id_type(id)
+    assert(type(id) == 'string' or math.type(id) == 'integer', 'bad id type')
+end
+
 function Graph:initialize(directed)
     self.directed = directed or false
     self.vertices = {}
@@ -20,6 +24,8 @@ end
 
 -- Add a vertex with optional info
 function Graph:addVertex(id, info)
+    check_id_type(id)
+
     assert(self.vertices[id] == nil, 'vertex already exists')
 
     self.vertices[id] = info or {}
@@ -30,6 +36,8 @@ end
 
 -- Remove a vertex and all connected edges
 function Graph:removeVertex(id)
+    check_id_type(id)
+
     if not self.vertices[id] then
         return false
     end
@@ -54,16 +62,23 @@ end
 
 -- Retrieve a vertex by id
 function Graph:getVertex(id)
+    check_id_type(id)
+
     return self.vertices[id]
 end
 
 -- Check if vertex exists
 function Graph:hasVertex(id)
+    check_id_type(id)
+
     return self.vertices[id] ~= nil
 end
 
 -- Add an edge with optional info
 function Graph:addEdge(id1, id2, info)
+    check_id_type(id1)
+    check_id_type(id2)
+
     assert(self.vertices[id1] ~= nil, 'vertex ' .. id1 .. ' doesn\'t exist')
     assert(self.vertices[id2] ~= nil, 'vertex ' .. id2 .. ' doesn\'t exist')
 
@@ -89,6 +104,9 @@ end
 
 -- Remove an edge
 function Graph:removeEdge(id1, id2)
+    check_id_type(id1)
+    check_id_type(id2)
+
     local edgeKey = self:_getEdgeKey(id1, id2)
     local reverseKey = self:_getEdgeKey(id2, id1)
 
@@ -111,17 +129,25 @@ end
 
 -- Retrieve an edge by source and target
 function Graph:getEdge(id1, id2)
+    check_id_type(id1)
+    check_id_type(id2)
+
     local edgeKey = self:_getEdgeKey(id1, id2)
     return self.edges[edgeKey]
 end
 
 -- Check if edge exists
 function Graph:hasEdge(id1, id2)
+    check_id_type(id1)
+    check_id_type(id2)
+
     return self:getEdge(id1, id2) ~= nil
 end
 
 -- Get all outgoing edges from a vertex
 function Graph:getOutEdges(id)
+    check_id_type(id)
+
     if not self.adjacency[id] then
         return {}
     end
@@ -136,6 +162,8 @@ end
 
 -- Get all incoming edges to a vertex
 function Graph:getInEdges(id)
+    check_id_type(id)
+
     local inEdges = {}
 
     for sourceId, targets in pairs(self.adjacency) do
