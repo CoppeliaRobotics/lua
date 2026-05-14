@@ -3,6 +3,10 @@ local checkargs = require('checkargs-2')
 
 local objInit = {}
 
+local knownCustomClasses = {
+    console = 'sim.Console',
+}
+
 function objInit.extractValueOrDefault(key, default, map)
     map = map or objInit.p
     local v = default
@@ -30,6 +34,9 @@ function objInit.init(target, methodName, initialProperties)
             retVal = objInit[objectType](methodName)
         else
             -- try custom class...
+            local modName = knownCustomClasses[objectType]
+            if modName then require(modName) end
+
             local cls = nil
             for i, clsi in ipairs(sim.app.customClasses) do
                 if clsi.objectType == objectType then
