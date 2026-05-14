@@ -244,4 +244,18 @@ function apidoc.APIDoc:getMethod(className, methodName)
     if c then return c:getMethod(methodName) end
 end
 
+function apidoc.APIDoc:getClassHierarchyGraph()
+    local Graph = require 'Graph'
+    local g = Graph(true)
+    for _, classInfo in pairs(self.classes) do
+        g:addVertex(classInfo.className)
+    end
+    for _, classInfo in pairs(self.classes) do
+        if classInfo.superClassName then
+            g:addEdge(classInfo.className, classInfo.superClassName)
+        end
+    end
+    return g
+end
+
 return apidoc
