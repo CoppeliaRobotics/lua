@@ -379,7 +379,7 @@ function Graph:tographviz(opts)
     -- render nodes
     for _, id in ipairs(self:getAllVertices()) do
         local nodeStyle = opts.nodeStyle(id)
-        table.insert(lines, string.format('  %d%s;', id, styleTxt(nodeStyle)))
+        table.insert(lines, string.format('  "%s"%s;', id, styleTxt(nodeStyle)))
     end
 
     -- render edges (undirected, deduplicated)
@@ -394,7 +394,7 @@ function Graph:tographviz(opts)
         local key = id1 .. '-' .. id2
         if not seen[key] then
             seen[key] = true
-            table.insert(lines, string.format('  %d %s %d%s;', id1, arrow, id2, styleTxt(edgeStyle)))
+            table.insert(lines, string.format('  "%s" %s "%s"%s;', id1, arrow, id2, styleTxt(edgeStyle)))
         end
     end
 
