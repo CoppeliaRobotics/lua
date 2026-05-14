@@ -33,7 +33,17 @@ function PropertyGroup:__index(k)
     elseif ptype == 'group' then
         return PropertyGroup(object, {prefix = k})
     elseif ptype then
-        return object:callMethod('getProperty', k, {type = ptype})
+        local v = object:callMethod('getProperty', k, {type = ptype})
+
+        local simEigen = require 'simEigen'
+        if simEigen.Matrix:ismatrix(v) or simEigen.Quaternion:isquaternion(v) then
+            -- prevent inline modifications, e.g.: obj.position[3] = 0
+            -- which havbe no effect (don't trigger a setProperty call) and
+            -- might confuse users
+            v:freeze()
+        end
+
+        return v
     end
 end
 
