@@ -353,12 +353,12 @@ end
 
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'scriptType', type = 'int', default = sim.scripttype_simulation},
+        {name = 'type', type = 'int', default = sim.scripttype_simulation},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
-    local scriptType = objInit.extractValueOrDefault('scriptType')
+    local scriptType = objInit.extractValueOrDefault('type')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))

@@ -1,7 +1,7 @@
 local motion = {}
 local checkargs = require('checkargs')
 local copy = require('copy')
-local Matrix = require'simEigen'.Matrix
+--local Matrix = require'simEigen'.Matrix
 local Vector = require'simEigen'.Vector
 local Pose = require'simEigen'.Pose
 local Quaternion = require'simEigen'.Quaternion
@@ -27,7 +27,7 @@ function sim.moveToConfig_init(params)
             end
             params.pos = Vector(#params.joints, 0.0)
             for i = 1, #params.joints do
-                params.pos[i] = sim.getJointPosition(params.joints[i])
+                params.pos[i] = params.joints[i].jointPosition
             end
         end
     end
@@ -123,7 +123,7 @@ end
 function sim.moveToConfig_step(data)
     local dt = data.timeStep
     if dt == 0 then
-        dt = sim.getSimulationTimeStep()
+        dt = sim.scene.simulation.timeStep
     end
     local res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
     newPosVelAccel = Vector(newPosVelAccel)
@@ -142,10 +142,10 @@ function sim.moveToConfig_step(data)
         else
             if data.joints then
                 for i = 1, #data.joints do
-                    if sim.isDynamicallyEnabled(data.joints[i]) then
-                        sim.setJointTargetPosition(data.joints[i], data.pos[i])
+                    if data.joints[i].dynamicallyEnabled then
+                        data.joints[i].targetPosition = data.pos[i]
                     else    
-                        sim.setJointPosition(data.joints[i], data.pos[i])
+                        data.joints[i].jointPosition = data.pos[i]
                     end
                 end
             end
@@ -165,7 +165,7 @@ end
 
 function sim.moveToConfig(...)
     local params = ...
-    local lb = sim.setStepping(true)
+    sim.self:setStepping(true)
     local data = sim.moveToConfig_init(params)
     local outParams = {}
     local res
@@ -174,13 +174,13 @@ function sim.moveToConfig(...)
         if res < 0 then
             error('sim.moveToConfig_step returned error code ' .. res)
         end
-        sim.step()
+        sim.self:step()
         if res ~= 0 then
             break
         end
     end
     sim.moveToConfig_cleanup(data)
-    sim.setStepping(lb)
+    sim.self:setStepping(false)
     return outParams
 end
 
@@ -197,22 +197,22 @@ function sim.moveToPose_init(params)
         params.ik = nil
     else
         if params.object then
-            if type(params.object) ~= 'number' then
+            if not sim.Object:isobject(params.object) or not params.object.metaInfo.isSceneObject then
                 error("invalid 'object' field.")
             end
-            params.pose = sim.getObjectPose(params.object, params.relObject)
+            params.pose = params.object:getPose({relativeToObject = params.relObject})
             params.ik = nil
         else
             if params.ik == nil then
                 error("missing field: either 'pose', 'object' or 'ik' is required.")
             else
-                if type(params.ik) ~= 'table' or type(params.ik.tip) ~= 'number' or type(params.ik.target) ~= 'number' then
+                if type(params.ik) ~= 'table' or ((not sim.Object:isobject(params.ik.tip)) or (not params.ik.tip.metaInfo.isSceneObject)) or ((not sim.Object:isobject(params.ik.target)) or (not params.ik.target.metaInfo.isSceneObject)) then
                     error("invalid 'ik' field, or missing/invalid sub-fields.")
                 end
                 params.relObject = -1
                 params.object = params.ik.target
-                sim.setObjectPose(params.ik.target, sim.getObjectPose(params.ik.tip))
-                params.pose = sim.getObjectPose(params.object)
+                params.ik.target:setPose(params.ik.tip:getPose())
+                params.pose = params.object:getPose()
             end
         end
     end
@@ -270,7 +270,7 @@ function sim.moveToPose_init(params)
     end
 
     if params.ik then
-        local simIK = require('simIK')
+        local simIK = require('simIK-1')
         params.ik.breakFlags = params.ik.breakFlags or 0
         params.ik.base = params.ik.base or -1
         params.ik.method = params.ik.method or simIK.method_damped_least_squares
@@ -282,14 +282,15 @@ function sim.moveToPose_init(params)
         params.ik.ikEnv = simIK.createEnvironment()
         params.ik.ikGroup = simIK.createGroup(params.ik.ikEnv)
         simIK.setGroupCalculation(params.ik.ikEnv, params.ik.ikGroup, params.ik.method, params.ik.damping, params.ik.iterations)
-        params.ik.ikElement, params.ik.simToIkMap, params.ik.ikToSimMap = simIK.addElementFromScene(params.ik.ikEnv, params.ik.ikGroup, params.ik.base, params.ik.tip, params.ik.target, params.ik.constraints)
+        params.ik.ikElement, params.ik.simToIkMap, params.ik.ikToSimMap = simIK.addElementFromScene(params.ik.ikEnv, params.ik.ikGroup, params.ik.base.handle, params.ik.tip.handle, params.ik.target.handle, params.ik.constraints)
         simIK.setElementPrecision(params.ik.ikEnv, params.ik.ikGroup, params.ik.ikElement, params.ik.precision)
         local hadJoints = params.ik.joints and (#params.ik.joints > 0)
         if not hadJoints then
             params.ik.joints = {}
         end
         for k, v in pairs(params.ik.simToIkMap) do
-            if sim.getObjectType(k) == sim.sceneobject_joint then
+            k = sim.Object:toobject(k)
+            if k.objectType == 'joint' then
                 if hadJoints then
                     local found = false
                     for i = 1, #params.ik.joints do
@@ -314,9 +315,10 @@ function sim.moveToPose_init(params)
     
     params.timeStep = params.timeStep or 0
 
-    params.startMatrix = params.pose:totransform()
-    params.targetMatrix = params.targetPose:totransform()
-    params.matrix = params.startMatrix:copy()
+    params.startPose = params.pose:copy()
+--    params.startMatrix = params.pose:totransform()
+--    params.targetMatrix = params.targetPose:totransform()
+--    params.matrix = params.startMatrix:copy()
     
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
@@ -330,16 +332,19 @@ function sim.moveToPose_init(params)
     params.timeLeft = 0
     params.dist = 1.0
     
-    local axis, angle = sim.getRotationAxis(params.startMatrix, params.targetMatrix)
+    local axis, angle = params.startPose.q:axisangle(params.targetPose.q) -- sim.getRotationAxis(params.startMatrix, params.targetMatrix)
     params.angle = angle
     if params.metric then
         -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
         -- the start and goal pose. This always results in straight line movement paths
         local dx = {
-            (params.targetMatrix[1][4] - params.startMatrix[1][4]) * params.metric[1],
-            (params.targetMatrix[2][4] - params.startMatrix[2][4]) * params.metric[2],
-            (params.targetMatrix[3][4] - params.startMatrix[4][4]) * params.metric[3], params.angle * params.metric[4],
+            (params.targetPose.t[1] - params.startPose.t[1]) * params.metric[1],
+            (params.targetPose.t[2] - params.startPose.t[2]) * params.metric[2],
+            (params.targetPose.t[3] - params.startPose.t[3]) * params.metric[3], params.angle * params.metric[4]
         }
+--            (params.targetMatrix[1][4] - params.startMatrix[1][4]) * params.metric[1],
+--            (params.targetMatrix[2][4] - params.startMatrix[2][4]) * params.metric[2],
+--            (params.targetMatrix[3][4] - params.startMatrix[3][4]) * params.metric[3], params.angle * params.metric[4],
         params.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
         if params.dist > 0.000001 then
             local currentPosVelAccel = {0, params.vel[1], params.accel[1]}
@@ -351,8 +356,12 @@ function sim.moveToPose_init(params)
         -- is handled and controlled individually. This can result in non-straight line movement paths,
         -- due to how the Ruckig functions operate depending on 'flags'
         local dx = Vector({
-            params.targetMatrix[1][4] - params.startMatrix[1][4], params.targetMatrix[2][4] - params.startMatrix[2][4],
-            params.targetMatrix[3][4] - params.startMatrix[3][4], params.angle,
+            params.targetPose.t[1] - params.startPose.t[1],
+            params.targetPose.t[2] - params.startPose.t[2],
+            params.targetPose.t[3] - params.startPose.t[3], params.angle
+--            params.targetMatrix[1][4] - params.startMatrix[1][4], 
+--            params.targetMatrix[2][4] - params.startMatrix[2][4],
+--            params.targetMatrix[3][4] - params.startMatrix[3][4], params.angle,
         })
         local currentPosVelAccel = Vector(dim, 0.0):vertcat(params.vel, params.accel):data()
         local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
@@ -380,8 +389,9 @@ function sim.moveToPose_step(data)
                     data.timeLeft = dt - syncTime
                 end
                 local t = newPosVelAccel[1] / data.dist
-                data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
-                data.pose = Pose:fromtransform(data.matrix)
+                data.pose = data.startPose:interp(t, data.targetPose)
+--                data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
+--                data.pose = Pose:fromtransform(data.matrix)
                 data.vel = Vector{newPosVelAccel[2]}
                 data.accel = Vector{newPosVelAccel[3]}
                 local cb = _S.simMoveToPose_callbacks[data]
@@ -391,10 +401,10 @@ function sim.moveToPose_step(data)
                     end
                 else
                     if data.object then
-                        sim.setObjectPose(data.object, data.pose, data.relObject)
+                        data.object:setPose(data.pose, {relativeToObject = data.relObject})
                     end
                     if data.ik then
-                        local simIK = require('simIK-2')
+                        local simIK = require('simIK-1')
                         local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                         if f & cmd.params.ik.breakFlags ~= 0 then
                             error('simIK.handleGroup in sim.moveToPose_step returned flags ' .. f)
@@ -419,11 +429,7 @@ function sim.moveToPose_step(data)
             if math.abs(data.angle) > math.pi * 0.00001 then
                 t = newPosVelAccel[4] / data.angle
             end
-            data.matrix = sim.interpolateMatrices(data.startMatrix, data.targetMatrix, t)
-            data.matrix[1][4] = data.startMatrix[1][4] + newPosVelAccel[1]
-            data.matrix[2][4] = data.startMatrix[2][4] + newPosVelAccel[2]
-            data.matrix[3][4] = data.startMatrix[3][4] + newPosVelAccel[3]
-            data.pose = Pose:fromtransform(data.matrix)
+            data.pose = Pose(data.startPose.t + Vector(table.slice(newPosVelAccel, 1, 3)), data.startPose.q:slerp(t, data.targetPose.q))
             data.vel  = Vector(table.slice(newPosVelAccel, 5, 8))
             data.accel = Vector(table.slice(newPosVelAccel, 9, 12))
             local cb = _S.simMoveToPose_callbacks[data]
@@ -433,10 +439,10 @@ function sim.moveToPose_step(data)
                 end
             else
                 if data.object then
-                    sim.setObjectPose(data.object, data.pose, data.relObject)
+                    data.object:setPose(data.pose, {relativeToObject = data.relObject})
                 end
                 if data.ik then
-                    local simIK = require('simIK-2')
+                    local simIK = require('simIK-1')
                     simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                 end
             end
@@ -453,7 +459,7 @@ function sim.moveToPose_cleanup(data)
         _S.simMoveToPose_callbacks[data] = nil
     end
     if data.ik then
-        local simIK = require('simIK-2')
+        local simIK = require('simIK-1')
         simIK.eraseEnvironment(data.ik.ikEnv)
         data.ik = nil
     end
@@ -461,7 +467,7 @@ end
 
 function sim.moveToPose(...)
     local params = ...
-    local lb = sim.setStepping(true)
+    sim.self:setStepping(true)
     local data = sim.moveToPose_init(params)
     local outParams = {}
     local res
@@ -470,13 +476,13 @@ function sim.moveToPose(...)
         if res < 0 then
             error('sim.moveToPose_step returned error code ' .. res)
         end
-        sim.step()
+        sim.self:step()
         if res ~= 0 then
             break
         end
     end
     sim.moveToPose_cleanup(data)
-    sim.setStepping(lb)
+    sim.self:setStepping(false)
     return outParams
 end
 
@@ -498,7 +504,7 @@ function sim.generateTimeOptimalTrajectory(...)
 
     if (dof * confCnt ~= #path) or dof < 1 or confCnt < 2 or dof ~= #minMaxVel / 2 or
         dof ~= #minMaxAccel / 2 then error("Bad table size.") end
-    local lb = sim.setStepping(true)
+    sim.self:setStepping(true)
 
     local pM = Matrix(confCnt, dof, path)
     local mmvM = Matrix(dof, 2, minMaxVel)
@@ -553,9 +559,12 @@ def cbb(req):
         removeScript = false
     end
     if script == nil or script == -1 then
-        script = sim.createScript(sim.scripttype_customization, code, 0, 'python')
-        sim.setObjectAlias(script, 'toppraPythonScript_tmp')
-        sim.initScript(script)
+        script = sim.scene:createObject({objectType = 'script', type = sim.scripttype_customization, code = code, language = 'python'})
+        script.name = 'toppraPythonScript_tmp'
+        script:init()
+    --    script = sim.createScript(sim.scripttype_customization, code, 0, 'python')
+    --    sim.setObjectAlias(script, 'toppraPythonScript_tmp')
+    --    sim.initScript(script)
     end
     local toSend = {
         samples = trajPtSamples,
@@ -566,15 +575,16 @@ def cbb(req):
         bc_type = boundaryCondition,
     }
 
-    local s, r = pcall(sim.callScriptFunction, 'cb', script, toSend)
+--    local s, r = pcall(sim.callScriptFunction, 'cb', script, toSend)
+    local s, r = pcall(script.detachedScript.callFunction, script.detachedScript, 'cb', toSend)
     if removeScript then
-        sim.removeObjects({script})
+        sim.scene:removeObjects({script})
         script = nil
     end
-    sim.setStepping(lb)
+    sim.self:setStepping(false)
     
     if s ~= true then
-        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.getProperty(sim.handle_app, 'defaultPython') .. ' -m pip install pyzmq cbor2 psutil numpy toppra.')
+        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.app.defaultPython .. ' -m pip install pyzmq cbor2 psutil numpy toppra.')
     end
 
     if not r.success then
