@@ -1,13 +1,28 @@
-local motion = {}
+local Motion = {}
+Motion.__index = Motion
+
 local checkargs = require('checkargs')
 local copy = require('copy')
 import('simEigen.*')
 
-function motion.extend(sim)
+-- ─────────────────────────────────────────────
+-- Constructor
+-- ─────────────────────────────────────────────
+function Motion:new()
+    local o = setmetatable({}, self)
+    o._callback = nil
+    o._data = nil
+    o._motionType = nil
+    return o
+end
 
-function sim.moveToConfig_init(params)
+-- ─────────────────────────────────────────────
+-- moveToConfig
+-- ─────────────────────────────────────────────
+function Motion:moveToConfig_init(params)
     params = params or {}
-    params = copy.deepcopy(params) -- do not modify input values
+    params = copy.deepcopy(params)
+
     if params.pos then
         if not Vector:isvector(params.pos) then
             error("invalid 'pos' field.")
@@ -28,6 +43,7 @@ function sim.moveToConfig_init(params)
             end
         end
     end
+
     local dim = #params.pos
     if not Vector:isvector(params.targetPos, dim) then
         error("missing or invalid 'targetPos' field.")
@@ -36,9 +52,9 @@ function sim.moveToConfig_init(params)
     params.maxVel = params.maxVel or Vector(dim, 9999.0)
     params.maxAccel = params.maxAccel or Vector(dim, 99999.0)
     params.maxJerk = params.maxJerk or Vector(dim, 9999999.0)
-    
+
     if type(params.maxVel) == 'number' then
-        params.maxvel = Vector(dim, params.maxvel)
+        params.maxVel = Vector(dim, params.maxVel)
     end
     if not Vector:isvector(params.maxVel, dim) then
         error("invalid 'maxVel' field.")
@@ -55,7 +71,7 @@ function sim.moveToConfig_init(params)
     if not Vector:isvector(params.maxJerk, dim) then
         error("invalid 'maxJerk' field.")
     end
-    
+
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
@@ -98,26 +114,27 @@ function sim.moveToConfig_init(params)
         end
         params.targetPos[i] = w
     end
+
     local currentPosVelAccel = params.pos:vertcat(params.vel, params.accel):data()
     local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
     local targetPosVel = params.targetPos:vertcat(params.targetVel):data()
     local sel = table.rep(1, dim)
-    
+
     params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
+
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
     end
-    if _S.simMoveToConfig_callbacks == nil then
-        _S.simMoveToConfig_callbacks = {}
-    end
-    _S.simMoveToConfig_callbacks[params] = params.callback
-    params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
+    self._callback = params.callback
+    params.callback = nil
     params.timeLeft = 0
-    
-    return params
+
+    self._data = params
+    self._motionType = 'config'
 end
 
-function sim.moveToConfig_step(data)
+function Motion:_moveToConfig_step()
+    local data = self._data
     local dt = data.timeStep
     if dt == 0 then
         dt = sim.scene.simulation.timeStep
@@ -131,9 +148,8 @@ function sim.moveToConfig_step(data)
         data.pos = newPosVelAccel:block(1, 1, #data.pos, 1)
         data.vel = newPosVelAccel:block(#data.pos + 1, 1, #data.pos, 1)
         data.accel = newPosVelAccel:block(2 * #data.pos + 1, 1, #data.pos, 1)
-        local cb = _S.simMoveToConfig_callbacks[data]
-        if cb then
-            if cb(data) then
+        if self._callback then
+            if self._callback(data) then
                 res = 2 -- aborted
             end
         else
@@ -141,7 +157,7 @@ function sim.moveToConfig_step(data)
                 for i = 1, #data.joints do
                     if data.joints[i].dynamicallyEnabled then
                         data.joints[i].targetPosition = data.pos[i]
-                    else    
+                    else
                         data.joints[i].jointPosition = data.pos[i]
                     end
                 end
@@ -149,42 +165,46 @@ function sim.moveToConfig_step(data)
         end
     end
 
-    return res, data
+    return res
 end
 
-function sim.moveToConfig_cleanup(data)
-    if data.ruckigObj then
+function Motion:_moveToConfig_cleanup()
+    local data = self._data
+    if data and data.ruckigObj then
         sim.ruckigRemove(data.ruckigObj)
         data.ruckigObj = nil
-        _S.simMoveToConfig_callbacks[data] = nil
     end
 end
 
-function sim.moveToConfig(...)
+function Motion:moveToConfig(...)
     local params = ...
     sim.self:setStepping(true)
-    local data = sim.moveToConfig_init(params)
-    local outParams = {}
+    self:moveToConfig_init(params)
     local res
     while true do
-        res, outParams = sim.moveToConfig_step(data)
+        res = self:step()
         if res < 0 then
-            error('sim.moveToConfig_step returned error code ' .. res)
+            error('step returned error code ' .. res)
         end
         sim.self:step()
         if res ~= 0 then
             break
         end
     end
-    sim.moveToConfig_cleanup(data)
+    local outData = self._data
+    self:cleanup()
     sim.self:setStepping(false)
-    return outParams
+    return outData
 end
 
-function sim.moveToPose_init(params)
+-- ─────────────────────────────────────────────
+-- moveToPose
+-- ─────────────────────────────────────────────
+function Motion:moveToPose_init(params)
     params = params or {}
-    params = copy.deepcopy(params) -- do not modify input values
+    params = copy.deepcopy(params)
     params.relObject = params.relObject or -1
+
     if params.pose then
         if not Pose:ispose(params.pose) then
             error("invalid 'pose' field.")
@@ -213,7 +233,7 @@ function sim.moveToPose_init(params)
             end
         end
     end
-    
+
     if not Pose:ispose(params.targetPose) then
         error("missing or invalid 'targetPose' field.")
     end
@@ -228,7 +248,7 @@ function sim.moveToPose_init(params)
     params.maxVel = params.maxVel or Vector(dim, 9999.0)
     params.maxAccel = params.maxAccel or Vector(dim, 99999.0)
     params.maxJerk = params.maxJerk or Vector(dim, 9999999.0)
-    
+
     if type(params.maxVel) == 'number' then
         params.maxVel = Vector(dim, params.maxVel)
     end
@@ -247,7 +267,7 @@ function sim.moveToPose_init(params)
     if not Vector:isvector(params.maxJerk, dim) then
         error("invalid 'maxJerk' field.")
     end
-    
+
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
@@ -309,66 +329,62 @@ function sim.moveToPose_init(params)
     params.vel = params.vel or Vector(dim, 0.0)
     params.accel = params.accel or Vector(dim, 0.0)
     params.targetVel = params.targetVel or Vector(dim, 0.0)
-    
+
     params.timeStep = params.timeStep or 0
 
     params.startPose = params.pose:copy()
-    
+
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
     end
-    if _S.simMoveToPose_callbacks == nil then
-        _S.simMoveToPose_callbacks = {}
-    end
-    _S.simMoveToPose_callbacks[params] = params.callback
-    params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
-    
+    self._callback = params.callback
+    params.callback = nil
+
     params.timeLeft = 0
     params.dist = 1.0
-    
-    local axis, angle = params.startPose.q:axisangle(params.targetPose.q) -- sim.getRotationAxis(params.startMatrix, params.targetMatrix)
+
+    local axis, angle = params.startPose.q:axisangle(params.targetPose.q)
     params.angle = angle
+
     if params.metric then
-        -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
-        -- the start and goal pose. This always results in straight line movement paths
         local dx = {
             (params.targetPose.t[1] - params.startPose.t[1]) * params.metric[1],
             (params.targetPose.t[2] - params.startPose.t[2]) * params.metric[2],
-            (params.targetPose.t[3] - params.startPose.t[3]) * params.metric[3], params.angle * params.metric[4]
+            (params.targetPose.t[3] - params.startPose.t[3]) * params.metric[3],
+            params.angle * params.metric[4]
         }
         params.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
         if params.dist > 0.000001 then
             local currentPosVelAccel = {0, params.vel[1], params.accel[1]}
             local maxVelAccelJerk = {params.maxVel[1], params.maxAccel[1], params.maxJerk[1], params.minVel[1], params.minAccel[1]}
-            params.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {params.dist, params.targetVel[1]} )
+            params.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {params.dist, params.targetVel[1]})
         end
     else
-        -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
-        -- is handled and controlled individually. This can result in non-straight line movement paths,
-        -- due to how the Ruckig functions operate depending on 'flags'
         local dx = Vector({
             params.targetPose.t[1] - params.startPose.t[1],
             params.targetPose.t[2] - params.startPose.t[2],
-            params.targetPose.t[3] - params.startPose.t[3], params.angle
+            params.targetPose.t[3] - params.startPose.t[3],
+            params.angle
         })
         local currentPosVelAccel = Vector(dim, 0.0):vertcat(params.vel, params.accel):data()
         local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
         local targetPosVel = dx:vertcat(params.targetVel):data()
         params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
     end
-    
-    return params
+
+    self._data = params
+    self._motionType = 'pose'
 end
-            
-function sim.moveToPose_step(data)
+
+function Motion:_moveToPose_step()
+    local data = self._data
     local res
     local dt = data.timeStep
     if dt == 0 then
         dt = sim.getSimulationTimeStep()
     end
+
     if data.metric then
-        -- Here we treat the movement as a 1 DoF movement, where we simply interpolate via t between
-        -- the start and goal pose. This always results in straight line movement paths
         if data.dist > 0.000001 then
             local newPosVelAccel, syncTime
             res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
@@ -380,9 +396,8 @@ function sim.moveToPose_step(data)
                 data.pose = data.startPose:interp(t, data.targetPose)
                 data.vel = Vector{newPosVelAccel[2]}
                 data.accel = Vector{newPosVelAccel[3]}
-                local cb = _S.simMoveToPose_callbacks[data]
-                if cb then
-                    if cb(data) then
+                if self._callback then
+                    if self._callback(data) then
                         res = 2 -- aborted
                     end
                 else
@@ -393,18 +408,15 @@ function sim.moveToPose_step(data)
                         local simIK = require('simIK-1')
                         local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                         if f & data.ik.breakFlags ~= 0 then
-                            error('simIK.handleGroup in sim.moveToPose_step returned flags ' .. f)
+                            error('simIK.handleGroup in step returned flags ' .. f)
                         end
                     end
                 end
             end
         else
-            res = 1 -- i.e. there is no motion to be executed
+            res = 1
         end
     else
-        -- Here we treat the movement as a 4 DoF movement, where each of X, Y, Z and rotation
-        -- is handled and controlled individually. This can result in non-straight line movement paths,
-        -- due to how the Ruckig functions operate depending on 'flags'
         local newPosVelAccel, syncTime
         res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
         if res >= 0 then
@@ -416,11 +428,10 @@ function sim.moveToPose_step(data)
                 t = newPosVelAccel[4] / data.angle
             end
             data.pose = Pose(data.startPose.t + Vector(table.slice(newPosVelAccel, 1, 3)), data.startPose.q:slerp(t, data.targetPose.q))
-            data.vel  = Vector(table.slice(newPosVelAccel, 5, 8))
+            data.vel = Vector(table.slice(newPosVelAccel, 5, 8))
             data.accel = Vector(table.slice(newPosVelAccel, 9, 12))
-            local cb = _S.simMoveToPose_callbacks[data]
-            if cb then
-                if cb(data) then
+            if self._callback then
+                if self._callback(data) then
                     res = 2 -- aborted
                 end
             else
@@ -435,44 +446,77 @@ function sim.moveToPose_step(data)
         end
     end
 
-    return res, data
+    return res
 end
 
-function sim.moveToPose_cleanup(data)
-    if data.ruckigObj then
+function Motion:_moveToPose_cleanup()
+    local data = self._data
+    if data and data.ruckigObj then
         sim.ruckigRemove(data.ruckigObj)
         data.ruckigObj = nil
-        _S.simMoveToPose_callbacks[data] = nil
     end
-    if data.ik then
+    if data and data.ik then
         local simIK = require('simIK-1')
         simIK.eraseEnvironment(data.ik.ikEnv)
         data.ik = nil
     end
 end
 
-function sim.moveToPose(...)
+function Motion:moveToPose(...)
     local params = ...
     sim.self:setStepping(true)
-    local data = sim.moveToPose_init(params)
-    local outParams = {}
+    self:moveToPose_init(params)
     local res
     while true do
-        res, outParams = sim.moveToPose_step(data)
+        res = self:step()
         if res < 0 then
-            error('sim.moveToPose_step returned error code ' .. res)
+            error('step returned error code ' .. res)
         end
         sim.self:step()
         if res ~= 0 then
             break
         end
     end
-    sim.moveToPose_cleanup(data)
+    local outData = self._data
+    self:cleanup()
     sim.self:setStepping(false)
-    return outParams
+    return outData
 end
 
-function sim.generateTimeOptimalTrajectory(...)
+-- ─────────────────────────────────────────────
+-- Unified step and cleanup
+-- ─────────────────────────────────────────────
+function Motion:step()
+    if not self._motionType then
+        error('No motion initialized. Call moveToConfig_init or moveToPose_init first.')
+    end
+    if self._motionType == 'config' then
+        return self:_moveToConfig_step()
+    elseif self._motionType == 'pose' then
+        return self:_moveToPose_step()
+    else
+        error("Unknown motion type: '" .. tostring(self._motionType) .. "'")
+    end
+end
+
+function Motion:cleanup()
+    if not self._motionType then
+        return
+    end
+    if self._motionType == 'config' then
+        self:_moveToConfig_cleanup()
+    elseif self._motionType == 'pose' then
+        self:_moveToPose_cleanup()
+    end
+    self._callback = nil
+    self._data = nil
+    self._motionType = nil
+end
+
+-- ─────────────────────────────────────────────
+-- generateTimeOptimalTrajectory
+-- ─────────────────────────────────────────────
+function Motion:generateTimeOptimalTrajectory(...)
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -483,7 +527,7 @@ function sim.generateTimeOptimalTrajectory(...)
             {type = 'string', default = 'not-a-knot'},
             {type = 'float', default = 5},
             {type = 'int', default_nil = true, nullable = true},
-    }, ...)
+        }, ...)
 
     local confCnt = #pathLengths
     local dof = math.floor(#path / confCnt)
@@ -528,7 +572,6 @@ def cbb(req):
     instance = algo.TOPPRA([pc_vel, pc_acc], coefficients, solver_wrapper='seidel')
     jnt_traj = instance.compute_trajectory(0, 0)
     duration = jnt_traj.duration
-    #print("Found optimal trajectory with duration {:f} sec".format(duration))
     n = coefficients.dof
     resp = dict(qs=[[]]*n, qds=[[]]*n, qdds=[[]]*n)
     ts = np.linspace(0, duration, req.get('samples', 100))
@@ -564,7 +607,7 @@ def cbb(req):
         script = nil
     end
     sim.self:setStepping(false)
-    
+
     if s ~= true then
         error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.app.defaultPython .. ' -m pip install pyzmq cbor2 psutil numpy toppra.')
     end
@@ -575,6 +618,11 @@ def cbb(req):
     return simEigen.Matrix(r.qs[1]):data(), r.ts, script
 end
 
-end -- end of motion.extend
+-- ─────────────────────────────────────────────
+-- Data accessor
+-- ─────────────────────────────────────────────
+function Motion:getData()
+    return self._data
+end
 
-return motion
+return Motion
