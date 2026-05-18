@@ -1,25 +1,55 @@
-local Motion = {}
-Motion.__index = Motion
-
-local checkargs = require('checkargs')
+local class = require('middleclass')
+local checkargs = require('checkargs-2')
 local copy = require('copy')
-import('simEigen.*')
+local simEigen = require('simEigen')
+local Vector, Matrix, Quaternion, Pose = simEigen.Vector, simEigen.Matrix, simEigen.Quaternion, simEigen.Pose
 
--- ─────────────────────────────────────────────
--- Constructor
--- ─────────────────────────────────────────────
-function Motion:new()
-    local o = setmetatable({}, self)
-    o._callback = nil
-    o._data = nil
-    o._motionType = nil
-    return o
+-- ═════════════════════════════════════════════
+-- Motion (abstract base)
+-- ═════════════════════════════════════════════
+local Motion = class('Motion')
+
+function Motion:initialize()
+    self._callback = nil
+    self._data = nil
 end
 
--- ─────────────────────────────────────────────
--- moveToConfig
--- ─────────────────────────────────────────────
-function Motion:moveToConfig_init(params)
+function Motion:step()
+    error('step() must be implemented by a subclass.')
+end
+
+function Motion:remove()
+    error('remove() must be implemented by a subclass.')
+end
+
+function Motion:data()
+    return self._data
+end
+
+function Motion:run()
+    sim.self:setStepping(true)
+    local res
+    while true do
+        res = self:step()
+        sim.self:step()
+        if res ~= 0 then
+            break
+        end
+    end
+    local outData = self._data
+    self:remove()
+    sim.self:setStepping(false)
+    return outData
+end
+
+-- ═════════════════════════════════════════════
+-- MoveToConfig
+-- ═════════════════════════════════════════════
+local MoveToConfig = class('MoveToConfig', Motion)
+
+function MoveToConfig:initialize(params)
+    Motion.initialize(self)
+
     params = params or {}
     params = copy.deepcopy(params)
 
@@ -130,17 +160,22 @@ function Motion:moveToConfig_init(params)
     params.timeLeft = 0
 
     self._data = params
-    self._motionType = 'config'
 end
 
-function Motion:_moveToConfig_step()
+function MoveToConfig:step()
     local data = self._data
+    if not data then
+        error('MoveToConfig not initialized or already cleaned up.')
+    end
+
     local dt = data.timeStep
     if dt == 0 then
         dt = sim.scene.simulation.timeStep
     end
+
     local res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
     newPosVelAccel = Vector(newPosVelAccel)
+
     if res >= 0 then
         if res == 0 then
             data.timeLeft = dt - syncTime
@@ -165,42 +200,32 @@ function Motion:_moveToConfig_step()
         end
     end
 
+    if res < 0 then
+        self:remove()
+        error('MoveToConfig step returned error code ' .. res)
+    end
+
     return res
 end
 
-function Motion:_moveToConfig_cleanup()
+function MoveToConfig:remove()
     local data = self._data
     if data and data.ruckigObj then
         sim.ruckigRemove(data.ruckigObj)
         data.ruckigObj = nil
     end
+    self._callback = nil
+    self._data = nil
 end
 
-function Motion:moveToConfig(...)
-    local params = ...
-    sim.self:setStepping(true)
-    self:moveToConfig_init(params)
-    local res
-    while true do
-        res = self:step()
-        if res < 0 then
-            error('step returned error code ' .. res)
-        end
-        sim.self:step()
-        if res ~= 0 then
-            break
-        end
-    end
-    local outData = self._data
-    self:cleanup()
-    sim.self:setStepping(false)
-    return outData
-end
+-- ═════════════════════════════════════════════
+-- MoveToPose
+-- ═════════════════════════════════════════════
+local MoveToPose = class('MoveToPose', Motion)
 
--- ─────────────────────────────────────────────
--- moveToPose
--- ─────────────────────────────────────────────
-function Motion:moveToPose_init(params)
+function MoveToPose:initialize(params)
+    Motion.initialize(self)
+
     params = params or {}
     params = copy.deepcopy(params)
     params.relObject = params.relObject or -1
@@ -373,11 +398,14 @@ function Motion:moveToPose_init(params)
     end
 
     self._data = params
-    self._motionType = 'pose'
 end
 
-function Motion:_moveToPose_step()
+function MoveToPose:step()
     local data = self._data
+    if not data then
+        error('MoveToPose not initialized or already cleaned up.')
+    end
+
     local res
     local dt = data.timeStep
     if dt == 0 then
@@ -408,6 +436,7 @@ function Motion:_moveToPose_step()
                         local simIK = require('simIK-1')
                         local r, f = simIK.handleGroup(data.ik.ikEnv, data.ik.ikGroup, {syncWorlds = true, allowError = data.ik.allowError})
                         if f & data.ik.breakFlags ~= 0 then
+                            self:remove()
                             error('simIK.handleGroup in step returned flags ' .. f)
                         end
                     end
@@ -446,10 +475,15 @@ function Motion:_moveToPose_step()
         end
     end
 
+    if res < 0 then
+        self:remove()
+        error('MoveToPose step returned error code ' .. res)
+    end
+
     return res
 end
 
-function Motion:_moveToPose_cleanup()
+function MoveToPose:remove()
     local data = self._data
     if data and data.ruckigObj then
         sim.ruckigRemove(data.ruckigObj)
@@ -460,63 +494,16 @@ function Motion:_moveToPose_cleanup()
         simIK.eraseEnvironment(data.ik.ikEnv)
         data.ik = nil
     end
-end
-
-function Motion:moveToPose(...)
-    local params = ...
-    sim.self:setStepping(true)
-    self:moveToPose_init(params)
-    local res
-    while true do
-        res = self:step()
-        if res < 0 then
-            error('step returned error code ' .. res)
-        end
-        sim.self:step()
-        if res ~= 0 then
-            break
-        end
-    end
-    local outData = self._data
-    self:cleanup()
-    sim.self:setStepping(false)
-    return outData
-end
-
--- ─────────────────────────────────────────────
--- Unified step and cleanup
--- ─────────────────────────────────────────────
-function Motion:step()
-    if not self._motionType then
-        error('No motion initialized. Call moveToConfig_init or moveToPose_init first.')
-    end
-    if self._motionType == 'config' then
-        return self:_moveToConfig_step()
-    elseif self._motionType == 'pose' then
-        return self:_moveToPose_step()
-    else
-        error("Unknown motion type: '" .. tostring(self._motionType) .. "'")
-    end
-end
-
-function Motion:cleanup()
-    if not self._motionType then
-        return
-    end
-    if self._motionType == 'config' then
-        self:_moveToConfig_cleanup()
-    elseif self._motionType == 'pose' then
-        self:_moveToPose_cleanup()
-    end
     self._callback = nil
     self._data = nil
-    self._motionType = nil
 end
 
--- ─────────────────────────────────────────────
--- generateTimeOptimalTrajectory
--- ─────────────────────────────────────────────
-function Motion:generateTimeOptimalTrajectory(...)
+-- ═════════════════════════════════════════════
+-- TimeOptimalTrajectory (stateless utility)
+-- ═════════════════════════════════════════════
+local TimeOptimalTrajectory = class('TimeOptimalTrajectory')
+
+function TimeOptimalTrajectory.static:generate(...)
     local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
         checkargs({
             {type = 'table', item_type = 'float', size = '2..*'},
@@ -618,11 +605,9 @@ def cbb(req):
     return simEigen.Matrix(r.qs[1]):data(), r.ts, script
 end
 
--- ─────────────────────────────────────────────
--- Data accessor
--- ─────────────────────────────────────────────
-function Motion:getData()
-    return self._data
-end
-
-return Motion
+return {
+    Motion = Motion,
+    MoveToConfig = MoveToConfig,
+    MoveToPose = MoveToPose,
+    TimeOptimalTrajectory = TimeOptimalTrajectory,
+}

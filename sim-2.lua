@@ -7,7 +7,6 @@ __2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only
 
 local simEigen = require 'simEigen'
 local checkargs = require('checkargs-2')
-require('motion-2').extend(sim)
 
 function sim.callMethod(target, name, ...)
     if callMethod(target, 'getMethodProperty', name, {noError = true}) then
