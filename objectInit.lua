@@ -95,11 +95,11 @@ function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'type', type = 'int', default = sim.scripttype_addon},
         {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
-        {name = 'lang', type = 'string', default = 'lua'},
+        {name = 'language', type = 'string', default = 'lua'},
     }, objInit.p)
     local tp = objInit.extractValueOrDefault('type')
     local code = objInit.extractValueOrDefault('code')
-    local lang = objInit.extractValueOrDefault('lang')
+    local lang = objInit.extractValueOrDefault('language')
     local retVal = sim.Object(sim.createDetachedScript(tp, code, lang))
     retVal:setProperties(objInit.p)
     return retVal

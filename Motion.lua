@@ -1,3 +1,4 @@
+local sim = require('sim-2')
 local class = require('middleclass')
 local checkargs = require('checkargs-2')
 local copy = require('copy')
@@ -499,33 +500,42 @@ function MoveToPose:remove()
 end
 
 -- ═════════════════════════════════════════════
--- TimeOptimalTrajectory (stateless utility)
+-- TimeOptimalTrajectory
 -- ═════════════════════════════════════════════
 local TimeOptimalTrajectory = class('TimeOptimalTrajectory')
 
-function TimeOptimalTrajectory.static:generate(...)
-    local path, pathLengths, minMaxVel, minMaxAccel, trajPtSamples, boundaryCondition, timeout, script =
-        checkargs({
-            {type = 'table', item_type = 'float', size = '2..*'},
-            {type = 'table', item_type = 'float', size = '2..*'},
-            {type = 'table', item_type = 'float', size = '2..*'},
-            {type = 'table', item_type = 'float', size = '2..*'},
-            {type = 'int', default = 1000},
-            {type = 'string', default = 'not-a-knot'},
-            {type = 'float', default = 5},
-            {type = 'int', default_nil = true, nullable = true},
-        }, ...)
+function TimeOptimalTrajectory:initialize()
+    self._script = nil
+    self._bla = nil
+end
 
-    local confCnt = #pathLengths
-    local dof = math.floor(#path / confCnt)
-
-    if (dof * confCnt ~= #path) or dof < 1 or confCnt < 2 or dof ~= #minMaxVel / 2 or
-        dof ~= #minMaxAccel / 2 then error("Bad table size.") end
+function TimeOptimalTrajectory:generate(params)
+    checkargs.checkfields({funcName = "TimeOptimalTrajectory"}, {
+        {name = 'pathLengths', type = 'matrix', rows = -1, cols = 1},
+    }, params)
+    local confCnt = params.pathLengths:rows()
+    if confCnt < 2 then
+        error("at least 2 configurations must be provided.")
+    end
+    checkargs.checkfields({funcName = "TimeOptimalTrajectory"}, {
+        {name = 'path', type = 'matrix', rows = confCnt, cols = -1},
+    }, params)
+    local dof = params.path:cols()
+    checkargs.checkfields({funcName = "TimeOptimalTrajectory"}, {
+        {name = 'maxVel', type = 'matrix', rows = dof, cols = 1},
+        {name = 'minVel', type = 'matrix', rows = dof, cols = 1, nullable=true},
+        {name = 'maxAccel', type = 'matrix', rows = dof, cols = 1},
+        {name = 'minAccel', type = 'matrix', rows = dof, cols = 1, nullable=true},
+        {name = 'samples', type = 'int', default=1000},
+        {name = 'boundaryCondition', type = 'string', default='not-a-knot'},
+        {name = 'timeout', type = 'float', default=5.0},
+    }, params)
+    local pM = params.path
+    local minVel = params.minVel or params.maxVel * -1.0
+    local minAccel = params.minAccel or params.maxAccel * -1.0
+    local mmvM = minVel:horzcat(params.maxVel)
+    local mmaM = minAccel:horzcat(params.maxAccel)
     sim.self:setStepping(true)
-
-    local pM = Matrix(confCnt, dof, path)
-    local mmvM = Matrix(dof, 2, minMaxVel)
-    local mmaM = Matrix(dof, 2, minMaxAccel)
 
     local code = [=[
 def sysCall_init():
@@ -570,29 +580,24 @@ def cbb(req):
     return resp
 ]=]
 
-    local removeScript = true
-    if script then
-        removeScript = false
+    -- Reuse or create the Python script
+    if not self._script then
+--        self._script = sim.scene:createObject({objectType = 'detachedScript', type = sim.scripttype_addon, code = code, language = 'python'})
+--        self._script:init()
+        self._script = sim.scene:createObject({objectType = 'script', type = sim.scripttype_customization, code = code, language = 'python'})
+        self._script.detachedScript:init()
     end
-    if script == nil or script == -1 then
-        script = sim.scene:createObject({objectType = 'script', type = sim.scripttype_customization, code = code, language = 'python'})
-        script.name = 'toppraPythonScript_tmp'
-        script:init()
-    end
+    
     local toSend = {
-        samples = trajPtSamples,
-        ss_waypoints = pathLengths,
-        waypoints = pM:totable(),
+        samples = params.samples,
+        ss_waypoints = params.pathLengths:data(),
+        waypoints = params.path:totable(),
         velocity_limits = mmvM:totable(),
         acceleration_limits = mmaM:totable(),
-        bc_type = boundaryCondition,
+        bc_type = params.boundaryCondition,
     }
-
-    local s, r = pcall(script.detachedScript.callFunction, script.detachedScript, 'cb', toSend)
-    if removeScript then
-        sim.scene:removeObjects({script})
-        script = nil
-    end
+--    local s, r = pcall(self._script.callFunction, self._script, 'cb', toSend)
+    local s, r = pcall(self._script.detachedScript.callFunction, self._script.detachedScript, 'cb', toSend)
     sim.self:setStepping(false)
 
     if s ~= true then
@@ -602,7 +607,14 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return simEigen.Matrix(r.qs[1]):data(), r.ts, script
+    return simEigen.Matrix(r.qs[1]), simEigen.Matrix(#r.ts, 1, r.ts)
+end
+
+function TimeOptimalTrajectory:remove()
+    if self._script then
+        self._script:remove()
+        self._script = nil
+    end
 end
 
 return {
