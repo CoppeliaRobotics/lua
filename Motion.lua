@@ -582,10 +582,8 @@ def cbb(req):
 
     -- Reuse or create the Python script
     if not self._script then
---        self._script = sim.scene:createObject({objectType = 'detachedScript', type = sim.scripttype_addon, code = code, language = 'python'})
---        self._script:init()
-        self._script = sim.scene:createObject({objectType = 'script', type = sim.scripttype_customization, code = code, language = 'python'})
-        self._script.detachedScript:init()
+        self._script = sim.app:createObject({objectType = 'detachedScript', type = sim.scripttype_addon, code = code, language = 'python'})
+        self._script:init()
     end
     
     local toSend = {
@@ -596,8 +594,7 @@ def cbb(req):
         acceleration_limits = mmaM:totable(),
         bc_type = params.boundaryCondition,
     }
---    local s, r = pcall(self._script.callFunction, self._script, 'cb', toSend)
-    local s, r = pcall(self._script.detachedScript.callFunction, self._script.detachedScript, 'cb', toSend)
+    local s, r = pcall(self._script.callFunction, self._script, 'cb', toSend)
     sim.self:setStepping(false)
 
     if s ~= true then
