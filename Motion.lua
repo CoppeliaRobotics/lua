@@ -146,12 +146,15 @@ function MoveToConfig:initialize(params)
         params.targetPos[i] = w
     end
 
+--[[
     local currentPosVelAccel = params.pos:vertcat(params.vel, params.accel):data()
     local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
     local targetPosVel = params.targetPos:vertcat(params.targetVel):data()
     local sel = table.rep(1, dim)
-
     params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
+--]]
+    local M = require'Motion'
+    params.ruckigObj = M.RuckigPosition:new(params)
 
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
@@ -173,17 +176,25 @@ function MoveToConfig:step()
     if dt == 0 then
         dt = sim.scene.simulation.timeStep
     end
-
+--[[
     local res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
     newPosVelAccel = Vector(newPosVelAccel)
+    --]]
+    local res = data.ruckigObj:step(dt)
 
     if res >= 0 then
         if res == 0 then
-            data.timeLeft = dt - syncTime
+--            data.timeLeft = dt - syncTime
+            data.timeLeft = dt - data.ruckigObj:data().syncTime
         end
+        --[[
         data.pos = newPosVelAccel:block(1, 1, #data.pos, 1)
         data.vel = newPosVelAccel:block(#data.pos + 1, 1, #data.pos, 1)
         data.accel = newPosVelAccel:block(2 * #data.pos + 1, 1, #data.pos, 1)
+        --]]
+        data.pos = data.ruckigObj:data().pos
+        data.vel = data.ruckigObj:data().vel
+        data.accel = data.ruckigObj:data().accel
         if self._callback then
             if self._callback(data) then
                 res = 2 -- aborted
@@ -212,11 +223,12 @@ end
 function MoveToConfig:remove()
     local data = self._data
     if data and data.ruckigObj then
-        sim.ruckigRemove(data.ruckigObj)
+--        sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj:remove()
         data.ruckigObj = nil
     end
     self._callback = nil
-    self._data = nil
+    -- keep data readable! self._data = nil
 end
 
 -- ═════════════════════════════════════════════
@@ -229,13 +241,13 @@ function MoveToPose:initialize(params)
 
     params = params or {}
     params = copy.deepcopy(params)
-    params.relObject = params.relObject or -1
+    --params.relObject = params.relObject or -1
 
     if params.pose then
         if not Pose:ispose(params.pose) then
             error("invalid 'pose' field.")
         end
-        params.relObject = -1
+        params.relObject = nil
         params.object = nil
         params.ik = nil
     else
@@ -252,7 +264,7 @@ function MoveToPose:initialize(params)
                 if type(params.ik) ~= 'table' or ((not sim.Object:isobject(params.ik.tip)) or (not params.ik.tip.metaInfo.isSceneObject)) or ((not sim.Object:isobject(params.ik.target)) or (not params.ik.target.metaInfo.isSceneObject)) then
                     error("invalid 'ik' field, or missing/invalid sub-fields.")
                 end
-                params.relObject = -1
+                params.relObject = nil
                 params.object = params.ik.target
                 params.ik.target:setPose(params.ik.tip:getPose())
                 params.pose = params.object:getPose()
@@ -321,7 +333,7 @@ function MoveToPose:initialize(params)
         params.ik.iterations = params.ik.iterations or 20
         params.ik.constraints = params.ik.constraints or simIK.constraint_pose
         params.ik.precision = params.ik.precision or {0.001, 0.5 * math.pi / 180}
-        params.ik.allowError = params.ik.allowError
+        --params.ik.allowError = params.ik.allowError
         params.ik.ikEnv = simIK.createEnvironment()
         params.ik.ikGroup = simIK.createGroup(params.ik.ikEnv)
         simIK.setGroupCalculation(params.ik.ikEnv, params.ik.ikGroup, params.ik.method, params.ik.damping, params.ik.iterations)
@@ -381,9 +393,17 @@ function MoveToPose:initialize(params)
         }
         params.dist = math.sqrt(dx[1] * dx[1] + dx[2] * dx[2] + dx[3] * dx[3] + dx[4] * dx[4])
         if params.dist > 0.000001 then
+            --[[
             local currentPosVelAccel = {0, params.vel[1], params.accel[1]}
             local maxVelAccelJerk = {params.maxVel[1], params.maxAccel[1], params.maxJerk[1], params.minVel[1], params.minAccel[1]}
             params.ruckigObj = sim.ruckigPos(1, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, {1}, {params.dist, params.targetVel[1]})
+            --]]
+            local M = require'Motion'
+            params.pos = Vector(1, 0.0)
+            params.targetPos = Vector(1, params.dist)
+            params.selection = table.rep(1, dim)
+            params.ruckigObj = M.RuckigPosition:new(params)
+            
         end
     else
         local dx = Vector({
@@ -392,10 +412,17 @@ function MoveToPose:initialize(params)
             params.targetPose.t[3] - params.startPose.t[3],
             params.angle
         })
+        --[[
         local currentPosVelAccel = Vector(dim, 0.0):vertcat(params.vel, params.accel):data()
         local maxVelAccelJerk = params.maxVel:vertcat(params.maxAccel, params.maxJerk, params.minVel, params.minAccel):data()
         local targetPosVel = dx:vertcat(params.targetVel):data()
         params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
+        --]]
+        local M = require'Motion'
+        params.pos = Vector(dim, 0.0)
+        params.targetPos = dx
+        params.selection = table.rep(1, dim)
+        params.ruckigObj = M.RuckigPosition:new(params)
     end
 
     self._data = params
@@ -415,16 +442,26 @@ function MoveToPose:step()
 
     if data.metric then
         if data.dist > 0.000001 then
+            --[[
             local newPosVelAccel, syncTime
             res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+            --]]
+            res = data.ruckigObj:step(dt)
             if res >= 0 then
                 if res == 0 then
-                    data.timeLeft = dt - syncTime
+                --    data.timeLeft = dt - syncTime
+                    data.timeLeft = dt - data.ruckigObj:data().syncTime
                 end
+                --[[
                 local t = newPosVelAccel[1] / data.dist
-                data.pose = data.startPose:interp(t, data.targetPose)
                 data.vel = Vector{newPosVelAccel[2]}
                 data.accel = Vector{newPosVelAccel[3]}
+                --]]
+                local t = data.ruckigObj:data().pos[1] / data.dist
+                data.vel = data.ruckigObj:data().vel
+                data.accel = data.ruckigObj:data().accel
+                
+                data.pose = data.startPose:interp(t, data.targetPose)
                 if self._callback then
                     if self._callback(data) then
                         res = 2 -- aborted
@@ -447,19 +484,33 @@ function MoveToPose:step()
             res = 1
         end
     else
+        --[[
         local newPosVelAccel, syncTime
         res, newPosVelAccel, syncTime = sim.ruckigStep(data.ruckigObj, dt)
+        --]]
+        res = data.ruckigObj:step(dt)
         if res >= 0 then
             if res == 0 then
-                data.timeLeft = dt - syncTime
+            --    data.timeLeft = dt - syncTime
+                data.timeLeft = dt - data.ruckigObj:data().syncTime
             end
             local t = 0
+            --[[
             if math.abs(data.angle) > math.pi * 0.00001 then
                 t = newPosVelAccel[4] / data.angle
             end
             data.pose = Pose(data.startPose.t + Vector(table.slice(newPosVelAccel, 1, 3)), data.startPose.q:slerp(t, data.targetPose.q))
             data.vel = Vector(table.slice(newPosVelAccel, 5, 8))
             data.accel = Vector(table.slice(newPosVelAccel, 9, 12))
+            --]]
+            
+            if math.abs(data.angle) > math.pi * 0.00001 then
+                t = data.ruckigObj:data().pos[4] / data.angle
+            end
+            data.pose = Pose(data.startPose.t + data.ruckigObj:data().pos:block(1, 1, 3, 1), data.startPose.q:slerp(t, data.targetPose.q))
+            data.vel = data.ruckigObj:data().vel
+            data.accel = data.ruckigObj:data().accel
+            
             if self._callback then
                 if self._callback(data) then
                     res = 2 -- aborted
@@ -487,7 +538,8 @@ end
 function MoveToPose:remove()
     local data = self._data
     if data and data.ruckigObj then
-        sim.ruckigRemove(data.ruckigObj)
+    --    sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj:remove()
         data.ruckigObj = nil
     end
     if data and data.ik then
@@ -496,7 +548,7 @@ function MoveToPose:remove()
         data.ik = nil
     end
     self._callback = nil
-    self._data = nil
+    -- keep data readable! self._data = nil
 end
 
 -- ═════════════════════════════════════════════
@@ -528,7 +580,6 @@ function TimeOptimalTrajectory:generate(params)
         {name = 'minAccel', type = 'matrix', rows = dof, cols = 1, nullable=true},
         {name = 'samples', type = 'int', default=1000},
         {name = 'boundaryCondition', type = 'string', default='not-a-knot'},
-        {name = 'timeout', type = 'float', default=5.0},
     }, params)
     local pM = params.path
     local minVel = params.minVel or params.maxVel * -1.0
@@ -614,9 +665,154 @@ function TimeOptimalTrajectory:remove()
     end
 end
 
+-- ═════════════════════════════════════════════
+-- RuckigPosition
+-- ═════════════════════════════════════════════
+local RuckigPosition = class('RuckigPosition', Motion)
+
+function RuckigPosition:initialize(params)
+    Motion.initialize(self)
+
+    params = params or {}
+    params = copy.deepcopy(params)
+
+    checkargs.checkfields({funcName = "RuckigPosition"}, {
+        {name = 'pos', type = 'matrix', rows = -1, cols = 1},
+    }, params)
+    local dim = params.pos:rows()
+
+    checkargs.checkfields({funcName = "RuckigPosition"}, {
+        {name = 'baseCycleTime', type = 'float', default = 0.0001},
+        {name = 'timeStep', type = 'float', default = 0.0},
+        {name = 'flags', type = 'int', default = -1},
+        {name = 'vel', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
+        {name = 'accel', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
+        {name = 'targetPos', type = 'matrix', rows = dim, cols = 1},
+        {name = 'targetVel', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
+        {name = 'maxVel', type = 'matrix', rows = dim, cols = 1},
+        {name = 'minVel', type = 'matrix', rows = dim, cols = 1, nullable = true},
+        {name = 'maxAccel', type = 'matrix', rows = dim, cols = 1},
+        {name = 'minAccel', type = 'matrix', rows = dim, cols = 1, nullable = true},
+        {name = 'maxJerk', type = 'matrix', rows = dim, cols = 1},
+        {name = 'selection', type = 'table', size = dim, item_type = 'int', default = table.rep(1, dim)},
+    }, params)
+
+    params.minVel = params.minVel or -params.maxVel
+    params.minAccel = params.minAccel or -params.maxAccel
+    
+    self._ruckigObj = sim.ruckigPos(dim, params.baseCycleTime, params.flags | sim.ruckig_minvel | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+        params.maxVel:vertcat(params.maxAccel):vertcat(params.maxJerk):vertcat(params.minVel):vertcat(params.minAccel):data(),
+        params.selection, params.targetPos:vertcat(params.targetVel):data())
+
+    self._data = params
+end
+
+function RuckigPosition:step()
+    local data = self._data
+    if not data then
+        error('RuckigPosition not initialized or already cleaned up.')
+    end
+
+    local dt = data.timeStep
+    if dt == 0 then
+        dt = sim.scene.simulation.timeStep
+    end
+
+    local res, newPosVelAccel, syncTime = sim.ruckigStep(self._ruckigObj, dt)
+    newPosVelAccel = Vector(newPosVelAccel)
+    local dim = #newPosVelAccel // 3
+    data.pos = newPosVelAccel:block(1, 1, dim, 1)
+    data.vel = newPosVelAccel:block(dim + 1, 1, dim, 1)
+    data.accel = newPosVelAccel:block(2 * dim + 1, 1, dim, 1)
+    data.syncTime = syncTime
+
+    return res
+end
+
+function RuckigPosition:remove()
+    local data = self._data
+    if data and data.ruckigObj then
+        sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj = nil
+    end
+    self._callback = nil
+    -- keep data readable! self._data = nil
+end
+
+-- ═════════════════════════════════════════════
+-- RuckigVelocity
+-- ═════════════════════════════════════════════
+local RuckigVelocity = class('RuckigVelocity', Motion)
+
+function RuckigVelocity:initialize(params)
+    Motion.initialize(self)
+
+    params = params or {}
+    params = copy.deepcopy(params)
+
+    checkargs.checkfields({funcName = "RuckigVelocity"}, {
+        {name = 'velocity', type = 'matrix', rows = -1, cols = 1},
+    }, params)
+    local dim = params.velocity:rows()
+
+    checkargs.checkfields({funcName = "RuckigVelocity"}, {
+        {name = 'baseCycleTime', type = 'float', default = 0.0001},
+        {name = 'flags', type = 'int', default = -1},
+        {name = 'pos', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
+        {name = 'accel', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
+        {name = 'targetVel', type = 'matrix', rows = dim, cols = 1},
+        {name = 'maxAccel', type = 'matrix', rows = dim, cols = 1},
+        {name = 'minAccel', type = 'matrix', rows = dim, cols = 1, nullable = true},
+        {name = 'maxJerk', type = 'matrix', rows = dim, cols = 1},
+        {name = 'selection', type = 'table', size = dim, item_type = 'int', default = table.rep(1, dim)},
+    }, params)
+    
+    params.minAccel = params.minAccel or -params.maxAccel
+    
+    self._ruckigObj = sim.ruckigVel(dim, params.baseCycleTime, params.flags | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+        params.maxAccel:vertcat(params.maxJerk):vertcat(params.minAccel):data(),
+        params.selection, params.targetVel:data())
+
+    self._data = params
+end
+
+function RuckigVelocity:step()
+    local data = self._data
+    if not data then
+        error('RuckigVelocity not initialized or already cleaned up.')
+    end
+
+    local dt = data.timeStep
+    if dt == 0 then
+        dt = sim.scene.simulation.timeStep
+    end
+
+    local res, newPosVelAccel, syncTime = sim.ruckigStep(self._ruckigObj, dt)
+    newPosVelAccel = Vector(newPosVelAccel)
+    local dim = #newPosVelAccel // 3
+    data.pos = newPosVelAccel:block(1, 1, dim, 1)
+    data.vel = newPosVelAccel:block(dim + 1, 1, dim, 1)
+    data.accel = newPosVelAccel:block(2 * dim + 1, 1, dim, 1)
+    data.syncTime = syncTime
+
+    return res
+end
+
+function RuckigVelocity:remove()
+    local data = self._data
+    if data and data.ruckigObj then
+        sim.ruckigRemove(data.ruckigObj)
+        data.ruckigObj = nil
+    end
+    self._callback = nil
+    -- keep data readable! self._data = nil
+end
+
 return {
     Motion = Motion,
     MoveToConfig = MoveToConfig,
     MoveToPose = MoveToPose,
+    RuckigPosition = RuckigPosition,
+    RuckigVelocity = RuckigVelocity,
     TimeOptimalTrajectory = TimeOptimalTrajectory,
 }
