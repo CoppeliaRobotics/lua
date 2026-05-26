@@ -406,13 +406,6 @@ function locals.createObject(target, methodName, initialProperties)
     return retVal
 end
 
-function sim.getSimulationStopping()
-    local s = sim.getSimulationState()
-    return s == sim.simulation_stopped or s == sim.simulation_advancing_lastbeforestop
-end
-
-sim.getThreadExitRequest = sim.getSimulationStopping
-
 function locals.getAppearance(target, methodName)
     target = sim.Object:toobject(target)
     assert(target.objectType == 'shape', 'not a shape')

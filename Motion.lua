@@ -634,6 +634,7 @@ def cbb(req):
     -- Reuse or create the Python script
     if not self._script then
         self._script = sim.app:createObject({objectType = 'detachedScript', type = sim.scripttype_addon, code = code, language = 'python'})
+        self._script.addOnMenuPath = 'Motion:TimeOptimalTrajectory'
         self._script:init()
     end
     

@@ -285,7 +285,7 @@ function locals.registerScriptFuncHook(funcNm, func, before)
     if type(func) == 'string' then
         retVal = locals.registerScriptFuncHookOrig(funcNm, func, before)
     else
-        local str = tostring(func)
+        local str = tostring(func):gsub("[%s:]", "_") -- typical tostring(func) typically produces: "function: xxxxxxx", and : is reserved
         retVal = locals.registerScriptFuncHookOrig(funcNm, '__1.' .. str, before)
         __1[str] = func
     end
