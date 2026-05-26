@@ -20,7 +20,6 @@ coppeliasim_add_lua_directory("models")
 coppeliasim_add_lua_directory("deprecated")
 coppeliasim_add_lua_directory("utils")
 coppeliasim_add_lua_directory("sim")
-coppeliasim_add_lua_directory("sha1")
 
 if(false)
 set(PYTHON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../python")
