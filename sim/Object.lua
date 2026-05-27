@@ -134,7 +134,6 @@ function Object:getPropertyInfo(pname, opts)
     if propertyInfo[self.objectType] == nil then
         propertyInfo[self.objectType] = {}
     end
-    propertyInfo[self.objectType] = propertyInfo[self.objectType] or {}
     local ptype, pflags
     if propertyInfo[self.objectType][pname] then
         ptype, pflags = table.unpack(propertyInfo[self.objectType][pname])
