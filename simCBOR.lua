@@ -158,4 +158,12 @@ for _, name in ipairs {
     simCBOR[name] = cbor[name]
 end
 
+simCBOR.null = setmetatable(
+    {},
+    {
+        __tocbor = function() return '\xF6' end,
+        __tostring = function() return 'nil' end,
+    }
+)
+
 return simCBOR
