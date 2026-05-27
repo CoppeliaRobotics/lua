@@ -8,6 +8,6 @@ return function(b)
     elseif ec ~= 0 then
         sim.addLog(sim.verbosity_errors, 'cbor2pretty.rb failed: exit code ' .. ec)
     else
-        print(out)
+        print(tostring(out))
     end
 end
