@@ -91,7 +91,12 @@ function ZMQRemoteAPI:handleRequest(req)
     assert(type(req.msg) == 'string', 'malformed request')
     if req.msg == 'call' then
         local ok, result = pcall(self.callLocal, self, req.func, req.args)
-        self:send{msg = 'result', error = not ok, result = result}
+        local n
+        if type(result) == 'table' then
+            n = result.n
+            result.n = nil
+        end
+        self:send{msg = 'result', error = not ok, result = result, n = n}
     elseif req.msg == 'registerCallback' then
         local ok, result = pcall(self.registerCallbackLocal, self, req.func)
         self:send{msg = 'result', error = not ok, result = result}
