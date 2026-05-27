@@ -134,25 +134,25 @@ function Object:getPropertyInfo(pname, opts)
     if propertyInfo[self.objectType] == nil then
         propertyInfo[self.objectType] = {}
     end
-    local ptype, pflags
+    local ptype, pflags, descr
     if propertyInfo[self.objectType][pname] then
-        ptype, pflags = table.unpack(propertyInfo[self.objectType][pname])
+        ptype, pflags, descr = table.unpack(propertyInfo[self.objectType][pname])
     else
-        ptype, pflags = self:callMethod('getPropertyInfo', pname, opts)
+        ptype, pflags, descr = self:callMethod('getPropertyInfo', pname, opts)
         if pflags and (pflags & sim.propertyinfo_removable) > 0 then
-            return ptype, pflags
+            return ptype, pflags, descr
         end
         if ptype then
         elseif self:callMethod('getPropertyName', 0, {prefix = pname .. '.'}) then
-            ptype, pflags = 'group', 0
+            ptype, pflags, descr = 'group', 0, ''
         else
-            ptype, pflags = nil, nil
+            ptype, pflags, descr = nil, nil, nil
         end
         if ptype then
-            propertyInfo[self.objectType][pname] = {ptype, pflags}
+            propertyInfo[self.objectType][pname] = {ptype, pflags, descr}
         end
     end
-    return ptype, pflags
+    return ptype, pflags, descr
 end
 
 function Object:toobject(o)
