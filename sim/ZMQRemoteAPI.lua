@@ -45,20 +45,14 @@ function ZMQRemoteAPI:log(level, ...)
     end
 end
 
-function ZMQRemoteAPI:callLocal(funcName, args, successCallback, errorCallback)
-    assert(type(funcName) == 'string', 'invalid function name')
-    local func = _G[funcName]
-    assert(func, 'no such function: ' .. funcName)
-    assert(type(func) == 'function', 'not a function: ' .. funcName)
-    args = args or {}
-    assert(type(args) == 'table', 'invalid args')
-    return table.pack(func(table.unpack(args or {})))
+function ZMQRemoteAPI:callMethod(target, methodName, args)
+    error 'property "callMethod" is not set'
 end
 
-function ZMQRemoteAPI:call(funcName, ...)
-    assert(type(funcName) == 'string', 'invalid function name')
+function ZMQRemoteAPI:call(target, funcName, ...)
+    assert(type(funcName) == 'string', 'invalid function name type')
     local args = table.pack(...)
-    self:send{msg = 'call', func = funcName, args = args}
+    self:send{msg = 'call', target = target, func = funcName, args = args}
     while true do
         local rep = self:recv(true)
         if rep.msg == 'result' then
@@ -73,13 +67,6 @@ function ZMQRemoteAPI:call(funcName, ...)
     end
 end
 
-function ZMQRemoteAPI:registerCallbackLocal(funcName)
-    assert(type(funcName) == 'string', 'invalid function name')
-    _G[funcName] = function(...)
-        return self:call(funcName, ...)
-    end
-end
-
 function ZMQRemoteAPI:registerCallback(funcName)
     self:send{msg = 'registerCallback', func = funcName}
     local rep = self:recv(true)
@@ -90,8 +77,21 @@ end
 function ZMQRemoteAPI:handleRequest(req)
     assert(type(req.msg) == 'string', 'malformed request')
     if req.msg == 'call' then
-        local ok, result = pcall(self.callLocal, self, req.func, req.args)
-        if type(result) == 'table' then
+        local ok, result = pcall(function()
+            assert(type(req.func) == 'string', 'invalid function name type: ' .. type(req.func))
+            assert(req.target == nil or math.type(req.target) == 'integer', 'invalid target type: ' .. type(req.target))
+            local args = req.args or {}
+            assert(type(args) == 'table', 'invalid args type: ' .. type(args))
+            if req.target then
+                return table.pack(self.callMethod(req.target, req.func, table.unpack(args)))
+            elseif not req.target then
+                local func = _G[req.func]
+                assert(func, 'no such function: ' .. req.func)
+                assert(type(func) == 'function', 'not a function: ' .. req.func)
+                return table.pack(func(table.unpack(args or {})))
+            end
+        end)
+        if ok then
             local n = result.n
             result.n = nil
             for i = 1, n do
@@ -100,9 +100,15 @@ function ZMQRemoteAPI:handleRequest(req)
                 end
             end
         end
-        self:send{msg = 'result', error = not ok, result = result, n = n}
+        self:send{msg = 'result', error = not ok, result = result}
     elseif req.msg == 'registerCallback' then
-        local ok, result = pcall(self.registerCallbackLocal, self, req.func)
+        local ok, result = pcall(function()
+            assert(type(req.func) == 'string', 'invalid function name')
+            _G[req.func] = function(...)
+                return self:call(nil, req.func, ...)
+            end
+            return true
+        end)
         self:send{msg = 'result', error = not ok, result = result}
     else
         self:log(1, 'unsupported message:', req.msg)
