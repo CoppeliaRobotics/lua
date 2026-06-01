@@ -13,7 +13,7 @@ function PropertyGroup:initialize(object, opts)
 end
 
 function PropertyGroup:__index(k)
-    local sim = {propertytype_method = 240}
+    local sim = {propertytype_group = 24, propertytype_method = 240}
     assert(type(k) == 'string', 'invalid key type')
 
     if self.__localProperties[k] then
@@ -30,7 +30,7 @@ function PropertyGroup:__index(k)
         return function(_, ...)
             return object:callMethod(k, ...)
         end
-    elseif ptype == 'group' then
+    elseif ptype == sim.propertytype_group then
         return PropertyGroup(object, {prefix = k})
     elseif ptype then
         local v = object:callMethod('getProperty', k, {type = ptype})

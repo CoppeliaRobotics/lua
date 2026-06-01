@@ -143,12 +143,6 @@ function Object:getPropertyInfo(pname, opts)
             return ptype, pflags, descr
         end
         if ptype then
-        elseif self:callMethod('getPropertyName', 0, {prefix = pname .. '.'}) then
-            ptype, pflags, descr = 'group', 0, ''
-        else
-            ptype, pflags, descr = nil, nil, nil
-        end
-        if ptype then
             propertyInfo[self.objectType][pname] = {ptype, pflags, descr}
         end
     end
