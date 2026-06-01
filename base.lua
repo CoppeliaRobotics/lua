@@ -214,6 +214,37 @@ function printf(fmt, ...)
     setAutoYield(lb)
 end
 
+function todisplay(x)
+    return callmeta(x, '__todisplay')
+end
+
+function display(x)
+    local s = todisplay(x)
+    if s then print(s) end
+end
+
+function dump(x, maxDepth)
+    maxDepth = maxDepth or 1
+    prefix = prefix or ''
+    if maxDepth > 0 and type(x) == 'table' and x.class then
+        local sim = require 'sim-2'
+        if x:isInstanceOf(sim.Object) or x:isInstanceOf(sim.PropertyGroup) then
+            local tbl = {}
+            for k, v in pairs(x) do
+                tbl[k] = dump(v, maxDepth - 1)
+            end
+            return tbl
+        elseif x:isInstanceOf(sim.ObjectArray) then
+            local tbl = {}
+            for i, v in ipairs(x) do
+                tbl[i] = dump(v, maxDepth - 1)
+            end
+            return tbl
+        end
+    end
+    return x
+end
+
 function _S.funcToString(f)
     local sim = require 'sim'
     local allModules = sim.getProperty(sim.handle_app, 'plugins')
