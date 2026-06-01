@@ -94,7 +94,7 @@ function PropertyGroup:__pairs()
                 props[pname2] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
             end
         elseif props[pname2] == nil then
-            props[pname2] = PropertyGroup(object, {prefix = prefix .. pname})
+            props[pname2] = PropertyGroup(object, {prefix = prefix .. pname2})
         end
         i = i + 1
     end
