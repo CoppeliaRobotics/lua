@@ -2,6 +2,8 @@ local class = require 'middleclass'
 
 local PropertyGroup = class 'sim.PropertyGroup'
 
+local sim = {propertytype_group = 24, propertytype_method = 240}
+
 function PropertyGroup:initialize(object, opts)
     local Object = require 'sim.Object'
     self.__object = Object:toobject(object)
@@ -13,7 +15,6 @@ function PropertyGroup:initialize(object, opts)
 end
 
 function PropertyGroup:__index(k)
-    local sim = {propertytype_group = 24, propertytype_method = 240}
     assert(type(k) == 'string', 'invalid key type')
 
     if self.__localProperties[k] then
@@ -86,15 +87,14 @@ function PropertyGroup:__pairs()
         local pname = object:callMethod('getPropertyName', i, {prefix = prefix})
         if pname == nil then break end
         pname = string.stripprefix(pname, prefix)
-        local pname2 = string.gsub(pname, '%..*$', '')
-        if pname == pname2 then
+        if pname:match('%.') == nil then
             local ptype, pflags, descr = object:callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
-            if readable then
-                props[pname2] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
+            if ptype == sim.propertytype_group then
+                props[pname] = PropertyGroup(object, {prefix = prefix .. pname})
+            elseif readable then
+                props[pname] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
             end
-        elseif props[pname2] == nil then
-            props[pname2] = PropertyGroup(object, {prefix = prefix .. pname2})
         end
         i = i + 1
     end
