@@ -549,7 +549,10 @@ function _evalExec(inputStr)
         local setCv = sim.getBoolProperty(sim.handle_app, 'customData.simCmd.setConvenienceVars', {noError = true})
         if setCv ~= false then setConvenienceVars() end
 
-        if theStr:endswith '!' then theStr = string.format('dump(%s)', theStr:stripsuffix '!') end
+        -- shortcut for dump(...) by appending 1+ exclamation points:
+        local m = theStr:match("!+$")
+        if m then theStr = string.format('dump(%s, %d)', theStr:sub(1, -#m-1), #m) end
+
         local func, err = load('return ' .. theStr)
         local rr = true
         if not func then
