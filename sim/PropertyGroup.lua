@@ -87,7 +87,8 @@ function PropertyGroup:__pairs()
         local pname = object:callMethod('getPropertyName', i, {prefix = prefix})
         if pname == nil then break end
         pname = string.stripprefix(pname, prefix)
-        if pname:match('%.') == nil then
+        pname = pname:gsub('%..*', '') -- strip everything after first dot
+        if not props[pname] then
             local ptype, pflags, descr = object:callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
             if ptype == sim.propertytype_group then
