@@ -225,13 +225,29 @@ end
 
 function dump(x, maxDepth)
     maxDepth = maxDepth or 1
-    prefix = prefix or ''
+    local apidoc = require('sim.apidoc')
     if maxDepth > 0 and type(x) == 'table' and x.class then
         local sim = require 'sim-2'
         if x:isInstanceOf(sim.Object) or x:isInstanceOf(sim.PropertyGroup) then
+            local obj, prefix
+            if x:isInstanceOf(sim.Object) then
+                obj, prefix = x, ''
+            elseif x:isInstanceOf(sim.PropertyGroup) then
+                obj, prefix = x.__object, x.__opts.prefix
+                if prefix ~= '' then prefix = prefix .. '.' end
+            end
             local tbl = {}
             for k, v in pairs(x) do
-                tbl[k] = dump(v, maxDepth - 1)
+                local info = obj:getPropertyInfos(prefix .. k)
+                local enum = info.enum and apidoc.getEnum(info.enum)
+                if enum then
+                    tbl[k] = setmetatable({}, {__tostring = function()
+                        local value = dump(v, maxDepth - 1)
+                        return string.format('%s (%s)', value, enum:nameFromValue(value))
+                    end})
+                else
+                    tbl[k] = dump(v, maxDepth - 1)
+                end
             end
             return tbl
         elseif x:isInstanceOf(sim.ObjectArray) then
