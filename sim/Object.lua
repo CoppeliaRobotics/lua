@@ -131,6 +131,7 @@ function Object:isValid()
 end
 
 function Object:getPropertyInfo(pname, opts)
+    opts = opts or {}
     if propertyInfo[self.objectType] == nil then
         propertyInfo[self.objectType] = {}
     end
@@ -138,7 +139,7 @@ function Object:getPropertyInfo(pname, opts)
     if propertyInfo[self.objectType][pname] then
         ptype, pflags, descr = table.unpack(propertyInfo[self.objectType][pname])
     else
-        ptype, pflags, descr = self:callMethod('getPropertyInfo', pname, opts)
+        ptype, pflags, descr = self:callMethod('getPropertyInfo', pname, table.update(opts, {bitCoded = 1}))
         if pflags and (pflags & sim.propertyinfo_removable) > 0 then
             return ptype, pflags, descr
         end
