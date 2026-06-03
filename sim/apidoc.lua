@@ -15,11 +15,9 @@ local function getChildrenXML(root)
     return table.concat(children_xml)
 end
 
-local apidoc = {}
+local ParamInfo = class 'sim.apidoc.ParamInfo'
 
-apidoc.ParamInfo = class 'sim.apidoc.ParamInfo'
-
-function apidoc.ParamInfo:initialize(methodInfo, node, acceptsDefaults)
+function ParamInfo:initialize(methodInfo, node, acceptsDefaults)
     assert(node.tag == 'param', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     assert(node.attr.type, 'missing "type" attribute')
@@ -36,9 +34,9 @@ function apidoc.ParamInfo:initialize(methodInfo, node, acceptsDefaults)
     end
 end
 
-apidoc.MethodInfo = class 'sim.apidoc.MethodInfo'
+MethodInfo = class 'sim.apidoc.MethodInfo'
 
-function apidoc.MethodInfo:initialize(classInfo, node, tag)
+function MethodInfo:initialize(classInfo, node, tag)
     assert(node.tag == tag, 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     self.classInfo = classInfo
@@ -52,13 +50,13 @@ function apidoc.MethodInfo:initialize(classInfo, node, tag)
         if subNode.tag == 'params' then
             for _, paramNode in ipairs(subNode) do
                 if paramNode.tag == 'param' then
-                    table.insert(self.params, apidoc.ParamInfo(self, paramNode, true))
+                    table.insert(self.params, ParamInfo(self, paramNode, true))
                 end
             end
         elseif subNode.tag == 'returns' then
             for _, paramNode in ipairs(subNode) do
                 if paramNode.tag == 'param' then
-                    table.insert(self.returns, apidoc.ParamInfo(self, paramNode))
+                    table.insert(self.returns, ParamInfo(self, paramNode))
                 end
             end
         elseif subNode.tag == 'description' then
@@ -81,11 +79,11 @@ function apidoc.MethodInfo:initialize(classInfo, node, tag)
     end
 end
 
-function apidoc.MethodInfo:__tostring()
+function MethodInfo:__tostring()
     return self.class.name .. '(name = ' .. self.name .. ')'
 end
 
-function apidoc.MethodInfo:getCallTip(types)
+function MethodInfo:getCallTip(types)
     local x = ''
     for i, p in ipairs(self.returns) do
         if i > 1 then x = x .. ', ' end
@@ -115,7 +113,7 @@ function apidoc.MethodInfo:getCallTip(types)
     return x
 end
 
-function apidoc.MethodInfo:getParamsDoc(params)
+function MethodInfo:getParamsDoc(params)
     if #params == 0 then return '' end
     local x = '<ul>'
     for i, p in ipairs(params) do
@@ -135,32 +133,31 @@ function apidoc.MethodInfo:getParamsDoc(params)
     return x
 end
 
-apidoc.ClassInfo = class 'sim.apidoc.ClassInfo'
+ClassInfo = class 'sim.apidoc.ClassInfo'
 
-function apidoc.ClassInfo:initialize(classesInfo, node)
+function ClassInfo:initialize(node)
     assert(node.tag == 'object-class', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
-    self.classesInfo = classesInfo
     self.className = node.attr.name
     self.superClassName = node.attr.superclass
     self.methods = {}
     for _, subNode in ipairs(node) do
         if subNode.tag == 'method' then
-            local info = apidoc.MethodInfo(self, subNode, 'method')
+            local info = MethodInfo(self, subNode, 'method')
             self.methods[info.name] = info
         end
     end
 end
 
-function apidoc.ClassInfo:__tostring()
+function ClassInfo:__tostring()
     return self.class.name .. '(className = ' .. self.className .. ')'
 end
 
-function apidoc.ClassInfo:getSuperClass()
-    return self.classesInfo:getClass(self.superClassName)
+function ClassInfo:getSuperClass()
+    return apidoc.getClass(self.superClassName)
 end
 
-function apidoc.ClassInfo:getMethod(methodName)
+function ClassInfo:getMethod(methodName)
     local c = self
     while c do
         if c.methods[methodName] then
@@ -170,18 +167,18 @@ function apidoc.ClassInfo:getMethod(methodName)
     end
 end
 
-apidoc.EnumItemInfo = class 'sim.apidoc.EnumItemInfo'
+EnumItemInfo = class 'sim.apidoc.EnumItemInfo'
 
-function apidoc.EnumItemInfo:initialize(node, value)
+function EnumItemInfo:initialize(node, value)
     assert(node.tag == 'item', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     self.name = node.attr.name
-    self.value = node.attr.value or value
+    self.value = tonumber(node.attr.value) or value
 end
 
-apidoc.EnumInfo = class 'sim.apidoc.EnumInfo'
+EnumInfo = class 'sim.apidoc.EnumInfo'
 
-function apidoc.EnumInfo:initialize(node)
+function EnumInfo:initialize(node)
     assert(node.tag == 'enum', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     self.name = node.attr.name
@@ -190,72 +187,86 @@ function apidoc.EnumInfo:initialize(node)
     local v = 0
     for _, subNode in ipairs(node) do
         if subNode.tag == 'item' then
-            local info = apidoc.EnumItemInfo(subNode, v)
+            local info = EnumItemInfo(subNode, v)
             v = info.value + 1
             self.items[info.name] = info
         end
     end
 end
 
-apidoc.APIDoc = class 'sim.apidoc.APIDoc'
-
-function apidoc.APIDoc:initialize()
-    local function xmltree(filename)
-        local lfsx = require 'lfsx'
-        local filepath = lfsx.pathjoin(sim.app.paths.resources, 'programming', 'include', 'sim', filename)
-        local objxmlfile = io.open(filepath, 'r')
-        assert(objxmlfile)
-        local objxml = objxmlfile:read '*a'
-        objxmlfile:close()
-        return xml.parse(objxml)
-    end
-
-    self.classes = {}
-    for _, node in ipairs(xmltree 'objects.xml') do
-        if node.tag == 'object-class' then
-            local info = apidoc.ClassInfo(self, node)
-            self.classes[info.className] = info
-        end
-    end
-
-    self.functions = {}
-    for _, node in ipairs(xmltree 'functions.xml') do
-        if node.tag == 'function' then
-            local info = apidoc.MethodInfo(nil, node, 'function')
-            self.functions[info.name] = info
-        end
-    end
-
-    self.enums = {}
-    for _, node in ipairs(xmltree 'enums.xml') do
-        if node.tag == 'enum' then
-            local info = apidoc.EnumInfo(node, 'enum')
-            self.enums[info.name] = info
+function EnumInfo:nameFromValue(v)
+    for k, info in pairs(self.items) do
+        if info.value == v then
+            return info.name
         end
     end
 end
 
-function apidoc.APIDoc:getClass(className)
-    return self.classes[className]
+local function xmltree(filename)
+    local lfsx = require 'lfsx'
+    local filepath = lfsx.pathjoin(sim.app.paths.resources, 'programming', 'include', 'sim', filename)
+    local objxmlfile = io.open(filepath, 'r')
+    assert(objxmlfile)
+    local objxml = objxmlfile:read '*a'
+    objxmlfile:close()
+    return xml.parse(objxml)
 end
 
-function apidoc.APIDoc:getMethod(className, methodName)
-    local c = self:getClass(className)
+local classes = {}
+for _, node in ipairs(xmltree 'objects.xml') do
+    if node.tag == 'object-class' then
+        local info = ClassInfo(node)
+        classes[info.className] = info
+    end
+end
+
+local functions = {}
+for _, node in ipairs(xmltree 'functions.xml') do
+    if node.tag == 'function' then
+        local info = MethodInfo(nil, node, 'function')
+        functions[info.name] = info
+    end
+end
+
+local enums = {}
+for _, node in ipairs(xmltree 'enums.xml') do
+    if node.tag == 'enum' then
+        local info = EnumInfo(node, 'enum')
+        enums[info.name] = info
+    end
+end
+
+local apidoc = {}
+
+function apidoc.getClass(className)
+    return classes[className]
+end
+
+function apidoc.getMethod(className, methodName)
+    local c = apidoc.getClass(className)
     if c then return c:getMethod(methodName) end
 end
 
-function apidoc.APIDoc:getClassHierarchyGraph()
+function apidoc.getClassHierarchyGraph()
     local Graph = require 'Graph'
     local g = Graph(true)
-    for _, classInfo in pairs(self.classes) do
+    for _, classInfo in pairs(classes) do
         g:addVertex(classInfo.className)
     end
-    for _, classInfo in pairs(self.classes) do
+    for _, classInfo in pairs(classes) do
         if classInfo.superClassName then
             g:addEdge(classInfo.className, classInfo.superClassName)
         end
     end
     return g
+end
+
+function apidoc.getFunction(functionName)
+    return functions[functionName]
+end
+
+function apidoc.getEnum(enumName)
+    return enums[enumName]
 end
 
 return apidoc
