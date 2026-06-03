@@ -150,6 +150,39 @@ function Object:getPropertyInfo(pname, opts)
     return ptype, pflags, descr
 end
 
+function Object:getPropertyInfos(pname, opts)
+    local sim = require 'sim-2'
+    opts = opts or {}
+    local infos = {}
+    local ptype, pflags, metaInfo = self:getPropertyInfo(pname)
+    if not ptype then return end
+    infos.type = ptype
+    infos.flags = {
+        value = pflags,
+        readable = pflags & sim.propertyinfo_notreadable == 0,
+        writable = pflags & sim.propertyinfo_notwritable == 0,
+        removable = pflags & sim.propertyinfo_removable > 0,
+        silent = pflags & sim.propertyinfo_silent > 0,
+        large = pflags & sim.propertyinfo_largedata > 0,
+        deprecated = pflags & sim.propertyinfo_deprecated > 0,
+        constant = pflags & sim.propertyinfo_constant > 0,
+    }
+    if opts.decodeMetaInfo ~= false then
+        if metaInfo ~= '' then
+            local json = require 'dkjson'
+            local decodedMetaInfo = json.decode(metaInfo)
+            assert(decodedMetaInfo ~= nil, 'invalid meta info: ' .. metaInfo)
+            for k, v in pairs(decodedMetaInfo) do
+                assert(infos[k] == nil)
+                infos[k] = v
+            end
+        end
+    else
+        infos.metaInfo = metaInfo
+    end
+    return infos
+end
+
 function Object:toobject(o)
     assert(self == Object, 'class method')
     if Object:isobject(o) then return o end
