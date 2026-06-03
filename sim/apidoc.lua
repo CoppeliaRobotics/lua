@@ -176,6 +176,33 @@ function EnumItemInfo:initialize(node, value)
     self.value = tonumber(node.attr.value) or value
 end
 
+EnumItemsInfo = class 'sim.apidoc.EnumItemsInfo'
+
+function EnumItemsInfo:initialize(node)
+    assert(node.tag == 'enum', 'invalid node tag')
+    rawset(self, '__items', {})
+    local v = 0
+    for _, subNode in ipairs(node) do
+        if subNode.tag == 'item' then
+            local info = EnumItemInfo(subNode, v)
+            v = info.value + 1
+            self.__items[info.name] = info
+        end
+    end
+end
+
+function EnumItemsInfo:__index(k)
+    if type(k) == 'string' then
+        return self.__items[k].value
+    elseif math.type(k) == 'integer' then
+        for _, info in pairs(self.__items) do
+            if info.value == k then
+                return info.name
+            end
+        end
+    end
+end
+
 EnumInfo = class 'sim.apidoc.EnumInfo'
 
 function EnumInfo:initialize(node)
@@ -183,23 +210,7 @@ function EnumInfo:initialize(node)
     assert(node.attr.name, 'missing "name" attribute')
     self.name = node.attr.name
     self.label = node.attr.label
-    self.items = {}
-    local v = 0
-    for _, subNode in ipairs(node) do
-        if subNode.tag == 'item' then
-            local info = EnumItemInfo(subNode, v)
-            v = info.value + 1
-            self.items[info.name] = info
-        end
-    end
-end
-
-function EnumInfo:nameFromValue(v)
-    for k, info in pairs(self.items) do
-        if info.value == v then
-            return info.name
-        end
-    end
+    self.items = EnumItemsInfo(node)
 end
 
 local function xmltree(filename)

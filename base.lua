@@ -243,7 +243,7 @@ function dump(x, maxDepth)
                 if enum then
                     tbl[k] = setmetatable({}, {__tostring = function()
                         local value = dump(v, maxDepth - 1)
-                        return string.format('%s (%s)', value, enum:nameFromValue(value))
+                        return string.format('%s (%s)', value, enum.items[value])
                     end})
                 else
                     tbl[k] = dump(v, maxDepth - 1)
