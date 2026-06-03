@@ -34,7 +34,7 @@ function ParamInfo:initialize(methodInfo, node, acceptsDefaults)
     end
 end
 
-MethodInfo = class 'sim.apidoc.MethodInfo'
+local MethodInfo = class 'sim.apidoc.MethodInfo'
 
 function MethodInfo:initialize(classInfo, node, tag)
     assert(node.tag == tag, 'invalid node tag')
@@ -133,7 +133,7 @@ function MethodInfo:getParamsDoc(params)
     return x
 end
 
-ClassInfo = class 'sim.apidoc.ClassInfo'
+local ClassInfo = class 'sim.apidoc.ClassInfo'
 
 function ClassInfo:initialize(node)
     assert(node.tag == 'object-class', 'invalid node tag')
@@ -167,50 +167,46 @@ function ClassInfo:getMethod(methodName)
     end
 end
 
-EnumItemInfo = class 'sim.apidoc.EnumItemInfo'
-
-function EnumItemInfo:initialize(node, value)
-    assert(node.tag == 'item', 'invalid node tag')
-    assert(node.attr.name, 'missing "name" attribute')
-    self.name = node.attr.name
-    self.value = tonumber(node.attr.value) or value
-end
-
-EnumItemsInfo = class 'sim.apidoc.EnumItemsInfo'
-
-function EnumItemsInfo:initialize(node)
-    assert(node.tag == 'enum', 'invalid node tag')
-    rawset(self, '__items', {})
-    local v = 0
-    for _, subNode in ipairs(node) do
-        if subNode.tag == 'item' then
-            local info = EnumItemInfo(subNode, v)
-            v = info.value + 1
-            self.__items[info.name] = info
-        end
-    end
-end
-
-function EnumItemsInfo:__index(k)
-    if type(k) == 'string' then
-        return self.__items[k].value
-    elseif math.type(k) == 'integer' then
-        for _, info in pairs(self.__items) do
-            if info.value == k then
-                return info.name
-            end
-        end
-    end
-end
-
-EnumInfo = class 'sim.apidoc.EnumInfo'
+local EnumInfo = class 'sim.apidoc.EnumInfo'
 
 function EnumInfo:initialize(node)
     assert(node.tag == 'enum', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     self.name = node.attr.name
     self.label = node.attr.label
-    self.items = EnumItemsInfo(node)
+
+    local items = {}
+    local v = 0
+    for _, subNode in ipairs(node) do
+        if subNode.tag == 'item' then
+            assert(subNode.attr.name, 'missing "name" attribute')
+            local name = subNode.attr.name
+            local value = tonumber(subNode.attr.value) or v
+            v = value + 1
+            items[name] = value
+        end
+    end
+
+    self.items = setmetatable(
+        {},
+        {
+            __tostring = function()
+                return self.class.name .. ' ' .. self.name .. ' items'
+            end,
+            __pairs = function()
+                return pairs(items)
+            end,
+            __index = function(self, k)
+                if type(k) == 'string' then
+                    return items[k]
+                elseif math.type(k) == 'integer' then
+                    for name, value in pairs(items) do
+                        if value == k then return name end
+                    end
+                end
+            end,
+        }
+    )
 end
 
 local function xmltree(filename)
