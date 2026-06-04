@@ -516,6 +516,21 @@ function locals.getPropertiesInfos(target, methodName, opts)
             error(string.format('property "%s": %s', pname, err))
         end
         propertiesInfos[pname].class = pclass
+
+        -- coppeliaSim won't report group properties via getPropertyName
+        -- infer them via pname dots:
+        if opts.groups ~= false then
+            local parts = string.split(pname, '.', true)
+            for i = 1, #parts-1 do
+                local pname1 = table.join(table.slice(parts, 1, i), '.')
+                local ok, err = pcall(function()
+                    propertiesInfos[pname1] = locals.getPropertyInfos(target, '', pname1, {decodeMetaInfo = opts.decodeMetaInfo})
+                end)
+                if not ok then
+                    printf('warning: %s: %s', pname1, err)
+                end
+            end
+        end
     end
     return propertiesInfos
 end
