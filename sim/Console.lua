@@ -28,8 +28,8 @@ function Console:init()
             resizable = self.resizable,
             ['on-close'] = self.handle .. ':onClose',
             placement = 'relative',
-            position = self['position.x'] .. ',' .. self['position.y'],
-            size = self['size.width'] .. ',' .. self['size.height'],
+            position = self.position.x .. ',' .. self.position.y,
+            size = self.size.width .. ',' .. self.size.height,
             activate = false,
         },
         children = {
