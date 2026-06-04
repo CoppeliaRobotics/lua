@@ -15,19 +15,6 @@ local function getChildrenXML(root)
     return table.concat(children_xml)
 end
 
-local function parseBool(s, def, context)
-    if s == nil then
-        if def == nil then
-            error(context .. 'attribute is required')
-        else
-            return def
-        end
-    end
-    if s == 'true' then return true end
-    if s == 'false' then return false end
-    error(string.format(context .. 'invalid boolean value found in XML attribute: "%s"', s))
-end
-
 local PropertyInfo = class 'sim.apidoc.PropertyInfo'
 
 function PropertyInfo:initialize(classInfo, node, tag)
@@ -36,10 +23,24 @@ function PropertyInfo:initialize(classInfo, node, tag)
     self.classInfo = classInfo
     self.name = node.attr.name
     self.type = node.attr.type
-    local context = string.format('class "%s": property "%s": ', classInfo.className, self.name)
-    self.readable = parseBool(node.attr.readable, true, context .. 'attribute "readable": ')
-    self.writable = parseBool(node.attr.writable, true, context .. 'attribute "writable": ')
-    self.removable = parseBool(node.attr.removable, false, context .. 'attribute "removable": ')
+    self.enum = node.attr.enum
+    self.handleType = node.attr['handle-type']
+    local function getBoolAttr(n, def)
+        local s = node.attr[n]
+        if s == nil then return def end
+        if s == 'true' then return true end
+        if s == 'false' then return false end
+        error(
+            string.format('class "%s": property "%s": attribute "%s": invalid boolean value: "%s"',
+                classInfo.className, self.name, n, s)
+        )
+    end
+    self.readable = getBoolAttr('readable', true)
+    self.writable = getBoolAttr('writable', true)
+    self.removable = getBoolAttr('removable', false)
+    self.silent = getBoolAttr('silent', false)
+    self.constant = getBoolAttr('constant', false)
+    self.deprecated = getBoolAttr('deprecated', false)
 end
 
 function PropertyInfo:__tostring()
@@ -254,34 +255,34 @@ local function xmltree(filename)
     return xml.parse(objxml)
 end
 
-local classes = {}
+local apidoc = {}
+
+apidoc.classes = {}
 for _, node in ipairs(xmltree 'objects.xml') do
     if node.tag == 'object-class' then
         local info = ClassInfo(node)
-        classes[info.className] = info
+        apidoc.classes[info.className] = info
     end
 end
 
-local functions = {}
+apidoc.functions = {}
 for _, node in ipairs(xmltree 'functions.xml') do
     if node.tag == 'function' then
         local info = MethodInfo(nil, node, 'function')
-        functions[info.name] = info
+        apidoc.functions[info.name] = info
     end
 end
 
-local enums = {}
+apidoc.enums = {}
 for _, node in ipairs(xmltree 'enums.xml') do
     if node.tag == 'enum' then
         local info = EnumInfo(node, 'enum')
-        enums[info.name] = info
+        apidoc.enums[info.name] = info
     end
 end
 
-local apidoc = {}
-
 function apidoc.getClass(className)
-    return classes[className]
+    return apidoc.classes[className]
 end
 
 function apidoc.getMethod(className, methodName)
@@ -292,10 +293,10 @@ end
 function apidoc.getClassHierarchyGraph()
     local Graph = require 'Graph'
     local g = Graph(true)
-    for _, classInfo in pairs(classes) do
+    for _, classInfo in pairs(apidoc.classes) do
         g:addVertex(classInfo.className)
     end
-    for _, classInfo in pairs(classes) do
+    for _, classInfo in pairs(apidoc.classes) do
         if classInfo.superClassName then
             g:addEdge(classInfo.className, classInfo.superClassName)
         end
@@ -304,11 +305,11 @@ function apidoc.getClassHierarchyGraph()
 end
 
 function apidoc.getFunction(functionName)
-    return functions[functionName]
+    return apidoc.functions[functionName]
 end
 
 function apidoc.getEnum(enumName)
-    return enums[enumName]
+    return apidoc.enums[enumName]
 end
 
 return apidoc
