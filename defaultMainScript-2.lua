@@ -13,7 +13,7 @@ function sysCall_actuation()
     sim.app:handleAddOnScripts(sim.syscb_actuation)
     sim.app:handleSandboxScript(sim.syscb_actuation)
     sim.handleJointMotion()
-    sim.handleDynamics(sim.getSimulationTimeStep())
+    sim.scene.dynamics:step()
 end
 
 function sysCall_sensing()

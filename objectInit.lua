@@ -562,7 +562,7 @@ function objInit.shape(methodName)
             {name = 'frameOrigin', type = 'pose', nullable = true},
         }, objInit.p.mesh)
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
-            {name = 'normals', type = 'matrix', cols = #objInit.p.mesh.indices, cols = 9, nullable = true},
+            {name = 'normals', type = 'matrix', cols = 3 * #objInit.p.mesh.indices, cols = 3, nullable = true},
         }, objInit.p.mesh)
         local texture_interpolate = true
         local texture_decal = false
