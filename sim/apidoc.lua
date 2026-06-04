@@ -15,6 +15,37 @@ local function getChildrenXML(root)
     return table.concat(children_xml)
 end
 
+local function parseBool(s, def, context)
+    if s == nil then
+        if def == nil then
+            error(context .. 'attribute is required')
+        else
+            return def
+        end
+    end
+    if s == 'true' then return true end
+    if s == 'false' then return false end
+    error(string.format(context .. 'invalid boolean value found in XML attribute: "%s"', s))
+end
+
+local PropertyInfo = class 'sim.apidoc.PropertyInfo'
+
+function PropertyInfo:initialize(classInfo, node, tag)
+    assert(node.tag == tag, 'invalid node tag')
+    assert(node.attr.name, 'missing "name" attribute')
+    self.classInfo = classInfo
+    self.name = node.attr.name
+    self.type = node.attr.type
+    local context = string.format('class "%s": property "%s": ', classInfo.className, self.name)
+    self.readable = parseBool(node.attr.readable, true, context .. 'attribute "readable": ')
+    self.writable = parseBool(node.attr.writable, true, context .. 'attribute "writable": ')
+    self.removable = parseBool(node.attr.removable, false, context .. 'attribute "removable": ')
+end
+
+function PropertyInfo:__tostring()
+    return self.class.name .. '(name = ' .. self.name .. ')'
+end
+
 local ParamInfo = class 'sim.apidoc.ParamInfo'
 
 function ParamInfo:initialize(methodInfo, node, acceptsDefaults)
@@ -140,9 +171,13 @@ function ClassInfo:initialize(node)
     assert(node.attr.name, 'missing "name" attribute')
     self.className = node.attr.name
     self.superClassName = node.attr.superclass
+    self.properties = {}
     self.methods = {}
     for _, subNode in ipairs(node) do
-        if subNode.tag == 'method' then
+        if subNode.tag == 'property' then
+            local info = PropertyInfo(self, subNode, 'property')
+            self.properties[info.name] = info
+        elseif subNode.tag == 'method' then
             local info = MethodInfo(self, subNode, 'method')
             self.methods[info.name] = info
         end
