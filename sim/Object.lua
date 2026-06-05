@@ -1,8 +1,6 @@
 local class = require 'middleclass'
 local json = require 'dkjson'
 
-local propertyInfo   = {} -- cache for property info, by objectType
-
 local Object = class 'sim.Object'
 local PropertyGroup = require 'sim.PropertyGroup'
 
@@ -131,6 +129,19 @@ function Object:isValid()
 end
 
 function Object:getPropertyInfo(pname, opts)
+    return self:callMethod('getPropertyInfo', pname, opts)
+end
+
+function Object:getPropertyInfos(pname, opts)
+    return self:callMethod('getPropertyInfos', pname, opts)
+end
+
+--[[
+-- getPropertyInfo with caching:
+
+local propertyInfo   = {} -- cache for property info, by objectType
+
+function Object:getPropertyInfo(pname, opts)
     opts = opts or {}
     if propertyInfo[self.objectType] == nil then
         propertyInfo[self.objectType] = {}
@@ -182,6 +193,8 @@ function Object:getPropertyInfos(pname, opts)
     end
     return infos
 end
+
+]]
 
 function Object:toobject(o)
     assert(self == Object, 'class method')
