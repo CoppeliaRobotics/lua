@@ -1,19 +1,50 @@
 local class = require 'middleclass'
 
+local EnumValue = class 'sim.EnumValue'
+
+function EnumValue:initialize(intValue, stringValue, enum)
+    self.intValue = intValue
+    self.stringValue = stringValue
+    self.enum = enum
+end
+
+function EnumValue:__tostring()
+    return string.format('%d (%s)', self.intValue, self.stringValue)
+end
+
 local Enum = class 'sim.Enum'
+
+local enumCache = {}
+
+function Enum.static:fromName(name)
+    if enumCache[name] then
+        return enumCache[name]
+    end
+    local apidoc = require 'sim.apidoc'
+    local enumInfo = apidoc.getEnum(name)
+    assert(enumInfo, 'no such enum: ' .. name)
+    local enum = Enum(name, enumInfo.items)
+    enumCache[name] = enum
+    return enum
+end
+
+function Enum.static:value(enumName, enumValue)
+    local enum = Enum:fromName(enumName)
+    return enum[enumValue]
+end
 
 function Enum:initialize(name, items)
     self.__name = name
     self.__items = {}
     self.__invItems = {}
-    for n, v in pairs(items) do
-        assert(type(n) == 'string', 'bad enum key type: ' .. type(n))
-        assert(type(v) == 'number', 'bad enum value type: ' .. type(v))
-        assert(math.type(v) == 'integer', 'bad enum value type: ' .. math.type(v))
-        self.__items[n] = v
-        assert(self.__invItems[v] == nil, 'duplicate enum value: ' .. v)
-        self.__invItems[v] = n
-    end
+    for k, v in pairs(items) do self:__addItem(k, v) end
+end
+
+function Enum:__addItem(k, v)
+    assert(type(k) == 'string')
+    assert(math.type(v) == 'integer')
+    self.__items[k] = EnumValue(v, k, self)
+    self.__invItems[v] = self.__items[k]
 end
 
 function Enum:__index(k)
@@ -21,8 +52,9 @@ function Enum:__index(k)
         return self.__items[k]
     elseif math.type(k) == 'integer' then
         return self.__invItems[k]
+    else
+        error('invalid key type')
     end
-    error('invalid index type')
 end
 
 function Enum:__newindex(k, v)
