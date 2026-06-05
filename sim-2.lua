@@ -739,6 +739,7 @@ sim.Object = require 'sim.Object'
 sim.Object.callMethod = sim.callMethod -- replace [C]callMethod with [Lua]sim.callMethod
 sim.ObjectArray = require 'sim.ObjectArray'
 sim.PropertyGroup = require 'sim.PropertyGroup'
+sim.Enum = require 'sim.Enum'
 
 sim.app = sim.Object.app
 sim.scene = sim.Object.scene
