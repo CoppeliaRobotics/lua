@@ -30,10 +30,12 @@ function Enum:initialize(name, items)
         self.__name = enum.__name
         self.__items = enum.__items
         self.__invItems = enum.__invItems
+        self.__plainItems = enum.__plainItems
     elseif type(items) == 'table' then
         self.__name = name
         self.__items = {}
         self.__invItems = {}
+        self.__plainItems = {}
         for k, v in pairs(items) do
             self:__addItem(k, v)
         end
@@ -47,6 +49,7 @@ function Enum:__addItem(k, v)
     assert(math.type(v) == 'integer')
     self.__items[k] = EnumValue(v, k, self)
     self.__invItems[v] = self.__items[k]
+    self.__plainItems[k] = v
 end
 
 function Enum:__index(k)
@@ -60,7 +63,7 @@ function Enum:__index(k)
 end
 
 function Enum:__newindex(k, v)
-    if k == '__items' or k == '__invItems' or k == '__name' then
+    if k == '__items' or k == '__invItems' or k == '__plainItems' or k == '__name' then
         rawset(self, k, v)
         return
     end
@@ -72,7 +75,7 @@ function Enum:__tostring()
 end
 
 function Enum:__pairs()
-    return pairs(self.__items)
+    return pairs(self.__plainItems)
 end
 
 return Enum
