@@ -16,28 +16,30 @@ local Enum = class 'sim.Enum'
 
 local enumCache = {}
 
-function Enum.static:fromName(name)
-    if enumCache[name] then
-        return enumCache[name]
-    end
-    local apidoc = require 'sim.apidoc'
-    local enumInfo = apidoc.getEnum(name)
-    assert(enumInfo, 'no such enum: ' .. name)
-    local enum = Enum(name, enumInfo.items)
-    enumCache[name] = enum
-    return enum
-end
-
-function Enum.static:value(enumName, enumValue)
-    local enum = Enum:fromName(enumName)
-    return enum[enumValue]
-end
-
 function Enum:initialize(name, items)
-    self.__name = name
-    self.__items = {}
-    self.__invItems = {}
-    for k, v in pairs(items) do self:__addItem(k, v) end
+    assert(type(name) == 'string', 'enum name must be a string')
+    if items == nil then
+        local enum = enumCache[name]
+        if not enum then
+            local apidoc = require 'sim.apidoc'
+            local enumInfo = apidoc.getEnum(name)
+            assert(enumInfo, 'no such enum: ' .. name)
+            enum = Enum(name, enumInfo.items)
+            enumCache[name] = enum
+        end
+        self.__name = enum.__name
+        self.__items = enum.__items
+        self.__invItems = enum.__invItems
+    elseif type(items) == 'table' then
+        self.__name = name
+        self.__items = {}
+        self.__invItems = {}
+        for k, v in pairs(items) do
+            self:__addItem(k, v)
+        end
+    else
+        error('invalid items type')
+    end
 end
 
 function Enum:__addItem(k, v)
@@ -66,7 +68,7 @@ function Enum:__newindex(k, v)
 end
 
 function Enum:__tostring()
-    return self.class.name .. '(' .. self.__name .. ')'
+    return self.class.name .. '(\'' .. self.__name .. '\')'
 end
 
 function Enum:__pairs()
