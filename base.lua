@@ -238,22 +238,19 @@ function dump(x, maxDepth)
             end
             local tbl = {}
             for k, v in pairs(x) do
-                local info = obj:getPropertyInfos(prefix .. k)
-                local enum = info.enum and apidoc.getEnum(info.enum)
-                if enum then
-                    tbl[k] = setmetatable({}, {__tostring = function()
-                        local value = dump(v, maxDepth - 1)
-                        return string.format('%s (%s)', value, enum.items[value])
-                    end})
-                else
-                    tbl[k] = dump(v, maxDepth - 1)
-                end
+                tbl[k] = dump(v, maxDepth - 1)
             end
             return tbl
         elseif x:isInstanceOf(sim.ObjectArray) then
             local tbl = {}
             for i, v in ipairs(x) do
                 tbl[i] = dump(v, maxDepth - 1)
+            end
+            return tbl
+        elseif x:isInstanceOf(sim.Enum) then
+            local tbl = {}
+            for k, v in pairs(x) do
+                tbl[k] = dump(v, maxDepth - 1)
             end
             return tbl
         end
