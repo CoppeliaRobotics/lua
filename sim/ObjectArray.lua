@@ -110,6 +110,14 @@ function ObjectArray:__tocbor()
         .. cbor.encode(self.handle)
 end
 
+function ObjectArray:__dump(maxDepth)
+    local tbl = {}
+    for i = 1, #self do
+        tbl[i] = dump(self[i], maxDepth - 1)
+    end
+    return tbl
+end
+
 function ObjectArray:isobjectarray(o)
     assert(self == ObjectArray, 'class method')
     return ObjectArray.isInstanceOf(o, ObjectArray)

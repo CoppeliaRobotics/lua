@@ -78,4 +78,8 @@ function Enum:__pairs()
     return pairs(self.__plainItems)
 end
 
+function Enum:__dump()
+    return table.clone(self)
+end
+
 return Enum

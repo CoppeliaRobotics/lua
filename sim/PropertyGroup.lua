@@ -107,6 +107,14 @@ function PropertyGroup:__pairs()
     return stateless_iter, self, nil
 end
 
+function PropertyGroup:__dump(maxDepth)
+    local tbl = {}
+    for k, v in pairs(self) do
+        tbl[k] = dump(v, maxDepth - 1)
+    end
+    return tbl
+end
+
 function PropertyGroup:registerLocalProperty(k, getter, setter)
     self.__localProperties[k] = {get = getter, set = setter}
 end
