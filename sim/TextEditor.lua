@@ -1,29 +1,29 @@
 local CustomClass = require 'sim.CustomClass'
 
-local Console = CustomClass 'console'
+local TextEditor = CustomClass 'textEditor'
 
-Console:setColorProperty('background', Color 'white')
-Console:setColorProperty('defaultColor', Color 'black')
-Console:setBoolProperty('hiddenInSimulation', false)
-Console:setBoolProperty('visible', true)
-Console:setStringProperty('ui', '')
-Console:setStringProperty('title', 'console')
-Console:setIntProperty('size.width', 800)
-Console:setIntProperty('size.height', 600)
-Console:setIntProperty('position.x', 50)
-Console:setIntProperty('position.y', 50)
-Console:setBoolProperty('closeable', true)
-Console:setBoolProperty('resizable', true)
-Console:setIntProperty('fontSize', 12)
+TextEditor:setColorProperty('background', Color 'white')
+TextEditor:setColorProperty('defaultColor', Color 'black')
+TextEditor:setBoolProperty('hiddenInSimulation', false)
+TextEditor:setBoolProperty('visible', true)
+TextEditor:setStringProperty('ui', '')
+TextEditor:setStringProperty('title', 'editor')
+TextEditor:setIntProperty('size.width', 800)
+TextEditor:setIntProperty('size.height', 600)
+TextEditor:setIntProperty('position.x', 50)
+TextEditor:setIntProperty('position.y', 50)
+TextEditor:setBoolProperty('closeable', true)
+TextEditor:setBoolProperty('resizable', true)
+TextEditor:setIntProperty('fontSize', 12)
 if sim.self.type == sim.scripttype_sandbox or sim.self.type == sim.scripttype_addon then
-    Console:setIntProperty('sceneUid', -1)
+    TextEditor:setIntProperty('sceneUid', -1)
 else
-    Console:setIntProperty('sceneUid', sim.scene.uid)
+    TextEditor:setIntProperty('sceneUid', sim.scene.uid)
 end
-Console:setStringProperty('text', '')
-Console:setStringProperty('html', '')
+TextEditor:setStringProperty('text', '')
+TextEditor:setStringProperty('html', '')
 
-function Console:init()
+function TextEditor:init()
     local xml = string.renderxml{
         tag = 'ui',
         attrs = {
@@ -46,7 +46,8 @@ function Console:init()
                         .. 'font-size: ' .. self.fontSize .. 'pt; '
                         .. 'background-color: ' .. self.background:html() .. '; '
                         .. 'color: ' .. self.defaultColor:html() .. ';',
-                    ['read-only'] = true,
+                    ['read-only'] = false,
+                    ['on-change'] = self.handle .. ':onChange',
                 }
             },
         },
@@ -64,16 +65,21 @@ function Console:init()
     end
 end
 
-function Console:onClose(ui)
+function TextEditor:onClose(ui)
     self:remove()
 end
 
-function Console:visible_get_(pname, currentValue)
+function TextEditor:onChange(ui, id, newHtml)
+    self.html = newHtml
+    self.text = todo
+end
+
+function TextEditor:visible_get_(pname, currentValue)
     local simUI = require 'simUI'
     return simUI.isVisible(self.ui)
 end
 
-function Console:visible_set_(pname, setValue)
+function TextEditor:visible_set_(pname, setValue)
     local simUI = require 'simUI'
     if setValue then
         simUI.show(self.ui)
@@ -83,58 +89,32 @@ function Console:visible_set_(pname, setValue)
     return setValue
 end
 
-function Console:beforeInstanceSwitch()
+function TextEditor:beforeInstanceSwitch()
     if self.sceneUid ~= -1 then
         self.visible = false
     end
 end
 
-function Console:afterInstanceSwitch()
+function TextEditor:afterInstanceSwitch()
     local sim = require 'sim-2'
     if self.sceneUid ~= -1 and sim.scene.uid == self.sceneUid then
         self.visible = true
     end
 end
 
-function Console:beforeSimulation()
+function TextEditor:beforeSimulation()
     if self.hiddenInSimulation then
         self.visible = false
     end
 end
 
-function Console:afterSimulation()
+function TextEditor:afterSimulation()
     if self.hiddenInSimulation then
         self.visible = true
     end
 end
 
-function Console:print(text, color)
-    assert(self.ui ~= '')
-
-    local simUI = require 'simUI'
-
-    self.text = self.text .. text
-
-    self.html = self.html .. string.format(
-        '<span style="color: %s;">%s</span>',
-        Color:tocolor(color or self.defaultColor):html(),
-        string.escapehtml(text):gsub("\n", "<br>")
-    )
-
-    simUI.setText(self.ui, 1, self.html)
-end
-
-function Console:clear()
-    assert(self.ui ~= '')
-
-    local simUI = require 'simUI'
-
-    self.text = ''
-    self.html = ''
-    simUI.setText(self.ui, 1, "")
-end
-
-function Console:cleanup()
+function TextEditor:cleanup()
     assert(self.ui ~= '')
 
     local simUI = require 'simUI'
@@ -151,4 +131,4 @@ function Console:cleanup()
     end
 end
 
-return Console
+return TextEditor
