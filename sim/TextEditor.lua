@@ -21,7 +21,6 @@ else
     TextEditor:setIntProperty('sceneUid', sim.scene.uid)
 end
 TextEditor:setStringProperty('text', '')
-TextEditor:setStringProperty('html', '')
 
 function TextEditor:init()
     local xml = string.renderxml{
@@ -41,6 +40,7 @@ function TextEditor:init()
                 tag = 'text-browser',
                 attrs = {
                     id = 1,
+                    type = 'plain',
                     style = ''
                         .. 'font-family: "Courier New", "Consolas", "Liberation Mono", "DejaVu Sans Mono"; '
                         .. 'font-size: ' .. self.fontSize .. 'pt; '
@@ -69,9 +69,8 @@ function TextEditor:onClose(ui)
     self:remove()
 end
 
-function TextEditor:onChange(ui, id, newHtml)
-    self.html = newHtml
-    self.text = todo
+function TextEditor:onChange(ui, id, newText)
+    self.text = newText
 end
 
 function TextEditor:visible_get_(pname, currentValue)
