@@ -5,7 +5,6 @@ backCompatibility = require('deprecated.defaultMainScriptBackCompatibility')
 -- Without main script, there is no simulation.
 
 function sysCall_init()
-    sim.handleSimulationStart()
     backCompatibility.handle(0)
 end
 
@@ -19,7 +18,6 @@ function sysCall_actuation()
 end
 
 function sysCall_sensing()
-    sim.handleSensingStart()
     backCompatibility.handle(4)
     sim.handleProximitySensor(sim.handle_all_except_explicit)
     sim.handleVisionSensor(sim.handle_all_except_explicit)

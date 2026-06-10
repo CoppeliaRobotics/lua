@@ -320,7 +320,7 @@ function locals.changeColor(target, methodName, ...)
     target = sim.Object:toobject(target)
     local color, options = checkargs({
         {type = 'color'},
-        {type = 'table', default = {component = sim.materialcomponent_diffuse}},
+        {type = 'table', default = {component = 'diffuse'}},
     }, ...)
     local colorData = {}
     local objs = {target}
@@ -331,10 +331,10 @@ function locals.changeColor(target, methodName, ...)
         local obj = objs[i]
         if obj.objectType == 'shape' then -- and obj.visible then
             local colComp = 'diffuse'
-            if options.component == sim.materialcomponent_specular then
-                colComp = 'specular'
-            elseif options.component == sim.materialcomponent_emission then
-                colComp = 'emission'
+            if options.component == 'specular' then
+                colComp = options.component
+            elseif options.component == 'emission' then
+                colComp = options.component
             end
             colorData[#colorData + 1] = {puid = obj.persistentUid, data = obj.compoundColors[colComp], comp = colComp}
             obj.applyColor[colComp] = color

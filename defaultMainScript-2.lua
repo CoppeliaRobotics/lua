@@ -4,7 +4,6 @@ sim = require('sim-2')
 -- Without main script, there is no simulation.
 
 function sysCall_init()
-    sim.handleSimulationStart()
 end
 
 function sysCall_actuation()
@@ -17,7 +16,6 @@ function sysCall_actuation()
 end
 
 function sysCall_sensing()
-    sim.handleSensingStart()
     local proxSensors = sim.scene:getObjects({'proximitySensor'})
     for i = 1, #proxSensors do
         local s = proxSensors[i]
