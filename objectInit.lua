@@ -27,25 +27,25 @@ function objInit.init(target, methodName, initialProperties)
     local saved = objInit.p
     objInit.p = table.clone(initialProperties or {})
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'objectType', type = 'string'},
+        {name = 'type', type = 'string'},
     }, objInit.p)
-    local objectType = objInit.extractValueOrDefault('objectType')
-    if objectType then
-        if objInit[objectType] then
-            retVal = objInit[objectType](methodName)
+    local _type = objInit.extractValueOrDefault('type')
+    if _type then
+        if objInit[_type] then
+            retVal = objInit[_type](methodName)
         else
             -- try custom class...
-            local modName = knownCustomClasses[objectType]
+            local modName = knownCustomClasses[_type]
             if modName then require(modName) end
 
             local cls = nil
             for i, clsi in ipairs(sim.app.customClasses) do
-                if clsi.objectType == objectType then
+                if clsi.type == _type then
                     cls = clsi
                     break
                 end
             end
-            assert(cls ~= nil, 'unknown type: ' .. objectType)
+            assert(cls ~= nil, 'unknown type: ' .. _type)
             assert(target == sim.app or target == sim.scene, 'target can only be app or scene')
             retVal = sim.Object(cls:makeObject{appScope = (target == sim.app)})
             retVal:setProperties(objInit.p)
@@ -338,9 +338,9 @@ function objInit.path(methodName)
 end]]
     code = "path = require('models.path_customization-2')\n\n" .. code
 
-    local retVal = objInit.init(methodName, {objectType = 'dummy', dummySize = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
+    local retVal = objInit.init(methodName, {type = 'dummy', dummySize = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
     retVal.name = 'Path'
-    local script = objInit.init(methodName, {objectType = 'script', scriptType = sim.scripttype_customization, code = code})
+    local script = objInit.init(methodName, {type = 'script', scriptType = sim.scripttype_customization, code = code})
     script:setParent(retVal)
     retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
     retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
