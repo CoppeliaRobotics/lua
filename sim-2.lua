@@ -123,7 +123,7 @@ function locals.getAncestors(target, methodName, options, objTypesMap)
         while target do
             target = target.parent
             if target then
-                if types[target.objectType] or types['sceneObject'] then
+                if types[target.type] or types['sceneObject'] then
                     retVal[#retVal + 1] = target
                 end
             else
@@ -155,7 +155,7 @@ function locals.getDescendants(target, methodName, options, types, depth)
         if target == sim.scene then
             for i = 1, #target.orphans do
                 local child = target.orphans[i]
-                if types[child.objectType] or types['sceneObject'] then
+                if types[child.type] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
                 retVal = table.add(retVal, locals.getDescendants(child, '', {}, types, depth - 1))
@@ -163,7 +163,7 @@ function locals.getDescendants(target, methodName, options, types, depth)
         else
             for i = 1, #target.children do
                 local child = target.children[i]
-                if types[child.objectType] or types['sceneObject'] then
+                if types[child.type] or types['sceneObject'] then
                     retVal[#retVal + 1] = child
                 end
                 retVal = table.add(retVal, locals.getDescendants(child, '', {}, types, depth - 1))
@@ -324,12 +324,12 @@ function locals.changeColor(target, methodName, ...)
     }, ...)
     local colorData = {}
     local objs = {target}
-    if target.objectType == 'collection' then
+    if target.type == 'collection' then
         objs = collection.objects
     end
     for i = 1, #objs, 1 do
         local obj = objs[i]
-        if obj.objectType == 'shape' then -- and obj.visible then
+        if obj.type == 'shape' then -- and obj.visible then
             local colComp = 'diffuse'
             if options.component == 'specular' then
                 colComp = options.component
@@ -386,7 +386,7 @@ function locals.visitTree(target, methodName, ...)
         end
     end
 
-    if types[target.objectType] or types['sceneObject'] then
+    if types[target.type] or types['sceneObject'] then
         if visitorFunc(target) == false then
             return
         end
@@ -408,7 +408,7 @@ end
 
 function locals.getAppearance(target, methodName)
     target = sim.Object:toobject(target)
-    assert(target.objectType == 'shape', 'not a shape')
+    assert(target.type == 'shape', 'not a shape')
     local r = {}
     r.edges = target.compoundEdges
     r.wireframe = target.compoundWireframe
@@ -425,7 +425,7 @@ end
 
 function locals.setAppearance(target, methodName, savedData)
     target = sim.Object:toobject(target)
-    assert(target.objectType == 'shape', 'not a shape')
+    assert(target.type == 'shape', 'not a shape')
     target.compoundEdges = savedData.edges
     target.compoundWireframe = savedData.wireframe
     target.compoundCullings = savedData.culling
