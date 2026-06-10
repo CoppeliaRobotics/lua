@@ -36,7 +36,7 @@ function Object:__setupPropertyGroups()
     self.__properties:registerLocalProperty('__methods', function()
         local methods = {}
         for i = 0, 1e9 do
-            local pname = self:callMethod('getPropertyName', i, {type = prefix})
+            local pname = self:callMethod('getPropertyName', i)
             if not pname then break end
             local ptype = self:callMethod('getPropertyInfo', pname)
             if ptype == sim.propertytype_method then
