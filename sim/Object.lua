@@ -36,7 +36,7 @@ function Object:__setupPropertyGroups()
     self.__properties:registerLocalProperty('__methods', function()
         local methods = {}
         for i = 0, 1e9 do
-            local pname = self:callMethod('getPropertyName', i, {objectType = prefix})
+            local pname = self:callMethod('getPropertyName', i, {type = prefix})
             if not pname then break end
             local ptype = self:callMethod('getPropertyInfo', pname)
             if ptype == sim.propertytype_method then
@@ -48,8 +48,8 @@ function Object:__setupPropertyGroups()
         return methods
     end)
 
-    local objectType = self:callMethod('getStringProperty', 'objectType')
-    rawset(self, 'objectType', objectType)
+    local _type = self:callMethod('getStringProperty', 'type')
+    rawset(self, 'type', _type)
 
     local namespaces = self:callMethod('getStringArrayProperty', 'metaInfo.namespaces')
     for _, ns in pairs(namespaces) do
@@ -147,23 +147,23 @@ end
 --[[
 -- getPropertyInfo with caching:
 
-local propertyInfo   = {} -- cache for property info, by objectType
+local propertyInfo   = {} -- cache for property info, by type
 
 function Object:getPropertyInfo(pname, opts)
     opts = opts or {}
-    if propertyInfo[self.objectType] == nil then
-        propertyInfo[self.objectType] = {}
+    if propertyInfo[self.type] == nil then
+        propertyInfo[self.type] = {}
     end
     local ptype, pflags, descr
-    if propertyInfo[self.objectType][pname] then
-        ptype, pflags, descr = table.unpack(propertyInfo[self.objectType][pname])
+    if propertyInfo[self.type][pname] then
+        ptype, pflags, descr = table.unpack(propertyInfo[self.type][pname])
     else
         ptype, pflags, descr = self:callMethod('getPropertyInfo', pname, table.update(opts, {bitCoded = 1}))
         if pflags and (pflags & sim.propertyinfo_removable) > 0 then
             return ptype, pflags, descr
         end
         if ptype then
-            propertyInfo[self.objectType][pname] = {ptype, pflags, descr}
+            propertyInfo[self.type][pname] = {ptype, pflags, descr}
         end
     end
     return ptype, pflags, descr
@@ -224,12 +224,12 @@ function Object.static.unittest()
     assert(b == f.children[1])
     assert(b.parent == f)
     d1 = scene:createObject{
-        objectType = 'dummy',
+        type = 'dummy',
         name = 'd1',
     }
     assert(Object:isobject(d1))
     d2 = scene:createObject{
-        objectType = 'dummy',
+        type = 'dummy',
         name = 'd2',
         dummyType = 0, -- dummyType = sim.dummytype_dynloopclosure,
         linkedDummy = d1,
@@ -245,9 +245,9 @@ function Object.static.unittest()
     local olda = scene:getObject('/a', {noError = true})
     if olda then olda:removeModel() end
 
-    a = scene:createObject {objectType = 'dummy', name = 'a', }
-    b = scene:createObject {objectType = 'dummy', name = 'b', }
-    c = scene:createObject {objectType = 'dummy', name = 'c', }
+    a = scene:createObject {type = 'dummy', name = 'a', }
+    b = scene:createObject {type = 'dummy', name = 'b', }
+    c = scene:createObject {type = 'dummy', name = 'c', }
     c.parent = b
     b.parent = a
     a.modelBase = true
