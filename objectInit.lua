@@ -205,9 +205,9 @@ end
 
 function objInit.dummy(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'dummySize', type = 'float', default = 0.01},
+        {name = 'size', type = 'float', default = 0.01},
     }, objInit.p)
-    local retVal = sim.Object(sim.createDummy(objInit.extractValueOrDefault('dummySize')))
+    local retVal = sim.Object(sim.createDummy(objInit.extractValueOrDefault('size')))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -248,7 +248,7 @@ end
 
 function objInit.joint(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'type', type = 'int', default = sim.joint_revolute},
+        {name = 'joint.type', type = 'string', default = 'revolute'},
         {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
         {name = 'length', type = 'float', default = 0.15},
         {name = 'diameter', type = 'float', default = 0.02},
@@ -257,13 +257,22 @@ function objInit.joint(methodName)
         {name = 'screwLead', type = 'float', nullable = true},
         {name = 'dynCtrlMode', type = 'int', nullable = true},
     }, objInit.p)
-    local jointType = objInit.extractValueOrDefault('type')
+    local jointType = objInit.extractValueOrDefault('joint.type')
     local jointMode = objInit.extractValueOrDefault('mode')
     local jointSize = {
         objInit.extractValueOrDefault('length'),
         objInit.extractValueOrDefault('diameter'),
     }
-    local retVal = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
+    local t
+    if jointType == 'revolute' then
+        t = sim.joint_revolute
+    elseif jointType == 'prismatic' then
+        t = sim.joint_prismatic
+    elseif jointType == 'spherical' then
+        t = sim.joint_spherical
+    end
+    assert(t, 'invalid joint type.')
+    local retVal = sim.Object(sim.createJoint(t, jointMode, 0, jointSize))
     local interval = objInit.extractValueOrDefault('interval')
     if interval then
         retVal.interval = interval
@@ -338,7 +347,7 @@ function objInit.path(methodName)
 end]]
     code = "path = require('models.path_customization-2')\n\n" .. code
 
-    local retVal = objInit.init(methodName, {type = 'dummy', dummySize = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
+    local retVal = objInit.init(methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
     retVal.name = 'Path'
     local script = objInit.init(methodName, {type = 'script', scriptType = sim.scripttype_customization, code = code})
     script:setParent(retVal)
@@ -520,7 +529,7 @@ end
 
 function objInit.light(methodName)
     local retVal = callMethod(sim.scene, 'createLight', objInit.p)
-    objInit.p.lightType = nil
+    objInit.p['light.type'] = nil
     retVal:setProperties(objInit.p)
     return retVal
 end
