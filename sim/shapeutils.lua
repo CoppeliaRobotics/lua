@@ -64,7 +64,7 @@ function shapeutils.createCapsuleAtPoints(a, b, diameter, opts)
 end
 
 function shapeutils.createJointShape(j)
-    local t = sim.getIntProperty(j, 'type')
+    local t = sim.getIntProperty(j, 'joint.type')
     local length = sim.getFloatProperty(j, 'length')
     local diameter = sim.getFloatProperty(j, 'diameter')
     local shapeType, size
