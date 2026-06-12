@@ -14,33 +14,19 @@ end
 
 local Enum = class 'sim.Enum'
 
-local enumCache = {}
-
 function Enum:initialize(name, items)
     assert(type(name) == 'string', 'enum name must be a string')
     if items == nil then
-        local enum = enumCache[name]
-        if not enum then
-            local apidoc = require 'sim.apidoc'
-            local enumInfo = apidoc.getEnum(name)
-            assert(enumInfo, 'no such enum: ' .. name)
-            enum = Enum(name, enumInfo.items)
-            enumCache[name] = enum
-        end
-        self.__name = enum.__name
-        self.__items = enum.__items
-        self.__invItems = enum.__invItems
-        self.__plainItems = enum.__plainItems
-    elseif type(items) == 'table' then
-        self.__name = name
-        self.__items = {}
-        self.__invItems = {}
-        self.__plainItems = {}
-        for k, v in pairs(items) do
-            self:__addItem(k, v)
-        end
-    else
-        error('invalid items type')
+        local sim = require 'sim-2'
+        items = sim.app:getEnumInfo(name)
+    end
+    assert(type(items) == 'table', 'invalid items type')
+    self.__name = name
+    self.__items = {}
+    self.__invItems = {}
+    self.__plainItems = {}
+    for k, v in pairs(items) do
+        self:__addItem(k, v)
     end
 end
 
