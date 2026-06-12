@@ -94,14 +94,19 @@ end
 
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'type', type = 'int', default = sim.scripttype_addon},
+        {name = 'detachedScript.type', type = 'string', default = 'addon'},
         {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
         {name = 'language', type = 'string', default = 'lua'},
     }, objInit.p)
-    local tp = objInit.extractValueOrDefault('type')
+    local tp = objInit.extractValueOrDefault('detachedScript.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    local retVal = sim.Object(sim.createDetachedScript(tp, code, lang))
+    local t
+    if tp == 'addon' then
+        t = sim.scripttype_addon
+    end
+    assert(t, 'invalid detached script type.')
+    local retVal = sim.Object(sim.createDetachedScript(t, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -214,7 +219,7 @@ end
 
 function objInit.customSceneObject(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'objectSize', type = 'float', default = 0.04},
+        {name = 'size', type = 'float', default = 0.04},
     }, objInit.p)
     local retVal = sim.Object(callMethod(sim.scene, 'createCustomSceneObject'))
     retVal:setProperties(objInit.p)
@@ -226,7 +231,7 @@ function objInit.forceSensor(methodName)
         {name = 'filterType', type = 'int', default = 0},
         {name = 'filterSampleSize', type = 'int', default = 1},
         {name = 'consecutiveViolationsToTrigger', type = 'int', default = 1},
-        {name = 'sensorSize', type = 'float', default = 0.01},
+        {name = 'size', type = 'float', default = 0.01},
         {name = 'forceThreshold', type = 'float', default = 5.0},
         {name = 'torqueThreshold', type = 'float', default = 5.0},
     }, objInit.p)
@@ -238,7 +243,7 @@ function objInit.forceSensor(methodName)
     intParams[2] = objInit.extractValueOrDefault('filterSampleSize')
     intParams[3] = objInit.extractValueOrDefault('consecutiveViolationsToTrigger')
     local floatParams = table.rep(0., 5)
-    floatParams[1] = objInit.extractValueOrDefault('sensorSize')
+    floatParams[1] = objInit.extractValueOrDefault('size')
     floatParams[2] = objInit.extractValueOrDefault('forceThreshold')
     floatParams[3] = objInit.extractValueOrDefault('torqueThreshold')
     local retVal = sim.Object(sim.createForceSensor(options, intParams, floatParams))
@@ -255,7 +260,7 @@ function objInit.joint(methodName)
         {name = 'interval', type = 'table', item_type = 'float', size = 2, nullable = true},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'screwLead', type = 'float', nullable = true},
-        {name = 'dynCtrlMode', type = 'int', nullable = true},
+        {name = 'dynamics.ctrlMode', type = 'int', nullable = true},
     }, objInit.p)
     local jointType = objInit.extractValueOrDefault('joint.type')
     local jointMode = objInit.extractValueOrDefault('mode')
@@ -285,7 +290,7 @@ function objInit.joint(methodName)
     if screwLead then
         retVal.screwLead = screwLead
     end
-    local dynCtrlMode = objInit.extractValueOrDefault('dynCtrlMode')
+    local dynCtrlMode = objInit.extractValueOrDefault('dynamics.ctrlMode')
     if dynCtrlMode then
         retVal.dynamics.ctrlMode = dynCtrlMode
     end
@@ -349,7 +354,7 @@ end]]
 
     local retVal = objInit.init(methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
     retVal.name = 'Path'
-    local script = objInit.init(methodName, {type = 'script', scriptType = sim.scripttype_customization, code = code})
+    local script = objInit.init(methodName, {type = 'script', ['detachedScript.type'] = 'customization', code = code})
     script:setParent(retVal)
     retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
     retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
@@ -363,17 +368,24 @@ end
 
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'type', type = 'int', default = sim.scripttype_simulation},
+        {name = 'detachedScript.type', type = 'string', default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
-    local scriptType = objInit.extractValueOrDefault('type')
+    local scriptType = objInit.extractValueOrDefault('detachedScript.type')
+    local t
+    if scriptType == 'simulation' then
+        t = sim.scripttype_simulation
+    else if scriptType == 'customization' then
+        t = sim.scripttype_customization
+    end
+    assert(t, 'invalid detached script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
     local lang = objInit.extractValueOrDefault('language')
-    local retVal = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
+    local retVal = sim.Object(sim.createScript(t, scriptText, options, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -395,7 +407,7 @@ end
 
 function objInit.proximitySensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'type', type = 'int', default = sim.proximitysensor_cone},
+        {name = 'proximitySensor.type', type = 'string', default = 'cone'},
         {name = 'explicitHandling', type = 'bool', default = false},
         {name = 'showVolume', type = 'bool', default = true},
         {name = 'frontFaceDetection', type = 'bool', default = true},
@@ -414,7 +426,20 @@ function objInit.proximitySensor(methodName)
         {name = 'volume_ySize', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
         {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
-    local sensorType = objInit.extractValueOrDefault('type')
+    local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
+    local t
+    if scriptType == 'cone' then
+        t = sim.proximitysensor_cone
+    else if scriptType == 'pyramid' then
+        t = sim.scripttype_pyramid
+    else if scriptType == 'cylinder' then
+        t = sim.scripttype_cylinder
+    else if scriptType == 'disc' then
+        t = sim.scripttype_disc
+    else if scriptType == 'ray' then
+        t = sim.scripttype_ray
+    end
+    assert(t, 'invalid proximity sensor type.')
     local options = 0
         + v(1, objInit.extractValueOrDefault('explicitHandling'))
         + v(2, false) -- deprecated, set to 0
@@ -458,7 +483,7 @@ function objInit.proximitySensor(methodName)
         floatParams[12] = 0.0
     end
     floatParams[13] = objInit.extractValueOrDefault('pointSize')
-    local retVal = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
+    local retVal = sim.Object(sim.createProximitySensor(t, 16, options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -470,7 +495,7 @@ function objInit.visionSensor(methodName)
         {name = 'useExtImage', type = 'bool', default = false},
         {name = 'resolution', type = 'table', item_type = 'int', size = 2, default = {256, 256}},
         {name = 'clippingPlanes', type = 'table', item_type = 'float', size = 2, default = {0.01, 10.0}},
-        {name = 'sensorSize', type = 'float', default = 0.01},
+        {name = 'size', type = 'float', default = 0.01},
         {name = 'viewAngle', type = 'float', nullable = true},
         {name = 'viewSize', type = 'float', nullable = true},
         {name = 'backgroundColor', type = 'color', nullable = true},
@@ -506,7 +531,7 @@ function objInit.visionSensor(methodName)
     else
         floatParams[3] = viewSize
     end
-    floatParams[4] = objInit.extractValueOrDefault('sensorSize')
+    floatParams[4] = objInit.extractValueOrDefault('size')
     if bgCol then
         bgCol = bgCol:data()
         floatParams[7] = bgCol[1]
