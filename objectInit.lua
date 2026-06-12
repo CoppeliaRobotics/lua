@@ -354,7 +354,7 @@ end]]
 
     local retVal = objInit.init(methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
     retVal.name = 'Path'
-    local script = objInit.init(methodName, {type = 'script', ['detachedScript.type'] = 'customization', code = code})
+    local script = objInit.init(methodName, {type = 'script', ['script.type'] = 'customization', code = code})
     script:setParent(retVal)
     retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
     retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
@@ -368,16 +368,16 @@ end
 
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'detachedScript.type', type = 'string', default = 'simulation'},
+        {name = 'script.type', type = 'string', default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
-    local scriptType = objInit.extractValueOrDefault('detachedScript.type')
+    local scriptType = objInit.extractValueOrDefault('script.type')
     local t
     if scriptType == 'simulation' then
         t = sim.scripttype_simulation
-    else if scriptType == 'customization' then
+    elseif scriptType == 'customization' then
         t = sim.scripttype_customization
     end
     assert(t, 'invalid detached script type.')
@@ -428,15 +428,15 @@ function objInit.proximitySensor(methodName)
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
     local t
-    if scriptType == 'cone' then
+    if sensorType == 'cone' then
         t = sim.proximitysensor_cone
-    else if scriptType == 'pyramid' then
+    elseif sensorType == 'pyramid' then
         t = sim.scripttype_pyramid
-    else if scriptType == 'cylinder' then
+    elseif sensorType == 'cylinder' then
         t = sim.scripttype_cylinder
-    else if scriptType == 'disc' then
+    elseif sensorType == 'disc' then
         t = sim.scripttype_disc
-    else if scriptType == 'ray' then
+    elseif sensorType == 'ray' then
         t = sim.scripttype_ray
     end
     assert(t, 'invalid proximity sensor type.')
