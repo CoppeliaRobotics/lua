@@ -95,17 +95,19 @@ end
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'detachedScript.type', type = 'string', default = 'addon'},
-        {name = 'code', type = 'string', default = "local sim = require 'sim-2' function sysCall_init() print('Hello from sysCall_init') end"},
+        {name = 'code', type = 'string', default = [[local sim = require 'sim-2'
+function sysCall_init()
+    print('Hello from sysCall_init')
+end]]},
         {name = 'language', type = 'string', default = 'lua'},
     }, objInit.p)
     local tp = objInit.extractValueOrDefault('detachedScript.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    local t = sim.Enum('SimDetachedScriptType')[tp]
-    if t then
-        t = t.intValue
-    end
-    assert(t and t == sim.scripttype_addon, 'invalid detached script type.')
+    local t = sim.Enum('SimScriptType')[tp]
+    assert(t, 'invalid detached script type.')
+    t = t.intValue
+    assert(t == sim.scripttype_addon, 'invalid detached script type.')
     local retVal = sim.Object(sim.createDetachedScript(t, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
@@ -376,11 +378,10 @@ function objInit.script(methodName)
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('script.type')
-    local t = sim.Enum('SimDetachedScriptType')[scriptType]
-    if t then
-        t = t.intValue
-    end
-    assert(t and (t == sim.scripttype_simulation or t == sim.scripttype_customization), 'invalid script type.')
+    local t = sim.Enum('SimScriptType')[scriptType]
+    assert(t, 'invalid script type.')
+    t = t.intValue
+    assert(t == sim.scripttype_simulation or t == sim.scripttype_customization, 'invalid script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
