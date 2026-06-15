@@ -110,11 +110,7 @@ function Object:__eq(o)
 end
 
 function Object:__dump(maxDepth)
-    local tbl = {}
-    for k, v in pairs(self.__properties) do
-        tbl[k] = dump(v, maxDepth - 1)
-    end
-    return tbl
+    return self.__properties:__dump(maxDepth)
 end
 
 function Object:__isobject()
