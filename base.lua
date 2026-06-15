@@ -312,30 +312,19 @@ function _S.tableToString(tt, opts)
         end
         table.insert(sb, '}')
     else
+        local sort = opts.sort ~= false
+        local sortOrder = opts.sortOrder or {'type', 'key'}
+        local entries = table.items(tt, {sort = sort, sortOrder = sortOrder})
         table.insert(sb, '{' .. (opts.indent and '\n' or ''))
-        -- Print the map content ordered according to type, then key:
-        local usedKeys = {}
-        for _, t in ipairs {
-            'boolean', 'number', 'string', 'function', 'userdata', 'thread', 'table', 'any',
-        } do
-            local keys = {}
-            for key, val in pairs(tt) do
-                if type(val) == t or (t == 'any' and not usedKeys[key]) then
-                    table.insert(keys, key)
-                    usedKeys[key] = true
-                end
+        for _, entry in ipairs(entries) do
+            local key, val = table.unpack(entry)
+            if opts.indent then
+                table.insert(sb, string.rep(opts.indentString, opts.indent))
             end
-            table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
-            for _, key in ipairs(keys) do
-                local val = tt[key]
-                if opts.indent then
-                    table.insert(sb, string.rep(opts.indentString, opts.indent))
-                end
-                table.insert(sb, _S.tableKeyToString(key))
-                table.insert(sb, ' = ')
-                table.insert(sb, _S.anyToString(val, opts))
-                table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
-            end
+            table.insert(sb, _S.tableKeyToString(key))
+            table.insert(sb, ' = ')
+            table.insert(sb, _S.anyToString(val, opts))
+            table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
         end
         if opts.indent then table.insert(sb, string.rep(opts.indentString, opts.indent - 1)) end
         table.insert(sb, '}')

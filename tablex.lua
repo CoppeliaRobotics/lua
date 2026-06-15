@@ -391,15 +391,60 @@ function table.update(t, ...)
     return t
 end
 
+local typeOrdering = {
+    ['boolean'] = 1,
+    ['number'] = 2,
+    ['string'] = 3,
+    ['function'] = 4,
+    ['userdata'] = 5,
+    ['thread'] = 6,
+    ['table'] = 7,
+    ['any'] = 8,
+}
+
+local function compareTableEntry(e1, e2, order)
+    if not order or #order == 0 then return false end
+    local k1, v1, k2, v2 = e1[1], e1[2], e2[1], e2[2]
+    for _, criterion in ipairs(order) do
+        if criterion == 'key' then
+            -- alphabetical comparison of keys (converted to strings)
+            local key1 = tostring(k1)
+            local key2 = tostring(k2)
+            if key1 < key2 then
+                return true
+            elseif key1 > key2 then
+                return false
+            end
+            -- keys equal -> continue to next criterion
+        elseif criterion == 'type' then
+            -- alphabetical comparison of the value's Lua type
+            local o1 = typeOrdering[type(v1)] or typeOrdering.any
+            local o2 = typeOrdering[type(v2)] or typeOrdering.any
+            if o1 < o2 then
+                return true
+            elseif o1 > o2 then
+                return false
+            end
+            -- types equal -> continue to next criterion
+        else
+            error('invalid sorting criterion: ' .. criterion)
+        end
+    end
+    return false
+end
+
 function table.items(tbl, opts)
     opts = opts or {}
-    opts.sort = opts.sort ~= false
+    local sort = opts.sort ~= false
+    local sortOrder = opts.sortOrder or {}
     local ret = {}
     for k, v in pairs(tbl) do
         table.insert(ret, {k, v})
     end
     if opts.sort then
-        table.sort(ret, function(a, b) return a[1] < b[1] end)
+        table.sort(ret, function(a, b)
+            return compareTableEntry(a, b, sortOrder)
+        end)
     end
     return ret
 end
