@@ -101,11 +101,11 @@ function objInit.detachedScript(methodName)
     local tp = objInit.extractValueOrDefault('detachedScript.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    local t
-    if tp == 'addon' then
-        t = sim.scripttype_addon
+    local t = sim.Enum('SimDetachedScriptType')[tp]
+    if t then
+        t = t.intValue
     end
-    assert(t, 'invalid detached script type.')
+    assert(t and t == sim.scripttype_addon, 'invalid detached script type.')
     local retVal = sim.Object(sim.createDetachedScript(t, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
@@ -153,7 +153,7 @@ end
 function objInit.marker(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'itemType', type = 'int', default = sim.markertype_spheres},
+        {name = 'marker.type', type = 'string', default = 'spheres'}, -- sim.markertype_spheres},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
@@ -162,7 +162,12 @@ function objInit.marker(methodName)
         {name = 'duplicateTolerance', type = 'float', default = 0.0},
         {name = 'itemCnt', type = 'int', default = 0},
     }, objInit.p)
-    local itemType = objInit.extractValueOrDefault('itemType')
+    local itemType = objInit.extractValueOrDefault('marker.type')
+    local t = sim.Enum('SimMarkerType')[itemType]
+    if t then
+        t = t.intValue
+    end
+    assert(t, 'invalid marker type.')
     local options = 0
     if objInit.extractValueOrDefault('cyclic') then
         options = options | sim.markeropts_cyclic
@@ -178,13 +183,14 @@ function objInit.marker(methodName)
     local duplicateTol = objInit.extractValueOrDefault('duplicateTolerance')
     local cnt = objInit.extractValueOrDefault('itemCnt')
     local vertices, indices, normals
-    if itemType == sim.markertype_custom then
+    if t == sim.markertype_custom then
         local mesh = objInit.extractValueOrDefault('mesh')
         if type(mesh) ~= 'table' then
             mesh = {}
         end
         if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:cols() == 3 then
             mesh.vertices = mesh.vertices:data()
+            printf(#mesh.vertices)
         end
         if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
             mesh.vertices = nil
@@ -203,7 +209,7 @@ function objInit.marker(methodName)
         normals = mesh.normals
     end
     objInit.p.mesh = nil
-    local retVal = sim.Object(sim.createMarker(itemType, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
+    local retVal = sim.Object(sim.createMarker(t, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -268,13 +274,9 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('length'),
         objInit.extractValueOrDefault('diameter'),
     }
-    local t
-    if jointType == 'revolute' then
-        t = sim.joint_revolute
-    elseif jointType == 'prismatic' then
-        t = sim.joint_prismatic
-    elseif jointType == 'spherical' then
-        t = sim.joint_spherical
+    local t = sim.Enum('SimJointType')[jointType]
+    if t then
+        t = t.intValue
     end
     assert(t, 'invalid joint type.')
     local retVal = sim.Object(sim.createJoint(t, jointMode, 0, jointSize))
@@ -374,13 +376,11 @@ function objInit.script(methodName)
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('script.type')
-    local t
-    if scriptType == 'simulation' then
-        t = sim.scripttype_simulation
-    elseif scriptType == 'customization' then
-        t = sim.scripttype_customization
+    local t = sim.Enum('SimDetachedScriptType')[scriptType]
+    if t then
+        t = t.intValue
     end
-    assert(t, 'invalid detached script type.')
+    assert(t and (t == sim.scripttype_simulation or t == sim.scripttype_customization), 'invalid script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
@@ -427,17 +427,9 @@ function objInit.proximitySensor(methodName)
         {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
-    local t
-    if sensorType == 'cone' then
-        t = sim.proximitysensor_cone
-    elseif sensorType == 'pyramid' then
-        t = sim.scripttype_pyramid
-    elseif sensorType == 'cylinder' then
-        t = sim.scripttype_cylinder
-    elseif sensorType == 'disc' then
-        t = sim.scripttype_disc
-    elseif sensorType == 'ray' then
-        t = sim.scripttype_ray
+    local t = sim.Enum('SimProximitySensorType')[sensorType]
+    if t then
+        t = t.intValue
     end
     assert(t, 'invalid proximity sensor type.')
     local options = 0
