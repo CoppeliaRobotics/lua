@@ -166,10 +166,8 @@ function objInit.marker(methodName)
     }, objInit.p)
     local itemType = objInit.extractValueOrDefault('marker.type')
     local t = sim.Enum('SimMarkerType')[itemType]
-    if t then
-        t = t.intValue
-    end
     assert(t, 'invalid marker type.')
+    t = t.intValue
     local options = 0
     if objInit.extractValueOrDefault('cyclic') then
         options = options | sim.markeropts_cyclic
@@ -277,10 +275,8 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('diameter'),
     }
     local t = sim.Enum('SimJointType')[jointType]
-    if t then
-        t = t.intValue
-    end
     assert(t, 'invalid joint type.')
+    t = t.intValue
     local retVal = sim.Object(sim.createJoint(t, jointMode, 0, jointSize))
     local interval = objInit.extractValueOrDefault('interval')
     if interval then
@@ -429,10 +425,8 @@ function objInit.proximitySensor(methodName)
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
     local t = sim.Enum('SimProximitySensorType')[sensorType]
-    if t then
-        t = t.intValue
-    end
     assert(t, 'invalid proximity sensor type.')
+    t = t.intValue
     local options = 0
         + v(1, objInit.extractValueOrDefault('explicitHandling'))
         + v(2, false) -- deprecated, set to 0
