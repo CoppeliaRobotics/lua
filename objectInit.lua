@@ -104,7 +104,7 @@ end]]},
     local tp = objInit.extractValueOrDefault('detachedScript.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    local t = sim.Enum('SimScriptType')[tp]
+    local t = sim.Enum('scriptType')[tp]
     assert(t, 'invalid detached script type.')
     t = t.intValue
     assert(t == sim.scripttype_addon, 'invalid detached script type.')
@@ -165,7 +165,7 @@ function objInit.marker(methodName)
         {name = 'itemCnt', type = 'int', default = 0},
     }, objInit.p)
     local itemType = objInit.extractValueOrDefault('marker.type')
-    local t = sim.Enum('SimMarkerType')[itemType]
+    local t = sim.Enum('markerType')[itemType]
     assert(t, 'invalid marker type.')
     t = t.intValue
     local options = 0
@@ -274,7 +274,7 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('length'),
         objInit.extractValueOrDefault('diameter'),
     }
-    local t = sim.Enum('SimJointType')[jointType]
+    local t = sim.Enum('jointType')[jointType]
     assert(t, 'invalid joint type.')
     t = t.intValue
     local retVal = sim.Object(sim.createJoint(t, jointMode, 0, jointSize))
@@ -374,7 +374,7 @@ function objInit.script(methodName)
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('script.type')
-    local t = sim.Enum('SimScriptType')[scriptType]
+    local t = sim.Enum('scriptType')[scriptType]
     assert(t, 'invalid script type.')
     t = t.intValue
     assert(t == sim.scripttype_simulation or t == sim.scripttype_customization, 'invalid script type.')
@@ -424,7 +424,7 @@ function objInit.proximitySensor(methodName)
         {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
-    local t = sim.Enum('SimProximitySensorType')[sensorType]
+    local t = sim.Enum('proximitySensorType')[sensorType]
     assert(t, 'invalid proximity sensor type.')
     t = t.intValue
     local options = 0
