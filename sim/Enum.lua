@@ -16,9 +16,8 @@ local Enum = class 'sim.Enum'
 
 function Enum.static:createEnums(sim)
     for _, n in ipairs(sim.app.enumTypes) do
-        local n1 = n:sub(4):gsub("^.", string.lower)
-        assert(sim[n1] == nil, 'cannot write enum to sim.' .. n1 .. ': name clash')
-        sim[n1] = sim.Enum(n, sim.app:getEnumInfo(n))
+        assert(sim[n] == nil, 'cannot write enum to sim.' .. n .. ': name clash')
+        sim[n] = sim.Enum(n, sim.app:getEnumInfo(n))
     end
 end
 
