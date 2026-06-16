@@ -262,7 +262,7 @@ function Color:rgb888()
     return (self:r8() << 16) | (self:g8() << 8) | self:b8()
 end
 
-function Color:rgba888()
+function Color:rgba8888()
     return (self:r8() << 24) | (self:g8() << 16) | (self:b8() << 8) | self:a8()
 end
 
@@ -270,7 +270,7 @@ function Color:rgb888table()
     return {self:r8(), self:g8(), self:b8()}
 end
 
-function Color:rgba888table()
+function Color:rgba8888table()
     return {self:r8(), self:g8(), self:b8(), self:a8()}
 end
 
