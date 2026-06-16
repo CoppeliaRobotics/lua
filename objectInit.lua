@@ -94,21 +94,18 @@ end
 
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'detachedScript.type', type = 'string', default = 'addon'},
+        {name = 'detachedScript.type', enum = 'scriptType', default = 'addon'},
         {name = 'code', type = 'string', default = [[local sim = require 'sim-2'
 function sysCall_init()
     print('Hello from sysCall_init')
 end]]},
         {name = 'language', type = 'string', default = 'lua'},
     }, objInit.p)
-    local tp = objInit.extractValueOrDefault('detachedScript.type')
+    local scriptType = objInit.extractValueOrDefault('detachedScript.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    local t = sim.scriptType[tp]
-    assert(t, 'invalid detached script type.')
-    t = t.intValue
-    assert(t == sim.scripttype_addon, 'invalid detached script type.')
-    local retVal = sim.Object(sim.createDetachedScript(t, code, lang))
+    assert(scriptType == sim.scripttype_addon, 'invalid detached script type.')
+    local retVal = sim.Object(sim.createDetachedScript(scriptType, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -155,7 +152,7 @@ end
 function objInit.marker(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'marker.type', type = 'string', default = 'spheres'}, -- sim.markertype_spheres},
+        {name = 'marker.type', enum = 'markerType', default = 'spheres'},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
@@ -165,9 +162,6 @@ function objInit.marker(methodName)
         {name = 'itemCnt', type = 'int', default = 0},
     }, objInit.p)
     local itemType = objInit.extractValueOrDefault('marker.type')
-    local t = sim.markerType[itemType]
-    assert(t, 'invalid marker type.')
-    t = t.intValue
     local options = 0
     if objInit.extractValueOrDefault('cyclic') then
         options = options | sim.markeropts_cyclic
@@ -209,7 +203,7 @@ function objInit.marker(methodName)
         normals = mesh.normals
     end
     objInit.p.mesh = nil
-    local retVal = sim.Object(sim.createMarker(t, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
+    local retVal = sim.Object(sim.createMarker(itemType, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -259,7 +253,7 @@ end
 
 function objInit.joint(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'joint.type', type = 'string', default = 'revolute'},
+        {name = 'joint.type', enum = 'jointType', default = 'revolute'},
         {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
         {name = 'length', type = 'float', default = 0.15},
         {name = 'diameter', type = 'float', default = 0.02},
@@ -274,10 +268,7 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('length'),
         objInit.extractValueOrDefault('diameter'),
     }
-    local t = sim.jointType[jointType]
-    assert(t, 'invalid joint type.')
-    t = t.intValue
-    local retVal = sim.Object(sim.createJoint(t, jointMode, 0, jointSize))
+    local retVal = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
     local interval = objInit.extractValueOrDefault('interval')
     if interval then
         retVal.interval = interval
@@ -368,21 +359,18 @@ end
 
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'script.type', type = 'string', default = 'simulation'},
+        {name = 'script.type', enum = 'scriptType', default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('script.type')
-    local t = sim.scriptType[scriptType]
-    assert(t, 'invalid script type.')
-    t = t.intValue
-    assert(t == sim.scripttype_simulation or t == sim.scripttype_customization, 'invalid script type.')
+    assert(scriptType == sim.scripttype_simulation or scriptType == sim.scripttype_customization, 'invalid script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
     local lang = objInit.extractValueOrDefault('language')
-    local retVal = sim.Object(sim.createScript(t, scriptText, options, lang))
+    local retVal = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -404,7 +392,7 @@ end
 
 function objInit.proximitySensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'proximitySensor.type', type = 'string', default = 'cone'},
+        {name = 'proximitySensor.type', enum = 'proximitySensorType', default = 'cone'},
         {name = 'explicitHandling', type = 'bool', default = false},
         {name = 'showVolume', type = 'bool', default = true},
         {name = 'frontFaceDetection', type = 'bool', default = true},
@@ -424,9 +412,6 @@ function objInit.proximitySensor(methodName)
         {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
-    local t = sim.proximitySensorType[sensorType]
-    assert(t, 'invalid proximity sensor type.')
-    t = t.intValue
     local options = 0
         + v(1, objInit.extractValueOrDefault('explicitHandling'))
         + v(2, false) -- deprecated, set to 0
@@ -470,7 +455,7 @@ function objInit.proximitySensor(methodName)
         floatParams[12] = 0.0
     end
     floatParams[13] = objInit.extractValueOrDefault('pointSize')
-    local retVal = sim.Object(sim.createProximitySensor(t, 16, options, intParams, floatParams))
+    local retVal = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
 end
