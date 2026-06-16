@@ -14,13 +14,21 @@ end
 
 local Enum = class 'sim.Enum'
 
+function Enum.static:createEnums(sim)
+    -- called from sim's initialization, can't use sim.Object yet!
+    local enumTypes = sim.callMethod(sim.handle_app, 'getStringArrayProperty', 'enumTypes')
+    for _, n in ipairs(enumTypes) do
+        local n1 = n:sub(4):gsub("^.", string.lower)
+        assert(sim[n1] == nil, 'cannot write enum to sim.' .. n1 .. ': name clash')
+        local enumInfo = sim.callMethod(sim.handle_app, 'getEnumInfo', n)
+        sim[n1] = sim.Enum(n, enumInfo)
+    end
+end
+
 function Enum:initialize(name, items)
     assert(type(name) == 'string', 'enum name must be a string')
-    if items == nil then
-        local sim = require 'sim-2'
-        items = sim.app:getEnumInfo(name)
-    end
     assert(type(items) == 'table', 'invalid items type')
+    assert(next(items), 'empty items')
     self.__name = name
     self.__items = {}
     self.__invItems = {}

@@ -744,6 +744,7 @@ sim.Enum = require 'sim.Enum'
 sim.app = sim.Object.app
 sim.scene = sim.Object.scene
 sim.self = sim.Object.self
+sim.Enum:createEnums(sim)
 
 sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 
