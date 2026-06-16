@@ -739,12 +739,14 @@ sim.Object = require 'sim.Object'
 sim.Object.callMethod = sim.callMethod -- replace [C]callMethod with [Lua]sim.callMethod
 sim.ObjectArray = require 'sim.ObjectArray'
 sim.PropertyGroup = require 'sim.PropertyGroup'
-sim.Enum = require 'sim.Enum'
 
 sim.app = sim.Object.app
 sim.scene = sim.Object.scene
 sim.self = sim.Object.self
-sim.Enum:createEnums(sim)
+for _, n in ipairs(sim.app.enumTypes) do
+    assert(sim[n] == nil, 'cannot write enum sim.' .. n .. ': name clash')
+    sim[n] = sim.app:getEnumInfo(n)
+end
 
 sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 
