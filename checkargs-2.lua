@@ -35,6 +35,7 @@ function checkargs.infertype(t)
     if t.type then return t.type end
     if t.class ~= nil then return 'object' end
     if t.union ~= nil then return 'union' end
+    if t.enum ~= nil then return 'enum' end
 end
 
 local simEigen = require 'simEigen'
@@ -187,6 +188,21 @@ function checkargs.checkarg.color(v, t)
         error('must be a color', 0)
     end
     return Color:tocolor(v)
+end
+
+function checkargs.checkarg.enum(v, t)
+    assert(type(t.enum) == 'string', 'missing "enum" key or not a string')
+    assert(sim[t.enum], 'enum "' .. t.enum .. '" does not exist')
+    local enum = sim[t.enum]
+    if type(v) == 'string' then
+        assert(enum[v] ~= nil, 'invalid value "' .. v .. '". must be one of: ' .. table.join(table.keys(enum)))
+        v = enum[v]
+    elseif math.type(v) == 'integer' then
+        assert(table.invert(enum[v]), 'invalid value: ' .. v)
+    else
+        error('invalid type')
+    end
+    return v
 end
 
 function checkargs.getdefault(t)
