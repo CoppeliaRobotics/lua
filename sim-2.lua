@@ -730,6 +730,20 @@ function locals.setTableProperty(target, methodName, ...)
     return callMethod(target, 'setTableProperty', tagName, buf, options)
 end
 
+function locals.getEnumProperty(target, methodName, ...)
+    return callMethod(target, 'getIntProperty', ...)
+end
+
+function locals.setEnumProperty(target, methodName, ...)
+    if type(v) == 'string' then
+        return callMethod(target, 'setStringProperty', ...)
+    elseif math.type(v) == 'integer' then
+        return callMethod(target, 'setIntProperty', ...)
+    else
+        error('invalid value type')
+    end
+end
+
 function __2.sysCallEx_init()
     -- Hook function, registered further down
     if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
