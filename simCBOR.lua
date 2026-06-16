@@ -110,7 +110,9 @@ registerTag(simCBOR.Tags.Array.F64LE)(function(values)
 end)
 
 registerTag(simCBOR.Tags.Sim.Color)(function(value)
-    return Color(value)
+    local rgba = sim.unpackUInt8Table(value)
+    for i = 1, 4 do rgba[i] = rgba[i] / 255. end
+    return Color(rgba)
 end)
 
 registerTag(simCBOR.Tags.Sim.Quaternion)(function(value)
