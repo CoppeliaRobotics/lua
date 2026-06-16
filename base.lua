@@ -312,9 +312,10 @@ function _S.tableToString(tt, opts)
         end
         table.insert(sb, '}')
     else
-        local sort = opts.sort ~= false
-        local sortOrder = opts.sortOrder or {'type', 'key'}
-        local entries = table.items(tt, {sort = sort, sortOrder = sortOrder})
+        local sort = opts.sort
+        if sort == nil then sort = true end
+        if sort == true then sort = {'type', 'key'} end
+        local entries = table.items(tt, {sort = sort})
         table.insert(sb, '{' .. (opts.indent and '\n' or ''))
         for _, entry in ipairs(entries) do
             local key, val = table.unpack(entry)
@@ -536,7 +537,7 @@ function _evalExec(inputStr)
 
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
-        if m then theStr = string.format('print(_S.tableToString(dump(%s, %d), {sortOrder = {"key"}}))', theStr:sub(1, -#m-1), #m) end
+        if m then theStr = string.format('print(_S.tableToString(dump(%s, %d), {sort = {"key"}}))', theStr:sub(1, -#m-1), #m) end
 
         local func, err = load('return ' .. theStr)
         local rr = true

@@ -435,15 +435,16 @@ end
 
 function table.items(tbl, opts)
     opts = opts or {}
-    local sort = opts.sort ~= false
-    local sortOrder = opts.sortOrder or {}
+    local sort = opts.sort
+    if sort == nil then sort = false end
+    if sort == true then sort = {'key'} end
     local ret = {}
     for k, v in pairs(tbl) do
         table.insert(ret, {k, v})
     end
-    if opts.sort then
+    if sort then
         table.sort(ret, function(a, b)
-            return compareTableEntry(a, b, sortOrder)
+            return compareTableEntry(a, b, sort)
         end)
     end
     return ret
