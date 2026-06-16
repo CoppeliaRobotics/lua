@@ -735,9 +735,14 @@ function locals.getEnumProperty(target, methodName, ...)
 end
 
 function locals.setEnumProperty(target, methodName, ...)
-    if type(v) == 'string' then
+    local pname, pvalue, options = checkargs.checkargsEx({nilGetsDefault=true}, {
+        {type = 'string'},
+        {union = {{type = 'string'}, {type = 'int'}}},
+        {type = 'table', default = {}},
+    }, ...)
+    if type(pvalue) == 'string' then
         return callMethod(target, 'setStringProperty', ...)
-    elseif math.type(v) == 'integer' then
+    elseif math.type(pvalue) == 'integer' then
         return callMethod(target, 'setIntProperty', ...)
     else
         error('invalid value type')
