@@ -15,13 +15,10 @@ end
 local Enum = class 'sim.Enum'
 
 function Enum.static:createEnums(sim)
-    -- called from sim's initialization, can't use sim.Object yet!
-    local enumTypes = sim.callMethod(sim.handle_app, 'getStringArrayProperty', 'enumTypes')
-    for _, n in ipairs(enumTypes) do
+    for _, n in ipairs(sim.app.enumTypes) do
         local n1 = n:sub(4):gsub("^.", string.lower)
         assert(sim[n1] == nil, 'cannot write enum to sim.' .. n1 .. ': name clash')
-        local enumInfo = sim.callMethod(sim.handle_app, 'getEnumInfo', n)
-        sim[n1] = sim.Enum(n, enumInfo)
+        sim[n1] = sim.Enum(n, sim.app:getEnumInfo(n))
     end
 end
 
