@@ -5,181 +5,185 @@ local Color = class 'Color'
 local ColorNames = {}
 
 for k, v in pairs{
-    IndianRed = 0xCD5C5C,
-    LightCoral = 0xF08080,
-    Salmon = 0xFA8072,
-    DarkSalmon = 0xE9967A,
-    LightSalmon = 0xFFA07A,
-    Crimson = 0xDC143C,
-    Red = 0xFF0000,
-    FireBrick = 0xB22222,
-    DarkRed = 0x8B0000,
-    Pink = 0xFFC0CB,
-    LightPink = 0xFFB6C1,
-    HotPink = 0xFF69B4,
-    DeepPink = 0xFF1493,
-    MediumVioletRed = 0xC71585,
-    PaleVioletRed = 0xDB7093,
-    LightSalmon = 0xFFA07A,
-    Coral = 0xFF7F50,
-    Tomato = 0xFF6347,
-    OrangeRed = 0xFF4500,
-    DarkOrange = 0xFF8C00,
-    Orange = 0xFFA500,
-    Gold = 0xFFD700,
-    Yellow = 0xFFFF00,
-    LightYellow = 0xFFFFE0,
-    LemonChiffon = 0xFFFACD,
-    LightGoldenrodYellow = 0xFAFAD2,
-    PapayaWhip = 0xFFEFD5,
-    Moccasin = 0xFFE4B5,
-    PeachPuff = 0xFFDAB9,
-    PaleGoldenrod = 0xEEE8AA,
-    Khaki = 0xF0E68C,
-    DarkKhaki = 0xBDB76B,
-    Lavender = 0xE6E6FA,
-    Thistle = 0xD8BFD8,
-    Plum = 0xDDA0DD,
-    Violet = 0xEE82EE,
-    Orchid = 0xDA70D6,
-    Fuchsia = 0xFF00FF,
-    Magenta = 0xFF00FF,
-    MediumOrchid = 0xBA55D3,
-    MediumPurple = 0x9370DB,
-    RebeccaPurple = 0x663399,
-    BlueViolet = 0x8A2BE2,
-    DarkViolet = 0x9400D3,
-    DarkOrchid = 0x9932CC,
-    DarkMagenta = 0x8B008B,
-    Purple = 0x800080,
-    Indigo = 0x4B0082,
-    SlateBlue = 0x6A5ACD,
-    DarkSlateBlue = 0x483D8B,
-    MediumSlateBlue = 0x7B68EE,
-    GreenYellow = 0xADFF2F,
-    Chartreuse = 0x7FFF00,
-    LawnGreen = 0x7CFC00,
-    Lime = 0x00FF00,
-    LimeGreen = 0x32CD32,
-    PaleGreen = 0x98FB98,
-    LightGreen = 0x90EE90,
-    MediumSpringGreen = 0x00FA9A,
-    SpringGreen = 0x00FF7F,
-    MediumSeaGreen = 0x3CB371,
-    SeaGreen = 0x2E8B57,
-    ForestGreen = 0x228B22,
-    Green = 0x008000,
-    DarkGreen = 0x006400,
-    YellowGreen = 0x9ACD32,
-    OliveDrab = 0x6B8E23,
-    Olive = 0x808000,
-    DarkOliveGreen = 0x556B2F,
-    MediumAquamarine = 0x66CDAA,
-    DarkSeaGreen = 0x8FBC8B,
-    LightSeaGreen = 0x20B2AA,
-    DarkCyan = 0x008B8B,
-    Teal = 0x008080,
-    Aqua = 0x00FFFF,
-    Cyan = 0x00FFFF,
-    LightCyan = 0xE0FFFF,
-    PaleTurquoise = 0xAFEEEE,
-    Aquamarine = 0x7FFFD4,
-    Turquoise = 0x40E0D0,
-    MediumTurquoise = 0x48D1CC,
-    DarkTurquoise = 0x00CED1,
-    CadetBlue = 0x5F9EA0,
-    SteelBlue = 0x4682B4,
-    LightSteelBlue = 0xB0C4DE,
-    PowderBlue = 0xB0E0E6,
-    LightBlue = 0xADD8E6,
-    SkyBlue = 0x87CEEB,
-    LightSkyBlue = 0x87CEFA,
-    DeepSkyBlue = 0x00BFFF,
-    DodgerBlue = 0x1E90FF,
-    CornflowerBlue = 0x6495ED,
-    MediumSlateBlue = 0x7B68EE,
-    RoyalBlue = 0x4169E1,
-    Blue = 0x0000FF,
-    MediumBlue = 0x0000CD,
-    DarkBlue = 0x00008B,
-    Navy = 0x000080,
-    MidnightBlue = 0x191970,
-    Cornsilk = 0xFFF8DC,
-    BlanchedAlmond = 0xFFEBCD,
-    Bisque = 0xFFE4C4,
-    NavajoWhite = 0xFFDEAD,
-    Wheat = 0xF5DEB3,
-    BurlyWood = 0xDEB887,
-    Tan = 0xD2B48C,
-    RosyBrown = 0xBC8F8F,
-    SandyBrown = 0xF4A460,
-    Goldenrod = 0xDAA520,
-    DarkGoldenrod = 0xB8860B,
-    Peru = 0xCD853F,
-    Chocolate = 0xD2691E,
-    SaddleBrown = 0x8B4513,
-    Sienna = 0xA0522D,
-    Brown = 0xA52A2A,
-    Maroon = 0x800000,
-    White = 0xFFFFFF,
-    Snow = 0xFFFAFA,
-    HoneyDew = 0xF0FFF0,
-    MintCream = 0xF5FFFA,
-    Azure = 0xF0FFFF,
-    AliceBlue = 0xF0F8FF,
-    GhostWhite = 0xF8F8FF,
-    WhiteSmoke = 0xF5F5F5,
-    SeaShell = 0xFFF5EE,
-    Beige = 0xF5F5DC,
-    OldLace = 0xFDF5E6,
-    FloralWhite = 0xFFFAF0,
-    Ivory = 0xFFFFF0,
-    AntiqueWhite = 0xFAEBD7,
-    Linen = 0xFAF0E6,
-    LavenderBlush = 0xFFF0F5,
-    MistyRose = 0xFFE4E1,
-    Gainsboro = 0xDCDCDC,
-    LightGray = 0xD3D3D3,
-    Silver = 0xC0C0C0,
-    DarkGray = 0xA9A9A9,
-    Gray = 0x808080,
-    DimGray = 0x696969,
-    LightSlateGray = 0x778899,
-    SlateGray = 0x708090,
-    DarkSlateGray = 0x2F4F4F,
-    Black = 0x000000,
+    ['#CD5C5C'] = 'IndianRed',
+    ['#F08080'] = 'LightCoral',
+    ['#FA8072'] = 'Salmon',
+    ['#E9967A'] = 'DarkSalmon',
+    ['#FFA07A'] = 'LightSalmon',
+    ['#DC143C'] = 'Crimson',
+    ['#FF0000'] = 'Red',
+    ['#B22222'] = 'FireBrick',
+    ['#8B0000'] = 'DarkRed',
+    ['#FFC0CB'] = 'Pink',
+    ['#FFB6C1'] = 'LightPink',
+    ['#FF69B4'] = 'HotPink',
+    ['#FF1493'] = 'DeepPink',
+    ['#C71585'] = 'MediumVioletRed',
+    ['#DB7093'] = 'PaleVioletRed',
+    ['#FFA07A'] = 'LightSalmon',
+    ['#FF7F50'] = 'Coral',
+    ['#FF6347'] = 'Tomato',
+    ['#FF4500'] = 'OrangeRed',
+    ['#FF8C00'] = 'DarkOrange',
+    ['#FFA500'] = 'Orange',
+    ['#FFD700'] = 'Gold',
+    ['#FFFF00'] = 'Yellow',
+    ['#FFFFE0'] = 'LightYellow',
+    ['#FFFACD'] = 'LemonChiffon',
+    ['#FAFAD2'] = 'LightGoldenrodYellow',
+    ['#FFEFD5'] = 'PapayaWhip',
+    ['#FFE4B5'] = 'Moccasin',
+    ['#FFDAB9'] = 'PeachPuff',
+    ['#EEE8AA'] = 'PaleGoldenrod',
+    ['#F0E68C'] = 'Khaki',
+    ['#BDB76B'] = 'DarkKhaki',
+    ['#E6E6FA'] = 'Lavender',
+    ['#D8BFD8'] = 'Thistle',
+    ['#DDA0DD'] = 'Plum',
+    ['#EE82EE'] = 'Violet',
+    ['#DA70D6'] = 'Orchid',
+    ['#FF00FF'] = 'Fuchsia',
+    ['#FF00FF'] = 'Magenta',
+    ['#BA55D3'] = 'MediumOrchid',
+    ['#9370DB'] = 'MediumPurple',
+    ['#663399'] = 'RebeccaPurple',
+    ['#8A2BE2'] = 'BlueViolet',
+    ['#9400D3'] = 'DarkViolet',
+    ['#9932CC'] = 'DarkOrchid',
+    ['#8B008B'] = 'DarkMagenta',
+    ['#800080'] = 'Purple',
+    ['#4B0082'] = 'Indigo',
+    ['#6A5ACD'] = 'SlateBlue',
+    ['#483D8B'] = 'DarkSlateBlue',
+    ['#7B68EE'] = 'MediumSlateBlue',
+    ['#ADFF2F'] = 'GreenYellow',
+    ['#7FFF00'] = 'Chartreuse',
+    ['#7CFC00'] = 'LawnGreen',
+    ['#00FF00'] = 'Lime',
+    ['#32CD32'] = 'LimeGreen',
+    ['#98FB98'] = 'PaleGreen',
+    ['#90EE90'] = 'LightGreen',
+    ['#00FA9A'] = 'MediumSpringGreen',
+    ['#00FF7F'] = 'SpringGreen',
+    ['#3CB371'] = 'MediumSeaGreen',
+    ['#2E8B57'] = 'SeaGreen',
+    ['#228B22'] = 'ForestGreen',
+    ['#008000'] = 'Green',
+    ['#006400'] = 'DarkGreen',
+    ['#9ACD32'] = 'YellowGreen',
+    ['#6B8E23'] = 'OliveDrab',
+    ['#808000'] = 'Olive',
+    ['#556B2F'] = 'DarkOliveGreen',
+    ['#66CDAA'] = 'MediumAquamarine',
+    ['#8FBC8B'] = 'DarkSeaGreen',
+    ['#20B2AA'] = 'LightSeaGreen',
+    ['#008B8B'] = 'DarkCyan',
+    ['#008080'] = 'Teal',
+    ['#00FFFF'] = 'Aqua',
+    ['#00FFFF'] = 'Cyan',
+    ['#E0FFFF'] = 'LightCyan',
+    ['#AFEEEE'] = 'PaleTurquoise',
+    ['#7FFFD4'] = 'Aquamarine',
+    ['#40E0D0'] = 'Turquoise',
+    ['#48D1CC'] = 'MediumTurquoise',
+    ['#00CED1'] = 'DarkTurquoise',
+    ['#5F9EA0'] = 'CadetBlue',
+    ['#4682B4'] = 'SteelBlue',
+    ['#B0C4DE'] = 'LightSteelBlue',
+    ['#B0E0E6'] = 'PowderBlue',
+    ['#ADD8E6'] = 'LightBlue',
+    ['#87CEEB'] = 'SkyBlue',
+    ['#87CEFA'] = 'LightSkyBlue',
+    ['#00BFFF'] = 'DeepSkyBlue',
+    ['#1E90FF'] = 'DodgerBlue',
+    ['#6495ED'] = 'CornflowerBlue',
+    ['#7B68EE'] = 'MediumSlateBlue',
+    ['#4169E1'] = 'RoyalBlue',
+    ['#0000FF'] = 'Blue',
+    ['#0000CD'] = 'MediumBlue',
+    ['#00008B'] = 'DarkBlue',
+    ['#000080'] = 'Navy',
+    ['#191970'] = 'MidnightBlue',
+    ['#FFF8DC'] = 'Cornsilk',
+    ['#FFEBCD'] = 'BlanchedAlmond',
+    ['#FFE4C4'] = 'Bisque',
+    ['#FFDEAD'] = 'NavajoWhite',
+    ['#F5DEB3'] = 'Wheat',
+    ['#DEB887'] = 'BurlyWood',
+    ['#D2B48C'] = 'Tan',
+    ['#BC8F8F'] = 'RosyBrown',
+    ['#F4A460'] = 'SandyBrown',
+    ['#DAA520'] = 'Goldenrod',
+    ['#B8860B'] = 'DarkGoldenrod',
+    ['#CD853F'] = 'Peru',
+    ['#D2691E'] = 'Chocolate',
+    ['#8B4513'] = 'SaddleBrown',
+    ['#A0522D'] = 'Sienna',
+    ['#A52A2A'] = 'Brown',
+    ['#800000'] = 'Maroon',
+    ['#FFFFFF'] = 'White',
+    ['#FFFAFA'] = 'Snow',
+    ['#F0FFF0'] = 'HoneyDew',
+    ['#F5FFFA'] = 'MintCream',
+    ['#F0FFFF'] = 'Azure',
+    ['#F0F8FF'] = 'AliceBlue',
+    ['#F8F8FF'] = 'GhostWhite',
+    ['#F5F5F5'] = 'WhiteSmoke',
+    ['#FFF5EE'] = 'SeaShell',
+    ['#F5F5DC'] = 'Beige',
+    ['#FDF5E6'] = 'OldLace',
+    ['#FFFAF0'] = 'FloralWhite',
+    ['#FFFFF0'] = 'Ivory',
+    ['#FAEBD7'] = 'AntiqueWhite',
+    ['#FAF0E6'] = 'Linen',
+    ['#FFF0F5'] = 'LavenderBlush',
+    ['#FFE4E1'] = 'MistyRose',
+    ['#DCDCDC'] = 'Gainsboro',
+    ['#D3D3D3'] = 'LightGray',
+    ['#C0C0C0'] = 'Silver',
+    ['#A9A9A9'] = 'DarkGray',
+    ['#808080'] = 'Gray',
+    ['#696969'] = 'DimGray',
+    ['#778899'] = 'LightSlateGray',
+    ['#708090'] = 'SlateGray',
+    ['#2F4F4F'] = 'DarkSlateGray',
+    ['#000000'] = 'Black',
 } do
-    ColorNames[k:lower()] = v
+    ColorNames[v:lower()] = k
 end
 
-function Color:initialize(rgb)
-    if type(rgb) == 'string' and ColorNames[rgb:lower()] then
-        rgb = ColorNames[rgb:lower()]
+function Color:initialize(rgba)
+    if type(rgba) == 'string' and ColorNames[rgba:lower()] then
+        rgba = ColorNames[rgba:lower()]
     end
 
-    if type(rgb) == 'string' then
-        assert(rgb:sub(1, 1) == '#', 'invalid format')
-        rgb = rgb:sub(2)
-        if #rgb == 3 then
-            local r, g, b = table.unpack(string.chars(rgb))
-            rgb = r .. r .. g .. g .. b .. b
+    if type(rgba) == 'string' then
+        assert(rgba:sub(1, 1) == '#', 'invalid format')
+        rgba = rgba:sub(2)
+        if #rgba == 3 then
+            rgba = rgba .. 'F'
         end
-        assert(#rgb == 6, 'invalid length')
-        rgb = tonumber('0x' .. rgb)
-    end
-
-    if math.type(rgb) == 'integer' then
-        assert(0 <= rgb and rgb <= 0xFFFFFF, 'invalid value')
-        rgb = {
-            ((rgb & 0xFF0000) >> 16) / 255.,
-            ((rgb &   0xFF00) >>  8) / 255.,
-             (rgb &     0xFF)        / 255.,
+        if #rgba == 4 then
+            local r, g, b, a = table.unpack(string.chars(rgba))
+            rgba = r .. r .. g .. g .. b .. b .. a .. a
+        end
+        if #rgba == 6 then
+            rgba = rgba .. 'FF'
+        end
+        assert(#rgba == 8, 'invalid string format')
+        rgba = tonumber('0x' .. rgba)
+        rgba = {
+            ((rgba & 0xFF000000) >> 24) / 255.,
+            ((rgba & 0x00FF0000) >> 16) / 255.,
+            ((rgba & 0x0000FF00) >>  8) / 255.,
+             (rgba & 0x000000FF)        / 255.,
         }
     end
 
-    assert(type(rgb) == 'table', 'invalid type')
-    assert(#rgb == 3, 'incorrect table size')
-    self.r, self.g, self.b = table.unpack(rgb)
+    assert(type(rgba) == 'table', 'invalid type')
+    if #rgba == 3 then table.insert(rgba, 1.0) end
+    assert(#rgba == 4, 'incorrect table size')
+    self.r, self.g, self.b, self.a = table.unpack(rgba)
 end
 
 function Color:red()
@@ -192,6 +196,10 @@ end
 
 function Color:blue()
     return math.max(0, math.min(1, self.b))
+end
+
+function Color:alpha()
+    return math.max(0, math.min(1, self.a))
 end
 
 function Color:hue()
@@ -246,32 +254,55 @@ function Color:b8()
     return math.min(255, math.floor(self:blue() * 256))
 end
 
+function Color:a8()
+    return math.min(255, math.floor(self:alpha() * 256))
+end
+
 function Color:rgb888()
     return (self:r8() << 16) | (self:g8() << 8) | self:b8()
+end
+
+function Color:rgba888()
+    return (self:r8() << 24) | (self:g8() << 16) | (self:b8() << 8) | self:a8()
 end
 
 function Color:rgb888table()
     return {self:r8(), self:g8(), self:b8()}
 end
 
+function Color:rgba888table()
+    return {self:r8(), self:g8(), self:b8(), self:a8()}
+end
+
 function Color:data()
-    return {self:red(), self:green(), self:blue()}
+    return {self:red(), self:green(), self:blue(), self:alpha()}
 end
 
 function Color:inverted()
-    return Color{1 - self:red(), 1 - self:green(), 1 - self:blue()}
+    return Color{1 - self:red(), 1 - self:green(), 1 - self:blue(), self:alpha()}
 end
 
-function Color:html()
-    return string.format('#%02x%02x%02x', self:r8(), self:g8(), self:b8())
+function Color:html(format)
+    format = format or 'auto'
+    if format == 'auto' then
+        local a8 = self:a8()
+        format = a8 < 255 and 'rgba' or 'rgb'
+    end
+    if format == 'rgba' then
+        return string.format('#%02x%02x%02x%02x', self:r8(), self:g8(), self:b8(), self:a8())
+    elseif format == 'rgb' then
+        return string.format('#%02x%02x%02x', self:r8(), self:g8(), self:b8())
+    else
+        error 'invalid format'
+    end
 end
 
 function Color:__copy()
-    return Color(self:rgb888())
+    return Color(self:data())
 end
 
 function Color:__deepcopy(m)
-    return Color(self:rgb888())
+    return Color(self:data())
 end
 
 function Color:__eq(o)
@@ -303,14 +334,18 @@ function Color:__tocbor(sref, stref)
     local cbor = require 'simCBOR'
     local cbor_c = require 'org.conman.cbor_c'
     return cbor_c.encode(0xC0, cbor.Tags.Sim.Color)
-        .. cbor.encode(self:rgb888())
+        .. cbor.encode(self:data())
 end
 
 function Color.static:rgb(r, g, b)
-    for k, v in pairs{red = r, green = g, blue = b} do
+    return Color:rgba(r, g, b, 1)
+end
+
+function Color.static:rgba(r, g, b, a)
+    for k, v in pairs{red = r, green = g, blue = b, alpha = a} do
         assert(type(v) == 'number' and v >= 0 and v <= 1, k .. ' component must be a number [0..1]')
     end
-    return Color{r, g, b}
+    return Color{r, g, b, a}
 end
 
 function Color.static:hsv(h, s, v)
