@@ -2,7 +2,11 @@ local class = require 'middleclass'
 
 local PropertyGroup = class 'sim.PropertyGroup'
 
-local sim = {propertytype_group = 24, propertytype_method = 240}
+local sim = {
+    propertytype_group = 24,
+    propertytype_enum = 25,
+    propertytype_method = 240,
+}
 
 function PropertyGroup:initialize(object, opts)
     local Object = require 'sim.Object'
@@ -77,24 +81,30 @@ function PropertyGroup:__tostring()
     return s
 end
 
-function PropertyGroup:__pairs()
+function PropertyGroup:__pairs(opts)
+    opts = opts or {}
     local object = self.__object
     local prefix = self.__opts.prefix or ''
     if prefix ~= '' then prefix = prefix .. '.' end
     local props = {}
     local i = 0
     while true do
-        local pname = object:callMethod('getPropertyName', i, {prefix = prefix})
-        if pname == nil then break end
-        pname = string.stripprefix(pname, prefix)
+        local pnameFull = object:callMethod('getPropertyName', i, {prefix = prefix})
+        if pnameFull == nil then break end
+        local pname = string.stripprefix(pnameFull, prefix)
         pname = pname:gsub('%..*', '') -- strip everything after first dot
         if not props[pname] then
-            local ptype, pflags, descr = object:callMethod('getPropertyInfo', prefix .. pname)
+            local ptype, pflags, metaInfo = object:callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
             if ptype == sim.propertytype_group then
                 props[pname] = PropertyGroup(object, {prefix = prefix .. pname})
             elseif readable then
                 props[pname] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
+                if opts.dump and ptype == sim.propertytype_enum then
+                    props[pname] = setmetatable({}, {__tostring = function(self)
+                        return string.format('%d (%s)', object:getIntProperty(pnameFull), object:getStringProperty(pnameFull))
+                    end})
+                end
             end
         end
         i = i + 1
@@ -109,7 +119,7 @@ end
 
 function PropertyGroup:__dump(maxDepth)
     local tbl = {}
-    for k, v in pairs(self) do
+    for k, v in self:__pairs{dump = true} do
         tbl[k] = dump(v, maxDepth - 1)
     end
     return tbl
