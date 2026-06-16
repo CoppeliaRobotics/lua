@@ -536,7 +536,7 @@ function _evalExec(inputStr)
 
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
-        if m then theStr = string.format('dump(%s, %d)', theStr:sub(1, -#m-1), #m) end
+        if m then theStr = string.format('print(_S.tableToString(dump(%s, %d), {sortOrder = {"key"}}))', theStr:sub(1, -#m-1), #m) end
 
         local func, err = load('return ' .. theStr)
         local rr = true
