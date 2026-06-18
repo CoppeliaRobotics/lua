@@ -177,7 +177,7 @@ function objInit.marker(methodName)
     local duplicateTol = objInit.extractValueOrDefault('duplicateTolerance')
     local cnt = objInit.extractValueOrDefault('itemCnt')
     local vertices, indices, normals
-    if t == sim.markertype_custom then
+    if itemType == sim.markertype_custom then
         local mesh = objInit.extractValueOrDefault('mesh')
         if type(mesh) ~= 'table' then
             mesh = {}

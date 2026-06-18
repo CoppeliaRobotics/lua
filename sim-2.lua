@@ -205,7 +205,7 @@ function locals.fastIdleLoop(target, methodName, enable)
     else
         sim.app:setIntProperty('idleFps', defaultIdleFps)
     end
-    sim.app:setBufferProperty('signal.__IDLEFPSSTACKSIZE__', sim.packInt32Table({stage, defaultIdleFps}))
+    sim.app:setBufferProperty('signal.__IDLEFPSSTACKSIZE__', app:packArray({stage, defaultIdleFps}, {type = 'int32'}))
 end
 
 function locals.throttle(target, methodName, func, interval, options)
