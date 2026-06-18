@@ -191,19 +191,12 @@ function checkargs.checkarg.color(v, t)
 end
 
 function checkargs.checkarg.enum(v, t)
-    local enum = t.enum
-    assert(enum, '"enum" key is required')
-    if type(enum) == 'string' then
-        assert(sim[enum], 'enum "' .. enum .. '" does not exist')
-        enum = sim[enum]
-    elseif type(enum) ~= 'table' then
-        error('"enum" key must be a string (enum name) or a table (enum items)')
-    end
+    assert(type(t.enum) == 'table', '"enum" key must be a map of enum items')
     if type(v) == 'string' then
-        assert(enum[v] ~= nil, 'invalid value "' .. v .. '". must be one of: ' .. table.join(table.keys(enum)))
-        v = enum[v]
+        assert(t.enum[v] ~= nil, 'invalid value "' .. v .. '". must be one of: ' .. table.join(table.keys(t.enum)))
+        v = t.enum[v]
     elseif math.type(v) == 'integer' then
-        assert(table.invert(enum)[v], 'invalid value: ' .. v)
+        assert(table.invert(t.enum)[v], 'invalid value: ' .. v)
     else
         error('invalid type')
     end
