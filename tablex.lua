@@ -205,7 +205,7 @@ function table.find(t, item, equalsFunc)
     equalsFunc = equalsFunc or function(x)
         return item == x
     end
-    for i, x in ipairs(t) do if equalsFunc(x) then return i end end
+    for k, v in pairs(t) do if equalsFunc(v) then return k end end
 end
 
 function table.compare(a, b, compareFunc)
