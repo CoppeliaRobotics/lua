@@ -376,8 +376,7 @@ end
 
 function Color.static:tocolor(c)
     if Color:iscolor(c) then return c end
-    if type(c) == 'table' and #c == 3 then return Color(c) end
-    error 'bad data'
+    return Color(c)
 end
 
 function Color.unittest()
