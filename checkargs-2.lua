@@ -198,7 +198,7 @@ function checkargs.checkarg.enum(v, t)
         assert(enum[v] ~= nil, 'invalid value "' .. v .. '". must be one of: ' .. table.join(table.keys(enum)))
         v = enum[v]
     elseif math.type(v) == 'integer' then
-        assert(table.invert(enum[v]), 'invalid value: ' .. v)
+        assert(table.invert(enum)[v], 'invalid value: ' .. v)
     else
         error('invalid type')
     end
