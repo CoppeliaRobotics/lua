@@ -94,7 +94,7 @@ end
 
 function objInit.detachedScript(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'detachedScript.type', enum = 'scriptType', default = 'addon'},
+        {name = 'detachedScript.type', enum = sim.scriptType, default = 'addon'},
         {name = 'code', type = 'string', default = [[local sim = require 'sim-2'
 function sysCall_init()
     print('Hello from sysCall_init')
@@ -152,7 +152,7 @@ end
 function objInit.marker(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'marker.type', enum = 'markerType', default = 'spheres'},
+        {name = 'marker.type', enum = sim.markerType, default = 'spheres'},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
@@ -253,7 +253,7 @@ end
 
 function objInit.joint(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'joint.type', enum = 'jointType', default = 'revolute'},
+        {name = 'joint.type', enum = sim.jointType, default = 'revolute'},
         {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
         {name = 'length', type = 'float', default = 0.15},
         {name = 'diameter', type = 'float', default = 0.02},
@@ -359,7 +359,7 @@ end
 
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'script.type', enum = 'scriptType', default = 'simulation'},
+        {name = 'script.type', enum = sim.scriptType, default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
@@ -392,7 +392,7 @@ end
 
 function objInit.proximitySensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'proximitySensor.type', enum = 'proximitySensorType', default = 'cone'},
+        {name = 'proximitySensor.type', enum = sim.proximitySensorType, default = 'cone'},
         {name = 'explicitHandling', type = 'bool', default = false},
         {name = 'showVolume', type = 'bool', default = true},
         {name = 'frontFaceDetection', type = 'bool', default = true},
