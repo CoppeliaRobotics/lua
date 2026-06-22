@@ -48,6 +48,7 @@ function locals.getMethodProperty(target, methodName, mName)
 end
 
 function locals.remove(target, methodName, delayed)
+    target = sim.Object:toobject(target)
     if target:getPropertyInfo('cleanup', {noError = true}) == sim.propertytype_method then
         target:getMethodProperty('cleanup')(target)
     end
