@@ -278,6 +278,7 @@ function checkargs.checkargsEx(opts, types, ...)
             if ok then
                 arg[i] = err
             else
+                if arg[i] == nil then err = 'cannot be nil' end
                 error(fn .. string.format('argument %d %s', i + (argOffset or 0), err or string.format('must be a %s', t.type)), errorLevel)
             end
         end
