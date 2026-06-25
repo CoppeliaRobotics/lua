@@ -653,6 +653,4 @@ function Path:_removeMarkers(m)
     end
 end
 
-return {
-    Path = Path,
-}
+return Path
