@@ -70,7 +70,7 @@ function MoveToConfig:initialize(params)
             end
             params.pos = Vector(#params.joints, 0.0)
             for i = 1, #params.joints do
-                params.pos[i] = params.joints[i].jointPosition
+                params.pos[i] = params.joints[i].joint.position
             end
         end
     end
@@ -205,7 +205,7 @@ function MoveToConfig:step()
                     if data.joints[i].dynamicallyEnabled then
                         data.joints[i].targetPosition = data.pos[i]
                     else
-                        data.joints[i].jointPosition = data.pos[i]
+                        data.joints[i].joint.position = data.pos[i]
                     end
                 end
             end
@@ -345,7 +345,7 @@ function MoveToPose:initialize(params)
         end
         for k, v in pairs(params.ik.simToIkMap) do
             k = sim.Object:toobject(k)
-            if k.objectType == 'joint' then
+            if k.type == 'joint' then
                 if hadJoints then
                     local found = false
                     for i = 1, #params.ik.joints do
@@ -633,7 +633,7 @@ def cbb(req):
 
     -- Reuse or create the Python script
     if not self._script then
-        self._script = sim.app:createObject({objectType = 'detachedScript', type = sim.scripttype_addon, code = code, language = 'python'})
+        self._script = sim.app:createObject({type = 'detachedScript', ['detachedScript.type'] = 'addon', code = code, language = 'python'})
         self._script.addOnMenuPath = 'Motion:TimeOptimalTrajectory'
         self._script:init()
     end
