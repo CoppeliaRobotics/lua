@@ -631,7 +631,7 @@ function _getCompletion(input, pos)
     return ret
 end
 
-function _getCalltip(input, pos)
+function _getCalltip(input, pos, scriptHandle)
     local sim = require 'sim'
     local parserx = require 'parserx'
     local cc = parserx.getCallContexts(input, pos)
@@ -640,10 +640,19 @@ function _getCalltip(input, pos)
         if sym:match':' then
             local apidoc = require 'sim.apidoc'
             local obj, met = table.unpack(sym:split':')
-            local methodsInfo = apidoc.getMethod(obj, met)
-            methodsInfo = {methodsInfo}
-            for _, methodInfo in pairs(apidoc.findMethod(met)) do
-                table.insert(methodsInfo, methodInfo)
+            local objType
+            if scriptHandle then
+                local func, err = load('return (' .. obj .. ').type')
+                if func then pcall(function() objType = func() end) end
+            end
+            local methodsInfo = {}
+            if objType then
+                methodsInfo[1] = apidoc.getMethod(objType, met)
+            else
+                methodsInfo[1] = apidoc.getMethod(obj, met)
+                for _, methodInfo in pairs(apidoc.findMethod(met)) do
+                    table.insert(methodsInfo, methodInfo)
+                end
             end
             methodsInfo = map(function(info) return info:getCallTip{types = true, format = 'html'} end, methodsInfo)
             return table.join(methodsInfo, '<br/>')
