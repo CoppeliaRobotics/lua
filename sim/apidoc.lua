@@ -117,32 +117,47 @@ function MethodInfo:__tostring()
     return self.class.name .. '(name = ' .. self.name .. ')'
 end
 
-function MethodInfo:getCallTip(types)
+function MethodInfo:getCallTip(opts)
+    opts = opts or {}
     local x = ''
     for i, p in ipairs(self.returns) do
         if i > 1 then x = x .. ', ' end
-        if types then
-            x = x .. '<span style="color: #00c;">' .. p.type .. '</span> '
+        if opts.types then
+            if opts.format == 'html' then x = x .. '<span style="color: #00c;">' end
+            x = x .. p.type
+            if opts.format == 'html' then x = x .. '</span>' end
+            x = x .. ' '
         end
-        x = x .. '<span style="color: #999;">' .. p.name .. '</span>'
+        if opts.format == 'html' then x = x .. '<span style="color: #999;">' end
+        x = x .. p.name
+        if opts.format == 'html' then x = x .. '</span>' end
     end
-    x = x .. '</span>'
     if #self.returns > 0 then
-        x = x .. '<span style="color: #ccc;"> = </span>'
+        if opts.format == 'html' then x = x .. '<span style="color: #ccc;">' end
+        x = x .. ' = '
+        if opts.format == 'html' then x = x .. '</span>' end
     end
-    x = x .. '<b>' .. self.name .. '</b>('
-    x = x .. '<span style="color: #ddd;">'
+    if opts.format == 'html' then x = x .. '<b>' end
+    x = x .. self.classInfo.className .. ':' .. self.name
+    if opts.format == 'html' then x = x .. '</b>' end
+    x = x .. '('
     for i, p in ipairs(self.params) do
         if i > 1 then x = x .. ', ' end
-        if types then
-            x = x .. '<span style="color: #00c;">' .. p.type .. '</span> '
+        if opts.types then
+            if opts.format == 'html' then x = x .. '<span style="color: #00c;">' end
+            x = x .. p.type
+            if opts.format == 'html' then x = x .. '</span>' end
+            x = x .. ' '
         end
-        x = x .. '<span style="color: #999;">' .. p.name .. '</span>'
+        if opts.format == 'html' then x = x .. '<span style="color: #999;">' end
+        x = x .. p.name
+        if opts.format == 'html' then x = x .. '</span>' end
         if p.default then
-            x = x .. '<span style="color: #ccc;">=' .. p.default .. '</span>'
+            if opts.format == 'html' then x = x .. '<span style="color: #ccc;">' end
+            x = x .. '=' .. p.default
+            if opts.format == 'html' then x = x .. '</span>' end
         end
     end
-    x = x .. '</span>'
     x = x .. ')'
     return x
 end
