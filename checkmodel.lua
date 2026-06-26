@@ -7,9 +7,9 @@ local function getInfo(handle)
     local info = {
         dynamic = sim.getIntProperty(handle, 'dynamicFlag') > 0,
         alias = sim.getStringProperty(handle, 'alias'),
-        objType = sim.getStringProperty(handle, 'objectType'),
+        objType = sim.getStringProperty(handle, 'type'),
     }
-    local objType = sim.getStringProperty(handle, 'objectType')
+    local objType = sim.getStringProperty(handle, 'type')
     if objType == 'shape' then
         info.is = {}
         if sim.getBoolProperty(handle, 'primitive') then
@@ -46,7 +46,7 @@ function checkmodel.buildObjectsGraph(parentHandle, g, visited)
     for index = 0, 10000 do
         local handle = sim.getObjectChild(parentHandle, index)
         if handle == -1 then break end
-        local objType = sim.getStringProperty(handle, 'objectType')
+        local objType = sim.getStringProperty(handle, 'type')
         if objType == 'shape' then
             edge(parentHandle, handle)
         elseif objType == 'joint' then
@@ -203,7 +203,7 @@ function checkmodel.check(modelHandle)
     end
 
     for _, id in ipairs(g:getAllVertices()) do
-        if sim.getStringProperty(id, 'objectType') == 'shape' then
+        if sim.getStringProperty(id, 'type') == 'shape' then
             local bb = sim.getVector3Property(id, 'bbHSize')
             local com = map(math.abs, sim.getVector3Property(id, 'centerOfMass'))
             if com[1] > bb[1] or com[2] > bb[2] or com[3] > bb[3] then
