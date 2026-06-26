@@ -637,7 +637,19 @@ function _getCalltip(input, pos)
     local cc = parserx.getCallContexts(input, pos)
     if cc and #cc > 0 then
         local sym = cc[#cc][1]
-        return sim.getApiInfo(-1, sym)
+        if sym:match':' then
+            local apidoc = require 'sim.apidoc'
+            local obj, met = table.unpack(sym:split':')
+            local methodsInfo = apidoc.getMethod(obj, met)
+            methodsInfo = {methodsInfo}
+            for _, methodInfo in pairs(apidoc.findMethod(met)) do
+                table.insert(methodsInfo, methodInfo)
+            end
+            methodsInfo = map(function(info) return info:getCallTip{types = true, format = 'html'} end, methodsInfo)
+            return table.join(methodsInfo, '<br/>')
+        else
+            return sim.getApiInfo(-1, sym)
+        end
     else
         return ''
     end
