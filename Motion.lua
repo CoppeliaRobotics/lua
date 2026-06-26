@@ -48,11 +48,15 @@ end
 -- ═════════════════════════════════════════════
 local MoveToConfig = class('MoveToConfig', Motion)
 
-function MoveToConfig:initialize(params)
+function MoveToConfig:initialize(pparams)
     Motion.initialize(self)
 
-    params = params or {}
-    params = copy.deepcopy(params)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
 
     if params.pos then
         if not Vector:isvector(params.pos) then
@@ -236,11 +240,15 @@ end
 -- ═════════════════════════════════════════════
 local MoveToPose = class('MoveToPose', Motion)
 
-function MoveToPose:initialize(params)
+function MoveToPose:initialize(pparams)
     Motion.initialize(self)
 
-    params = params or {}
-    params = copy.deepcopy(params)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
     --params.relObject = params.relObject or -1
 
     if params.pose then
@@ -671,11 +679,15 @@ end
 -- ═════════════════════════════════════════════
 local RuckigPosition = class('RuckigPosition', Motion)
 
-function RuckigPosition:initialize(params)
+function RuckigPosition:initialize(pparams)
     Motion.initialize(self)
 
-    params = params or {}
-    params = copy.deepcopy(params)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
 
     checkargs.checkfields({funcName = "RuckigPosition"}, {
         {name = 'pos', type = 'matrix', rows = -1, cols = 1},
@@ -745,11 +757,15 @@ end
 -- ═════════════════════════════════════════════
 local RuckigVelocity = class('RuckigVelocity', Motion)
 
-function RuckigVelocity:initialize(params)
+function RuckigVelocity:initialize(pparams)
     Motion.initialize(self)
 
-    params = params or {}
-    params = copy.deepcopy(params)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
 
     checkargs.checkfields({funcName = "RuckigVelocity"}, {
         {name = 'velocity', type = 'matrix', rows = -1, cols = 1},

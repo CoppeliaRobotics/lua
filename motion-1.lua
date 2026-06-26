@@ -1,11 +1,16 @@
 local motion = {}
 local checkargs = require('checkargs')
+local copy = require('copy')
 
 function motion.extend(sim)
 
-function sim.moveToConfig_init(params)
-    params = params or {}
-    params = table.deepcopy(params) -- do not modify input values
+function sim.moveToConfig_init(pparams)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
     if params.pos then
         if type(params.pos) ~= 'table' or #params.pos == 0 then
             error("invalid 'pos' field.")
@@ -263,9 +268,13 @@ function sim.moveToConfig(...)
     end
 end
 
-function sim.moveToPose_init(params)
-    params = params or {}
-    params = table.deepcopy(params) -- do not modify input values
+function sim.moveToPose_init(pparams)
+    pparams = pparams or {}
+    local auxData = pparams.auxData
+    pparams.auxData = nil
+    local params = copy.deepcopy(pparams) -- do not modify input values
+    pparams.auxData = auxData
+    params.auxData = auxData
     params.relObject = params.relObject or -1
     if params.pose then
         if type(params.pose) ~= 'table' or #params.pose ~= 7 then
