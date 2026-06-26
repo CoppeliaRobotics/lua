@@ -2,6 +2,8 @@ local class = require 'middleclass'
 local sim = require 'sim-2'
 local xml = require 'pl.xml'
 
+local apidoc = {}
+
 local function getChildrenXML(root)
     local children_xml = {}
     for i = 1, #root do
@@ -193,12 +195,14 @@ function ClassInfo:getSuperClass()
     return apidoc.getClass(self.superClassName)
 end
 
-function ClassInfo:getMethod(methodName)
+function ClassInfo:getMethod(methodName, opts)
+    opts = opts or {}
     local c = self
     while c do
         if c.methods[methodName] then
             return c.methods[methodName]
         end
+        if opts.searchSuperclasses == false then return end
         c = c:getSuperClass()
     end
 end
@@ -254,8 +258,6 @@ local function xmltree(filename)
     objxmlfile:close()
     return xml.parse(objxml)
 end
-
-local apidoc = {}
 
 apidoc.classes = {}
 for _, node in ipairs(xmltree 'objects.xml') do
