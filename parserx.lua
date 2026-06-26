@@ -63,6 +63,13 @@ function parserx.getCompoundId(ast)
             return id1 .. '.' .. id2
         end
     end
+    if ast.tag == 'Invoke' then
+        local receiver = parserx.getCompoundId(ast[1])
+        local method = parserx.getCompoundId(ast[2])
+        if receiver and method then
+            return receiver .. ':' .. method
+        end
+    end
 end
 
 function parserx.findCallsAtPosition(ast, pos, results)
@@ -70,10 +77,17 @@ function parserx.findCallsAtPosition(ast, pos, results)
     if type(ast) ~= 'table' then return end
     local fn = ''
     if ast.tag == 'Call' then fn = parserx.getCompoundId(ast[1]) or '' end
+    if ast.tag == 'Invoke' then fn = parserx.getCompoundId(ast) or '' end
     for i, t in ipairs(ast) do
         if type(t) == 'table' then
-            if type(t) == 'table' and ast.tag == 'Call' and t.pos <= pos and pos <= t.end_pos then
-                local argindex = i - 1
+            if (ast.tag == 'Call' or ast.tag == 'Invoke') and t.pos <= pos and pos <= t.end_pos then
+                local argindex
+                if ast.tag == 'Call' then
+                    argindex = i - 1
+                elseif ast.tag == 'Invoke' then
+                    -- Invoke has obj and method before args
+                    argindex = i - 2
+                end
                 table.insert(results, {fn, argindex})
                 if verbose then print('> ', fn, argindex) end
             end
@@ -82,7 +96,7 @@ function parserx.findCallsAtPosition(ast, pos, results)
     end
     -- if no call context are being returned for <fn>...
     -- but anyway we are in a call, so return <fn,1>:
-    if ast.tag == 'Call' and ast.pos <= pos and pos <= ast.end_pos then
+    if (ast.tag == 'Call' or ast.tag == 'Invoke') and ast.pos <= pos and pos <= ast.end_pos then
         local havefn = false
         for i = 1, #results do
             if results[i][1] == fn then
@@ -157,6 +171,9 @@ function parserx.unittest()
     test('sim.getObjectAlias(sim.getObject(', {{'sim.getObjectAlias', 1}, {'sim.getObject', 1}})
     test('sim.getObjectAlias(sim.getObject()', {{'sim.getObjectAlias', 1}})
     test('sim.getObjectAlias(sim.getObject(),', {{'sim.getObjectAlias', 2}})
+    test('obj:method(x', {{'obj:method', 1}})
+    test('obj:method(x, y', {{'obj:method', 2}})
+    test('obj:method(foo:bar(', {{'obj:method', 1}, {'foo:bar', 1}})
 
     print('Number of tests passed: ' .. numPassed .. '/' .. numTotal)
 end
