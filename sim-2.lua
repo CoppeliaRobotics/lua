@@ -540,10 +540,11 @@ function locals.getProperties(target, methodName, opts)
     opts = opts or {}
     local propertiesValues = {}
     for pname, pinfos in pairs(sim.callMethod(target, 'getPropertiesInfos', opts)) do
-        if pinfos.flags.readable and pinfos.type ~= sim.propertytype_group then
-            if not opts.skipLarge or not pinfos.flags.large then
-                propertiesValues[pname] = sim.callMethod(target, 'getProperty', pname)
-            end
+        local skip = not pinfos.flags.readable
+            or (opts.skipLarge and pinfos.flags.large)
+            or (opts.skipGroups ~= false and pinfos.type == sim.propertytype_group)
+        if not skip then
+            propertiesValues[pname] = sim.callMethod(target, 'getProperty', pname)
         end
     end
     return propertiesValues
