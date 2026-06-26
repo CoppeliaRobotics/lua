@@ -647,24 +647,6 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
     return sim.callMethod(target, setterMethod, pname, pvalue, opts)
 end
 
-function locals.convertPropertyValue(target, methodName, value, fromType, toType)
-    if fromType == toType then
-        return value
-    elseif fromType == sim.propertytype_string then
-        local fn, err = loadstring(
-            'local sim = require "sim-2"; ' ..
-            'local simEigen = require "simEigen"; ' ..
-            'return ' .. value
-        )
-        if not fn then return nil, err end
-        local ok, val = pcall(fn)
-        if ok then return val, nil else return nil, val end
-    elseif toType == sim.propertytype_string then
-        return _S.anyToString(value)
-    end
-    error 'unsupported type of conversion'
-end
-
 function locals.getPropertyInfos(target, methodName, pname, opts)
     opts = opts or {}
     local infos = {}
@@ -1055,10 +1037,6 @@ function sim.setProperty(t, ...)
     return locals.setProperty(t, '', ...)
 end
 
-function sim.convertPropertyValue(...)
-    return locals.convertPropertyValue(-1, '', ...)
-end
-
 function sim.getPropertyInfos(t, ...)
     return locals.getPropertyInfos(t, '', ...)
 end
@@ -1100,7 +1078,6 @@ sim.closePath = nil
 sim.closeScene = nil
 sim.combineRgbImages = nil
 sim.computeMassAndInertia = nil
-sim.convertPropertyValue = nil
 sim.copyPasteObjects = nil
 sim.createCollectionEx = nil
 sim.createDetachedScript = nil
