@@ -304,7 +304,16 @@ end
 
 function apidoc.getMethod(className, methodName)
     local c = apidoc.getClass(className)
-    if c then return c:getMethod(methodName) end
+    if c then return c:getMethod(methodName, {searchSuperclasses = false}) end
+end
+
+function apidoc.findMethod(methodName)
+    local ret = {}
+    for _, classInfo in pairs(apidoc.classes) do
+        local m = classInfo:getMethod(methodName, {searchSuperclasses = false})
+        if m then table.insert(ret, m) end
+    end
+    return ret
 end
 
 function apidoc.getClassHierarchyGraph()
