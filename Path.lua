@@ -3,6 +3,7 @@ local class = require('middleclass')
 local copy = require('copy')
 local checkargs = require('checkargs-2')
 local simEigen = require('simEigen')
+local simIK = require('simIK-1')
 
 local Path = class('Path')
 
@@ -22,7 +23,7 @@ function Path:initialize(ctrlPoints, opt)
         {name = 'lineColor', type = 'color', default = Color('#ff8800')},
         {name = 'tubeRadius', type = 'float', default = 0.0025},
         {name = 'duplicateThreshold', type = 'float', default = 0.02},
-        {name = 'linearityTolerance', type = 'float', default = 0.05}, -- in percent
+        {name = 'linearityTolerance', type = 'float', default = 0.001}, -- in percent
     }, opt.ctrlPoints)
     checkargs.checkfields({funcName = 'Path:new'}, {
         {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'none'},
@@ -37,6 +38,7 @@ function Path:initialize(ctrlPoints, opt)
         {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
     }, opt.pathPoints)
     checkargs.checkfields({funcName = 'Path:new'}, {
+        {name = 'onlyCtrlPoints', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
         {name = 'closedRepeatsStart', type = 'bool', default = false},
     }, opt)
@@ -96,27 +98,71 @@ function Path:initialize(ctrlPoints, opt)
     data.opt.ctrlPoints = nil
     data.opt.pathPoints = nil
 
-    if (#data.opt.types > 1) and (data.opt.types[1] == 0) and (data.opt.types[2] == 0) then
-        if (#data.opt.types > 2) and (data.opt.types[3] == 0) then
-            if (#data.opt.types > 6) and (data.opt.types[4] == 2) and (data.opt.types[5] == 2) and (data.opt.types[6] == 2) and (data.opt.types[7] == 2) then
-                data.opt.displDim = 7
+    if data.opt.joints then
+        data.opt.displDim = -1
+    else
+        if (#data.opt.types > 1) and (data.opt.types[1] == 0) and (data.opt.types[2] == 0) then
+            if (#data.opt.types > 2) and (data.opt.types[3] == 0) then
+                if (#data.opt.types > 6) and (data.opt.types[4] == 2) and (data.opt.types[5] == 2) and (data.opt.types[6] == 2) and (data.opt.types[7] == 2) then
+                    data.opt.displDim = 7
+                else
+                    data.opt.displDim = 3
+                end
             else
-                data.opt.displDim = 3
+                data.opt.displDim = 2
             end
         else
-            data.opt.displDim = 2
+            data.opt.displDim = 0
         end
-    else
-        data.opt.displDim = 0
     end
-
-    self:setCtrlPoints(ctrlPoints, true)
+    
+    self:setPoints(ctrlPoints, true)
 end
 
-function Path:setCtrlPoints(ctrlPoints, noArgCheck)
+function Path.fromJoints(endEffector, base, opt)
+    endEffector, base = checkargs.checkargsEx({funcName = 'fromJoints'}, {
+        {type = 'handle'},
+        {type = 'handle', nullable = true},
+    }, endEffector, base)
+    opt = opt or {}
+    local jointList = {}
+    local obj = endEffector.parent
+    while obj ~= base do
+        if obj.type == 'joint' then
+            jointList[#jointList + 1] = obj
+        end
+        obj = obj.parent
+    end
+    opt.joints = table.reversed(jointList)
+    opt.tip = endEffector
+    opt.base = base
+    opt.types = {}
+    for i = 1, #opt.joints do
+        if opt.joints[i].joint.type == 'prismatic' then
+            opt.types[i] = 'scal'
+        elseif opt.joints[i].joint.type == 'revolute' then
+            opt.types[i] = 'cycl'
+        else
+            opt.types[i] = 'quat'
+        end
+    end
+    return Path(nil, opt)
+end
+
+function Path.fromObject(obj, opt)
+    obj = checkargs.checkargsEx({funcName = 'fromObject'}, {
+        {type = 'handle'},
+    }, obj)
+    opt = opt or {}
+    opt.object = obj
+    opt.types = {'scal', 'scal', 'scal', 'quat', 'quat', 'quat', 'quat'}
+    return Path(nil, opt)
+end
+
+function Path:setPoints(ctrlPoints, noArgCheck)
     local data = self._data
     if not noArgCheck then
-        ctrlPoints = checkargs.checkargsEx({funcName = 'setCtrlPoints'}, {
+        ctrlPoints = checkargs.checkargsEx({funcName = 'setPoints'}, {
             {type = 'matrix', cols = #data.opt.types, nullable = true},
         }, ctrlPoints)
     end
@@ -135,27 +181,120 @@ function Path:setCtrlPoints(ctrlPoints, noArgCheck)
     data.ctrlPoints.points = ctrlPoints
     if data.ctrlPoints.points:rows() > 1 then
         data.ctrlPoints.arcLengths, data.ctrlPoints.distancesAlongPath, data.ctrlPoints.pathLength = self:_computeArcLengths(data.ctrlPoints.points)
-        data.pathPoints.points = self:_resample(data.ctrlPoints.points)
-        data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength = self:_computeArcLengths(data.pathPoints.points)
+        if not data.opt.onlyCtrlPoints then
+            data.pathPoints.points = self:_resample(data.ctrlPoints.points)
+            data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength = self:_computeArcLengths(data.pathPoints.points)
+        end
     else 
         if ctrlPoints:rows() == 1 then
-            data.pathPoints.points = copy.copy(ctrlPoints)
             data.ctrlPoints.distancesAlongPath = simEigen.Vector{0.0}
-            data.pathPoints.distancesAlongPath = simEigen.Vector{0.0}
+            if not data.opt.onlyCtrlPoints then
+                data.pathPoints.points = copy.copy(ctrlPoints)
+                data.pathPoints.distancesAlongPath = simEigen.Vector{0.0}
+            end
         else
-            data.pathPoints.points = simEigen.Matrix(0, #data.opt.types, {})
             data.ctrlPoints.distancesAlongPath = simEigen.Vector{}
-            data.pathPoints.distancesAlongPath = simEigen.Vector{}
+            if not data.opt.onlyCtrlPoints then
+                data.pathPoints.points = simEigen.Matrix(0, #data.opt.types, {})
+                data.pathPoints.distancesAlongPath = simEigen.Vector{}
+            end
         end
         data.ctrlPoints.arcLengths = simEigen.Vector{}
         data.ctrlPoints.pathLength = 0.0
-        data.pathPoints.arcLengths = simEigen.Vector{}
-        data.pathPoints.pathLength = 0.0
+        if not data.opt.onlyCtrlPoints then
+            data.pathPoints.arcLengths = simEigen.Vector{}
+            data.pathPoints.pathLength = 0.0
+        end
     end
     self:_updateMarkers()
 end
 
+function Path:appendPoints(ctrlPoints, update)
+    if update == nil then
+        update = true
+    end
+    local data = self._data
+    ctrlPoints = checkargs.checkargsEx({funcName = 'setPoints'}, {
+        {type = 'matrix', cols = #data.opt.types},
+    }, ctrlPoints)
+    assert(ctrlPoints:rows() > 0, 'invalid points')
+
+    data.ctrlPoints.toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
+    data.ctrlPoints.toUpdate = data.ctrlPoints.toUpdate:vertcat(ctrlPoints)
+    if update then
+        self:update()
+    end
+end
+
+function Path:appendFromJoints(update)
+    if update == nil then
+        update = true
+    end
+    local data = self._data
+    assert(data.opt.joints, 'no joints specified')
+    ctrlPoints = {}
+    for i = 1, #data.opt.joints do
+        if data.opt.types[i] ~= 2 then
+            ctrlPoints[#ctrlPoints + 1] = data.opt.joints[i].joint.position
+        else
+            table.add(ctrlPoints, data.opt.joints[i].joint.quaternion:data())
+        end
+    end
+    local toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
+    local newPt = simEigen.Matrix(1, #data.opt.types, ctrlPoints)
+    if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
+        if toUpdate:rows() > 0 then
+            if self:dist(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+                newPt = nil
+            end
+        end
+    end
+    if newPt then
+        data.ctrlPoints.toUpdate = toUpdate:vertcat(newPt)
+        if update then
+            self:update()
+        end
+    end
+end
+
+function Path:appendFromObject(update)
+    if update == nil then
+        update = true
+    end
+    local data = self._data
+    assert(data.opt.object, 'no object specified')
+    local toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
+    local newPt = simEigen.Matrix(1, 7, data.opt.object.worldPose:data())
+    if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
+        if toUpdate:rows() > 0 then
+            if self:dist(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+                newPt = nil
+            end
+        end
+    end
+    if newPt then
+        data.ctrlPoints.toUpdate = toUpdate:vertcat(newPt)
+        if update then
+            self:update()
+        end
+    end
+end
+
+function Path:update()
+    local data = self._data
+    if data.ctrlPoints.toUpdate then
+        self:setPoints(data.ctrlPoints.toUpdate)
+        data.ctrlPoints.toUpdate = nil
+    end
+end
+
+function Path:clearPoints()
+    self.data.ctrlPoints.toUpdate = nil
+    self:setPoints(nil, true)
+end
+
 function Path:data()
+    self:update()
     local retVal = self._data
     if retVal.opt.closed and retVal.opt.closedRepeatsStart then
         retVal = copy.deepcopy(self._data)
@@ -383,13 +522,15 @@ function Path:dist(conf1, conf2, noArgCheck)
         local dd = 0
         if data.opt.types[j] == 0 then
             dd = (confB[j] - confA[j]) * data.opt.metric[j] -- e.g. joint with limits
-        end
-        if data.opt.types[j] == 1 then
+        elseif data.opt.types[j] == 1 then
+            local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
+            dd = math.abs(dx) * data.opt.metric[j]
+            --[[
             local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
             local v = confA[j] + dx
             dd = math.atan2(math.sin(v), math.cos(v)) * data.opt.metric[j] -- cyclic rev. joint (-pi;pi)
-        end
-        if data.opt.types[j] == 2 then
+            --]]
+        elseif data.opt.types[j] == 2 then
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
@@ -424,23 +565,18 @@ function Path:lerp(conf1, conf2, t, noArgCheck)
     for i = 1, #confA, 1 do
         if data.opt.types[i] == 0 then
             retVal[i] = confA[i] * (1 - t) + confB[i] * t -- e.g. joint with limits
-        end
-        if data.opt.types[i] == 1 then
+        elseif data.opt.types[i] == 1 then
             local dx = math.atan2(math.sin(confB[i] - confA[i]), math.cos(confB[i] - confA[i]))
             local v = confA[i] + dx * t
             retVal[i] = math.atan2(math.sin(v), math.cos(v)) -- cyclic rev. joint (-pi;pi)
-        end
-        if data.opt.types[i] == 2 then
+        elseif data.opt.types[i] == 2 then
             qcnt = qcnt + 1
             if qcnt == 4 then
                 qcnt = 0
                 local q1 = simEigen.Quaternion({confA[i - 3], confA[i - 2], confA[i - 1], confA[i - 0]})
                 local q2 = simEigen.Quaternion({confB[i - 3], confB[i - 2], confB[i - 1], confB[i - 0]})
                 local q = q1:slerp(t, q2)
-                retVal[i - 3] = q[1]
-                retVal[i - 2] = q[2]
-                retVal[i - 1] = q[3]
-                retVal[i - 0] = q[4]
+                retVal = table.add(retVal, q:data())
             end
         end
     end
@@ -531,10 +667,13 @@ function Path:_resample(points, resamplingType)
 end
 
 function Path:createMarkers()
+    self:update()
     local data = self._data
     self:removeMarkers()
     data.ctrlPoints.markers = self:_createMarkers(data.ctrlPoints.points, data.ctrlPoints.opt)
-    data.pathPoints.markers = self:_createMarkers(data.pathPoints.points, data.pathPoints.opt)
+    if not data.opt.onlyCtrlPoints then
+        data.pathPoints.markers = self:_createMarkers(data.pathPoints.points, data.pathPoints.opt)
+    end
 end
 
 function Path:_updateMarkers()
@@ -550,7 +689,7 @@ end
 function Path:_createMarkers(points, opt)
     local data = self._data
     local retPointMarker, retLineMarker, retRefMarker
-    if data.opt.displDim > 0 then
+    if data.opt.displDim ~= 0 then
         if opt.pointType ~= 0 or opt.showAxes then
             if opt.pointType ~= 0 then
                 local t = 'spheres'
@@ -588,40 +727,96 @@ function Path:__updateMarkers(markers, points)
         markers.lineMarker:clearItems()
     end
     if points:rows() > 0 then
-        if markers.pointMarker or markers.axesMarker then
-            local dat
-            local quat
-            if data.opt.displDim == 2 then
-                dat = points:block(1, 1, -1, 2):horzcat(simEigen.Matrix(points:rows(), 1, 0.0))
-            elseif data.opt.displDim == 3 then
-                dat = points:block(1, 1, -1, 3)
-            elseif data.opt.displDim == 7 then
-                dat = points:block(1, 1, -1, 3)
-                quat = {quaternion = points:block(1, 4, -1, 4)}
+        if data.opt.joints then
+            if data.opt.ik == nil then
+                data.opt.ik = {}
+                data.opt.ik.ikEnv = simIK.createEnvironment()
+                local group = simIK.createGroup(data.opt.ik.ikEnv)
+                local b = -1
+                if data.opt.base then
+                    b = data.opt.base.handle
+                end
+                local element, mapping = simIK.addElementFromScene(data.opt.ik.ikEnv, group, b, data.opt.tip.handle, data.opt.tip.handle, 0)
+                data.opt.ik.joints = {}
+                for i = 1, #data.opt.joints do
+                    data.opt.ik.joints[i] = mapping[data.opt.joints[i].handle]
+                end
+                data.opt.ik.tip = mapping[data.opt.tip.handle]
             end
-            if markers.pointMarker then
-                markers.pointMarker:addItems(dat, {quaternions = quat})
-            end
-            if markers.axesMarker then
-                markers.axesMarker:addItems(dat, {quaternions = quat})
-            end
-        end
-        if markers.lineMarker then
-            local dat
-            if data.opt.displDim == 2 then
-                dat = points:block(1, 1, -1, 2):horzcat(simEigen.Matrix(points:rows(), 1, 0.0))
+            if data.opt.base then
+                simIK.setObjectPose(data.opt.ik.ikEnv, data.opt.ik.base, data.opt.base.worldPose:data())
             else
-                dat = points:block(1, 1, -1, 3)
+                simIK.setObjectPose(data.opt.ik.ikEnv, data.opt.ik.joints[1], data.opt.joints[1].worldPose:data())
             end
-            local lines = simEigen.Matrix(0, dat:cols(), {})
-            for i = 1, dat:rows() - 1 do
-                lines = lines:vertcat(dat:block(i, 1, 2, -1))
+            local firstDat, lastDat
+            for i = 1, points:rows() do
+                local off = 1
+                for j = 1, #data.opt.ik.joints do
+                    if data.opt.types[j] == 2 then
+                        simIK.setJointQuaternion(data.opt.ik.ikEnv, data.opt.ik.joints[j], points:block(i, off, 1, 4):data())
+                        off = off + 4
+                    else
+                        simIK.setJointPosition(data.opt.ik.ikEnv, data.opt.ik.joints[j], points:item(i, off))
+                        off = off + 1
+                    end
+                end
+                local ppos, qq = simIK.getObjectTransformation(data.opt.ik.ikEnv, data.opt.ik.tip)
+                local dat = simEigen.Matrix(1, 3, ppos)
+                local quat = simEigen.Matrix(1, 4, qq)
+                if markers.pointMarker then
+                    markers.pointMarker:addItems(dat, {quaternions = quat})
+                end
+                if markers.axesMarker then
+                    markers.axesMarker:addItems(dat, {quaternions = quat})
+                end
+                if markers.lineMarker then
+                    if firstDat then
+                        markers.lineMarker:addItems(lastDat:vertcat(dat))
+                    else
+                        firstDat = dat
+                    end
+                    lastDat = dat
+                    if data.opt.closed and (i == points:rows()) then
+                        markers.lineMarker:addItems(lastDat:vertcat(firstDat))
+                    end
+                end
             end
-            if data.opt.closed then
-                lines = lines:vertcat(dat:block(dat:rows(), 1, 1, -1))
-                lines = lines:vertcat(dat:block(1, 1, 1, -1))
+        else
+            if markers.pointMarker or markers.axesMarker then
+                local dat
+                local quat
+                if data.opt.displDim == 2 then
+                    dat = points:block(1, 1, -1, 2):horzcat(simEigen.Matrix(points:rows(), 1, 0.0))
+                elseif data.opt.displDim == 3 then
+                    dat = points:block(1, 1, -1, 3)
+                elseif data.opt.displDim == 7 then
+                    dat = points:block(1, 1, -1, 3)
+                    quat = points:block(1, 4, -1, 4)
+                end
+                if markers.pointMarker then
+                    markers.pointMarker:addItems(dat, {quaternions = quat})
+                end
+                if markers.axesMarker then
+                    markers.axesMarker:addItems(dat, {quaternions = quat})
+                end
             end
-            markers.lineMarker:addItems(lines)
+            if markers.lineMarker then
+                local dat
+                if data.opt.displDim == 2 then
+                    dat = points:block(1, 1, -1, 2):horzcat(simEigen.Matrix(points:rows(), 1, 0.0))
+                else
+                    dat = points:block(1, 1, -1, 3)
+                end
+                local lines = simEigen.Matrix(0, dat:cols(), {})
+                for i = 1, dat:rows() - 1 do
+                    lines = lines:vertcat(dat:block(i, 1, 2, -1))
+                end
+                if data.opt.closed then
+                    lines = lines:vertcat(dat:block(dat:rows(), 1, 1, -1))
+                    lines = lines:vertcat(dat:block(1, 1, 1, -1))
+                end
+                markers.lineMarker:addItems(lines)
+            end
         end
     end
 end
@@ -630,23 +825,29 @@ function Path:removeMarkers()
     local data = self._data
     if data.ctrlPoints.markers then
         self:_removeMarkers(data.ctrlPoints.markers)
+        data.ctrlPoints.markers = nil
     end
     if data.pathPoints.markers then
         self:_removeMarkers(data.pathPoints.markers)
+        data.pathPoints.markers = nil
+    end
+    if data.opt.ik then
+        simIK.eraseEnvironment(data.opt.ik.ikEnv)
+        data.opt.ik = nil
     end
 end
 
 function Path:_removeMarkers(m)
     if m then
-        if m.pointMarker then
+        if m.pointMarker and m.pointMarker:isValid() then
             m.pointMarker:remove()
             m.pointMarker = nil
         end
-        if m.lineMarker then
+        if m.lineMarker and m.lineMarker:isValid()  then
             m.lineMarker:remove()
             m.lineMarker = nil
         end
-        if m.axesMarker then
+        if m.axesMarker and m.axesMarker:isValid()  then
             m.axesMarker:remove()
             m.axesMarker = nil
         end

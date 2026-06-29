@@ -4,6 +4,7 @@ local class = require('middleclass')
 local sim = require('sim')
 local sim2 = require('sim-2')
 local checkargs = require('checkargs-2')
+local properties = require('middleclassProperties')
 
 -- module-level bookkeeping that is genuinely cross-cutting (set elsewhere, e.g. python bindings):
 local __ = {}
@@ -88,6 +89,22 @@ end
 -- IK element class
 --==================================================================
 local IKElement = class('IKElement')
+properties.enable(IKElement)
+
+IKElement.static.property('myProperty', {
+    type = 0,
+    info = 0,
+    description = "HEllo world",
+    get = function(self) 
+        print("bla")
+        return self._opt.weights 
+    end,
+    set = function(self, value)
+        print("bli")
+        value = checkargs({{type = 'int'}}, value)
+        self._opt.weights = value
+    end,
+})
 
 function IKElement:initialize(ik, group, elementHandle, simToIkMap, ikToSimMap, opt)
     self._ik = ik
@@ -148,6 +165,7 @@ function IKGroup:initialize(ik, groupHandle, opt)
     self._ik = ik
     self.handle = groupHandle
     self.elements = {}
+    self.elementMap = {}
     self._opt = {}
     
     -- Defaults:
@@ -225,13 +243,28 @@ end
 --function IKGroup:handle() return self.handle end
 
 function IKGroup:addElementFromScene(base, tip, target, const, opt)
+    base, tip, target, const, opt = checkargs.checkargsEx({funcName = 'addElementFromScene'}, {
+        {type = 'handle', nullable = true},
+        {type = 'handle'},
+        {type = 'handle'},
+        {type = 'int'},
+        {type = 'table', nullable = true},
+    }, base, tip, target, const, opt)
+
     local ik = self._ik
-    
-    local ikElement, simToIkMap, ikToSimMap = ik:_addElementFromScene(self.handle, base, tip, target, const)
+    if base then
+        base = base.handle
+    else
+        base = -1
+    end
+    tip = tip.handle
+    target = target.handle
     opt = opt or {}
+    local elementHandle, simToIkMap, ikToSimMap = ik:_addElementFromScene(self.handle, base, tip, target, const)
     opt.constraints = const
-    local element = IKElement(ik, self, ikElement, simToIkMap, ikToSimMap, opt)
+    local element = IKElement(ik, self, elementHandle, simToIkMap, ikToSimMap, opt)
     self.elements[#self.elements + 1] = element
+    self.elementMap[elementHandle] = element
     return element
 end
 
@@ -299,7 +332,8 @@ local IK = class('IK')
 
 function IK:initialize()
     self.handle = simIK.createEnvironment()
-    self.groups = {} 
+    self.groups = {}
+    self.groupMap = {}
     
     -- internal use:
     self._ikGroupData = {}
@@ -341,6 +375,7 @@ simIK.getGroupJointLimitHits
     self._ikGroupHandles[#self._ikGroupHandles + 1] = groupHandle
     local group = IKGroup(self, groupHandle, opt)
     self.groups[#self.groups + 1] = group
+    self.groupMap[groupHandle] = group
     return group
 end
 
@@ -464,6 +499,10 @@ function IK:setJointQuaternion(h, q)
 end
 
 function IK:updateJoint(handle, opt)
+    handle = checkargs.checkargsEx({funcName = 'updateJoint'}, {
+        {type = 'int'},
+    }, handle)
+
     checkargs.checkfields({funcName = 'updateJoint'}, {
         {name = 'interval', type = 'table', size = 2, itemType = 'float', nullable = true},
         {name = 'weight', type = 'float', nullable = true},
@@ -794,6 +833,7 @@ function IK:remove()
         end
     end
     self.groups = {}
+    self.groupMap = {}
     self._ikGroupData = {}
     self._ikGroupHandles = {}
     self._simToIkMap = {}
@@ -845,9 +885,9 @@ function IK:_findConfig(...)
     return retVal
 end
 
-function IK:debugJacobianDisplay(inData)
-    local groupData = self._ikGroupData[inData.groupHandle]
-    local groupIdStr = string.format('env:%d/group:%d', self.handle, inData.groupHandle)
+function IK:_debugJacobianDisplay(inData)
+    local groupData = self._ikGroupData[inData.group.handle]
+    local groupIdStr = string.format('env:%d/group:%d', self.handle, inData.group.handle)
     local simQML
     pcall(function() simQML = require 'simQML' end)
     if simQML then
@@ -1013,22 +1053,22 @@ function IK:_handleGroups(ikGroups, options)
         local data = {}
         data.rows = {}
         data.cols = {}
+        data.group = self.groupMap[groupId]
         if pythonCallback then
             data.jacobian = jacobian
             data.e = errorVect
         else
-            data.jacobian = Matrix(#rows_constr, #cols_handles, jacobian)
-            data.e = Matrix(#rows_constr, 1, errorVect)
+            data.jacobian = simEigen.Matrix(#rows_constr, #cols_handles, jacobian)
+            data.e = simEigen.Vector(errorVect)
         end
         for i = 1, #rows_constr do
-            data.rows[i] = {constraint = rows_constr[i], element = rows_ikEl[i]}
+            data.rows[i] = {constraint = rows_constr[i], element = data.group.elementMap[rows_ikEl[i]]}
         end
         for i = 1, #cols_handles do
             data.cols[i] = {joint = cols_handles[i], dofIndex = cols_dofIndex[i]}
         end
-        data.groupHandle = groupId
         data.iteration = iteration
-        if debugJacobian then self:debugJacobianDisplay(data) end
+        if debugJacobian then self:_debugJacobianDisplay(data) end
         local j = {}
         local e = {}
         local dq = {}

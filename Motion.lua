@@ -58,6 +58,20 @@ function MoveToConfig:initialize(pparams)
     pparams.auxData = auxData
     params.auxData = auxData
 
+    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons 
+    checkargs.checkfields({funcName = 'MoveToConfig:new'}, {
+        {name = 'pos', type = 'vector', nullable = true},
+        {name = 'vel', type = 'vector', nullable = true},
+        {name = 'accel', type = 'vector', nullable = true},
+        {name = 'maxVel', type = 'vector', nullable = true},
+        {name = 'minVel', type = 'vector', nullable = true},
+        {name = 'maxAccel', type = 'vector', nullable = true},
+        {name = 'minAccel', type = 'vector', nullable = true},
+        {name = 'maxJerk', type = 'vector', nullable = true},
+        {name = 'targetVel', type = 'vector', nullable = true},
+        {name = 'targetPos', type = 'vector', nullable = true},
+    }, params)
+    
     if params.pos then
         if not Vector:isvector(params.pos) then
             error("invalid 'pos' field.")
@@ -250,6 +264,39 @@ function MoveToPose:initialize(pparams)
     pparams.auxData = auxData
     params.auxData = auxData
     --params.relObject = params.relObject or -1
+
+    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons 
+    checkargs.checkfields({funcName = 'MoveToPose:new'}, {
+        {name = 'pose', type = 'pose', nullable = true},
+        {name = 'object', type = 'handle', nullable = true},
+        {name = 'targetPose', type = 'pose', nullable = true},
+        {name = 'targetVel', type = 'vector', nullable = true},
+        {name = 'metric', type = 'vector', nullable = true},
+        {name = 'maxVel', type = 'vector', nullable = true},
+        {name = 'minVel', type = 'vector', nullable = true},
+        {name = 'maxAccel', type = 'vector', nullable = true},
+        {name = 'minAccel', type = 'vector', nullable = true},
+        {name = 'maxJerk', type = 'vector', nullable = true},
+    }, params)
+
+    --[[
+    todo, convert to IK class:
+                            <li>ik (map): mandatory if neither pose nor object are specified. Contains IK-relevant informations, if a kinematic chain should move via IK to a target: 
+                                <ul> 
+                                    <li>tip (handle): specifies the tip object (on the end-effector) </li> 
+                                    <li>target (handle): specifies the target object (the object to reach) </li> 
+                                    <li>base (handle, defaults to nil): optional. Specifies the base object (the base of the kinematic chain)</li> 
+                                    <li>joints (handle[], defaults to all joints within tip and base): optional. Specifies the handles of the joints involved in IK calculations</li> 
+                                    <li>method (int, defaults to simIK.method_damped_least_squares): optional. Specifies the resolution method</li> 
+                                    <li>damping (float, defaults to 0.02): optional. Specifies the resolution damping</li> 
+                                    <li>iterations (int, defaults to 20): optional. Specifies the max. number of iterations</li> 
+                                    <li>constraints (int, defaults to simIK.constraint_pose): optional. Specifies the constraints</li> 
+                                    <li>precision (int[2], defaults to [0.001, 0.5 * math.pi / 180.0]): optional. Specifies the desired precision (linear and angular)</li> 
+                                    <li>allowError (bool, defaults to false): optional. Specifies whether a resolution with precision values over what is allowed will be applied anyway</li> 
+                                    <li>breakFlags (int, defaults to 0): optional. Specified the reasons-flags required for simIK.handleGroup to fail</li> 
+                                </ul> 
+                            </li>
+    --]]
 
     if params.pose then
         if not Pose:ispose(params.pose) then
