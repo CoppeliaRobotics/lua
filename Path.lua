@@ -46,11 +46,12 @@ function Path:initialize(ctrlPoints, opt)
     if ctrlPoints then
         assert(ctrlPoints:cols() > 0, 'invalid control points')
         if (opt.types == nil) and (ctrlPoints:cols() == 7) then
-            opt.types = {'scal', 'scal', 'scal', 'quat', 'quat', 'quat', 'quat'}
+            opt.types = {'lin', 'lin', 'lin', 'quat', 'quat', 'quat', 'quat'}
         end
         checkargs.checkfields({funcName = 'Path:new'}, {
             {name = 'metric', type = 'matrix', rows = 1, cols = ctrlPoints:cols(), default = simEigen.Matrix(1, ctrlPoints:cols(), 1.0)},
-            {name = 'types', type = 'table', size = ctrlPoints:cols(), default = table.rep('scal', ctrlPoints:cols())},
+            {name = 'types', type = 'table', size = ctrlPoints:cols(), default = table.rep('lin', ctrlPoints:cols())},
+            {name = 'bounds', type = 'table', size = ctrlPoints:cols(), default = table.rep({}, ctrlPoints:cols())},
         }, opt)
     else
         checkargs.checkfields({funcName = 'Path:new'}, {
@@ -58,22 +59,24 @@ function Path:initialize(ctrlPoints, opt)
         }, opt)
         checkargs.checkfields({funcName = 'Path:new'}, {
             {name = 'metric', type = 'matrix', rows = 1, cols = #opt.types, default = simEigen.Matrix(1, #opt.types, 1.0)},
+            {name = 'bounds', type = 'table', size = #opt.types, default = table.rep({}, #opt.types)},
         }, opt)
         ctrlPoints = simEigen.Matrix(0, #opt.types, {})
     end
     local quatC = 0
     for i = 1, #opt.types do
-        if opt.types[i] == 'scal' then
+        if opt.types[i] == 'lin' then
             if quatC ~= 0 then
                 error("invalid 'types' array")
             end
             opt.types[i] = 0
-        elseif opt.types[i] == 'cycl' then
+        elseif opt.types[i] == 'ang' then
             if quatC ~= 0 then
                 error("invalid 'types' array")
             end
             opt.types[i] = 1
         elseif opt.types[i] == 'quat' then
+            opt.bounds[i] = {}
             opt.types[i] = 2
             quatC = quatC + 1
             if quatC == 4 then
@@ -81,6 +84,16 @@ function Path:initialize(ctrlPoints, opt)
             end
         else
             error("invalid 'types' array")
+        end
+        local b = opt.bounds[i]
+        if #b > 0 then
+            if #b > 2 then
+                error("invalid 'bounds' array")
+            else
+                if (type(b[1]) ~= 'number') or (type(b[2]) ~= 'number') or (b[2] < b[1]) or (opt.types[i] == 2) then
+                    error("invalid 'bounds' array")
+                end
+            end
         end
     end
     if quatC ~= 0 then
@@ -115,7 +128,6 @@ function Path:initialize(ctrlPoints, opt)
             data.opt.displDim = 0
         end
     end
-    
     self:setPoints(ctrlPoints, true)
 end
 
@@ -137,14 +149,16 @@ function Path.fromJoints(endEffector, base, opt)
     opt.tip = endEffector
     opt.base = base
     opt.types = {}
+    opt.bounds = {}
     for i = 1, #opt.joints do
         if opt.joints[i].joint.type == 'prismatic' then
-            opt.types[i] = 'scal'
+            opt.types[i] = 'lin'
         elseif opt.joints[i].joint.type == 'revolute' then
-            opt.types[i] = 'cycl'
+            opt.types[i] = 'ang'
         else
             opt.types[i] = 'quat'
         end
+        opt.bounds[i] = opt.joints[i].bounds
     end
     return Path(nil, opt)
 end
@@ -155,11 +169,12 @@ function Path.fromObject(obj, opt)
     }, obj)
     opt = opt or {}
     opt.object = obj
-    opt.types = {'scal', 'scal', 'scal', 'quat', 'quat', 'quat', 'quat'}
+    opt.types = {'lin', 'lin', 'lin', 'quat', 'quat', 'quat', 'quat'}
     return Path(nil, opt)
 end
 
 function Path:setPoints(ctrlPoints, noArgCheck)
+    sim.self:setStepping(true)
     local data = self._data
     if not noArgCheck then
         ctrlPoints = checkargs.checkargsEx({funcName = 'setPoints'}, {
@@ -207,6 +222,7 @@ function Path:setPoints(ctrlPoints, noArgCheck)
         end
     end
     self:_updateMarkers()
+    sim.self:setStepping(false)
 end
 
 function Path:appendPoints(ctrlPoints, update)
@@ -509,8 +525,8 @@ function Path:dist(conf1, conf2, noArgCheck)
     local confB = conf2
     if not noArgCheck then
         confA, confB = checkargs.checkargsEx({funcName = 'dist'}, {
-            {type = 'vector'},
-            {type = 'vector'},
+            {type = 'vector', size = #data.opt.types},
+            {type = 'vector', size = #data.opt.types},
         }, conf1, conf2)
         assert( (confA:rows() == #data.opt.types) and (confA:rows() == confB:rows()), 'invalid points')
     end
@@ -520,7 +536,7 @@ function Path:dist(conf1, conf2, noArgCheck)
     local qcnt = 0
     for j = 1, #confA, 1 do
         local dd = 0
-        if data.opt.types[j] == 0 then
+        if (data.opt.types[j] == 0) or (#data.opt.bounds[j] == 2) then
             dd = (confB[j] - confA[j]) * data.opt.metric[j] -- e.g. joint with limits
         elseif data.opt.types[j] == 1 then
             local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
@@ -551,11 +567,10 @@ function Path:lerp(conf1, conf2, t, noArgCheck)
     local confB = conf2
     if not noArgCheck then
         confA, confB, t = checkargs.checkargsEx({funcName = 'lerp'}, {
-            {type = 'vector'},
-            {type = 'vector'},
+            {type = 'vector', size = #data.opt.types},
+            {type = 'vector', size = #data.opt.types},
             {type = 'float'},
         }, conf1, conf2, t)
-        assert( (confA:rows() == #data.opt.types) and (confA:rows() == confB:rows()), 'invalid points')
     end
     confA = confA:data()
     confB = confB:data()
@@ -563,7 +578,7 @@ function Path:lerp(conf1, conf2, t, noArgCheck)
     local retVal = {}
     local qcnt = 0
     for i = 1, #confA, 1 do
-        if data.opt.types[i] == 0 then
+        if (data.opt.types[i] == 0) or (#data.opt.bounds[i] == 2) then
             retVal[i] = confA[i] * (1 - t) + confB[i] * t -- e.g. joint with limits
         elseif data.opt.types[i] == 1 then
             local dx = math.atan2(math.sin(confB[i] - confA[i]), math.cos(confB[i] - confA[i]))
@@ -581,6 +596,84 @@ function Path:lerp(conf1, conf2, t, noArgCheck)
         end
     end
     return simEigen.Matrix(1, #retVal, retVal)
+end
+
+function Path:equiv(conf, noArgCheck)
+    local data = self._data
+    if not noArgCheck then
+        conf = checkargs.checkargsEx({funcName = 'equiv'}, {
+            {type = 'vector', size = #data.opt.types},
+        }, conf)
+    end
+    local inputConfig = conf:data()
+    sim.self:setStepping(true)
+    
+    local lowLimits = table.rep(0.0, #inputConfig)
+    local ranges = table.rep(0.0, #inputConfig)
+    for i = 1, #inputConfig do
+        if data.opt.types[i] == 1 then
+            if #data.opt.bounds[i] == 2 then
+                local r = data.opt.bounds[i][2] - data.opt.bounds[i][1]
+                if r > 2.0 * math.pi then
+                    ranges[i] = r
+                end
+            end
+        end
+    end
+
+    function _loopThroughAltConfigSolutions(confS, x, index)
+        if index > #confS then
+            return {copy.deepcopy(confS)}
+        else
+            local c = copy.deepcopy(confS)
+            local solutions = {}
+            while c[index] <= x[index][2] do
+                local s = _loopThroughAltConfigSolutions(c, x, index + 1)
+                for i = 1, #s, 1 do solutions[#solutions + 1] = s[i] end
+                c[index] = c[index] + math.pi * 2.0
+            end
+            return solutions
+        end
+    end
+
+    local x = {}
+    local confS = {}
+    local configs = {}
+    local err = false
+    for i = 1, #ranges do
+        if ranges[i] > 0.0 then
+            local pi2 = math.pi * 2.0
+            while inputConfig[i] > lowLimits[i] + ranges[i] do
+                inputConfig[i] = inputConfig[i] - pi2
+            end
+            while inputConfig[i] < lowLimits[i] do
+                inputConfig[i] = inputConfig[i] + pi2
+            end
+            if (inputConfig[i] >= lowLimits[i]) and (inputConfig[i] <= lowLimits[i] + ranges[i]) then
+                if inputConfig[i] - pi2 >= lowLimits[i] or inputConfig[i] + pi2 <= lowLimits[i] + ranges[i] then
+                    local y = inputConfig[i]
+                    while y - pi2 >= lowLimits[i] do 
+                        y = y - pi2 
+                    end
+                    x[i] = {y, lowLimits[i] + ranges[i]}
+                else
+                    ranges[i] = 0.0
+                end
+            else
+                err = true
+            end
+        end
+        if x[i] == nil then
+            x[i] = {inputConfig[i], inputConfig[i]} -- there's no alternative position for this joint
+        end
+        confS[i] = x[i][1]
+    end
+    if not err then
+        configs = _loopThroughAltConfigSolutions(confS, x, 1)
+    end
+    local retVal = simEigen.Matrix(configs)
+    sim.self:setStepping(false)
+    return retVal
 end
 
 function Path:_resample(points, resamplingType)

@@ -257,8 +257,7 @@ function objInit.joint(methodName)
         {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
         {name = 'length', type = 'float', default = 0.15},
         {name = 'diameter', type = 'float', default = 0.02},
-        {name = 'interval', type = 'table', item_type = 'float', size = 2, nullable = true},
-        {name = 'cyclic', type = 'bool', nullable = true},
+        {name = 'bounds', type = 'table', item_type = 'float', size = "0..2", nullable = true},
         {name = 'screwLead', type = 'float', nullable = true},
         {name = 'dynamics.ctrlMode', type = 'int', nullable = true},
     }, objInit.p)
@@ -269,13 +268,9 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('diameter'),
     }
     local retVal = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
-    local interval = objInit.extractValueOrDefault('interval')
-    if interval then
-        retVal.interval = interval
-    end
-    local cyclic = objInit.extractValueOrDefault('cyclic')
-    if cyclic ~= nil then
-        retVal.cyclic = cyclic
+    local bounds = objInit.extractValueOrDefault('bounds')
+    if bounds then
+        retVal.bounds = bounds
     end
     local screwLead = objInit.extractValueOrDefault('screwLead')
     if screwLead then

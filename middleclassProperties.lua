@@ -1,19 +1,8 @@
--- properties.lua
+local json = require 'dkjson'
+local sim = require 'sim-2'
+
 local Properties = {}
 
--- Install property support onto a middleclass class.
--- After this, use:
---   Class.static.property(name, {
---       type = <int>, info = <int flags>, description = <string>,
---       get = function(self, key) ... end,
---       set = function(self, value, key) ... end,
---   })
--- Class-level introspection:
---   Class.properties()              -> array of property metadata (own + inherited)
---   Class.propertyInfo(name)        -> single property metadata, or nil
--- Instance-level introspection (works even if the class is not exported):
---   obj:properties()                -> array of property metadata
---   obj:propertyInfo(name)          -> single property metadata, or nil
 function Properties.enable(Class)
     local dict = Class.__instanceDict
 
@@ -61,17 +50,18 @@ function Properties.enable(Class)
         assert(def.get or def.set, 'property needs at least a get or set')
 
         -- normalize / default the metadata fields:
-        assert(def.type == nil or math.type(def.type) == 'integer',
-            "property 'type' must be an integer")
-        assert(def.info == nil or math.type(def.info) == 'integer',
-            "property 'info' must be an integer (flags)")
-        assert(def.description == nil or type(def.description) == 'string',
-            "property 'description' must be a string")
+        assert(math.type(def.type) == 'integer', "invalid property 'type'")
+        assert(def.flags == nil or math.type(def.flags) == 'integer', "invalid property 'flags'")
+        assert(def.info == nil or type(def.info) == 'table', "invalid property 'info'")
 
         def.name = name
         def.type = def.type or 0
-        def.info = def.info or 0
-        def.description = def.description or ''
+        def.flags = def.flags or (sim.propertyinfo_silent | sim.propertyinfo_modelhashexclude)
+        if def.info then
+            def.info = json.encode(def.info)
+        else
+            def.info = '{}'
+        end
         registry[name] = def
         return def
     end
@@ -83,8 +73,8 @@ function Properties.enable(Class)
         return {
             name = p.name,
             type = p.type,
+            flags = p.flags,
             info = p.info,
-            description = p.description,
             readable = p.get ~= nil,
             writable = p.set ~= nil,
         }
@@ -117,8 +107,8 @@ function Properties.enable(Class)
             list[#list + 1] = {
                 name = p.name,
                 type = p.type,
+                flags = p.flags,
                 info = p.info,
-                description = p.description,
                 readable = p.get ~= nil,
                 writable = p.set ~= nil,
             }
@@ -137,6 +127,33 @@ function Properties.enable(Class)
         return self.class.propertyInfo(name)
     end
 
+    function dict:__pairs(opts)
+        opts = opts or {}
+        local props = self:properties()
+        local i = 0
+        return function()
+            while true do
+                i = i + 1
+                local p = props[i]
+                if not p then return nil end
+                if p.readable then
+                    return p.name, self[p.name]
+                end
+                -- skip non-readable (write-only) properties
+            end
+        end
+    end
+
+    -- Produce a plain table representation for dump()/printing.
+    function dict:__dump(maxDepth)
+        maxDepth = maxDepth or math.huge
+        local tbl = {}
+        for k, v in self:__pairs{dump = true} do
+            tbl[k] = dump(v, maxDepth - 1)
+        end
+        return tbl
+    end
+    
     return Class
 end
 
