@@ -182,16 +182,15 @@ function objInit.marker(methodName)
         if type(mesh) ~= 'table' then
             mesh = {}
         end
-        if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:cols() == 3 then
+        if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:rows() == 3 then
             mesh.vertices = mesh.vertices:data()
-            printf(#mesh.vertices)
         end
         if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
             mesh.vertices = nil
             mesh.indices = nil
             mesh.normals = nil
         else
-            if simEigen.Matrix:ismatrix(mesh.normals) and mesh.normals:cols() == 3 then
+            if simEigen.Matrix:ismatrix(mesh.normals) and mesh.normals:rows() == 3 then
                 mesh.normals = mesh.normals:data()
             end
             if type(mesh.normals) ~= 'table' then
@@ -302,7 +301,7 @@ end
 function objInit.path(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'ctrlPts', type = 'matrix', cols = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})},
+        {name = 'ctrlPts', type = 'matrix', cols = rows, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
         {name = 'hiddenDuringSim', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
         {name = 'subdiv', type = 'int', default = 100},
@@ -558,13 +557,13 @@ function objInit.shape(methodName)
     }, objInit.p)
     if objInit.p.mesh then
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
-            {name = 'vertices', type = 'matrix', cols = 3, default = simEigen.Matrix(3, 3, {0.0, 0.0, 0.005, 0.1, 0.0, 0.005, 0.2, 0.1, 0.005})},
+            {name = 'vertices', type = 'matrix', rows = 3, default = simEigen.Matrix(3, 3, {0.0, 0.0, 0.005, 0.1, 0.0, 0.005, 0.2, 0.1, 0.005}).T},
             {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
             {name = 'boundingBoxQuaternion', type = 'quaternion', nullable = true},
             {name = 'frameOrigin', type = 'pose', nullable = true},
         }, objInit.p.mesh)
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
-            {name = 'normals', type = 'matrix', cols = 3 * #objInit.p.mesh.indices, cols = 3, nullable = true},
+            {name = 'normals', type = 'matrix', rows = 3, cols = #objInit.p.mesh.indices, nullable = true},
         }, objInit.p.mesh)
         local texture_interpolate = true
         local texture_decal = false
@@ -589,7 +588,7 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (mesh.texture field)'}, {
                 {name = 'resolution', type = 'table', item_type = 'int', size = 2},
                 {name = 'image', type = 'buffer', size = vals * objInit.p.mesh.texture.resolution[1] * objInit.p.mesh.texture.resolution[2]},
-                {name = 'coordinates', type = 'matrix', cols = #objInit.p.mesh.indices, rows = 2, nullable = true},
+                {name = 'coordinates', type = 'matrix', rows = 2, cols = #objInit.p.mesh.indices, nullable = true},
             }, objInit.p.mesh.texture)
 
             texture_interpolate = objInit.extractValueOrDefault('interpolate', true, objInit.p.mesh.texture)
@@ -614,9 +613,12 @@ function objInit.shape(methodName)
         local indices = objInit.extractValueOrDefault('indices', nil, objInit.p.mesh)
         local normals = objInit.extractValueOrDefault('normals', nil, objInit.p.mesh)
         if normals then
-            normals = normals:data()
+            normals = normals:data('column-major')
         end
-        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data(), indices, normals, texture_coord, texture_img, texture_res))
+        if texture_coord then
+            texture_coord = texture_coord:data('column-major')
+        end
+        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data('column-major'), indices, normals, texture_coord, texture_img, texture_res))
         local bbQuat = objInit.extractValueOrDefault('boundingBoxQuaternion', nil, objInit.p.mesh)
         if bbQuat then
             retVal:alignBoundingBox(bbQuat)

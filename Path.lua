@@ -260,7 +260,7 @@ function Path:appendFromJoints(update)
     local newPt = simEigen.Matrix(1, #data.opt.types, ctrlPoints)
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
         if toUpdate:rows() > 0 then
-            if self:dist(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+            if self:distance(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
@@ -283,7 +283,7 @@ function Path:appendFromObject(update)
     local newPt = simEigen.Matrix(1, 7, data.opt.object.worldPose:data())
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
         if toUpdate:rows() > 0 then
-            if self:dist(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+            if self:distance(toUpdate:block(toUpdate:rows(), 1, 1, -1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
@@ -348,7 +348,7 @@ function Path:_removeDuplicates(points)
             local i = 2
             while i <= retVal:rows() - 1 do
                 local p = retVal:block(i, 1, 1, -1)
-                if self:dist(firstPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
+                if self:distance(firstPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
                     retVal = retVal:block(1, 1, i - 1, -1):vertcat(retVal:block(i + 1, 1, - 1, -1))
                     removed = removed + 1
                 else
@@ -363,7 +363,7 @@ function Path:_removeDuplicates(points)
                 local i = retVal:rows() - 1
                 while i >= 2 do
                     local p = retVal:block(i, 1, 1, -1)
-                    if self:dist(lastPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
+                    if self:distance(lastPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
                         retVal = retVal:block(1, 1, i - 1, -1):vertcat(retVal:block(i + 1, 1, - 1, -1))
                         removed = removed + 1
                     else
@@ -384,11 +384,11 @@ function Path:_removeDuplicates(points)
                         while i <= points:rows() - 2 do
                             p0 = points:block(i, 1, 1, -1)
                             p1 = points:block(i + 1, 1, 1, -1)
-                            local d = self:dist(p0, p1, true)
+                            local d = self:distance(p0, p1, true)
                             if d >= data.ctrlPoints.opt.duplicateThreshold then
                                 retVal = retVal:vertcat(p0)
                             else
-                                retVal = retVal:vertcat(self:lerp(p0, p1, 0.5, true))
+                                retVal = retVal:vertcat(self:interpolate(p0, p1, 0.5, true))
                                 removed = removed + 1
                                 p1 = nil
                                 i = i + 1
@@ -442,11 +442,11 @@ function Path:_removeColinearSegments(points)
             local p0 = pts:block(i, 1, 1, -1)
             local p1 = pts:block(i + 1, 1, 1, -1)
             local p2 = pts:block(i + 2, 1, 1, -1)
-            local d0 = self:dist(p0, p1, true)
-            local d1 = self:dist(p1, p2, true)
+            local d0 = self:distance(p0, p1, true)
+            local d1 = self:distance(p1, p2, true)
             local t = d0 / (d0 + d1)
-            local proj = self:lerp(p0, p2, t, true)
-            local relDist = self:dist(proj, p1, true) / self:dist(p0, p2, true)
+            local proj = self:interpolate(p0, p2, t, true)
+            local relDist = self:distance(proj, p1, true) / self:distance(p0, p2, true)
             if relDist < data.ctrlPoints.opt.linearityTolerance then
                 toPrune[#toPrune + 1] = {pos = i + 1, val = relDist}
             end
@@ -504,7 +504,7 @@ function Path:_computeArcLengths(points)
     for i = 1, pts:rows() - 1 do
         local p0 = pts:block(i, 1, 1, -1)
         local p1 = pts:block(i + 1, 1, 1, -1)
-        local d = self:dist(p0, p1, true)
+        local d = self:distance(p0, p1, true)
         tot[#tot + 1] = d
         l = l + d
         distances[#distances + 1] = l
@@ -512,19 +512,19 @@ function Path:_computeArcLengths(points)
     if data.opt.closed then
         local p0 = pts:block(pts:rows(), 1, 1, -1)
         local p1 = pts:block(1, 1, 1, -1)
-        local d = self:dist(p0, p1, true)
+        local d = self:distance(p0, p1, true)
         tot[#tot + 1] = d
         l = l + d
     end
     return simEigen.Vector(tot), simEigen.Vector(distances), l
 end
 
-function Path:dist(conf1, conf2, noArgCheck)
+function Path:distance(conf1, conf2, noArgCheck)
     local data = self._data
     local confA = conf1
     local confB = conf2
     if not noArgCheck then
-        confA, confB = checkargs.checkargsEx({funcName = 'dist'}, {
+        confA, confB = checkargs.checkargsEx({funcName = 'distance'}, {
             {type = 'vector', size = #data.opt.types},
             {type = 'vector', size = #data.opt.types},
         }, conf1, conf2)
@@ -561,12 +561,12 @@ function Path:dist(conf1, conf2, noArgCheck)
     return math.sqrt(d)
 end
 
-function Path:lerp(conf1, conf2, t, noArgCheck)
+function Path:interpolate(conf1, conf2, t, noArgCheck)
     local data = self._data
     local confA = conf1
     local confB = conf2
     if not noArgCheck then
-        confA, confB, t = checkargs.checkargsEx({funcName = 'lerp'}, {
+        confA, confB, t = checkargs.checkargsEx({funcName = 'interpolate'}, {
             {type = 'vector', size = #data.opt.types},
             {type = 'vector', size = #data.opt.types},
             {type = 'float'},
@@ -598,10 +598,10 @@ function Path:lerp(conf1, conf2, t, noArgCheck)
     return simEigen.Matrix(1, #retVal, retVal)
 end
 
-function Path:equiv(conf, noArgCheck)
+function Path:configs(conf, noArgCheck)
     local data = self._data
     if not noArgCheck then
-        conf = checkargs.checkargsEx({funcName = 'equiv'}, {
+        conf = checkargs.checkargsEx({funcName = 'configs'}, {
             {type = 'vector', size = #data.opt.types},
         }, conf)
     end
@@ -699,23 +699,23 @@ function Path:_resample(points, resamplingType)
             local pa = pts:block(paInd, 1, 1, -1)
             local pb = pts:block(paInd + 1, 1, 1, -1)
             local r = (l - distances[paInd + 0]) / (distances[paInd + 1] - distances[paInd + 0])
-            retPts = retPts:vertcat(self:lerp(pa, pb, r, true))
+            retPts = retPts:vertcat(self:interpolate(pa, pb, r, true))
         end
         if not data.opt.closed then
             retPts = retPts:vertcat(pts:block(pts:rows(), 1, 1, -1))
         end
     else
         local function getBezierPt(a, b, c, t)
-            local pia = self:lerp(a, b, 0.5, true)
-            local pib = self:lerp(b, c, 0.5, true)
+            local pia = self:interpolate(a, b, 0.5, true)
+            local pib = self:interpolate(b, c, 0.5, true)
             if data.pathPoints.opt.bezierSmoothing < 0.999 then
-                pia = self:lerp(b, pia, data.pathPoints.opt.bezierSmoothing, true)
-                pib = self:lerp(b, pib, data.pathPoints.opt.bezierSmoothing, true)
+                pia = self:interpolate(b, pia, data.pathPoints.opt.bezierSmoothing, true)
+                pib = self:interpolate(b, pib, data.pathPoints.opt.bezierSmoothing, true)
             end
 
-            local p1 = self:lerp(pia, b, t, true)
-            local p2 = self:lerp(b, pib, t, true)
-            return self:lerp(p1, p2, t, true)
+            local p1 = self:interpolate(pia, b, t, true)
+            local p2 = self:interpolate(b, pib, t, true)
+            return self:interpolate(p1, p2, t, true)
         end
         retPts = simEigen.Matrix(0, pts:cols(), {})
         if data.opt.closed then
@@ -724,10 +724,10 @@ function Path:_resample(points, resamplingType)
         else
             local a = pts:block(pts:rows() - 1, 1, 1, -1)
             local b = pts:block(pts:rows() - 0, 1, 1, -1)
-            pts = pts:vertcat(self:lerp(a, b, 2.0, true))
+            pts = pts:vertcat(self:interpolate(a, b, 2.0, true))
             local a = pts:block(2, 1, 1, -1)
             local b = pts:block(1, 1, 1, -1)
-            pts = self:lerp(a, b, 2.0, true):vertcat(pts)
+            pts = self:interpolate(a, b, 2.0, true):vertcat(pts)
         end
         local cnt = math.floor(totalL * 2.0 / data.pathPoints.opt.samplingDistance) + 1.0 -- first a smaller sampling
         local sd = totalL / cnt
@@ -757,6 +757,145 @@ function Path:_resample(points, resamplingType)
         retPts = self:_resample(retPts, 0)
     end
     return retPts
+end
+
+function Path:createShape(opt)
+    self:update()
+    local data = self._data
+    local pts
+    if data.opt.onlyCtrlPoints then
+        pts = data.ctrlPoints.points
+    else
+        pts = data.pathPoints.points
+    end
+    assert(pts:rows() >= 2 and pts:cols() >= 2 and data.opt.types[1] == 0 and data.opt.types[2] == 0, 'path not appropriate for shape creation.')
+    local w = 2
+    if pts:cols() >= 3 and data.opt.types[3] == 0 then
+        w = 3
+        if pts:cols() >= 7 then
+            w = 7
+            for i = 4, 7 do
+                if data.opt.types[i] ~= 2 then
+                    w = 3
+                    break
+                end
+            end
+        end
+    end
+    pts = pts:block(1, 1, -1, w)
+    if w == 2 then
+        pts = pts:horzcat(simEigen.Matrix(pts:rows(), 1, 0.0))
+        w = 3
+    end
+    if w == 3 then
+        pts = pts:horzcat(simEigen.Matrix(pts:rows(), 3, 0.0))
+        pts = pts:horzcat(simEigen.Matrix(pts:rows(), 1, 1.0))
+    end
+    if data.opt.closed then
+        pts = pts:vertcat(pts:block(1, 1, 1, -1))
+    end
+    
+    return callMethod(-1, 'createShapeFromPath', pts, opt)
+end
+
+function Path:closest(point)
+    local data = self._data
+    if not noArgCheck then
+        point = checkargs.checkargsEx({funcName = 'closest'}, {
+            {type = 'vector', size = #data.opt.types},
+        }, point)
+    end
+    self:update()
+    local pts, arcLengths, distancesAlongPath, pathLength
+    if data.opt.onlyCtrlPoints then
+        pts = data.ctrlPoints.points
+        arcLengths = data.ctrlPoints.arcLengths
+        distancesAlongPath = data.ctrlPoints.distancesAlongPath
+        pathLength = data.ctrlPoints.pathLength
+    else
+        pts = data.pathPoints.points
+        arcLengths = data.pathPoints.arcLengths
+        distancesAlongPath = data.pathPoints.distancesAlongPath
+        pathLength = data.pathPoints.pathLength
+    end
+    assert(pts:rows() > 0, 'path is empty.')
+    if pts:rows() == 1 then
+        return pts:copy().T, 0.0
+    else
+        if data.opt.closed then
+            pts = pts:vertcat(pts:block(1, 1, 1, -1))
+        end
+        opt = {metric = data.opt.metric}
+        opt.types = {}
+        for i = 1, #data.opt.types do
+            if (data.opt.types[i] == 0) or (#data.opt.bounds[i] == 2) then
+                opt.types[i] = 0
+            else
+                opt.types[i] = data.opt.types[i]
+            end
+        end
+        local pt, ind = callMethod(-1, 'getClosestOnPath', pts, point, opt)
+        local pt1 = pts:block(ind + 1, 1, 1, -1)
+        local pt2 = pts:block(ind + 2, 1, 1, -1)
+        local t = self:distance(pt1.T, pt) / self:distance(pt1.T, pt2.T)
+        local l = distancesAlongPath[ind + 1] + t * arcLengths[ind + 1]
+        return pt, l / pathLength
+    end
+end
+
+function Path:getPoint(distance)
+    local data = self._data
+    if not noArgCheck then
+        distance = checkargs.checkargsEx({funcName = 'getPoint'}, {
+            {type = 'float'},
+        }, distance)
+    end
+    self:update()
+    if distance < 0.0 then
+        distance = 0.0
+    end
+    if distance > 1.0 then
+        distance = 1.0
+    end
+    local pts, arcLengths, distancesAlongPath, pathLength
+    if data.opt.onlyCtrlPoints then
+        pts = data.ctrlPoints.points
+        arcLengths = data.ctrlPoints.arcLengths
+        distancesAlongPath = data.ctrlPoints.distancesAlongPath
+        pathLength = data.ctrlPoints.pathLength
+    else
+        pts = data.pathPoints.points
+        arcLengths = data.pathPoints.arcLengths
+        distancesAlongPath = data.pathPoints.distancesAlongPath
+        pathLength = data.pathPoints.pathLength
+    end
+    assert(pts:rows() > 0, 'path is empty.')
+    if pts:rows() == 1 then
+        return pts:copy().T
+    else
+        local l = distance * pathLength
+        if data.opt.closed then
+            pts = pts:vertcat(pts:block(1, 1, 1, -1))
+            distancesAlongPath = distancesAlongPath:vertcat(simEigen.Vector{pathLength})
+        end
+        local retVal
+        for i = 1, distancesAlongPath:rows() - 1 do
+            if distancesAlongPath[i + 1] > l then
+                local d2 = distancesAlongPath[i + 1] - distancesAlongPath[i + 0]
+                local d1 = l - distancesAlongPath[i + 0]
+                retVal = self:interpolate(pts:block(i, 1, 1, -1).T, pts:block(i + 1, 1, 1, -1).T, d1 / d2)
+                break
+            end
+        end
+        if retVal == nil then
+            if data.opt.closed then
+                retVal = pts:block(1, 1, 1, -1)
+            else
+                retVal = pts:block(pts:rows(), 1, 1, -1)
+            end
+        end
+        return retVal
+    end
 end
 
 function Path:createMarkers()
