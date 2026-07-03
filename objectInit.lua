@@ -183,7 +183,7 @@ function objInit.marker(methodName)
             mesh = {}
         end
         if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:rows() == 3 then
-            mesh.vertices = mesh.vertices:data()
+            mesh.vertices = mesh.vertices:data(simEigen.dataOrder.columnMajor)
         end
         if type(mesh.vertices) ~= 'table' or type(mesh.indices) ~= 'table' then
             mesh.vertices = nil
@@ -613,12 +613,12 @@ function objInit.shape(methodName)
         local indices = objInit.extractValueOrDefault('indices', nil, objInit.p.mesh)
         local normals = objInit.extractValueOrDefault('normals', nil, objInit.p.mesh)
         if normals then
-            normals = normals:data('column-major')
+            normals = normals:data(simEigen.dataOrder.columnMajor)
         end
         if texture_coord then
-            texture_coord = texture_coord:data('column-major')
+            texture_coord = texture_coord:data(simEigen.dataOrder.columnMajor)
         end
-        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data('column-major'), indices, normals, texture_coord, texture_img, texture_res))
+        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals, texture_coord, texture_img, texture_res))
         local bbQuat = objInit.extractValueOrDefault('boundingBoxQuaternion', nil, objInit.p.mesh)
         if bbQuat then
             retVal:alignBoundingBox(bbQuat)

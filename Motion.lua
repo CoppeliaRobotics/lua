@@ -625,9 +625,9 @@ function TimeOptimalTrajectory:generate(params)
         error("at least 2 configurations must be provided.")
     end
     checkargs.checkfields({funcName = "TimeOptimalTrajectory"}, {
-        {name = 'path', type = 'matrix', rows = confCnt, cols = -1},
+        {name = 'path', type = 'matrix', rows = -1, cols = confCnt},
     }, params)
-    local dof = params.path:cols()
+    local dof = params.path:rows()
     checkargs.checkfields({funcName = "TimeOptimalTrajectory"}, {
         {name = 'maxVel', type = 'matrix', rows = dof, cols = 1},
         {name = 'minVel', type = 'matrix', rows = dof, cols = 1, nullable=true},
@@ -642,7 +642,7 @@ function TimeOptimalTrajectory:generate(params)
     local mmvM = minVel:horzcat(params.maxVel)
     local mmaM = minAccel:horzcat(params.maxAccel)
     sim.self:setStepping(true)
-
+    
     local code = [=[
 def sysCall_init():
     global ta, constraint, algo, np
@@ -696,7 +696,7 @@ def cbb(req):
     local toSend = {
         samples = params.samples,
         ss_waypoints = params.pathLengths:data(),
-        waypoints = params.path:totable(),
+        waypoints = params.path.T:totable(),
         velocity_limits = mmvM:totable(),
         acceleration_limits = mmaM:totable(),
         bc_type = params.boundaryCondition,
@@ -711,7 +711,7 @@ def cbb(req):
     if not r.success then
         error('toppra failed with following message: ' .. r.error)
     end
-    return simEigen.Matrix(r.qs[1]), simEigen.Matrix(#r.ts, 1, r.ts)
+    return simEigen.Matrix(r.qs[1]).T, simEigen.Matrix(#r.ts, 1, r.ts)
 end
 
 function TimeOptimalTrajectory:remove()
