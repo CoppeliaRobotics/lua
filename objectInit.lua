@@ -301,7 +301,7 @@ end
 function objInit.path(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'ctrlPts', type = 'matrix', cols = rows, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
+        {name = 'ctrlPts', type = 'matrix', rows = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
         {name = 'hiddenDuringSim', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
         {name = 'subdiv', type = 'int', default = 100},
@@ -322,7 +322,6 @@ function objInit.path(methodName)
     else
         orientationMode = 0
     end
-    --h = sim.Object(sim.createPath(ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector:data()))
     local fl = setYieldAllowed(false)
     local code = [[function path.shaping(path,pathIsClosed,upVector)
     local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
@@ -337,13 +336,14 @@ function objInit.path(methodName)
 end]]
     code = "path = require('models.path_customization-2')\n\n" .. code
 
-    local retVal = objInit.init(methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
+    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
     retVal.name = 'Path'
-    local script = objInit.init(methodName, {type = 'script', ['script.type'] = 'customization', code = code})
+    local script = objInit.init(sim.handle_scene, methodName, {type = 'script', ['script.type'] = 'customization', code = code})
     script:setParent(retVal)
     retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
     retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
-    local data = sim.app:packTable({ctrlPts:data(), options, subdiv, smoothness, orientationMode, upVector})
+    local sim1=require'sim-1'
+    local data = sim1.packTable({ctrlPts:data(simEigen.dataOrder.columnMajor), options, subdiv, smoothness, orientationMode, upVector:data()})
     retVal:setBufferProperty("customData.ABC_PATH_CREATION", data)
     script.detachedScript:init()
     setYieldAllowed(fl)

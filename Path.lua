@@ -7,130 +7,143 @@ local simIK = require('simIK-1')
 
 local Path = class('Path')
 
-function Path:initialize(ctrlPoints, opt)
-    ctrlPoints = checkargs.checkargsEx({funcName = 'Path:new'}, {
-        {type = 'matrix', nullable = true},
-    }, ctrlPoints)
-    opt = opt or {}
-    opt.ctrlPoints = opt.ctrlPoints or {}
-    opt.pathPoints = opt.pathPoints or {}
-    checkargs.checkfields({funcName = 'Path:new'}, {
-        {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'cube'},
-        {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
-        {name = 'pointColor', type = 'color', default = Color('#ffff00')},
-        {name = 'showAxes', type = 'bool', default = false},
-        {name = 'pointRadius', type = 'float', default = 0.005},
-        {name = 'lineColor', type = 'color', default = Color('#ff8800')},
-        {name = 'tubeRadius', type = 'float', default = 0.0025},
-        {name = 'duplicateThreshold', type = 'float', default = 0.02},
-        {name = 'linearityTolerance', type = 'float', default = 0.001}, -- in percent
-    }, opt.ctrlPoints)
-    checkargs.checkfields({funcName = 'Path:new'}, {
-        {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'none'},
-        {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
-        {name = 'pointColor', type = 'color', default = Color('#000000')},
-        {name = 'showAxes', type = 'bool', default = false},
-        {name = 'pointRadius', type = 'float', default = 0.002},
-        {name = 'lineColor', type = 'color', default = Color('#050505')},
-        {name = 'tubeRadius', type = 'float', default = 0.0025},
-        {name = 'samplingDistance', type = 'float', default = 0.02},
-        {name = 'bezierSmoothing', type = 'float', range = {0.05, 1.0}, default = 1.0},
-        {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
-    }, opt.pathPoints)
-    checkargs.checkfields({funcName = 'Path:new'}, {
-        {name = 'onlyCtrlPoints', type = 'bool', default = false},
-        {name = 'closed', type = 'bool', default = false},
-        {name = 'closedRepeatsStart', type = 'bool', default = false},
-    }, opt)
-    
-    if ctrlPoints then
-        opt.dim = ctrlPoints:rows()
-        assert(opt.dim > 0, 'invalid control points')
-        if (opt.types == nil) and (opt.dim == 7) then
-            opt.types = {'lin', 'lin', 'lin', 'quat', 'quat', 'quat', 'quat'}
-        end
-        checkargs.checkfields({funcName = 'Path:new'}, {
-            {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
-            {name = 'types', type = 'table', size = opt.dim, default = table.rep('lin', opt.dim)},
-            {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
-        }, opt)
+function Path:initialize(ctrlPoints, opt, data)
+    if data then
+        self._data = data
     else
+        ctrlPoints = checkargs.checkargsEx({funcName = 'Path:new'}, {
+            {type = 'matrix', nullable = true},
+        }, ctrlPoints)
+        opt = opt or {}
+        opt.ctrlPoints = opt.ctrlPoints or {}
+        opt.pathPoints = opt.pathPoints or {}
         checkargs.checkfields({funcName = 'Path:new'}, {
-            {name = 'types', type = 'table', range = '1..*'}, -- in this case not optional
-        }, opt)
-        opt.dim = #opt.types
+            {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'cube'},
+            {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
+            {name = 'pointColor', type = 'color', default = Color('#ffff00')},
+            {name = 'showAxes', type = 'bool', default = false},
+            {name = 'pointRadius', type = 'float', default = 0.005},
+            {name = 'lineColor', type = 'color', default = Color('#ff8800')},
+            {name = 'tubeRadius', type = 'float', default = 0.0025},
+            {name = 'duplicateThreshold', type = 'float', default = 0.02},
+            {name = 'linearityTolerance', type = 'float', default = 0.001}, -- in percent
+        }, opt.ctrlPoints)
         checkargs.checkfields({funcName = 'Path:new'}, {
-            {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
-            {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
+            {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'none'},
+            {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
+            {name = 'pointColor', type = 'color', default = Color('#000000')},
+            {name = 'showAxes', type = 'bool', default = false},
+            {name = 'pointRadius', type = 'float', default = 0.002},
+            {name = 'lineColor', type = 'color', default = Color('#050505')},
+            {name = 'tubeRadius', type = 'float', default = 0.0025},
+            {name = 'samplingDistance', type = 'float', default = 0.02},
+            {name = 'bezierSmoothing', type = 'float', range = {0.05, 1.0}, default = 1.0},
+            {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
+        }, opt.pathPoints)
+        checkargs.checkfields({funcName = 'Path:new'}, {
+            {name = 'onlyCtrlPoints', type = 'bool', default = false},
+            {name = 'closed', type = 'bool', default = false},
+            {name = 'closedRepeatsStart', type = 'bool', default = false},
         }, opt)
-        ctrlPoints = simEigen.Matrix(opt.dim, 0, {})
-    end
-    local quatC = 0
-    for i = 1, opt.dim do
-        if opt.types[i] == 'lin' then
-            if quatC ~= 0 then
-                error("invalid 'types' array")
+        
+        if ctrlPoints then
+            opt.dim = ctrlPoints:rows()
+            assert(opt.dim > 0, 'invalid control points')
+            if (opt.types == nil) and (opt.dim == 7) then
+                opt.types = {'lin', 'lin', 'lin', 'quat', 'quat', 'quat', 'quat'}
             end
-            opt.types[i] = 0
-        elseif opt.types[i] == 'ang' then
-            if quatC ~= 0 then
-                error("invalid 'types' array")
-            end
-            opt.types[i] = 1
-        elseif opt.types[i] == 'quat' then
-            opt.bounds[i] = {}
-            opt.types[i] = 2
-            quatC = quatC + 1
-            if quatC == 4 then
-                quatC = 0
-            end
+            checkargs.checkfields({funcName = 'Path:new'}, {
+                {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
+                {name = 'types', type = 'table', size = opt.dim, default = table.rep('lin', opt.dim)},
+                {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
+            }, opt)
         else
+            checkargs.checkfields({funcName = 'Path:new'}, {
+                {name = 'types', type = 'table', range = '1..*'}, -- in this case not optional
+            }, opt)
+            opt.dim = #opt.types
+            checkargs.checkfields({funcName = 'Path:new'}, {
+                {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
+                {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
+            }, opt)
+            ctrlPoints = simEigen.Matrix(opt.dim, 0, {})
+        end
+        local quatC = 0
+        for i = 1, opt.dim do
+            if opt.types[i] == 'lin' then
+                if quatC ~= 0 then
+                    error("invalid 'types' array")
+                end
+                opt.types[i] = 0
+            elseif opt.types[i] == 'ang' then
+                if quatC ~= 0 then
+                    error("invalid 'types' array")
+                end
+                opt.types[i] = 1
+            elseif opt.types[i] == 'quat' then
+                opt.bounds[i] = {}
+                opt.types[i] = 2
+                quatC = quatC + 1
+                if quatC == 4 then
+                    quatC = 0
+                end
+            else
+                error("invalid 'types' array")
+            end
+            local b = opt.bounds[i]
+            if #b > 0 then
+                if #b > 2 then
+                    error("invalid 'bounds' array")
+                else
+                    if (type(b[1]) ~= 'number') or (type(b[2]) ~= 'number') or (b[2] < b[1]) or (opt.types[i] == 2) then
+                        error("invalid 'bounds' array")
+                    end
+                end
+            end
+        end
+        if quatC ~= 0 then
             error("invalid 'types' array")
         end
-        local b = opt.bounds[i]
-        if #b > 0 then
-            if #b > 2 then
-                error("invalid 'bounds' array")
-            else
-                if (type(b[1]) ~= 'number') or (type(b[2]) ~= 'number') or (b[2] < b[1]) or (opt.types[i] == 2) then
-                    error("invalid 'bounds' array")
-                end
-            end
-        end
-    end
-    if quatC ~= 0 then
-        error("invalid 'types' array")
-    end
 
-    local data = {}
-    self._data = data
-    data.ctrlPoints = {}
-    data.pathPoints = {}
-    data.ctrlPoints.opt = opt.ctrlPoints
-    data.pathPoints.opt = opt.pathPoints
+        local data = {}
+        self._data = data
+        data.ctrlPoints = {}
+        data.pathPoints = {}
+        data.ctrlPoints.opt = opt.ctrlPoints
+        data.pathPoints.opt = opt.pathPoints
 
-    data.opt = copy.deepcopy(opt)
-    data.opt.ctrlPoints = nil
-    data.opt.pathPoints = nil
+        data.opt = copy.deepcopy(opt)
+        data.opt.ctrlPoints = nil
+        data.opt.pathPoints = nil
 
-    if data.opt.joints then
-        data.opt.displDim = -1
-    else
-        if (data.opt.dim > 1) and (data.opt.types[1] == 0) and (data.opt.types[2] == 0) then
-            if (data.opt.dim > 2) and (data.opt.types[3] == 0) then
-                if (data.opt.dim > 6) and (data.opt.types[4] == 2) and (data.opt.types[5] == 2) and (data.opt.types[6] == 2) and (data.opt.types[7] == 2) then
-                    data.opt.displDim = 7
-                else
-                    data.opt.displDim = 3
-                end
-            else
-                data.opt.displDim = 2
-            end
+        if data.opt.joints then
+            data.opt.displDim = -1
         else
-            data.opt.displDim = 0
+            if (data.opt.dim > 1) and (data.opt.types[1] == 0) and (data.opt.types[2] == 0) then
+                if (data.opt.dim > 2) and (data.opt.types[3] == 0) then
+                    if (data.opt.dim > 6) and (data.opt.types[4] == 2) and (data.opt.types[5] == 2) and (data.opt.types[6] == 2) and (data.opt.types[7] == 2) then
+                        data.opt.displDim = 7
+                    else
+                        data.opt.displDim = 3
+                    end
+                else
+                    data.opt.displDim = 2
+                end
+            else
+                data.opt.displDim = 0
+            end
         end
+        self:setPoints(ctrlPoints, true)
     end
-    self:setPoints(ctrlPoints, true)
+end
+
+function Path.fromBuffer(buff, objects)
+    local data = sim.app:unpack(buff)
+    objects = objects or {}
+    for k, v in pairs(objects) do
+        data.opt[k] = v
+    end
+    return Path(nil, nil, data)
 end
 
 function Path.fromJoints(endEffector, base, opt)
@@ -845,13 +858,13 @@ function Path:closest(point)
 end
 
 function Path:getPoint(distance)
-    local data = self._data
     if not noArgCheck then
         distance = checkargs.checkargsEx({funcName = 'getPoint'}, {
             {type = 'float'},
         }, distance)
     end
     self:update()
+    local data = self._data
     if distance < 0.0 then
         distance = 0.0
     end
@@ -897,6 +910,28 @@ function Path:getPoint(distance)
         end
         return retVal
     end
+end
+
+function Path:toBuffer()
+    self:update()
+    -- Do not serialize objects!
+    local objectStr = {'object', 'tip', 'base', 'joints'}
+    local objects = {}
+    for i = 1, #objectStr do
+        objects[objectStr[i]] = self._data.opt[objectStr[i]]
+        self._data.opt[objectStr[i]] = nil
+    end
+    local ctrlPtMarkers = self._data.ctrlPoints.markers
+    self._data.ctrlPoints.markers = nil
+    local pathPtMarkers = self._data.pathPoints.markers
+    self._data.pathPoints.markers = nil
+    local retVal = sim.app:pack(self._data)
+    self._data.ctrlPoints.markers = ctrlPtMarkers
+    self._data.pathPoints.markers = pathPtMarkers
+    for k, v in pairs(objects) do
+        self._data.opt[k] = v
+    end
+    return retVal, objects
 end
 
 function Path:createMarkers()
