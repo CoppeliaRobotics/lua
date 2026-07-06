@@ -182,6 +182,22 @@ function MethodInfo:getParamsDoc(params)
     return x
 end
 
+function MethodInfo:getDoc()
+    local doc = self:getCallTip()
+    if self.description then
+        doc = doc .. '<hr/>' .. self.description
+    end
+    local p = self:getParamsDoc(self.params)
+    if p and p ~= '' then
+        doc = doc .. '<hr/>Params:<br/>' .. p
+    end
+    local r = self:getParamsDoc(self.returns)
+    if r and r ~= '' then
+        doc = doc .. '<hr/>Return value(s):<br/>' .. r
+    end
+    return doc
+end
+
 local ClassInfo = class 'sim.apidoc.ClassInfo'
 
 function ClassInfo:initialize(node)
