@@ -304,6 +304,97 @@ function objInit.path(methodName)
         {name = 'ctrlPts', type = 'matrix', rows = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
         {name = 'hiddenDuringSim', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
+    }, objInit.p)
+    local ctrlPts = objInit.extractValueOrDefault('ctrlPts')
+
+    objInit.p.ctrlPoints = objInit.p.ctrlPoints or {}
+    objInit.p.ctrlPoints.pointType = objInit.p.ctrlPoints.pointType or 'none'
+    objInit.p.ctrlPoints.lineType = objInit.p.ctrlPoints.lineType or 'line'
+    objInit.p.ctrlPoints.lineColor = objInit.p.ctrlPoints.lineColor or Color'#00ffa0'
+    objInit.p.ctrlPoints.showAxes = objInit.p.ctrlPoints.showAxes or false
+    objInit.p.ctrlPoints.duplicateThreshold = objInit.p.ctrlPoints.duplicateThreshold or 0.01
+    objInit.p.ctrlPoints.linearityTolerance = objInit.p.ctrlPoints.linearityTolerance or 0.01
+    objInit.p.pathPoints = objInit.p.pathPoints or {}
+    objInit.p.pathPoints.pointType = objInit.p.pathPoints.pointType or 'none'
+    objInit.p.pathPoints.lineType = objInit.p.pathPoints.lineType or 'line'
+    objInit.p.pathPoints.lineColor = objInit.p.pathPoints.lineColor or Color'#00dd00'
+    objInit.p.pathPoints.showAxes = objInit.p.pathPoints.showAxes or true
+    objInit.p.pathPoints.type = objInit.p.pathPoints.type or 'quadraticBezier'
+    objInit.p.pathPoints.bezierSmoothing = objInit.p.pathPoints.bezierSmoothing or 1.0
+    objInit.p.pathPoints.samplingDistance = objInit.p.pathPoints.samplingDistance or 0.05
+    objInit.p.extrusion = objInit.p.extrusion or {}
+    --objInit.p.extrusion.section = objInit.p.extrusion.section or nil
+    objInit.p.extrusion.color = objInit.p.extrusion.color or Color'#ffffff'
+    objInit.p.extrusion.selectable = objInit.p.extrusion.selectable or false
+    --objInit.p.extrusion.upVector = objInit.p.extrusion.upVector or nil
+    objInit.p.dummy = objInit.p.dummy or {}
+    objInit.p.dummy.size = objInit.p.dummy.size or 0.01
+    objInit.p.dummy.color = objInit.p.dummy.color or Color'#00ccff'
+    if objInit.p.dummy.visible == nil then objInit.p.dummy.visible = true end
+
+    local code = [[pathModel = require'models/path-2'
+
+function sysCall_init()
+    local opt = {}
+    opt.closed = false
+    opt.hiddenDuringSim = false
+    opt.ctrlPoints = {}
+    opt.ctrlPoints.pointType = 'none'
+    opt.ctrlPoints.lineType = 'line'
+    opt.ctrlPoints.lineColor = Color'#00ffa0'
+    opt.ctrlPoints.showAxes = false
+    opt.ctrlPoints.duplicateThreshold = 0.01
+    opt.ctrlPoints.linearityTolerance = 0.01
+    opt.pathPoints = {}
+    opt.pathPoints.pointType = 'none'
+    opt.pathPoints.lineType = 'line'
+    opt.pathPoints.lineColor = Color'#00dd00'
+    opt.pathPoints.showAxes = false
+    opt.pathPoints.type = 'quadraticBezier'
+    opt.pathPoints.bezierSmoothing = 1.0
+    opt.pathPoints.samplingDistance = 0.02
+    opt.extrusion = {}
+    opt.extrusion.section = nil --{0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
+    opt.extrusion.color = Color'#ffffff'
+    opt.extrusion.selectable = false
+    opt.extrusion.upVector = nil
+    opt.dummy = {}
+    opt.dummy.size = 0.01
+    opt.dummy.color = Color'#00ccff'
+    opt.dummy.visible = true
+    -- pathModel.update(opt)
+end]]
+
+    setYieldAllowed(false)
+    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'script', ['script.type'] = 'customization', code = code})
+    retVal.name = 'Path'
+    retVal.size = 0.025
+    retVal.color.diffuse = Color'#00ffff'
+    retVal.layer = 4
+    for i = 1, ctrlPts:cols() do
+        local dummy = objInit.init(sim.handle_scene, methodName, {type = 'dummy'})
+        dummy.name = 'ctrlPt'
+        dummy.customData.ctrlPtInfo = sim.app:pack({index = i})
+        dummy:setParent(retVal)
+        dummy.pose = ctrlPts:block(1, i, -1, 1):data()
+    end
+    retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
+    retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
+    retVal.customData.pathCreationInfo = sim.app:pack(objInit.p)
+    retVal.detachedScript:init()
+    setYieldAllowed(true)
+    --retVal:setProperties(objInit.p)
+    return retVal
+end
+
+
+--[=[
+function objInit.path(methodName)
+    local simEigen = require 'simEigen'
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'ctrlPts', type = 'matrix', rows = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
+        {name = 'hiddenDuringSim', type = 'bool', default = false},
+        {name = 'closed', type = 'bool', default = false},
         {name = 'subdiv', type = 'int', default = 100},
         {name = 'smoothness', type = 'float', default = 1.0},
         {name = 'orientationMode', type = 'int', nullable = true},
@@ -350,7 +441,7 @@ end]]
     retVal:setProperties(objInit.p)
     return retVal
 end
-
+--]=]
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'script.type', enum = sim.scriptType, default = 'simulation'},

@@ -411,9 +411,12 @@ function Path:_removeDuplicates(points)
                             i = i + 1
                         end
                     end
-                    if p1 then
-                        retVal = retVal:horzcat(p1)
+                    if i == points:cols() - 1 then
+                        retVal = retVal:horzcat(points:block(1, i, -1, 1))
                     end
+--                    if p1 then
+--                        retVal = retVal:horzcat(p1)
+--                    end
                     retVal = retVal:horzcat(lastPoint)
                 end
             end
@@ -942,6 +945,7 @@ function Path:createMarkers()
     if not data.opt.onlyCtrlPoints then
         data.pathPoints.markers = self:_createMarkers(data.pathPoints.points, data.pathPoints.opt)
     end
+    return {ctrlPointMarkers = data.ctrlPoints.markers, pathPointMarkers = data.pathPoints.markers} 
 end
 
 function Path:_updateMarkers()
@@ -965,9 +969,11 @@ function Path:_createMarkers(points, opt)
                     t = 'cubes'
                 end
                 retPointMarker = sim.scene:createObject({type = 'marker', ['marker.type'] = t, ['local'] = true, itemSize = table.rep(opt.pointRadius * 2.0, 3), itemColor = opt.pointColor})
+                retPointMarker.selectable = false
             end
             if opt.showAxes then
                 retRefMarker = sim.scene:createObject({type = 'marker', ['marker.type'] = 'axes', ['local'] = true, itemSize = table.rep(opt.pointRadius * 2.0, 3)})
+                retRefMarker.selectable = false
             end
         end
         if opt.lineType ~= 0 then
@@ -976,6 +982,7 @@ function Path:_createMarkers(points, opt)
                 t = 'tubes'
             end
             retLineMarker = sim.scene:createObject({type = 'marker', ['marker.type'] = t, ['local'] = true, itemSize = table.rep(opt.tubeRadius * 2.0, 3), itemColor = opt.lineColor})
+            retLineMarker.selectable = false
         end
     end
     local markers = {pointMarker = retPointMarker, lineMarker = retLineMarker, axesMarker = retRefMarker}
