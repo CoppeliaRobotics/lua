@@ -302,9 +302,9 @@ function apidoc.getClass(className)
     return apidoc.classes[className]
 end
 
-function apidoc.getMethod(className, methodName)
+function apidoc.getMethod(className, methodName, opts)
     local c = apidoc.getClass(className)
-    if c then return c:getMethod(methodName, {searchSuperclasses = false}) end
+    if c then return c:getMethod(methodName, opts) end
 end
 
 function apidoc.findMethod(methodName)
