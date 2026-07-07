@@ -304,33 +304,48 @@ function objInit.path(methodName)
         {name = 'ctrlPts', type = 'matrix', rows = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
         {name = 'hiddenDuringSim', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
+        {name = 'orientationMetric', type = 'float', default = 0.5},
     }, objInit.p)
+
     local ctrlPts = objInit.extractValueOrDefault('ctrlPts')
 
     objInit.p.ctrlPoints = objInit.p.ctrlPoints or {}
-    objInit.p.ctrlPoints.pointType = objInit.p.ctrlPoints.pointType or 'none'
-    objInit.p.ctrlPoints.lineType = objInit.p.ctrlPoints.lineType or 'line'
-    objInit.p.ctrlPoints.lineColor = objInit.p.ctrlPoints.lineColor or Color'#00ffa0'
-    objInit.p.ctrlPoints.showAxes = objInit.p.ctrlPoints.showAxes or false
-    objInit.p.ctrlPoints.duplicateThreshold = objInit.p.ctrlPoints.duplicateThreshold or 0.01
-    objInit.p.ctrlPoints.linearityTolerance = objInit.p.ctrlPoints.linearityTolerance or 0.01
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 0},
+        {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 1},
+        {name = 'lineColor', type = 'color', default = Color'#00ffa0'},
+        {name = 'showAxes', type = 'bool', default = false},
+        {name = 'duplicateThreshold', type = 'float', default = 0.01},
+        {name = 'linearityTolerance', type = 'float', default = 0.01},
+    }, objInit.p.ctrlPoints)
+
     objInit.p.pathPoints = objInit.p.pathPoints or {}
-    objInit.p.pathPoints.pointType = objInit.p.pathPoints.pointType or 'none'
-    objInit.p.pathPoints.lineType = objInit.p.pathPoints.lineType or 'line'
-    objInit.p.pathPoints.lineColor = objInit.p.pathPoints.lineColor or Color'#00dd00'
-    objInit.p.pathPoints.showAxes = objInit.p.pathPoints.showAxes or true
-    objInit.p.pathPoints.type = objInit.p.pathPoints.type or 'quadraticBezier'
-    objInit.p.pathPoints.bezierSmoothing = objInit.p.pathPoints.bezierSmoothing or 1.0
-    objInit.p.pathPoints.samplingDistance = objInit.p.pathPoints.samplingDistance or 0.05
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 0},
+        {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 1},
+        {name = 'lineColor', type = 'color', default = Color'#00dd00'},
+        {name = 'showAxes', type = 'bool', default = false},
+        {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
+        {name = 'bezierSmoothing', type = 'float', default = 1.0},
+        {name = 'samplingDistance', type = 'float', default = 0.05},
+    }, objInit.p.pathPoints)
+
     objInit.p.extrusion = objInit.p.extrusion or {}
-    --objInit.p.extrusion.section = objInit.p.extrusion.section or nil
-    objInit.p.extrusion.color = objInit.p.extrusion.color or Color'#ffffff'
-    objInit.p.extrusion.selectable = objInit.p.extrusion.selectable or false
-    --objInit.p.extrusion.upVector = objInit.p.extrusion.upVector or nil
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'section', type = 'matrix', rows = 2, nullable = true},
+        {name = 'color', type = 'color', default = Color'#ffffff'},
+        {name = 'selectable', type = 'bool', default = false},
+        {name = 'axis', type = 'int', default = 0},
+        {name = 'upVector', type = 'vector', size = 3, default = simEigen.Vector({0.0, 0.0, 1.0})},
+    }, objInit.p.extrusion)
+
     objInit.p.dummy = objInit.p.dummy or {}
-    objInit.p.dummy.size = objInit.p.dummy.size or 0.01
-    objInit.p.dummy.color = objInit.p.dummy.color or Color'#00ccff'
-    if objInit.p.dummy.visible == nil then objInit.p.dummy.visible = true end
+    checkargs.checkfields({funcName = methodName}, {
+        {name = 'size', type = 'float', default = 0.01},
+        {name = 'color', type = 'color', default = Color'#00ccff'},
+        {name = 'visible', type = 'bool', default = true},
+    }, objInit.p.dummy)
+
 
     local code = [[pathModel = require'models/path-2'
 
@@ -338,6 +353,7 @@ function sysCall_init()
     local opt = {}
     opt.closed = false
     opt.hiddenDuringSim = false
+    opt.orientationMetric = 0.5
     opt.ctrlPoints = {}
     opt.ctrlPoints.pointType = 'none'
     opt.ctrlPoints.lineType = 'line'
@@ -352,7 +368,7 @@ function sysCall_init()
     opt.pathPoints.showAxes = false
     opt.pathPoints.type = 'quadraticBezier'
     opt.pathPoints.bezierSmoothing = 1.0
-    opt.pathPoints.samplingDistance = 0.02
+    opt.pathPoints.samplingDistance = 0.05
     opt.extrusion = {}
     opt.extrusion.section = nil --{0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
     opt.extrusion.color = Color'#ffffff'

@@ -82,6 +82,10 @@ function pathModel.start()
             dat2 = sim.app:unpack(dat2)
             pathModel.opt = dat2
         end
+        if pathModel.opt.orientationMetric then
+            pathModel.opt.metric = {1.0, 1.0, 1.0, pathModel.opt.orientationMetric, pathModel.opt.orientationMetric, pathModel.opt.orientationMetric, pathModel.opt.orientationMetric}
+            pathModel.opt.orientationMetric = nil
+        end
         pathModel.path = Path(pts, pathModel.opt)
         pathModel.modelRoot.customData.pathInfo = pathModel.path:toBuffer()
     else

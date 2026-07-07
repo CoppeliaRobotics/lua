@@ -7,6 +7,21 @@ local simIK = require('simIK-1')
 
 local Path = class('Path')
 
+local function pointTableFromMatrix(m)
+    local t = {}
+    for i = 1, m:cols() do
+        t[i] = m:block(1, i, -1, 1):data()
+    end
+    return t
+end
+
+local function matrixFromPointTable(rows, t)
+    if #t == 0 then
+        return simEigen.Matrix(rows, 0, {})
+    end
+    return simEigen.Matrix(t).T -- each inner table is one point, i.e. one column
+end
+
 function Path:initialize(ctrlPoints, opt, data)
     if data then
         self._data = data
@@ -250,8 +265,12 @@ function Path:appendPoints(ctrlPoints, update)
     }, ctrlPoints)
     assert(ctrlPoints:cols() > 0, 'invalid points')
 
-    data.ctrlPoints.toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
-    data.ctrlPoints.toUpdate = data.ctrlPoints.toUpdate:horzcat(ctrlPoints)
+    -- accumulate pending points in a table-of-tables, matrix is built in update():
+    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
+    for i = 1, ctrlPoints:cols() do
+        toUpdate[#toUpdate + 1] = ctrlPoints:block(1, i, -1, 1):data()
+    end
+    data.ctrlPoints.toUpdate = toUpdate
     if update then
         self:update()
     end
@@ -263,25 +282,26 @@ function Path:appendFromJoints(update)
     end
     local data = self._data
     assert(data.opt.joints, 'no joints specified')
-    ctrlPoints = {}
+    local ctrlPoint = {}
     for i = 1, data.opt.dim do
         if data.opt.types[i] ~= 2 then
-            ctrlPoints[#ctrlPoints + 1] = data.opt.joints[i].joint.position
+            ctrlPoint[#ctrlPoint + 1] = data.opt.joints[i].joint.position
         else
-            table.add(ctrlPoints, data.opt.joints[i].joint.quaternion:data())
+            table.add(ctrlPoint, data.opt.joints[i].joint.quaternion:data())
         end
     end
-    local toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
-    local newPt = simEigen.Vector(ctrlPoints)
+    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
+    local newPt = ctrlPoint
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
-        if toUpdate:cols() > 0 then
-            if self:distance(toUpdate:block(1, toUpdate:cols(), -1, 1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+        if #toUpdate > 0 then
+            if self:distance(simEigen.Vector(toUpdate[#toUpdate]), simEigen.Vector(newPt), true) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
     end
     if newPt then
-        data.ctrlPoints.toUpdate = toUpdate:horzcat(newPt)
+        toUpdate[#toUpdate + 1] = newPt
+        data.ctrlPoints.toUpdate = toUpdate
         if update then
             self:update()
         end
@@ -294,17 +314,18 @@ function Path:appendFromObject(update)
     end
     local data = self._data
     assert(data.opt.object, 'no object specified')
-    local toUpdate = data.ctrlPoints.toUpdate or data.ctrlPoints.points
-    local newPt = simEigen.Vector(data.opt.object.worldPose:data())
+    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
+    local newPt = data.opt.object.worldPose:data()
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
-        if toUpdate:cols() > 0 then
-            if self:distance(toUpdate:block(1, toUpdate:cols(), -1, 1), newPt, true) < data.ctrlPoints.opt.duplicateThreshold then
+        if #toUpdate > 0 then
+            if self:distance(simEigen.Vector(toUpdate[#toUpdate]), simEigen.Vector(newPt), true) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
     end
     if newPt then
-        data.ctrlPoints.toUpdate = toUpdate:horzcat(newPt)
+        toUpdate[#toUpdate + 1] = newPt
+        data.ctrlPoints.toUpdate = toUpdate
         if update then
             self:update()
         end
@@ -314,13 +335,14 @@ end
 function Path:update()
     local data = self._data
     if data.ctrlPoints.toUpdate then
-        self:setPoints(data.ctrlPoints.toUpdate)
+        -- generate the matrix from the accumulated table-of-tables, in one go:
+        self:setPoints(matrixFromPointTable(data.opt.dim, data.ctrlPoints.toUpdate))
         data.ctrlPoints.toUpdate = nil
     end
 end
 
 function Path:clearPoints()
-    self.data.ctrlPoints.toUpdate = nil
+    self._data.ctrlPoints.toUpdate = nil
     self:setPoints(nil, true)
 end
 
@@ -344,27 +366,26 @@ end
 
 function Path:_removeDuplicates(points)
     local data = self._data
-    local pts = points
 
-    local function __removeDuplicates(inPoints)
-        local retVal = inPoints:copy()
+    -- operates on a table-of-tables (one inner table per point):
+    local function __removeDuplicates(pts)
         local removed = 0
         local minPtCnt = 2
 
         -- temp. append the first point with closed paths:
         if data.opt.closed then
-            retVal = retVal:horzcat(retVal:block(1, 1, -1, 1))
+            pts[#pts + 1] = pts[1]
             minPtCnt = 3
         end
 
-        if retVal:cols() > minPtCnt then
+        if #pts > minPtCnt then
             -- Remove points close to the first point:
-            local firstPoint = retVal:block(1, 1, -1, 1)
+            local firstPoint = simEigen.Vector(pts[1])
             local i = 2
-            while i <= retVal:cols() - 1 do
-                local p = retVal:block(1, i, -1, 1)
+            while i <= #pts - 1 do
+                local p = simEigen.Vector(pts[i])
                 if self:distance(firstPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
-                    retVal = retVal:block(1, 1, -1, i - 1):horzcat(retVal:block(1, i + 1, - 1, -1))
+                    table.remove(pts, i)
                     removed = removed + 1
                 else
                     break
@@ -372,14 +393,14 @@ function Path:_removeDuplicates(points)
                 i = i + 1
             end
 
-            if retVal:cols() > minPtCnt then
+            if #pts > minPtCnt then
                 -- Remove points close to the last point:
-                local lastPoint = retVal:block(1, retVal:cols(), -1, 1)
-                local i = retVal:cols() - 1
+                local lastPoint = simEigen.Vector(pts[#pts])
+                local i = #pts - 1
                 while i >= 2 do
-                    local p = retVal:block(1, i, -1, 1)
+                    local p = simEigen.Vector(pts[i])
                     if self:distance(lastPoint, p, true) < data.ctrlPoints.opt.duplicateThreshold then
-                        retVal = retVal:block(1, 1, -1, i - 1):horzcat(retVal:block(1, i + 1, - 1, -1))
+                        table.remove(pts, i)
                         removed = removed + 1
                     else
                         break
@@ -387,51 +408,47 @@ function Path:_removeDuplicates(points)
                     i = i - 1
                 end
 
-                if retVal:cols() > minPtCnt then
+                if #pts > minPtCnt then
                     -- merge points pairwise:
-                    local points = retVal
-                    retVal = firstPoint
-                    local p0, p1
+                    local points = pts
+                    local merged = {points[1]}
                     local i = 2
-                    if points:cols() == 3 then
-                        retVal = retVal:horzcat(points:block(1, 2, -1, 1))
+                    if #points == 3 then
+                        merged[#merged + 1] = points[2]
                     else
-                        while i <= points:cols() - 2 do
-                            p0 = points:block(1, i, -1, 1)
-                            p1 = points:block(1, i + 1, -1, 1)
+                        while i <= #points - 2 do
+                            local p0 = simEigen.Vector(points[i])
+                            local p1 = simEigen.Vector(points[i + 1])
                             local d = self:distance(p0, p1, true)
                             if d >= data.ctrlPoints.opt.duplicateThreshold then
-                                retVal = retVal:horzcat(p0)
+                                merged[#merged + 1] = points[i]
                             else
-                                retVal = retVal:horzcat(self:interpolate(p0, p1, 0.5, true))
+                                merged[#merged + 1] = self:interpolate(p0, p1, 0.5, true):data()
                                 removed = removed + 1
-                                p1 = nil
                                 i = i + 1
                             end
                             i = i + 1
                         end
                     end
-                    if i == points:cols() - 1 then
-                        retVal = retVal:horzcat(points:block(1, i, -1, 1))
+                    if i == #points - 1 then
+                        merged[#merged + 1] = points[i]
                     end
---                    if p1 then
---                        retVal = retVal:horzcat(p1)
---                    end
-                    retVal = retVal:horzcat(lastPoint)
+                    merged[#merged + 1] = points[#points] -- last point
+                    pts = merged
                 end
             end
         end
 
         -- Remove the last point (coincident with the first point), with closed paths:
         if data.opt.closed then
-            retVal = retVal:block(1, 1, -1, retVal:cols() - 1)
+            table.remove(pts)
         end
 
-        return retVal, removed
+        return pts, removed
     end
 
     local cnt = 0
-    local ret = pts
+    local ret = pointTableFromMatrix(points)
     while true do
         local r
         ret, r = __removeDuplicates(ret)
@@ -440,26 +457,24 @@ function Path:_removeDuplicates(points)
         end
         cnt = cnt + r
     end
-    return ret, cnt
+    return matrixFromPointTable(data.opt.dim, ret), cnt
 end
 
 function Path:_removeColinearSegments(points)
     local data = self._data
-    local pts = points
 
-    local function __removeColinearSegments(inPoints)
-        local pts = inPoints:copy()
-
+    -- operates on a table-of-tables (one inner table per point):
+    local function __removeColinearSegments(pts)
         -- temp. append the first point with closed paths:
         if data.opt.closed then
-            pts = pts:horzcat(pts:block(1, 1, -1, 1))
+            pts[#pts + 1] = pts[1]
         end
 
         local toPrune = {}
-        for i = 1, pts:cols() - 3 do
-            local p0 = pts:block(1, i, -1, 1)
-            local p1 = pts:block(1, i + 1, -1, 1)
-            local p2 = pts:block(1, i + 2, -1, 1)
+        for i = 1, #pts - 3 do
+            local p0 = simEigen.Vector(pts[i])
+            local p1 = simEigen.Vector(pts[i + 1])
+            local p2 = simEigen.Vector(pts[i + 2])
             local d0 = self:distance(p0, p1, true)
             local d1 = self:distance(p1, p2, true)
             local t = d0 / (d0 + d1)
@@ -483,24 +498,24 @@ function Path:_removeColinearSegments(points)
                 end
             end
         end
-        local retVal = simEigen.Matrix(pts:rows(), 0, {})
+        local retVal = {}
         local removed = 0
-        for i = 1, pts:cols() do
+        for i = 1, #pts do
             if colsToRemove[i] then
                 removed = removed + 1
             else
-                retVal = retVal:horzcat(pts:block(1, i, -1, 1))
+                retVal[#retVal + 1] = pts[i]
             end
         end
         -- Remove the last point (coincident with the first point), with closed paths:
         if data.opt.closed then
-            retVal = retVal:block(1, 1, -1, retVal:cols() - 1)
+            table.remove(retVal)
         end
         return retVal, removed
     end
 
     local cnt = 0
-    local ret = pts
+    local ret = pointTableFromMatrix(points)
     while true do
         local r
         ret, r = __removeColinearSegments(ret)
@@ -509,7 +524,7 @@ function Path:_removeColinearSegments(points)
         end
         cnt = cnt + r
     end
-    return ret, cnt
+    return matrixFromPointTable(data.opt.dim, ret), cnt
 end
 
 function Path:_computeArcLengths(points)
@@ -693,6 +708,7 @@ function Path:configs(conf, noArgCheck)
     return retVal
 end
 
+--[[
 function Path:_resample(points, resamplingType)
     local data = self._data
     local pts = points
@@ -700,10 +716,10 @@ function Path:_resample(points, resamplingType)
         pts = pts:horzcat(pts:block(1, 1, -1, 1))
     end
     local arcL, distances, totalL = self:_computeArcLengths(pts)
-    local retPts
+    local retPts = {} -- accumulate resampled points as table-of-tables
     resamplingType = resamplingType or data.pathPoints.opt.type 
     if resamplingType == 0 then
-        retPts = pts:block(1, 1, -1, 1)
+        retPts[#retPts + 1] = pts:block(1, 1, -1, 1):data()
         local cnt = math.floor(totalL / data.pathPoints.opt.samplingDistance)
         local sd = totalL / (cnt + 1.0)
         local l = 0.0
@@ -716,11 +732,12 @@ function Path:_resample(points, resamplingType)
             local pa = pts:block(1, paInd, -1, 1)
             local pb = pts:block(1, paInd + 1, -1, 1)
             local r = (l - distances[paInd + 0]) / (distances[paInd + 1] - distances[paInd + 0])
-            retPts = retPts:horzcat(self:interpolate(pa, pb, r, true))
+            retPts[#retPts + 1] = self:interpolate(pa, pb, r, true):data()
         end
         if not data.opt.closed then
-            retPts = retPts:horzcat(pts:block(1, pts:cols(), -1, 1))
+            retPts[#retPts + 1] = pts:block(1, pts:cols(), -1, 1):data()
         end
+        return matrixFromPointTable(data.opt.dim, retPts)
     else
         local function getBezierPt(a, b, c, t)
             local pia = self:interpolate(a, b, 0.5, true)
@@ -734,7 +751,6 @@ function Path:_resample(points, resamplingType)
             local p2 = self:interpolate(b, pib, t, true)
             return self:interpolate(p1, p2, t, true)
         end
-        retPts = simEigen.Matrix(data.opt.dim, 0, {})
         if data.opt.closed then
             pts = pts:horzcat(pts:block(1, 2, -1, 1))
             pts = pts:block(1, pts:cols() - 2, -1, 1):horzcat(pts)
@@ -765,15 +781,225 @@ function Path:_resample(points, resamplingType)
             else
                 pi = getBezierPt(px, pa, pb, r + 0.5)
             end
-            retPts = retPts:horzcat(pi)
+            retPts[#retPts + 1] = pi:data()
             l = l + sd
         end
         if not data.opt.closed then
-            retPts = retPts:horzcat(pts:block(1, pts:cols() - 1, -1, 1))
+            retPts[#retPts + 1] = pts:block(1, pts:cols() - 1, -1, 1):data()
         end
-        retPts = self:_resample(retPts, 0)
+        return self:_resample(matrixFromPointTable(data.opt.dim, retPts), 0)
     end
-    return retPts
+end
+--]]
+
+function Path:_resample(points, resamplingType)
+    -- Faster version. Original version is above
+    local data = self._data
+    local dim = data.opt.dim
+    local closed = data.opt.closed
+    local samplingDistance = data.pathPoints.opt.samplingDistance
+    local bezierSmoothing = data.pathPoints.opt.bezierSmoothing
+    local doSmooth = bezierSmoothing < 0.999
+    resamplingType = resamplingType or data.pathPoints.opt.type
+
+    local sin, cos, atan2, acos, sqrt, abs, floor =
+        math.sin, math.cos, math.atan2, math.acos, math.sqrt, math.abs, math.floor
+
+    -- Precompute per-component handling mode once, instead of re-checking
+    -- types/bounds for every component of every interpolated point:
+    -- 0: linear, 1: cyclic angular, 2: quaternion (first of 4 components)
+    local modes = {}
+    do
+        local types, bounds = data.opt.types, data.opt.bounds
+        local i = 1
+        while i <= dim do
+            if types[i] == 2 then
+                modes[i] = 2
+                i = i + 4 -- validated in initialize: always groups of 4
+            elseif (types[i] == 0) or (#bounds[i] == 2) then
+                modes[i] = 0
+                i = i + 1
+            else
+                modes[i] = 1
+                i = i + 1
+            end
+        end
+    end
+    local metric = data.opt.metric:data() -- plain table, no per-element C calls
+
+    -- distance on plain tables (equivalent to Path:distance):
+    local function dist(a, b)
+        local d = 0.0
+        for j = 1, dim do
+            local m = modes[j]
+            if m == 0 then
+                local dd = (b[j] - a[j]) * metric[j]
+                d = d + dd * dd
+            elseif m == 1 then
+                local dd = abs(atan2(sin(b[j] - a[j]), cos(b[j] - a[j]))) * metric[j]
+                d = d + dd * dd
+            elseif m == 2 then
+                -- angle between quaternions: 2*acos(|dot|) (shortest arc)
+                local dot = a[j] * b[j] + a[j + 1] * b[j + 1] + a[j + 2] * b[j + 2] + a[j + 3] * b[j + 3]
+                if dot < 0.0 then dot = -dot end
+                if dot > 1.0 then dot = 1.0 end
+                local dd = 2.0 * acos(dot) * metric[j]
+                d = d + dd * dd
+            end
+        end
+        return sqrt(d)
+    end
+
+    -- interpolation on plain tables (equivalent to Path:interpolate),
+    -- with pure-Lua slerp (no simEigen.Quaternion object creation):
+    local function interp(a, b, t)
+        local r = {}
+        for j = 1, dim do
+            local m = modes[j]
+            if m == 0 then
+                r[j] = a[j] * (1 - t) + b[j] * t
+            elseif m == 1 then
+                local dx = atan2(sin(b[j] - a[j]), cos(b[j] - a[j]))
+                local v = a[j] + dx * t
+                r[j] = atan2(sin(v), cos(v))
+            elseif m == 2 then
+                local ax, ay, az, aw = a[j], a[j + 1], a[j + 2], a[j + 3]
+                local bx, by, bz, bw = b[j], b[j + 1], b[j + 2], b[j + 3]
+                local dot = ax * bx + ay * by + az * bz + aw * bw
+                if dot < 0.0 then
+                    bx, by, bz, bw, dot = -bx, -by, -bz, -bw, -dot
+                end
+                local x, y, z, w
+                if dot > 0.9995 then -- nearly identical: nlerp
+                    x = ax + (bx - ax) * t
+                    y = ay + (by - ay) * t
+                    z = az + (bz - az) * t
+                    w = aw + (bw - aw) * t
+                    local n = sqrt(x * x + y * y + z * z + w * w)
+                    x, y, z, w = x / n, y / n, z / n, w / n
+                else
+                    local th0 = acos(dot)
+                    local sth0 = sin(th0)
+                    local s1 = sin((1.0 - t) * th0) / sth0
+                    local s2 = sin(t * th0) / sth0
+                    x = ax * s1 + bx * s2
+                    y = ay * s1 + by * s2
+                    z = az * s1 + bz * s2
+                    w = aw * s1 + bw * s2
+                end
+                r[j], r[j + 1], r[j + 2], r[j + 3] = x, y, z, w
+            end
+        end
+        return r
+    end
+
+    -- cumulative distances along a table-of-points:
+    local function arcLengths(pts)
+        local l = 0.0
+        local distances = {0.0}
+        for i = 1, #pts - 1 do
+            l = l + dist(pts[i], pts[i + 1])
+            distances[i + 1] = l
+        end
+        return distances, l
+    end
+
+    -- linear resampling, table in / table out:
+    local function resampleLinear(pts)
+        if closed then
+            pts[#pts + 1] = pts[1]
+        end
+        local distances, totalL = arcLengths(pts)
+        local ret = {pts[1]}
+        local cnt = floor(totalL / samplingDistance)
+        local sd = totalL / (cnt + 1.0)
+        local l = 0.0
+        local paInd = 1
+        for i = 1, cnt do
+            l = l + sd
+            while l > distances[paInd + 1] do
+                paInd = paInd + 1
+            end
+            local r = (l - distances[paInd]) / (distances[paInd + 1] - distances[paInd])
+            ret[#ret + 1] = interp(pts[paInd], pts[paInd + 1], r)
+        end
+        if not closed then
+            ret[#ret + 1] = pts[#pts]
+        end
+        return ret
+    end
+
+    local pts = pointTableFromMatrix(points)
+
+    if resamplingType == 0 then
+        return matrixFromPointTable(dim, resampleLinear(pts))
+    end
+
+    -- Bezier resampling:
+    if closed then
+        pts[#pts + 1] = pts[1]
+    end
+    local distances, totalL = arcLengths(pts)
+    -- extend by one point at each end:
+    local n = #pts
+    if closed then
+        pts[n + 1] = pts[2]
+        table.insert(pts, 1, pts[n - 1])
+    else
+        pts[n + 1] = interp(pts[n - 1], pts[n], 2.0)
+        table.insert(pts, 1, interp(pts[2], pts[1], 2.0))
+    end
+
+    -- the two Bezier tangent points only depend on the segment triple, not
+    -- on t; since many consecutive samples share the same triple, cache them
+    -- (keyed by the index of the middle point):
+    local biasCache = {}
+    local function getBias(ib)
+        local c = biasCache[ib]
+        if not c then
+            local b = pts[ib]
+            local pia = interp(pts[ib - 1], b, 0.5)
+            local pib = interp(b, pts[ib + 1], 0.5)
+            if doSmooth then
+                pia = interp(b, pia, bezierSmoothing)
+                pib = interp(b, pib, bezierSmoothing)
+            end
+            c = {pia, pib}
+            biasCache[ib] = c
+        end
+        return c[1], c[2]
+    end
+
+    local ret = {}
+    local cnt = floor(totalL * 2.0 / samplingDistance) + 1.0 -- first a smaller sampling
+    local sd = totalL / cnt
+    local l = 0.0
+    local paInd = 1
+    local nd = #distances
+    for i = 1, cnt + 1 do
+        while (l > distances[paInd + 1]) and (nd > paInd + 1) do
+            paInd = paInd + 1
+        end
+        local r = (l - distances[paInd]) / (distances[paInd + 1] - distances[paInd])
+        local t, ib
+        if r >= 0.5 then
+            t, ib = r - 0.5, paInd + 2
+        else
+            t, ib = r + 0.5, paInd + 1
+        end
+        local pia, pib = getBias(ib)
+        local b = pts[ib]
+        local p1 = interp(pia, b, t)
+        local p2 = interp(b, pib, t)
+        ret[#ret + 1] = interp(p1, p2, t)
+        l = l + sd
+    end
+    if not closed then
+        ret[#ret + 1] = pts[#pts - 1]
+    end
+
+    -- final pass: stay in table land, convert to matrix only once at the end:
+    return matrixFromPointTable(dim, resampleLinear(ret))
 end
 
 function Path:createShape(opt)
@@ -1082,15 +1308,17 @@ function Path:__updateMarkers(markers, points)
                 else
                     dat = points:block(1, 1, 3, -1)
                 end
-                local lines = simEigen.Matrix(dat:rows(), 0, {})
+                -- accumulate line segment points in a table, build matrix once:
+                local lineTab = {}
                 for i = 1, dat:cols() - 1 do
-                    lines = lines:horzcat(dat:block(1, i, -1, 2))
+                    lineTab[#lineTab + 1] = dat:block(1, i, -1, 1):data()
+                    lineTab[#lineTab + 1] = dat:block(1, i + 1, -1, 1):data()
                 end
                 if data.opt.closed then
-                    lines = lines:horzcat(dat:block(1, dat:cols(), -1, 1))
-                    lines = lines:horzcat(dat:block(1, 1, -1, 1))
+                    lineTab[#lineTab + 1] = dat:block(1, dat:cols(), -1, 1):data()
+                    lineTab[#lineTab + 1] = dat:block(1, 1, -1, 1):data()
                 end
-                markers.lineMarker:addItems(lines)
+                markers.lineMarker:addItems(matrixFromPointTable(dat:rows(), lineTab))
             end
         end
     end
