@@ -243,7 +243,7 @@ end
 
 function _S.funcToString(f)
     local sim = require 'sim'
-    local allModules = sim.getProperty(sim.handle_app, 'plugins')
+    local allModules = sim.getProperty(sim.handle_app, 'pluginNames')
     table.insert(allModules, 1, 'sim')
     for _, objName in ipairs(allModules) do
         local obj = _G[objName]
