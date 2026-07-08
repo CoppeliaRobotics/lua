@@ -34,6 +34,21 @@ function Properties.enable(Class)
     dict.__newindex = function(self, key, value)
         local prop = findProp(key)
         if prop then
+            if prop.plain then
+                rawset(self, key, value)          -- plain documented field
+            elseif prop.set then
+                prop.set(self, value, key)
+            else
+                error("property '" .. key .. "' is read-only", 2)
+            end
+        else
+            rawset(self, key, value)
+        end
+    end
+    --[[
+    dict.__newindex = function(self, key, value)
+        local prop = findProp(key)
+        if prop then
             if not prop.set then
                 error("property '" .. key .. "' is read-only", 2)
             end
@@ -42,12 +57,13 @@ function Properties.enable(Class)
             rawset(self, key, value)
         end
     end
-
+    --]]
+    
     -- Registration API
     function Class.static.property(name, def)
         assert(type(name) == 'string', 'property name must be a string')
         assert(type(def) == 'table', 'property def must be a table')
-        assert(def.get or def.set, 'property needs at least a get or set')
+        --assert(def.get or def.set, 'property needs at least a get or set')
 
         -- normalize / default the metadata fields:
         assert(math.type(def.type) == 'integer', "invalid property 'type'")
@@ -55,6 +71,7 @@ function Properties.enable(Class)
         assert(def.info == nil or type(def.info) == 'table', "invalid property 'info'")
 
         def.name = name
+        def.plain = (def.get == nil and def.set == nil)  -- documented plain field
         def.type = def.type or 0
         def.flags = def.flags or (sim.propertyinfo_silent | sim.propertyinfo_modelhashexclude)
         if def.info then
@@ -75,7 +92,7 @@ function Properties.enable(Class)
             type = p.type,
             flags = p.flags,
             info = p.info,
-            readable = p.get ~= nil,
+            readable = p.plain or (p.get ~= nil),
             writable = p.set ~= nil,
         }
     end
@@ -109,7 +126,7 @@ function Properties.enable(Class)
                 type = p.type,
                 flags = p.flags,
                 info = p.info,
-                readable = p.get ~= nil,
+                readable = p.plain or (p.get ~= nil),
                 writable = p.set ~= nil,
             }
         end

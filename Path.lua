@@ -32,7 +32,7 @@ function Path:initialize(ctrlPoints, opt, data)
         opt = opt or {}
         opt.ctrlPoints = opt.ctrlPoints or {}
         opt.pathPoints = opt.pathPoints or {}
-        checkargs.checkfields({funcName = 'Path:new'}, {
+        checkargs.checkfields({funcName = "Path:new, options field 'ctrlPoints'"}, {
             {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'cube'},
             {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
             {name = 'pointColor', type = 'color', default = Color('#ffff00')},
@@ -43,7 +43,7 @@ function Path:initialize(ctrlPoints, opt, data)
             {name = 'duplicateThreshold', type = 'float', default = 0.02},
             {name = 'linearityTolerance', type = 'float', default = 0.001}, -- in percent
         }, opt.ctrlPoints)
-        checkargs.checkfields({funcName = 'Path:new'}, {
+        checkargs.checkfields({funcName = "Path:new, options field 'pathPoints'"}, {
             {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'none'},
             {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
             {name = 'pointColor', type = 'color', default = Color('#000000')},
@@ -55,7 +55,7 @@ function Path:initialize(ctrlPoints, opt, data)
             {name = 'bezierSmoothing', type = 'float', range = {0.05, 1.0}, default = 1.0},
             {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
         }, opt.pathPoints)
-        checkargs.checkfields({funcName = 'Path:new'}, {
+        checkargs.checkfields({funcName = 'Path:new, options argument'}, {
             {name = 'onlyCtrlPoints', type = 'bool', default = false},
             {name = 'closed', type = 'bool', default = false},
             {name = 'closedRepeatsStart', type = 'bool', default = false},
@@ -67,17 +67,17 @@ function Path:initialize(ctrlPoints, opt, data)
             if (opt.types == nil) and (opt.dim == 7) then
                 opt.types = {'lin', 'lin', 'lin', 'quat', 'quat', 'quat', 'quat'}
             end
-            checkargs.checkfields({funcName = 'Path:new'}, {
+            checkargs.checkfields({funcName = 'Path:new, options argument'}, {
                 {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
                 {name = 'types', type = 'table', size = opt.dim, default = table.rep('lin', opt.dim)},
                 {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
             }, opt)
         else
-            checkargs.checkfields({funcName = 'Path:new'}, {
+            checkargs.checkfields({funcName = 'Path:new, options argument'}, {
                 {name = 'types', type = 'table', range = '1..*'}, -- in this case not optional
             }, opt)
             opt.dim = #opt.types
-            checkargs.checkfields({funcName = 'Path:new'}, {
+            checkargs.checkfields({funcName = 'Path:new, options argument'}, {
                 {name = 'metric', type = 'vector', size = opt.dim, default = simEigen.Vector(opt.dim, 1.0)},
                 {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
             }, opt)
@@ -162,7 +162,7 @@ function Path.fromBuffer(buff, objects)
 end
 
 function Path.fromJoints(endEffector, base, opt)
-    endEffector, base = checkargs.checkargsEx({funcName = 'fromJoints'}, {
+    endEffector, base = checkargs.checkargsEx({funcName = 'Path.fromJoints'}, {
         {type = 'handle'},
         {type = 'handle', nullable = true},
     }, endEffector, base)
@@ -194,7 +194,7 @@ function Path.fromJoints(endEffector, base, opt)
 end
 
 function Path.fromObject(obj, opt)
-    obj = checkargs.checkargsEx({funcName = 'fromObject'}, {
+    obj = checkargs.checkargsEx({funcName = 'Path.fromObject'}, {
         {type = 'handle'},
     }, obj)
     opt = opt or {}
@@ -207,7 +207,7 @@ function Path:setPoints(ctrlPoints, noArgCheck)
     sim.self:setStepping(true)
     local data = self._data
     if not noArgCheck then
-        ctrlPoints = checkargs.checkargsEx({funcName = 'setPoints'}, {
+        ctrlPoints = checkargs.checkargsEx({funcName = 'Path:setPoints'}, {
             {type = 'matrix', rows = data.opt.dim, nullable = true},
         }, ctrlPoints)
     end
@@ -260,7 +260,7 @@ function Path:appendPoints(ctrlPoints, update)
         update = true
     end
     local data = self._data
-    ctrlPoints = checkargs.checkargsEx({funcName = 'setPoints'}, {
+    ctrlPoints = checkargs.checkargsEx({funcName = 'Path:appendPoints'}, {
         {type = 'matrix', rows = data.opt.dim},
     }, ctrlPoints)
     assert(ctrlPoints:cols() > 0, 'invalid points')
@@ -557,7 +557,7 @@ function Path:distance(conf1, conf2, noArgCheck)
     local confA = conf1
     local confB = conf2
     if not noArgCheck then
-        confA, confB = checkargs.checkargsEx({funcName = 'distance'}, {
+        confA, confB = checkargs.checkargsEx({funcName = 'Path:distance'}, {
             {type = 'vector', size = data.opt.dim},
             {type = 'vector', size = data.opt.dim},
         }, conf1, conf2)
@@ -598,7 +598,7 @@ function Path:interpolate(conf1, conf2, t, noArgCheck)
     local confA = conf1
     local confB = conf2
     if not noArgCheck then
-        confA, confB, t = checkargs.checkargsEx({funcName = 'interpolate'}, {
+        confA, confB, t = checkargs.checkargsEx({funcName = 'Path:interpolate'}, {
             {type = 'vector', size = data.opt.dim},
             {type = 'vector', size = data.opt.dim},
             {type = 'float'},
@@ -633,7 +633,7 @@ end
 function Path:configs(conf, noArgCheck)
     local data = self._data
     if not noArgCheck then
-        conf = checkargs.checkargsEx({funcName = 'configs'}, {
+        conf = checkargs.checkargsEx({funcName = 'Path:configs'}, {
             {type = 'vector', size = data.opt.dim},
         }, conf)
     end
@@ -1044,7 +1044,7 @@ end
 function Path:closest(point)
     local data = self._data
     if not noArgCheck then
-        point = checkargs.checkargsEx({funcName = 'closest'}, {
+        point = checkargs.checkargsEx({funcName = 'Path:closest'}, {
             {type = 'vector', size = data.opt.dim},
         }, point)
     end
@@ -1088,7 +1088,7 @@ end
 
 function Path:getPoint(distance)
     if not noArgCheck then
-        distance = checkargs.checkargsEx({funcName = 'getPoint'}, {
+        distance = checkargs.checkargsEx({funcName = 'Path:getPoint'}, {
             {type = 'float'},
         }, distance)
     end
