@@ -295,59 +295,74 @@ function string.renderxml(node, opts, _indent)
     end
     opts = opts or {}
     _indent = _indent or ""
-
     local nl = "\n"
+
+    local shortFormat = nil
+    if node.tag == nil then
+        assert(type(node[1]) == 'string', 'missing tag')
+        shortFormat = true
+    else
+        shortFormat = false
+    end
 
     local xml = {}
 
+    local tag = shortFormat and node[1] or node.tag
+
+    local attrs = shortFormat and node or node.attrs
     local attrsEntries = {}
-    if node.attrs then
+    if attrs then
         local done = {}
         for _, k in ipairs(opts.attrsOrder or {}) do
-            local v = node.attrs[k]
+            local v = attrs[k]
             if v then
                 table.insert(attrsEntries, {k, v})
                 done[k] = true
             end
         end
-        for k, v in pairs(node.attrs) do
+        for k, v in pairs(attrs) do
             if not done[k] then
                 table.insert(attrsEntries, {k, v})
             end
         end
     end
-    local attrs = ""
+    local attrsStr = ""
     for _, attrEntry in ipairs(attrsEntries) do
         local k, v = table.unpack(attrEntry)
-        if opts.attrUnderscoreToDash ~= false then
-            k = k:gsub('_', '-')
+        if type(k) == 'string' then
+            if opts.attrUnderscoreToDash ~= false then
+                k = k:gsub('_', '-')
+            end
+            v = string.escapehtml(tostring(v))
+            attrsStr = attrsStr .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
         end
-        v = string.escapehtml(tostring(v))
-        attrs = attrs .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
     end
 
-    if not node.children or #node.children == 0 then
-        table.insert(xml, string.format("%s<%s%s />", _indent, node.tag, attrs))
+    local children = shortFormat and node or node.children
+    local numChildren = shortFormat and (#node - 1) or #node.children
+    local i = shortFormat and 2 or 1 -- starting index
+
+    if not children or numChildren == 0 then
+        table.insert(xml, string.format("%s<%s%s />", _indent, tag, attrsStr))
         return table.concat(xml, "")
     end
 
     -- exactly one text child -> inline start/end tag
-    if #node.children == 1 and type(node.children[1]) == "string" then
-        table.insert(xml,
-            string.format("%s<%s%s>%s</%s>", _indent, node.tag, attrs, string.escapehtml(node.children[1]), node.tag)
-        )
+    if numChildren == 1 and type(children[i]) == "string" then
+        table.insert(xml, string.format("%s<%s%s>%s</%s>", _indent, tag, attrsStr, string.escapehtml(children[i]), tag))
         return table.concat(xml)
     end
 
-    table.insert(xml, string.format("%s<%s%s>", _indent, node.tag, attrs))
-    for _, child in ipairs(node.children) do
-        if type(child) == "string" then
-            table.insert(xml, string.escapehtml(child))
+    table.insert(xml, string.format("%s<%s%s>", _indent, tag, attrsStr))
+    while children[i] do
+        if type(children[i]) == "string" then
+            table.insert(xml, string.escapehtml(children[i]))
         else
-            table.insert(xml, nl .. string.renderxml(child, opts, _indent .. "  "))
+            table.insert(xml, nl .. string.renderxml(children[i], opts, _indent .. "  "))
         end
+        i = i + 1
     end
-    table.insert(xml, string.format("%s</%s>", nl .. _indent, node.tag))
+    table.insert(xml, string.format("%s</%s>", nl .. _indent, tag))
 
     return table.concat(xml)
 end
