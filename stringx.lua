@@ -338,11 +338,11 @@ function string.renderxml(node, opts, _indent)
         end
     end
 
-    local children = shortFormat and node or node.children
-    local numChildren = shortFormat and (#node - 1) or #node.children
+    local children = shortFormat and node or node.children or {}
+    local numChildren = shortFormat and (#children - 1) or #children
     local i = shortFormat and 2 or 1 -- starting index
 
-    if not children or numChildren == 0 then
+    if numChildren == 0 then
         table.insert(xml, string.format("%s<%s%s />", _indent, tag, attrsStr))
         return table.concat(xml, "")
     end
@@ -545,5 +545,40 @@ function string.unittest()
     assert(table.eq({string.blocksize('aaa\naaa')}, {3, 2}))
     assert(string.blockpad('a\naa', 4, 3) == 'a   \naa  \n    ')
     assert(string.blockhstack({'aa\naa', 'bbb\nbbb\nbbb'}) == '   bbb\naa bbb\naa bbb')
+    assert(
+        string.renderxml{
+            tag = 'ui',
+            attrs = {
+                title = 'thetitle',
+                closeable = true,
+                resizable = 4,
+                ['on-close'] = ':onClose',
+            },
+            children = {
+                {
+                    tag = 'text-browser',
+                    attrs = {
+                        id = 1,
+                        style = 'color: red;',
+                        ['read-only'] = true,
+                    }
+                },
+            },
+        }
+        ==
+        string.renderxml{
+            'ui',
+            title = 'thetitle',
+            closeable = true,
+            resizable = 4,
+            on_close = ':onClose',
+            {
+                'text-browser',
+                id = 1,
+                style = 'color: red;',
+                read_only = true,
+            },
+        }
+    )
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
