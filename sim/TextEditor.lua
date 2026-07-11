@@ -1,5 +1,4 @@
 local CustomClass = require 'sim.CustomClass'
-
 local TextEditor = CustomClass 'textEditor'
 
 TextEditor:setColorProperty('background', Color 'white')
@@ -15,14 +14,11 @@ TextEditor:setIntProperty('position.y', 50)
 TextEditor:setBoolProperty('closeable', true)
 TextEditor:setBoolProperty('resizable', true)
 TextEditor:setIntProperty('fontSize', 12)
-if sim.self.type == sim.scripttype_sandbox or sim.self.type == sim.scripttype_addon then
-    TextEditor:setIntProperty('sceneUid', -1)
-else
-    TextEditor:setIntProperty('sceneUid', sim.scene.uid)
-end
 TextEditor:setStringProperty('text', '')
+TextEditor:setIntProperty('sceneUid', -1)
 
 function TextEditor:init()
+    local sim = require 'sim-2'
     local xml = string.renderxml{
         tag = 'ui',
         attrs = {
@@ -54,8 +50,11 @@ function TextEditor:init()
     }
     local simUI = require 'simUI'
     self.ui = simUI.create(xml)
-
-    local sim = require 'sim-2'
+    
+    if sim.self.detachedScript.type ~= 'sandbox' and sim.self.detachedScript.type ~= 'addon' then
+        self.sceneUid = sim.scene.uid
+    end
+    
     sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
     sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 
