@@ -674,9 +674,11 @@ function objInit.shape(methodName)
         }, objInit.p.mesh)
         local texture_interpolate = true
         local texture_decal = false
-        local texture_rgba = false
         local texture_horizFlip = false
         local texture_vertFlip = false
+        local texture_repeatU = false
+        local texture_repeatV = false
+        local texture_scalingUV = nil
         local texture_res = nil
         local texture_coord = nil
         local texture_img = nil
@@ -684,25 +686,23 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (mesh.texture field)'}, {
                 {name = 'interpolate', type = 'bool', default = true},
                 {name = 'decal', type = 'bool', default = false},
-                {name = 'rgba', type = 'bool', default = false},
-                {name = 'horizFlip', type = 'bool', default = false},
-                {name = 'vertFlip', type = 'bool', default = false},
-            }, objInit.p.mesh.texture)
-            local vals = 3
-            if objInit.p.mesh.texture.rgba then
-                vals = 4
-            end
-            checkargs.checkfields({funcName = methodName .. ' (mesh.texture field)'}, {
+                {name = 'flipH', type = 'bool', default = false},
+                {name = 'flipV', type = 'bool', default = false},
+                {name = 'repeatU', type = 'bool', default = false},
+                {name = 'repeatV', type = 'bool', default = false},
+                {name = 'scalingUV', type = 'table', item_type = 'float', default = {1.0, 1.0}},
                 {name = 'resolution', type = 'table', item_type = 'int', size = 2},
-                {name = 'image', type = 'buffer', size = vals * objInit.p.mesh.texture.resolution[1] * objInit.p.mesh.texture.resolution[2]},
+                {name = 'image', type = 'buffer', nullable = true},
                 {name = 'coordinates', type = 'matrix', rows = 2, cols = #objInit.p.mesh.indices, nullable = true},
             }, objInit.p.mesh.texture)
 
             texture_interpolate = objInit.extractValueOrDefault('interpolate', true, objInit.p.mesh.texture)
             texture_decal = objInit.extractValueOrDefault('decal', false, objInit.p.mesh.texture)
-            texture_rgba = objInit.extractValueOrDefault('rgba', false, objInit.p.mesh.texture)
-            texture_horizFlip = objInit.extractValueOrDefault('horizFlip', false, objInit.p.mesh.texture)
-            texture_vertFlip = objInit.extractValueOrDefault('vertFlip', false, objInit.p.mesh.texture)
+            texture_horizFlip = objInit.extractValueOrDefault('flipH', false, objInit.p.mesh.texture)
+            texture_vertFlip = objInit.extractValueOrDefault('flipV', false, objInit.p.mesh.texture)
+            texture_repeatU = objInit.extractValueOrDefault('repeatU', false, objInit.p.mesh.texture)
+            texture_repeatV = objInit.extractValueOrDefault('repeatV', false, objInit.p.mesh.texture)
+            texture_scalingUV = objInit.extractValueOrDefault('scalingUV', nil, objInit.p.mesh.texture)
             texture_res = objInit.extractValueOrDefault('resolution', nil, objInit.p.mesh.texture)
             texture_coord = objInit.extractValueOrDefault('coordinates', nil, objInit.p.mesh.texture)
             texture_img = objInit.extractValueOrDefault('image', nil, objInit.p.mesh.texture)
@@ -710,11 +710,9 @@ function objInit.shape(methodName)
         local options = 0
             + v(1, objInit.extractValueOrDefault('culling'))
             + v(2, objInit.extractValueOrDefault('showEdges'))
-            + v(4, not texture_interpolate)
-            + v(8, texture_decal)
-            + v(16, texture_rgba)
-            + v(32, texture_horizFlip)
-            + v(64, texture_vertFlip)
+        if texture_coord then
+            options = options | 128 -- do not simplify/modify vertices/indices
+        end
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         local vertices = objInit.extractValueOrDefault('vertices', nil, objInit.p.mesh)
         local indices = objInit.extractValueOrDefault('indices', nil, objInit.p.mesh)
@@ -725,7 +723,10 @@ function objInit.shape(methodName)
         if texture_coord then
             texture_coord = texture_coord:data(simEigen.dataOrder.columnMajor)
         end
-        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals, texture_coord, texture_img, texture_res))
+        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals))
+        if texture_img then
+            retVal.meshes[1].texture:set(texture_img, texture_res, {coordinates = texture_coord, interpolate = texture_interpolate, decal = texture_decal, flipH = texture_horizFlip, flipV = texture_vertFlip, repeatU = texture_repeatU, repeatV = texture_repeatV, scalingUV = texture_scalingUV})
+        end
         local bbQuat = objInit.extractValueOrDefault('boundingBoxQuaternion', nil, objInit.p.mesh)
         if bbQuat then
             retVal:alignBoundingBox(bbQuat)
