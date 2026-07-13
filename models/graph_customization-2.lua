@@ -1,5 +1,8 @@
 local sim = require('sim')
-local simUI = require('simUI')
+local simUI
+if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
+    simUI = require('simUI')
+end
 
 -- e.g. to record data constantly, i.e. also when simulation is not running:
 
@@ -52,6 +55,8 @@ function sysCall_resume()
 end
 --]]
 
+_S.graph = {}
+
 function sysCall_init()
     _S.graph.init()
 end
@@ -62,9 +67,18 @@ end
 
 function sysCall_sensing()
     _S.graph.handle()
-    _S.graph.updateCurves()
+    if simUI then
+        _S.graph.updateCurves()
+    end
 end
 
+function sysCall_beforeSimulation()
+    _S.graph.beforeSimulation()
+end
+
+if simUI then
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
 function sysCall_nonSimulation()
     local upd = sim.getObjectInt32Param(_S.graph.model, sim.graphintparam_needs_refresh)
     if upd == 1 then
@@ -73,9 +87,6 @@ function sysCall_nonSimulation()
     end
 end
 
-function sysCall_beforeSimulation()
-    _S.graph.beforeSimulation()
-end
 
 function sysCall_afterSimulation()
     _S.graph.afterSimulation()
@@ -137,8 +148,6 @@ function sysCall_userConfig()
     _S.graph.ui = simUI.create(xml)
     _S.graph.setDlgItemContent()
 end
-
-_S.graph = {}
 
 function _S.graph.removeDlg()
     local x, y = simUI.getPosition(_S.graph.ui)
@@ -735,21 +744,6 @@ function _S.graph.getUpdateTick(v)
     return 1
 end
 
-function _S.graph.init()
-    _S.graph.model = sim.getObject('..')
-    if sim.getExplicitHandling(_S.graph.model) == 0 then
-        sim.setExplicitHandling(_S.graph.model, 1)
-    end
-    _S.graph.allCurves_event = {}
-    _S.graph.allIds_event = {}
-    local c = _S.graph.readInfo()
-    _S.graph.updateTick = _S.graph.getUpdateTick(c['updateFreq'])
-    _S.graph.updateCnt = 0
-    _S.graph.plotTabIndex = 0
-    _S.graph.createOrRemovePlotIfNeeded()
-    _S.graph.updateCurves(true)
-end
-
 function _S.graph.cleanup()
     _S.graph.removePlot()
     for i = 1, #_S.graph.allCurves_event do
@@ -758,24 +752,48 @@ function _S.graph.cleanup()
     end
 end
 
-function _S.graph.beforeSimulation()
-    _S.graph.reset()
-end
-
 function _S.graph.afterSimulation()
     _S.graph.createOrRemovePlotIfNeeded(false)
     _S.graph.updateCurves(true)
     _S.graph.enableMouseInteractions(true)
 end
 
+end -- "if simUI then"
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+
+
+function _S.graph.beforeSimulation()
+    _S.graph.reset()
+end
+
+function _S.graph.init()
+    _S.graph.model = sim.getObject('..')
+    if sim.getExplicitHandling(_S.graph.model) == 0 then
+        sim.setExplicitHandling(_S.graph.model, 1)
+    end
+    if simUI then
+        _S.graph.allCurves_event = {}
+        _S.graph.allIds_event = {}
+        local c = _S.graph.readInfo()
+        _S.graph.updateTick = _S.graph.getUpdateTick(c['updateFreq'])
+        _S.graph.updateCnt = 0
+        _S.graph.plotTabIndex = 0
+        _S.graph.createOrRemovePlotIfNeeded()
+        _S.graph.updateCurves(true)
+    end
+end
+
 function _S.graph.reset()
     -- i.e. reset graph and start recording
     sim.resetGraph(_S.graph.model)
-    _S.graph.removePlot()
-    _S.graph.createOrRemovePlotIfNeeded(true)
-    _S.graph.prepareCurves()
-    _S.graph.clearCurves()
-    _S.graph.enableMouseInteractions(false)
+    if simUI then
+        _S.graph.removePlot()
+        _S.graph.createOrRemovePlotIfNeeded(true)
+        _S.graph.prepareCurves()
+        _S.graph.clearCurves()
+        _S.graph.enableMouseInteractions(false)
+    end
 end
 
 function _S.graph.handle(recordingTime)
