@@ -621,6 +621,8 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
                 ptype = sim.propertytype_color
             elseif sim.Object:isobject(pvalue) then
                 ptype = sim.propertytype_handle
+            elseif sim.ObjectArray:isobjectarray(pvalue) then
+                ptype = sim.propertytype_handlearray
             elseif simEigen.Quaternion:isquaternion(pvalue) then
                 ptype = sim.propertytype_quaternion
             elseif simEigen.Matrix:ismatrix(pvalue) then
