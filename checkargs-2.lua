@@ -67,6 +67,11 @@ function checkargs.checkarg.int(v, t)
 end
 
 function checkargs.checkarg.string(v, t)
+    if not t.strict then
+        if isbuffer(v) then
+            v = tostring(v)
+        end
+    end
     if type(v) ~= 'string' then
         error('must be a string', 0)
     end
@@ -74,7 +79,12 @@ function checkargs.checkarg.string(v, t)
 end
 
 function checkargs.checkarg.buffer(v, t)
-    if type(v) ~= 'string' then
+    if not t.strict then
+        if type(v) == 'string' then
+            v = tobuffer(v)
+        end
+    end
+    if not isbuffer(v) then
         error('must be a buffer', 0)
     end
     return v
