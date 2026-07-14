@@ -664,6 +664,7 @@ function locals.getPropertyInfos(target, methodName, pname, opts)
         large = pflags & sim.propertyinfo_largedata > 0,
         deprecated = pflags & sim.propertyinfo_deprecated > 0,
         constant = pflags & sim.propertyinfo_constant > 0,
+        modelhashexclude = pflags & sim.propertyinfo_modelhashexclude > 0,
     }
     if opts.decodeMetaInfo ~= false then
         if metaInfo ~= '' then
