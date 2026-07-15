@@ -1,4 +1,5 @@
 local sim = require 'sim-2'
+local sim1 = require 'sim-1'
 local checkargs = require('checkargs-2')
 
 local objInit = {}
@@ -66,7 +67,7 @@ function objInit.collection(methodName)
     if objInit.extractValueOrDefault('override') then
         opts = 1
     end
-    local retVal = sim.Object(sim.createCollectionEx(opts))
+    local retVal = sim.Object(sim1.createCollectionEx(opts))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -105,14 +106,14 @@ end]]},
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
     assert(scriptType == sim.scripttype_addon, 'invalid detached script type.')
-    local retVal = sim.Object(sim.createDetachedScript(scriptType, code, lang))
+    local retVal = sim.Object(sim1.createDetachedScript(scriptType, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
 
 function objInit.drawingObject(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'itemType', type = 'int', default = sim.drawing_spherepts},
+        {name = 'itemType', type = 'int', default = sim1.drawing_spherepts},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'paint', type = 'bool', nullable = true},
@@ -125,16 +126,16 @@ function objInit.drawingObject(methodName)
     }, objInit.p)
     local itemType = objInit.extractValueOrDefault('itemType')
     if objInit.extractValueOrDefault('cyclic') then
-        itemType = itemType | sim.drawing_cyclic
+        itemType = itemType | sim1.drawing_cyclic
     end
     if objInit.extractValueOrDefault('local') then
-        itemType = itemType | sim.drawing_local
+        itemType = itemType | sim1.drawing_local
     end
     if objInit.extractValueOrDefault('paint') then
-        itemType = itemType | sim.drawing_painttag
+        itemType = itemType | sim1.drawing_painttag
     end
     if objInit.extractValueOrDefault('overlay') then
-        itemType = itemType | sim.drawing_overlay
+        itemType = itemType | sim1.drawing_overlay
     end
     local size = objInit.extractValueOrDefault('itemSize')
     local duplicateTol = objInit.extractValueOrDefault('duplicateTolerance')
@@ -144,7 +145,7 @@ function objInit.drawingObject(methodName)
     end
     local cnt = objInit.extractValueOrDefault('itemCnt')
     local col = objInit.extractValueOrDefault('color')
-    local retVal = sim.Object(sim.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
+    local retVal = sim.Object(sim1.createDrawingObject(itemType, size, duplicateTol, parentObject, cnt, col:data()))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -211,7 +212,7 @@ function objInit.dummy(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'size', type = 'float', default = 0.01},
     }, objInit.p)
-    local retVal = sim.Object(sim.createDummy(objInit.extractValueOrDefault('size')))
+    local retVal = sim.Object(sim1.createDummy(objInit.extractValueOrDefault('size')))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -245,7 +246,7 @@ function objInit.forceSensor(methodName)
     floatParams[1] = objInit.extractValueOrDefault('size')
     floatParams[2] = objInit.extractValueOrDefault('forceThreshold')
     floatParams[3] = objInit.extractValueOrDefault('torqueThreshold')
-    local retVal = sim.Object(sim.createForceSensor(options, intParams, floatParams))
+    local retVal = sim.Object(sim1.createForceSensor(options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -266,7 +267,7 @@ function objInit.joint(methodName)
         objInit.extractValueOrDefault('length'),
         objInit.extractValueOrDefault('diameter'),
     }
-    local retVal = sim.Object(sim.createJoint(jointType, jointMode, 0, jointSize))
+    local retVal = sim.Object(sim1.createJoint(jointType, jointMode, 0, jointSize))
     local bounds = objInit.extractValueOrDefault('bounds')
     if bounds then
         retVal.bounds = bounds
@@ -293,7 +294,7 @@ function objInit.ocTree(methodName)
     local pointSize = objInit.extractValueOrDefault('pointSize')
     local options = 0
         + v(1, objInit.extractValueOrDefault('showPoints'))
-    local retVal = sim.Object(sim.createOctree(voxelSize, options, pointSize))
+    local retVal = sim.Object(sim1.createOctree(voxelSize, options, pointSize))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -394,8 +395,8 @@ end]]
         dummy:setParent(retVal)
         dummy.pose = ctrlPts:block(1, i, -1, 1):data()
     end
-    retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
-    retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
+    retVal.model.propertyFlags = (retVal.model.propertyFlags | sim1.modelproperty_not_model) - sim1.modelproperty_not_model
+    retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim1.objectproperty_collapsed
     retVal.customData.pathCreationInfo = sim.app:pack(objInit.p)
     retVal.detachedScript:init()
     setYieldAllowed(true)
@@ -403,61 +404,6 @@ end]]
     return retVal
 end
 
-
---[=[
-function objInit.path(methodName)
-    local simEigen = require 'simEigen'
-    checkargs.checkfields({funcName = methodName}, {
-        {name = 'ctrlPts', type = 'matrix', rows = 7, default = simEigen.Matrix(2, 7, {-0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0}).T},
-        {name = 'hiddenDuringSim', type = 'bool', default = false},
-        {name = 'closed', type = 'bool', default = false},
-        {name = 'subdiv', type = 'int', default = 100},
-        {name = 'smoothness', type = 'float', default = 1.0},
-        {name = 'orientationMode', type = 'int', nullable = true},
-        {name = 'upVector', type = 'vector3', default = simEigen.Vector({0.0, 0.0, 1.0})},
-    }, objInit.p)
-    local ctrlPts = objInit.extractValueOrDefault('ctrlPts')
-    local options = 0
-        + v(1, objInit.extractValueOrDefault('hiddenDuringSim'))
-        + v(2, objInit.extractValueOrDefault('closed'))
-    local subdiv = objInit.extractValueOrDefault('subdiv')
-    local smoothness = objInit.extractValueOrDefault('smoothness')
-    local orientationMode = objInit.extractValueOrDefault('orientationMode')
-    local upVector = objInit.extractValueOrDefault('upVector')
-    if orientationMode then
-        options = options | 16
-    else
-        orientationMode = 0
-    end
-    local fl = setYieldAllowed(false)
-    local code = [[function path.shaping(path,pathIsClosed,upVector)
-    local section={0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
-    local color={0.7,0.9,0.9}
-    local options=0
-    if pathIsClosed then
-        options=options|4
-    end
-    local shape=sim.generateShapeFromPath(path,section,options,upVector)
-    sim.setShapeColor(shape,nil,sim.colorcomponent_ambient_diffuse,color)
-    return shape
-end]]
-    code = "path = require('models.path_customization-2')\n\n" .. code
-
-    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'dummy', size = 0.04, ['color.diffuse'] = {0.0, 0.68, 0.47}})
-    retVal.name = 'Path'
-    local script = objInit.init(sim.handle_scene, methodName, {type = 'script', ['script.type'] = 'customization', code = code})
-    script:setParent(retVal)
-    retVal.model.propertyFlags = (retVal.model.propertyFlags | sim.modelproperty_not_model) - sim.modelproperty_not_model
-    retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim.objectproperty_collapsed
-    local sim1=require'sim-1'
-    local data = sim1.packTable({ctrlPts:data(simEigen.dataOrder.columnMajor), options, subdiv, smoothness, orientationMode, upVector:data()})
-    retVal:setBufferProperty("customData.ABC_PATH_CREATION", data)
-    script.detachedScript:init()
-    setYieldAllowed(fl)
-    retVal:setProperties(objInit.p)
-    return retVal
-end
---]=]
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'script.type', enum = sim.scriptType, default = 'simulation'},
@@ -471,7 +417,7 @@ function objInit.script(methodName)
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
     local lang = objInit.extractValueOrDefault('language')
-    local retVal = sim.Object(sim.createScript(scriptType, scriptText, options, lang))
+    local retVal = sim.Object(sim1.createScript(scriptType, scriptText, options, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -486,7 +432,7 @@ function objInit.pointCloud(methodName)
     local maxPtCntPerVoxel = objInit.extractValueOrDefault('maxPointsInCell')
     local options = 0
     local pointSize = objInit.extractValueOrDefault('pointSize')
-    local retVal = sim.Object(sim.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize))
+    local retVal = sim.Object(sim1.createPointCloud(maxVoxelSize, maxPtCntPerVoxel, options, pointSize))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -556,7 +502,7 @@ function objInit.proximitySensor(methodName)
         floatParams[12] = 0.0
     end
     floatParams[13] = objInit.extractValueOrDefault('pointSize')
-    local retVal = sim.Object(sim.createProximitySensor(sensorType, 16, options, intParams, floatParams))
+    local retVal = sim.Object(sim1.createProximitySensor(sensorType, 16, options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -611,7 +557,7 @@ function objInit.visionSensor(methodName)
         floatParams[8] = bgCol[2]
         floatParams[9] = bgCol[3]
     end
-    local retVal = sim.Object(sim.createVisionSensor(options, intParams, floatParams))
+    local retVal = sim.Object(sim1.createVisionSensor(options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -723,7 +669,7 @@ function objInit.shape(methodName)
         if texture_coord then
             texture_coord = texture_coord:data(simEigen.dataOrder.columnMajor)
         end
-        retVal = sim.Object(sim.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals))
+        retVal = sim.Object(sim1.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals))
         if texture_img then
             retVal.meshes[1].texture:set(texture_img, texture_res, {coordinates = texture_coord, interpolate = texture_interpolate, decal = texture_decal, flipH = texture_horizFlip, flipV = texture_vertFlip, repeatU = texture_repeatU, repeatV = texture_repeatV, scalingUV = texture_scalingUV})
         end
@@ -753,7 +699,7 @@ function objInit.shape(methodName)
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         local heights = objInit.extractValueOrDefault('heights', nil, objInit.p.heightField)
         local cellSize = objInit.extractValueOrDefault('cellSize', nil, objInit.p.heightField)
-        retVal = sim.Object(sim.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data()))
+        retVal = sim.Object(sim1.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data()))
         objInit.p.heightField = nil
     elseif objInit.p.string then
         checkargs.checkfields({funcName = methodName .. ' (text field)'}, {
@@ -779,7 +725,7 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (plane field)'}, {
                 {name = 'size', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.1}},
             }, ff)
-            pt = sim.primitiveshape_plane
+            pt = sim1.primitiveshape_plane
             local s = objInit.extractValueOrDefault('size', nil, ff)
             size = {s[1], s[2], 0.0}
         elseif objInit.p.disc then
@@ -788,7 +734,7 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (disc field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
             }, ff)
-            pt = sim.primitiveshape_disc
+            pt = sim1.primitiveshape_disc
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             size = {r * 2.0, r * 2.0, 0.0}
         elseif objInit.p.sphere then
@@ -797,7 +743,7 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (sphere field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
             }, ff)
-            pt = sim.primitiveshape_spheroid
+            pt = sim1.primitiveshape_spheroid
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             size = {r * 2.0, r * 2.0, r * 2.0}
         elseif objInit.p.cylinder then
@@ -808,7 +754,7 @@ function objInit.shape(methodName)
                 {name = 'length', type = 'float', default = 0.1},
                 {name = 'open', type = 'bool', default = false},
             }, ff)
-            pt = sim.primitiveshape_cylinder
+            pt = sim1.primitiveshape_cylinder
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             local l = objInit.extractValueOrDefault('length', nil, ff)
             size = {r * 2.0, r * 2.0, l}
@@ -821,7 +767,7 @@ function objInit.shape(methodName)
                 {name = 'height', type = 'float', default = 0.1},
                 {name = 'open', type = 'bool', default = false},
             }, ff)
-            pt = sim.primitiveshape_cone
+            pt = sim1.primitiveshape_cone
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             local l = objInit.extractValueOrDefault('height', nil, ff)
             size = {r * 2.0, r * 2.0, l}
@@ -833,7 +779,7 @@ function objInit.shape(methodName)
                 {name = 'radius', type = 'float', default = 0.05},
                 {name = 'length', type = 'float', default = 0.2},
             }, ff)
-            pt = sim.primitiveshape_capsule
+            pt = sim1.primitiveshape_capsule
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             local l = objInit.extractValueOrDefault('length', nil, ff)
             size = {r * 2.0, r * 2.0, math.max(l, r * 2.0)}
@@ -846,16 +792,16 @@ function objInit.shape(methodName)
             checkargs.checkfields({funcName = methodName .. ' (cube field)'}, {
                 {name = 'size', type = 'table', item_type = 'float', size = 3, default = {0.1, 0.1, 0.1}},
             }, ff)
-            pt = sim.primitiveshape_cuboid
+            pt = sim1.primitiveshape_cuboid
             size = objInit.extractValueOrDefault('size', nil, ff)
         end
         local options = 2
             + v(1, objInit.extractValueOrDefault('culling'))
             + v(4, open)
             + v(8, objInit.extractValueOrDefault('rawMesh', ff))
-        retVal = sim.Object(sim.createPrimitiveShape(pt, size, options))
+        retVal = sim.Object(sim1.createPrimitiveShape(pt, size, options))
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
-        sim.setFloatProperty(retVal, 'applyShadingAngle', shadingAngle)
+        retVal.applyShadingAngle = shadingAngle
     end
     retVal.dynamic = objInit.extractValueOrDefault('dynamic', false)
     if objInit.extractValueOrDefault('showEdges') then

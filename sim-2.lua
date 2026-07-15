@@ -738,7 +738,7 @@ end
 
 function __2.sysCallEx_init()
     -- Hook function, registered further down
-    if sysCall_selChange then sysCall_selChange({sel = sim.getObjectSel()}) end
+    if sysCall_selChange then sysCall_selChange({sel = sim.scene.selection}) end
 end
 
 sim.Object = require 'sim.Object'
@@ -758,6 +758,7 @@ sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- ho
 
 -- Backward compatibility functions, to be eventually removed:
 --------------------------------------------------------------
+--[=[
 function sim.getReferencedHandle(...)
     local sim1 = require('sim-1')
     return sim1.getReferencedHandle(...)
@@ -1043,8 +1044,9 @@ end
 function sim.getPropertyInfos(t, ...)
     return locals.getPropertyInfos(t, '', ...)
 end
+--]=]
 --------------------------------------------------------------
---[[
+---[[
 sim._qhull = nil
 sim._serialClose = nil
 sim._serialOpen = nil
@@ -1067,7 +1069,6 @@ sim.auxiliaryConsoleOpen = nil
 sim.auxiliaryConsolePrint = nil
 sim.auxiliaryConsoleShow = nil
 sim.broadcastMsg = nil
-sim.callMethod = nil
 sim.callScriptFunction = nil
 sim.cameraFitToView = nil
 sim.cancelScheduledExecution = nil
@@ -1356,6 +1357,5 @@ sim.unpackUInt32Table = nil
 sim.unpackUInt8Table = nil
 sim.wait = nil
 sim.writeTexture = nil
-}
 --]]
 return sim

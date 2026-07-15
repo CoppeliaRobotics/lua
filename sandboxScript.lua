@@ -20,7 +20,7 @@ function s_init()
     sim.app:logInfo("Simulator launched, welcome! ")
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
-        if sim.getBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', {noError = true}) ~= true then
+        if sim.app:getBoolProperty('signal.pythonSandboxInitFailed', {noError = true}) ~= true then
             require('pythonLuaSetupAssistant')
         end
     end

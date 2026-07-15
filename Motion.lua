@@ -1,4 +1,5 @@
 local sim = require('sim-2')
+local sim1 = require('sim-1')
 local class = require('middleclass')
 local checkargs = require('checkargs-2')
 local copy = require('copy')
@@ -492,7 +493,7 @@ function MoveToPose:step()
     local res
     local dt = data.timeStep
     if dt == 0 then
-        dt = sim.getSimulationTimeStep()
+        dt = sim.scene.simulation.timeStep
     end
 
     if data.metric then
@@ -760,7 +761,7 @@ function RuckigPosition:initialize(pparams)
     params.minVel = params.minVel or -params.maxVel
     params.minAccel = params.minAccel or -params.maxAccel
     
-    self._ruckigObj = sim.ruckigPos(dim, params.baseCycleTime, params.flags | sim.ruckig_minvel | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+    self._ruckigObj = sim1.ruckigPos(dim, params.baseCycleTime, params.flags | sim.ruckig_minvel | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
         params.maxVel:vertcat(params.maxAccel):vertcat(params.maxJerk):vertcat(params.minVel):vertcat(params.minAccel):data(),
         params.selection, params.targetPos:vertcat(params.targetVel):data())
 
@@ -778,7 +779,7 @@ function RuckigPosition:step()
         dt = sim.scene.simulation.timeStep
     end
 
-    local res, newPosVelAccel, syncTime = sim.ruckigStep(self._ruckigObj, dt)
+    local res, newPosVelAccel, syncTime = sim1.ruckigStep(self._ruckigObj, dt)
     newPosVelAccel = Vector(newPosVelAccel)
     local dim = #newPosVelAccel // 3
     data.pos = newPosVelAccel:block(1, 1, dim, 1)
@@ -792,7 +793,7 @@ end
 function RuckigPosition:remove()
     local data = self._data
     if data and data.ruckigObj then
-        sim.ruckigRemove(data.ruckigObj)
+        sim1.ruckigRemove(data.ruckigObj)
         data.ruckigObj = nil
     end
     self._callback = nil
@@ -833,7 +834,7 @@ function RuckigVelocity:initialize(pparams)
     
     params.minAccel = params.minAccel or -params.maxAccel
     
-    self._ruckigObj = sim.ruckigVel(dim, params.baseCycleTime, params.flags | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+    self._ruckigObj = sim1.ruckigVel(dim, params.baseCycleTime, params.flags | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
         params.maxAccel:vertcat(params.maxJerk):vertcat(params.minAccel):data(),
         params.selection, params.targetVel:data())
 
@@ -851,7 +852,7 @@ function RuckigVelocity:step()
         dt = sim.scene.simulation.timeStep
     end
 
-    local res, newPosVelAccel, syncTime = sim.ruckigStep(self._ruckigObj, dt)
+    local res, newPosVelAccel, syncTime = sim1.ruckigStep(self._ruckigObj, dt)
     newPosVelAccel = Vector(newPosVelAccel)
     local dim = #newPosVelAccel // 3
     data.pos = newPosVelAccel:block(1, 1, dim, 1)
@@ -865,7 +866,7 @@ end
 function RuckigVelocity:remove()
     local data = self._data
     if data and data.ruckigObj then
-        sim.ruckigRemove(data.ruckigObj)
+        sim1.ruckigRemove(data.ruckigObj)
         data.ruckigObj = nil
     end
     self._callback = nil
