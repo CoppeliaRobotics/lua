@@ -309,18 +309,33 @@ function string.renderxml(node, opts, _indent)
 
     local tag = shortFormat and node[1] or node.tag
 
+    local function normalizeAttribute(a)
+        if opts.attrUnderscoreToDash ~= false then
+            a = a:gsub('_', '-')
+        end
+        return a
+    end
+
     local attrs = shortFormat and node or node.attrs
     local attrsEntries = {}
     if attrs then
+        local attrsNorm = {}
+        for k, v in pairs(attrs) do
+            if type(k) == 'string' then
+                k = normalizeAttribute(k)
+                attrsNorm[k] = v
+            end
+        end
         local done = {}
         for _, k in ipairs(opts.attrsOrder or {}) do
-            local v = attrs[k]
+            k = normalizeAttribute(k)
+            local v = attrsNorm[k]
             if v then
                 table.insert(attrsEntries, {k, v})
                 done[k] = true
             end
         end
-        for k, v in pairs(attrs) do
+        for k, v in pairs(attrsNorm) do
             if not done[k] then
                 table.insert(attrsEntries, {k, v})
             end
@@ -329,13 +344,8 @@ function string.renderxml(node, opts, _indent)
     local attrsStr = ""
     for _, attrEntry in ipairs(attrsEntries) do
         local k, v = table.unpack(attrEntry)
-        if type(k) == 'string' then
-            if opts.attrUnderscoreToDash ~= false then
-                k = k:gsub('_', '-')
-            end
-            v = string.escapehtml(tostring(v))
-            attrsStr = attrsStr .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
-        end
+        v = string.escapehtml(tostring(v))
+        attrsStr = attrsStr .. string.format(' %s="%s"', k, string.escapehtml(tostring(v)))
     end
 
     local children = shortFormat and node or node.children or {}
