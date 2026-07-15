@@ -203,7 +203,7 @@ function objInit.marker(methodName)
         normals = mesh.normals
     end
     objInit.p.mesh = nil
-    local retVal = sim.Object(sim.createMarker(itemType, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
+    local retVal = sim.Object(sim1.createMarker(itemType, col:data(), size:data(), cnt, options, duplicateTol, vertices, indices, normals))
     retVal:setProperties(objInit.p)
     return retVal
 end

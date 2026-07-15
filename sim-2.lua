@@ -1357,5 +1357,256 @@ sim.unpackUInt32Table = nil
 sim.unpackUInt8Table = nil
 sim.wait = nil
 sim.writeTexture = nil
+
+-- constants:
+sim.buffer_base64 = nil
+sim.buffer_clamp = nil
+sim.buffer_double = nil
+sim.buffer_float = nil
+sim.buffer_int16 = nil
+sim.buffer_int32 = nil
+sim.buffer_int8 = nil
+sim.buffer_split = nil
+sim.buffer_uint16 = nil
+sim.buffer_uint32 = nil
+sim.buffer_uint8 = nil
+sim.buffer_uint8argb = nil
+sim.buffer_uint8bgr = nil
+sim.buffer_uint8rgb = nil
+sim.buffer_uint8rgba = nil
+
+sim.drawing_cubepts = nil
+sim.drawing_cyclic = nil
+sim.drawing_discpts = nil
+sim.drawing_lines = nil
+sim.drawing_linestrip = nil
+sim.drawing_local = nil
+sim.drawing_overlay = nil
+sim.drawing_painttag = nil
+sim.drawing_points = nil
+sim.drawing_quadpts = nil
+sim.drawing_spherepts = nil
+sim.drawing_trianglepts = nil
+sim.drawing_triangles = nil
+
+sim.handleflag_abscoords = nil
+sim.handleflag_addmultiple = nil
+sim.handleflag_assembly = nil
+sim.handleflag_axis = nil
+sim.handleflag_camera = nil
+sim.handleflag_codedstring = nil
+sim.handleflag_depthbuffer = nil
+sim.handleflag_depthbuffermeters = nil
+sim.handleflag_extended = nil
+sim.handleflag_greyscale = nil
+sim.handleflag_keeporiginal = nil
+sim.handleflag_model = nil
+sim.handleflag_rawvalue = nil
+sim.handleflag_reljointbaseframe = nil
+sim.handleflag_resetforce = nil
+sim.handleflag_resetforcetorque = nil
+sim.handleflag_resettorque = nil
+sim.handleflag_silenterror = nil
+sim.handleflag_togglevisibility = nil
+sim.handleflag_wxyzquat = nil
+
+sim.imgcomb_horizontal = nil
+sim.imgcomb_vertical = nil
+
+sim.materialcomponent_diffuse = nil
+sim.materialcomponent_emission = nil
+sim.materialcomponent_lightdiffuse = nil
+sim.materialcomponent_specular = nil
+
+sim.message_keypress = nil
+sim.message_model_loaded = nil
+sim.message_object_selection_changed = nil
+sim.message_scene_loaded = nil
+
+sim.modelproperty_not_collidable = nil
+sim.modelproperty_not_detectable = nil
+sim.modelproperty_not_dynamic = nil
+sim.modelproperty_not_measurable = nil
+sim.modelproperty_not_model = nil
+sim.modelproperty_not_reset = nil
+sim.modelproperty_not_respondable = nil
+sim.modelproperty_not_showasinsidemodel = nil
+sim.modelproperty_not_visible = nil
+sim.modelproperty_scripts_inactive = nil
+
+sim.object_collectionend = nil
+sim.object_collectionstart = nil
+sim.object_customappend = nil
+sim.object_customappstart = nil
+sim.object_customclassstart = nil
+sim.object_customend = nil
+sim.object_customsceneend = nil
+sim.object_customscenestart = nil
+sim.object_customstart = nil
+sim.object_detachedscriptend = nil
+sim.object_detachedscriptstart = nil
+sim.object_drawingend = nil
+sim.object_drawingstart = nil
+sim.object_sceneobjectend = nil
+sim.object_sceneobjectstart = nil
+sim.object_stackend = nil
+sim.object_stackstart = nil
+sim.object_textureend = nil
+sim.object_texturestart = nil
+sim.object_variousstart = nil
+    
+sim.objectproperty_cannotdelete = nil
+sim.objectproperty_cannotdeleteduringsim = nil
+sim.objectproperty_collapsed = nil
+sim.objectproperty_depthinvisible = nil
+sim.objectproperty_dontshowasinsidemodel = nil
+sim.objectproperty_hiddenforsimulation = nil
+sim.objectproperty_ignoreviewfitting = nil
+sim.objectproperty_selectable = nil
+sim.objectproperty_selectinvisible = nil
+sim.objectproperty_selectmodelbaseinstead = nil
+
+sim.objectspecialproperty_collidable = nil
+sim.objectspecialproperty_detectable = nil
+sim.objectspecialproperty_measurable = nil
+
+sim.objecttype_app = nil
+sim.objecttype_collection = nil
+sim.objecttype_customobject = nil
+sim.objecttype_detachedscript = nil
+sim.objecttype_interfacestack = nil
+sim.objecttype_mesh = nil
+sim.objecttype_scene = nil
+sim.objecttype_sceneobject = nil
+sim.objecttype_script = nil
+sim.objecttype_texture = nil
+
+sim.parentingmode_assembly = nil
+sim.parentingmode_keeplocalpose = nil
+sim.parentingmode_keepworldpose = nil
+
+sim.plugininfo_builddatestr = nil
+sim.plugininfo_extversionint = nil
+sim.plugininfo_extversionstr = nil
+sim.plugininfo_statusbarverbosity = nil
+sim.plugininfo_verbosity = nil
+
+sim.primitiveshape_capsule = nil
+sim.primitiveshape_cone = nil
+sim.primitiveshape_cuboid = nil
+sim.primitiveshape_cylinder = nil
+sim.primitiveshape_disc = nil
+sim.primitiveshape_heightfield = nil
+sim.primitiveshape_none = nil
+sim.primitiveshape_plane = nil
+sim.primitiveshape_spheroid = nil
+
+sim.ruckig_minaccel = nil
+sim.ruckig_minvel = nil
+
+sim.sceneobject_camera = nil
+sim.sceneobject_customsceneobject = nil
+sim.sceneobject_dummy = nil
+sim.sceneobject_forcesensor = nil
+sim.sceneobject_graph = nil
+sim.sceneobject_joint = nil
+sim.sceneobject_light = nil
+sim.sceneobject_marker = nil
+sim.sceneobject_mill = nil
+sim.sceneobject_mirror = nil
+sim.sceneobject_octree = nil
+sim.sceneobject_path = nil
+sim.sceneobject_pointcloud = nil
+sim.sceneobject_proximitysensor = nil
+sim.sceneobject_renderingsensor = nil
+sim.sceneobject_script = nil
+sim.sceneobject_shape = nil
+sim.sceneobject_visionsensor = nil
+
+sim.scriptintparam_autorestartonerror = nil
+sim.scriptintparam_enabled = nil
+sim.scriptintparam_execcount = nil
+sim.scriptintparam_execorder = nil
+sim.scriptintparam_type = nil
+
+sim.scriptstringparam_description = nil
+sim.scriptstringparam_lang = nil
+sim.scriptstringparam_name = nil
+sim.scriptstringparam_nameext = nil
+sim.scriptstringparam_text = nil
+
+sim.shape_compound = nil
+sim.shape_simple = nil
+
+sim.stackitem_bool = nil
+sim.stackitem_color = nil
+sim.stackitem_double = nil
+sim.stackitem_func = nil
+sim.stackitem_handle = nil
+sim.stackitem_handlearray = nil
+sim.stackitem_integer = nil
+sim.stackitem_lightuserdat = nil
+sim.stackitem_matrix = nil
+sim.stackitem_null = nil
+sim.stackitem_pose = nil
+sim.stackitem_quaternion = nil
+sim.stackitem_string = nil
+sim.stackitem_table = nil
+sim.stackitem_thread = nil
+sim.stackitem_userdat = nil
+
+sim.stream_transf_cumulative = nil
+sim.stream_transf_derivative = nil
+sim.stream_transf_integral = nil
+sim.stream_transf_raw = nil
+
+sim.syscb_actuation = nil
+sim.syscb_aftercopy = nil
+sim.syscb_aftercreate = nil
+sim.syscb_afterdelete = nil
+sim.syscb_afterinstanceswitch = nil
+sim.syscb_aftersimulation = nil
+sim.syscb_aos_resume = nil
+sim.syscb_aos_suspend = nil
+sim.syscb_beforecopy = nil
+sim.syscb_beforedelete = nil
+sim.syscb_beforeinstanceswitch = nil
+sim.syscb_beforemainscript = nil
+sim.syscb_beforesimulation = nil
+sim.syscb_cleanup = nil
+sim.syscb_contact = nil
+sim.syscb_data = nil
+sim.syscb_dyn = nil
+sim.syscb_init = nil
+sim.syscb_joint = nil
+sim.syscb_moduleentry = nil
+sim.syscb_nonsimulation = nil
+sim.syscb_resume = nil
+sim.syscb_selchange = nil
+sim.syscb_sensing = nil
+sim.syscb_suspend = nil
+sim.syscb_suspended = nil
+sim.syscb_thread = nil
+sim.syscb_trigger = nil
+sim.syscb_userconfig = nil
+sim.syscb_vision = nil
+
+sim.textureapplymode_add = nil
+sim.textureapplymode_decal = nil
+sim.textureapplymode_modulate = nil
+    
+sim.texturemap_cube = nil
+sim.texturemap_cylinder = nil
+sim.texturemap_plane = nil
+sim.texturemap_sphere = nil
+    
+sim.volume_cone = nil
+sim.volume_cylinder = nil
+sim.volume_disc = nil
+sim.volume_pyramid = nil
+sim.volume_randomizedray = nil
+sim.volume_ray = nil
+    
+
 --]]
 return sim

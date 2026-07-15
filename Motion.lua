@@ -124,7 +124,7 @@ function MoveToConfig:initialize(pparams)
 
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    params.flags = params.flags | sim1.ruckig_minvel | sim1.ruckig_minaccel
 
     params.vel = params.vel or Vector(dim, 0.0)
     params.accel = params.accel or Vector(dim, 0.0)
@@ -364,7 +364,7 @@ function MoveToPose:initialize(pparams)
 
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
-    params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
+    params.flags = params.flags | sim1.ruckig_minvel | sim1.ruckig_minaccel
     params.minVel = params.minVel or (params.maxVel * -1.0)
     if type(params.minVel) == 'number' then
         params.minVel = Vector(dim, params.minVel)
@@ -761,7 +761,7 @@ function RuckigPosition:initialize(pparams)
     params.minVel = params.minVel or -params.maxVel
     params.minAccel = params.minAccel or -params.maxAccel
     
-    self._ruckigObj = sim1.ruckigPos(dim, params.baseCycleTime, params.flags | sim.ruckig_minvel | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+    self._ruckigObj = sim1.ruckigPos(dim, params.baseCycleTime, params.flags | sim1.ruckig_minvel | sim1.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
         params.maxVel:vertcat(params.maxAccel):vertcat(params.maxJerk):vertcat(params.minVel):vertcat(params.minAccel):data(),
         params.selection, params.targetPos:vertcat(params.targetVel):data())
 
