@@ -59,7 +59,7 @@ function MoveToConfig:initialize(pparams)
     pparams.auxData = auxData
     params.auxData = auxData
 
-    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons 
+    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons
     checkargs.checkfields({funcName = 'MoveToConfig:new'}, {
         {name = 'pos', type = 'vector', nullable = true},
         {name = 'vel', type = 'vector', nullable = true},
@@ -72,7 +72,7 @@ function MoveToConfig:initialize(pparams)
         {name = 'targetVel', type = 'vector', nullable = true},
         {name = 'targetPos', type = 'vector', nullable = true},
     }, params)
-    
+
     if params.pos then
         if not Vector:isvector(params.pos) then
             error("invalid 'pos' field.")
@@ -266,7 +266,7 @@ function MoveToPose:initialize(pparams)
     params.auxData = auxData
     --params.relObject = params.relObject or -1
 
-    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons 
+    -- Following just to implicitly convert tables to vectors. Arg checking happens further down for historical reasons
     checkargs.checkfields({funcName = 'MoveToPose:new'}, {
         {name = 'pose', type = 'pose', nullable = true},
         {name = 'object', type = 'handle', nullable = true},
@@ -282,20 +282,20 @@ function MoveToPose:initialize(pparams)
 
     --[[
     todo, convert to IK class:
-                            <li>ik (map): mandatory if neither pose nor object are specified. Contains IK-relevant informations, if a kinematic chain should move via IK to a target: 
-                                <ul> 
-                                    <li>tip (handle): specifies the tip object (on the end-effector) </li> 
-                                    <li>target (handle): specifies the target object (the object to reach) </li> 
-                                    <li>base (handle, defaults to nil): optional. Specifies the base object (the base of the kinematic chain)</li> 
-                                    <li>joints (handle[], defaults to all joints within tip and base): optional. Specifies the handles of the joints involved in IK calculations</li> 
-                                    <li>method (int, defaults to simIK.method_damped_least_squares): optional. Specifies the resolution method</li> 
-                                    <li>damping (float, defaults to 0.02): optional. Specifies the resolution damping</li> 
-                                    <li>iterations (int, defaults to 20): optional. Specifies the max. number of iterations</li> 
-                                    <li>constraints (int, defaults to simIK.constraint_pose): optional. Specifies the constraints</li> 
-                                    <li>precision (int[2], defaults to [0.001, 0.5 * math.pi / 180.0]): optional. Specifies the desired precision (linear and angular)</li> 
-                                    <li>allowError (bool, defaults to false): optional. Specifies whether a resolution with precision values over what is allowed will be applied anyway</li> 
-                                    <li>breakFlags (int, defaults to 0): optional. Specified the reasons-flags required for simIK.handleGroup to fail</li> 
-                                </ul> 
+                            <li>ik (map): mandatory if neither pose nor object are specified. Contains IK-relevant informations, if a kinematic chain should move via IK to a target:
+                                <ul>
+                                    <li>tip (handle): specifies the tip object (on the end-effector) </li>
+                                    <li>target (handle): specifies the target object (the object to reach) </li>
+                                    <li>base (handle, defaults to nil): optional. Specifies the base object (the base of the kinematic chain)</li>
+                                    <li>joints (handle[], defaults to all joints within tip and base): optional. Specifies the handles of the joints involved in IK calculations</li>
+                                    <li>method (int, defaults to simIK.method_damped_least_squares): optional. Specifies the resolution method</li>
+                                    <li>damping (float, defaults to 0.02): optional. Specifies the resolution damping</li>
+                                    <li>iterations (int, defaults to 20): optional. Specifies the max. number of iterations</li>
+                                    <li>constraints (int, defaults to simIK.constraint_pose): optional. Specifies the constraints</li>
+                                    <li>precision (int[2], defaults to [0.001, 0.5 * math.pi / 180.0]): optional. Specifies the desired precision (linear and angular)</li>
+                                    <li>allowError (bool, defaults to false): optional. Specifies whether a resolution with precision values over what is allowed will be applied anyway</li>
+                                    <li>breakFlags (int, defaults to 0): optional. Specified the reasons-flags required for simIK.handleGroup to fail</li>
+                                </ul>
                             </li>
     --]]
 
@@ -459,7 +459,7 @@ function MoveToPose:initialize(pparams)
             params.targetPos = Vector(1, params.dist)
             params.selection = table.rep(1, dim)
             params.ruckigObj = M.RuckigPosition:new(params)
-            
+
         end
     else
         local dx = Vector({
@@ -516,7 +516,7 @@ function MoveToPose:step()
                 local t = data.ruckigObj:data().pos[1] / data.dist
                 data.vel = data.ruckigObj:data().vel
                 data.accel = data.ruckigObj:data().accel
-                
+
                 data.pose = data.startPose:interp(t, data.targetPose)
                 if self._callback then
                     if self._callback(data) then
@@ -559,14 +559,14 @@ function MoveToPose:step()
             data.vel = Vector(table.slice(newPosVelAccel, 5, 8))
             data.accel = Vector(table.slice(newPosVelAccel, 9, 12))
             --]]
-            
+
             if math.abs(data.angle) > math.pi * 0.00001 then
                 t = data.ruckigObj:data().pos[4] / data.angle
             end
             data.pose = Pose(data.startPose.t + data.ruckigObj:data().pos:block(1, 1, 3, 1), data.startPose.q:slerp(t, data.targetPose.q))
             data.vel = data.ruckigObj:data().vel
             data.accel = data.ruckigObj:data().accel
-            
+
             if self._callback then
                 if self._callback(data) then
                     res = 2 -- aborted
@@ -643,7 +643,7 @@ function TimeOptimalTrajectory:generate(params)
     local mmvM = minVel:horzcat(params.maxVel)
     local mmaM = minAccel:horzcat(params.maxAccel)
     sim.self:setStepping(true)
-    
+
     local code = [=[
 def sysCall_init():
     global ta, constraint, algo, np
@@ -693,7 +693,7 @@ def cbb(req):
         self._script.addOnMenuPath = 'Motion:TimeOptimalTrajectory'
         self._script:init()
     end
-    
+
     local toSend = {
         samples = params.samples,
         ss_waypoints = params.pathLengths:data(),
@@ -760,7 +760,7 @@ function RuckigPosition:initialize(pparams)
 
     params.minVel = params.minVel or -params.maxVel
     params.minAccel = params.minAccel or -params.maxAccel
-    
+
     self._ruckigObj = sim1.ruckigPos(dim, params.baseCycleTime, params.flags | sim1.ruckig_minvel | sim1.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
         params.maxVel:vertcat(params.maxAccel):vertcat(params.maxJerk):vertcat(params.minVel):vertcat(params.minAccel):data(),
         params.selection, params.targetPos:vertcat(params.targetVel):data())
@@ -816,12 +816,13 @@ function RuckigVelocity:initialize(pparams)
     params.auxData = auxData
 
     checkargs.checkfields({funcName = "RuckigVelocity"}, {
-        {name = 'velocity', type = 'matrix', rows = -1, cols = 1},
+        {name = 'vel', type = 'matrix', rows = -1, cols = 1},
     }, params)
-    local dim = params.velocity:rows()
+    local dim = params.vel:rows()
 
     checkargs.checkfields({funcName = "RuckigVelocity"}, {
         {name = 'baseCycleTime', type = 'float', default = 0.0001},
+        {name = 'timeStep', type = 'float', default = 0.0},
         {name = 'flags', type = 'int', default = -1},
         {name = 'pos', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
         {name = 'accel', type = 'matrix', rows = dim, cols = 1, default = Vector(dim, 0.0)},
@@ -831,10 +832,10 @@ function RuckigVelocity:initialize(pparams)
         {name = 'maxJerk', type = 'matrix', rows = dim, cols = 1},
         {name = 'selection', type = 'table', size = dim, item_type = 'int', default = table.rep(1, dim)},
     }, params)
-    
+
     params.minAccel = params.minAccel or -params.maxAccel
-    
-    self._ruckigObj = sim1.ruckigVel(dim, params.baseCycleTime, params.flags | sim.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
+
+    self._ruckigObj = sim1.ruckigVel(dim, params.baseCycleTime, params.flags | sim1.ruckig_minaccel, params.pos:vertcat(params.vel):vertcat(params.accel):data(),
         params.maxAccel:vertcat(params.maxJerk):vertcat(params.minAccel):data(),
         params.selection, params.targetVel:data())
 
