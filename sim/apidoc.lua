@@ -17,54 +17,188 @@ local function getChildrenXML(root)
     return table.concat(children_xml)
 end
 
+local function xmlFind(node, tag)
+    for _, subnode in ipairs(node) do
+        if subnode.tag == tag then
+            return subnode
+        end
+    end
+end
+
+local function xmlFindAll(node, tag)
+    local ret = {}
+    for _, subnode in ipairs(node) do
+        if subnode.tag == tag then
+            table.insert(ret, subnode)
+        end
+    end
+    return ret
+end
+
+local function xmlText(node)
+    for _, subnode in ipairs(node) do
+        if type(subnode) == 'string' then
+            return subnode
+        end
+    end
+end
+
+local function boolFromStr(s, def)
+    if s == nil and def ~= nil then return def end
+    if s == 'true' then return true end
+    if s == 'false' then return false end
+    error('invalid value for bool: "' .. s .. '"')
+end
+
+local PropertyFlags = class 'sim.apidoc.PropertyFlags'
+
+function PropertyFlags:initialize(propertyInfo, node)
+    self.propertyInfo = propertyInfo
+    self.readable = false
+    self.writable = false
+    self.removable = false
+    self.silent = false
+    self.constant = false
+    self.deprecated = false
+
+    if node then
+        assert(node.tag == 'flags', 'invalid node tag')
+        self.readable = boolFromStr(node.attr.readable, self.readable)
+        self.writable = boolFromStr(node.attr.writable, self.writable)
+        self.removable = boolFromStr(node.attr.removable, self.removable)
+        self.silent = boolFromStr(node.attr.silent, self.silent)
+        self.constant = boolFromStr(node.attr.constant, self.constant)
+        self.deprecated = boolFromStr(node.attr.deprecated, self.deprecated)
+    end
+end
+
+function PropertyFlags:__tostring()
+    return self.class.name .. '(...)'
+end
+
 local PropertyInfo = class 'sim.apidoc.PropertyInfo'
 
-function PropertyInfo:initialize(classInfo, node, tag)
-    assert(node.tag == tag, 'invalid node tag')
+function PropertyInfo:initialize(classInfo, node)
+    assert(node.tag == 'property', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
+    assert(node.attr.type, 'missing "type" attribute')
+
     self.classInfo = classInfo
     self.name = node.attr.name
     self.type = node.attr.type
-    self.enum = node.attr.enum
-    self.handleType = node.attr['handle-type']
-    local function getBoolAttr(n, def)
-        local s = node.attr[n]
-        if s == nil then return def end
-        if s == 'true' then return true end
-        if s == 'false' then return false end
-        error(
-            string.format('class "%s": property "%s": attribute "%s": invalid boolean value: "%s"',
-                classInfo.className, self.name, n, s)
-        )
+    self.flags = PropertyFlags(self, xmlFind(node, 'flags'))
+    self.label = ''
+    self.description = ''
+    self.replacedBy = nil
+    self.migrateTo = nil
+    self.supersedes = nil
+    self.enum = nil
+    self.var = node.attr.var
+    self.aux = {}
+    if node.attr.aux then
+        self.aux = string.split(node.attr.aux, ',')
     end
-    self.readable = getBoolAttr('readable', true)
-    self.writable = getBoolAttr('writable', true)
-    self.removable = getBoolAttr('removable', false)
-    self.silent = getBoolAttr('silent', false)
-    self.constant = getBoolAttr('constant', false)
-    self.deprecated = getBoolAttr('deprecated', false)
+
+    local supportNode = xmlFind(node, 'support')
+    if supportNode then
+        self.startSupport = supportNode.attr.start
+        self.endSupport = supportNode.attr['end']
+        self.startDeprecated = supportNode.attr['start-deprecated']
+    end
+
+    local replacedByNode = xmlFind(node, 'replaced-by')
+    if replacedByNode then
+        assert(replacedByNode.attr.name, 'missing "name" attribute in <replaced-by>')
+        self.replacedBy = replacedByNode.attr.name
+    end
+
+    local migrateToNode = xmlFind(node, 'migrate-to')
+    if migrateToNode then
+        assert(migrateToNode.attr.name, 'missing "name" attribute in <migrate-to>')
+        self.migrateTo = migrateToNode.attr.name
+    end
+
+    local supersedesNode = xmlFind(node, 'supersedes')
+    if supersedesNode then
+        self.supersedes = {}
+        for _, itemNode in ipairs(xmlFindAll(supersedesNode, 'item')) do
+            assert(itemNode.attr.name, 'missing "name" attribute in <supersedes>/<item>')
+            table.insert(self.supersedes, itemNode.attr.name)
+        end
+    end
+
+    local labelNode = xmlFind('label')
+    if labelNode then
+        self.label = xmlText(labelNode)
+    end
+
+    local descriptionNode = xmlFind('description')
+    if descriptionNode then
+        self.description = xmlText(descriptionNode)
+    end
+
+    local handleNode = xmlFind(node, 'handle')
+    if handleNode then
+        self.handleType = handleNode.attr['type']
+    end
+
+    local enumNode = xmlFind(node, 'enum')
+    if enumNode then
+        self.enum = enumNode.attr.name
+    end
 end
 
 function PropertyInfo:__tostring()
-    return self.class.name .. '(name = ' .. self.name .. ')'
+    return tostring(self.classInfo) .. ', property ' .. self.name
+end
+
+local NamespaceInfo = class 'sim.apidoc.NamespaceInfo'
+
+function NamespaceInfo:initialize(classInfo, node, acceptsDefaults)
+    assert(node.tag == 'namespace', 'invalid node tag')
+    assert(node.attr.name, 'missing "name" attribute')
+
+    self.classInfo = classInfo
+    self.name = node.attr.name
+    self.newPropertyForcedType = node.attr['new-property-forced-type']
+    self.deprecated = boolFromStr(node.attr.deprecated, false)
 end
 
 local ParamInfo = class 'sim.apidoc.ParamInfo'
 
-function ParamInfo:initialize(methodInfo, node, acceptsDefaults)
+function ParamInfo:initialize(methodInfo, node, acceptsDefaults, parent, xtype)
     assert(node.tag == 'param', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
     assert(node.attr.type, 'missing "type" attribute')
+
     self.methodInfo = methodInfo
+    self.array = false
+    self.itemType, self.size = nil, nil
+    if parent then
+        self.name = parent.name
+        self.type = xtype
+        return
+    end
     self.name = node.attr.name
     self.type = node.attr.type
+    local itemType, size = self.type:match("^(%w+)%[(%d*)%]$")
+    if itemType then
+        self.array = true
+        self.itemType = ParamInfo(minfo, node, acceptsDefaults, self, itemType)
+        self.size = size ~= "" and tonumber(size) or nil
+        self.type = self.itemType.type .. "array" .. (self.size or "")
+    end
+    self.description = ''
+
     if acceptsDefaults then
         self.default = node.attr.default
+    elseif node.attr.default then
+        error 'attribute "default" not allowed here'
     end
-    for _, descriptionNode in ipairs(node) do
-        if descriptionNode.tag == 'description' then
-            self.description = getChildrenXML(descriptionNode)
-        end
+
+    local descriptionNode = xmlFind(node, 'description')
+    if descriptionNode then
+        self.description = getChildrenXML(descriptionNode)
     end
 end
 
@@ -73,42 +207,95 @@ local MethodInfo = class 'sim.apidoc.MethodInfo'
 function MethodInfo:initialize(classInfo, node, tag)
     assert(node.tag == tag, 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
+
     self.classInfo = classInfo
     self.name = node.attr.name
+    self.type = 'method'
     self.lang = node.attr.lang
+    self.flags = PropertyFlags()
+    self.flags.silent = true
+    self.flags.constant = true
+    self.flags.modelhashexclude = true
+    self.var = node.attr.var
+    self.aux = {}
     self.params = {}
     self.returns = {}
     self.categories = {}
+    self.seeAlso = {}
     self.related = {}
-    for _, subNode in ipairs(node) do
-        if subNode.tag == 'params' then
-            for _, paramNode in ipairs(subNode) do
-                if paramNode.tag == 'param' then
-                    table.insert(self.params, ParamInfo(self, paramNode, true))
-                end
-            end
-        elseif subNode.tag == 'returns' then
-            for _, paramNode in ipairs(subNode) do
-                if paramNode.tag == 'param' then
-                    table.insert(self.returns, ParamInfo(self, paramNode))
-                end
-            end
-        elseif subNode.tag == 'description' then
-            self.description = getChildrenXML(subNode)
-        elseif subNode.tag == 'categories' then
-            for _, categoryNode in ipairs(subNode) do
-                if categoryNode.tag == 'category' then
-                    self.categories[categoryNode.attr.name] = true
-                end
-            end
-        elseif subNode.tag == 'see-also' then
-            for _, refNode in ipairs(subNode) do
-                if refNode.tag == 'function-ref' then
-                    table.insert(self.related, {refNode.tag, refNode.attr.name})
-                elseif refNode.tag == 'link' then
-                    table.insert(self.related, {refNode.tag, refNode.attr.href})
-                end
-            end
+    self.description = ''
+    self.replacedBy = nil
+    self.migrateTo = nil
+    self.supersedes = nil
+
+    local paramsNode = xmlFind(node, 'params')
+    if paramsNode then
+        for _, paramNode in ipairs(xmlFindAll(paramsNode, 'param')) do
+            table.insert(self.params, ParamInfo(self, paramNode, true))
+        end
+    end
+
+    local returnsNode = xmlFind(node, 'returns')
+    if returnsNode then
+        for _, paramNode in ipairs(xmlFindAll(returnsNode, 'param')) do
+            table.insert(self.returns, ParamInfo(self, paramNode))
+        end
+    end
+
+    local descriptionNode = xmlFind(node, 'description')
+    if descriptionNode then
+        self.description = getChildrenXML(descriptionNode)
+    end
+
+    local categoriesNode = xmlFind(node, 'categories')
+    if categoriesNode then
+        for _, categoryNode in ipairs(xmlFindAll(categoriesNode, 'category')) do
+            assert(categoryNode.attr.name, 'missing "name" attribute in <category>')
+            self.categories[categoryNode.attr.name] = true
+        end
+    end
+
+    local seeAlsoNode = xmlFind(node, 'see-also')
+    if seeAlsoNode then
+        for _, subnode in ipairs(xmlFindAll(seeAlsoNode, 'function-ref')) do
+            assert(subnode.attr.name, 'missing "name" attribute in <function-ref>')
+            table.insert(self.seeAlso, {'function', subnode.attr.name})
+        end
+        for _, subnode in ipairs(xmlFindAll(seeAlsoNode, 'property-ref')) do
+            assert(subnode.attr.name, 'missing "name" attribute in <property-ref>')
+            table.insert(self.seeAlso, {'property', subnode.attr.name})
+        end
+        for _, subnode in ipairs(xmlFindAll(seeAlsoNode, 'link')) do
+            assert(subnode.attr.href, 'missing "href" attribute in <link>')
+            table.insert(self.seeAlso, {'link', subnode.attr.href, subnode.attr.label})
+        end
+    end
+
+    local supportNode = xmlFind(node, 'support')
+    if supportNode then
+        self.startSupport = supportNode.attr.start
+        self.endSupport = supportNode.attr['end']
+        self.startDeprecated = supportNode.attr['start-deprecated']
+    end
+
+    local replacedByNode = xmlFind(node, 'replaced-by')
+    if replacedByNode then
+        assert(replacedByNode.attr.name, 'missing "name" attribute in <replaced-by>')
+        self.replacedBy = replacedByNode.attr.name
+    end
+
+    local migrateToNode = xmlFind(node, 'migrate-to')
+    if migrateToNode then
+        assert(migrateToNode.attr.name, 'missing "name" attribute in <migrate-to>')
+        self.migrateTo = migrateToNode.attr.name
+    end
+
+    local supersedesNode = xmlFind(node, 'supersedes')
+    if supersedesNode then
+        self.supersedes = {}
+        for _, itemNode in ipairs(xmlFindAll(supersedesNode, 'item')) do
+            assert(itemNode.attr.name, 'missing "name" attribute in <supersedes>/<item>')
+            table.insert(self.supersedes, itemNode.attr.name)
         end
     end
 end
@@ -203,18 +390,26 @@ local ClassInfo = class 'sim.apidoc.ClassInfo'
 function ClassInfo:initialize(node)
     assert(node.tag == 'object-class', 'invalid node tag')
     assert(node.attr.name, 'missing "name" attribute')
+
     self.className = node.attr.name
     self.superClassName = node.attr.superclass
     self.properties = {}
     self.methods = {}
-    for _, subNode in ipairs(node) do
-        if subNode.tag == 'property' then
-            local info = PropertyInfo(self, subNode, 'property')
-            self.properties[info.name] = info
-        elseif subNode.tag == 'method' then
-            local info = MethodInfo(self, subNode, 'method')
-            self.methods[info.name] = info
-        end
+    self.namespaces = {}
+
+    for _, propertyNode in ipairs(xmlFindAll(node, 'property')) do
+        local info = PropertyInfo(self, propertyNode)
+        self.properties[info.name] = info
+    end
+
+    for _, methodNode in ipairs(xmlFindAll(node, 'method')) do
+        local info = MethodInfo(self, methodNode, 'method')
+        self.methods[info.name] = info
+    end
+
+    for _, namespaceNode in ipairs(xmlFindAll(node, 'namespace')) do
+        local info = NamespaceInfo(self, namespaceNode)
+        self.namespaces[info.name] = info
     end
 end
 
