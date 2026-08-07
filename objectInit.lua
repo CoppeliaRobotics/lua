@@ -720,7 +720,7 @@ function objInit.shape(methodName)
         local pt, size, open
         local ff
         if objInit.p.plane then
-            ff = objInit.p.plane
+            ff = table.clone(objInit.p.plane)
             objInit.p.plane = nil
             checkargs.checkfields({funcName = methodName .. ' (plane field)'}, {
                 {name = 'size', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.1}},
@@ -729,7 +729,7 @@ function objInit.shape(methodName)
             local s = objInit.extractValueOrDefault('size', nil, ff)
             size = {s[1], s[2], 0.0}
         elseif objInit.p.disc then
-            ff = objInit.p.disc
+            ff = table.clone(objInit.p.disc)
             objInit.p.disc = nil
             checkargs.checkfields({funcName = methodName .. ' (disc field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
@@ -738,7 +738,7 @@ function objInit.shape(methodName)
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             size = {r * 2.0, r * 2.0, 0.0}
         elseif objInit.p.sphere then
-            ff = objInit.p.sphere
+            ff = table.clone(objInit.p.sphere)
             objInit.p.sphere = nil
             checkargs.checkfields({funcName = methodName .. ' (sphere field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
@@ -747,7 +747,7 @@ function objInit.shape(methodName)
             local r = objInit.extractValueOrDefault('radius', nil, ff)
             size = {r * 2.0, r * 2.0, r * 2.0}
         elseif objInit.p.cylinder then
-            ff = objInit.p.cylinder
+            ff = table.clone(objInit.p.cylinder)
             objInit.p.cylinder = nil
             checkargs.checkfields({funcName = methodName .. ' (cylinder field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
@@ -760,7 +760,7 @@ function objInit.shape(methodName)
             size = {r * 2.0, r * 2.0, l}
             open = objInit.extractValueOrDefault('open', nil, ff)
         elseif objInit.p.cone then
-            ff = objInit.p.cone
+            ff = table.clone(objInit.p.cone)
             objInit.p.cone = nil
             checkargs.checkfields({funcName = methodName .. ' (cone field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
@@ -773,7 +773,7 @@ function objInit.shape(methodName)
             size = {r * 2.0, r * 2.0, l}
             open = objInit.extractValueOrDefault('open', nil, ff)
         elseif objInit.p.capsule then
-            ff = objInit.p.capsule
+            ff = table.clone(objInit.p.capsule)
             objInit.p.capsule = nil
             checkargs.checkfields({funcName = methodName .. ' (capsule field)'}, {
                 {name = 'radius', type = 'float', default = 0.05},
@@ -787,7 +787,7 @@ function objInit.shape(methodName)
             if objInit.p.cube == nil then
                 objInit.p.cube = {}
             end
-            ff = objInit.p.cube
+            ff = table.clone(objInit.p.cube)
             objInit.p.cube = nil
             checkargs.checkfields({funcName = methodName .. ' (cube field)'}, {
                 {name = 'size', type = 'table', item_type = 'float', size = 3, default = {0.1, 0.1, 0.1}},
@@ -798,7 +798,7 @@ function objInit.shape(methodName)
         local options = 2
             + v(1, objInit.extractValueOrDefault('culling'))
             + v(4, open)
-            + v(8, objInit.extractValueOrDefault('rawMesh', ff))
+            + v(8, objInit.extractValueOrDefault('rawMesh', false, ff))
         retVal = sim.Object(sim1.createPrimitiveShape(pt, size, options))
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         retVal.applyShadingAngle = shadingAngle
