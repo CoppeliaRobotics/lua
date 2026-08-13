@@ -182,6 +182,8 @@ function objInit.marker(methodName)
         local mesh = objInit.extractValueOrDefault('mesh')
         if type(mesh) ~= 'table' then
             mesh = {}
+        else
+            mesh = {vertices = mesh.vertices, indices = mesh.indices, normals = mesh.normals} -- meshe could be a mesh object too!
         end
         if simEigen.Matrix:ismatrix(mesh.vertices) and mesh.vertices:rows() == 3 then
             mesh.vertices = mesh.vertices:data(simEigen.dataOrder.columnMajor)
@@ -609,6 +611,23 @@ function objInit.shape(methodName)
         {name = 'color.emission', type = 'color', default = Color:rgb(0.0, 0.0, 0.0)},
     }, objInit.p)
     if objInit.p.mesh then
+        if objInit.p.mesh.handle then
+            -- We have a mesh object
+            local m = {}
+            m.vertices = objInit.p.mesh.vertices
+            m.indices = objInit.p.mesh.indices
+            m.normals = objInit.p.mesh.normals
+            if objInit.p.mesh.texture and #objInit.p.mesh.texture.image > 0 then
+                m.texture = {}
+                m.texture.image = objInit.p.mesh.texture.image
+                m.texture.resolution = objInit.p.mesh.texture.resolution
+                m.texture.coordinates = simEigen.Matrix(#objInit.p.mesh.texture.coordinates//2, 2, objInit.p.mesh.texture.coordinates).T
+                m.texture.interpolate = objInit.p.mesh.texture.interpolate
+                m.texture.repeatU = objInit.p.mesh.texture.repeatU
+                m.texture.repeatV = objInit.p.mesh.texture.repeatV
+            end
+            objInit.p.mesh = m
+        end
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
             {name = 'vertices', type = 'matrix', rows = 3, default = simEigen.Matrix(3, 3, {0.0, 0.0, 0.005, 0.1, 0.0, 0.005, 0.2, 0.1, 0.005}).T},
             {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
