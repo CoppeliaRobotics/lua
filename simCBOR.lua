@@ -141,6 +141,10 @@ registerTag(simCBOR.Tags.Sim.HandleArray)(function(value)
 end)
 
 function simCBOR.decode(data)
+    local sim = require 'sim-2'
+    if isbuffer(data) then
+        data = tostring(data)
+    end
     return cbor.decode(data, 1, type_tags)
 end
 

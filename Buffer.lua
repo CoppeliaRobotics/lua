@@ -179,25 +179,4 @@ string.lower = wrap(string.lower, function(origFunc)
     end
 end)
 
-require = wrap(require, function(origRequire)
-    return function(...)
-        local arg = ({...})[1]
-        local first = not package.loaded[arg]
-        local ret = {origRequire(...)}
-        if first and arg == 'simCBOR' then
-            (function(cbor)
-                cbor.decode = wrap(cbor.decode, function(origFunc)
-                    return function(b, ...)
-                        if isbuffer(b) then
-                            b = tostring(b)
-                        end
-                        return origFunc(b, ...)
-                    end
-                end)
-            end)(ret[1])
-        end
-        return table.unpack(ret)
-    end
-end)
-
 return Buffer
