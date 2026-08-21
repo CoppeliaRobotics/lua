@@ -393,6 +393,9 @@ function ClassInfo:initialize(node)
 
     self.className = node.attr.name
     self.superClassName = node.attr.superclass
+    if self.superClassName == '' then
+        self.superClassName = nil
+    end
     self.properties = {}
     self.methods = {}
     self.namespaces = {}
@@ -431,6 +434,13 @@ function ClassInfo:getMethod(methodName, opts)
         if opts.searchSuperclasses == false then return end
         c = c:getSuperClass()
     end
+end
+
+function ClassInfo:isSubclassOf(className)
+    if self.className == className then return true end
+    local sc = self:getSuperClass()
+    if sc then return sc:isSubclassOf(className) end
+    return false
 end
 
 local EnumInfo = class 'sim.apidoc.EnumInfo'
