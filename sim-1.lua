@@ -1987,4 +1987,6 @@ sim.registerScriptFuncHook('sysCall_beforeInstanceSwitch', '__1.sysCallEx_before
 sim.registerScriptFuncHook('sysCall_addOnScriptSuspend', '__1.sysCallEx_addOnScriptSuspend', false)
 ----------------------------------------------------------
 
+require 'deprecated.matrixLazyLoaders'
+
 return sim

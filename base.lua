@@ -682,7 +682,7 @@ registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 
 if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) then
     require 'deprecated.lazyLoaders'
-    require 'deprecated.matrixLazyLoaders'
+    --require 'deprecated.matrixLazyLoaders' -- moved to sim-1.lua
 end
 
 if _DEVMODE then
