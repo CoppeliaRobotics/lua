@@ -86,6 +86,13 @@ function PropertyInfo:initialize(classInfo, node)
     self.classInfo = classInfo
     self.name = node.attr.name
     self.type = node.attr.type
+    self.array, self.arraySize = false, nil
+    local itemType, arraySize = self.type:match("^(%w+)%[(%d*)%]$")
+    if itemType then
+        self.array = true
+        self.arraySize = arraySize ~= '' and tonumber(arraySize) or nil
+        self.type = itemType .. '[]'
+    end
     self.flags = PropertyFlags(self, xmlFind(node, 'flags'))
     self.label = ''
     self.description = ''
@@ -173,7 +180,7 @@ function ParamInfo:initialize(methodInfo, node, acceptsDefaults, parent, xtype)
 
     self.methodInfo = methodInfo
     self.array = false
-    self.itemType, self.size = nil, nil
+    self.itemType, self.arraySize = nil, nil
     if parent then
         self.name = parent.name
         self.type = xtype
@@ -181,12 +188,12 @@ function ParamInfo:initialize(methodInfo, node, acceptsDefaults, parent, xtype)
     end
     self.name = node.attr.name
     self.type = node.attr.type
-    local itemType, size = self.type:match("^(%w+)%[(%d*)%]$")
+    local itemType, arraySize = self.type:match('^(%w+)%[(%d*)%]$')
     if itemType then
         self.array = true
         self.itemType = ParamInfo(minfo, node, acceptsDefaults, self, itemType)
-        self.size = size ~= "" and tonumber(size) or nil
-        self.type = self.itemType.type .. "array" .. (self.size or "")
+        self.arraySize = arraySize ~= '' and tonumber(arraySize) or nil
+        self.type = self.itemType.type .. '[]'
     end
     self.description = ''
 
