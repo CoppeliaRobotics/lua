@@ -738,7 +738,14 @@ end
 
 function __2.sysCallEx_init()
     -- Hook function, registered further down
-    if sysCall_selChange then sysCall_selChange({sel = sim.scene.selection}) end
+    if sysCall_selChange then
+        local sel = {}
+        local selection = sim.scene.selection
+        for i = 1, #selection do
+            sel[i] = selection[i].handle
+        end
+        sysCall_selChange({sel = sel, selection = selection})
+    end
 end
 
 sim.Object = require 'sim.Object'
@@ -1454,7 +1461,7 @@ sim.object_stackstart = nil
 sim.object_textureend = nil
 sim.object_texturestart = nil
 sim.object_variousstart = nil
-    
+
 sim.objectproperty_cannotdelete = nil
 sim.objectproperty_cannotdeleteduringsim = nil
 sim.objectproperty_collapsed = nil
@@ -1563,19 +1570,19 @@ sim.stream_transf_raw = nil
 sim.textureapplymode_add = nil
 sim.textureapplymode_decal = nil
 sim.textureapplymode_modulate = nil
-    
+
 sim.texturemap_cube = nil
 sim.texturemap_cylinder = nil
 sim.texturemap_plane = nil
 sim.texturemap_sphere = nil
-    
+
 sim.volume_cone = nil
 sim.volume_cylinder = nil
 sim.volume_disc = nil
 sim.volume_pyramid = nil
 sim.volume_randomizedray = nil
 sim.volume_ray = nil
-    
+
 
 --]]
 return sim
