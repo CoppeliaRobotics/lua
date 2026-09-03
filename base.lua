@@ -671,34 +671,6 @@ if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) t
     --require 'deprecated.matrixLazyLoaders' -- moved to sim-1.lua
 end
 
--- convenience vars: (SEL/SEL1/H)
-do
-    local mt = getmetatable(_G) or {}
-    local old_index = mt.__index
-    mt.__index = function(tbl, key)
-        local v
-        if old_index then
-            if type(old_index) == "function" then
-                v = old_index(tbl, key)
-            else
-                v = rawget(old_index, key)
-            end
-        else
-            v = rawget(_G, key)
-        end
-        if v == nil and (key == 'SEL' or key == 'SEL1' or key == 'H') then
-            local scene = rawget(_G, 'scene')
-            if scene then
-                if key == 'SEL' then v = scene.selection end
-                if key == 'SEL1' then v = scene.selection[#scene.selection] end
-                if key == 'H' then v = function(...) return scene:getObject(...) end end
-            end
-        end
-        return v
-    end
-    setmetatable(_G, mt)
-end
-
 if _DEVMODE then
     -- DEBUG: print each time global variable "sim" is about to be wrote to:
     local mt = getmetatable(_G) or {}

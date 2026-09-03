@@ -80,3 +80,48 @@ sim.self:registerFunctionHook('sysCall_resume', 's_resume', false)
 sim.self:registerFunctionHook('sysCall_nonSimulation', 's_nonSimulation', false)
 sim.self:registerFunctionHook('sysCall_actuation', 's_actuation', false)
 sim.self:registerFunctionHook('sysCall_suspended', 's_suspended', false)
+
+-- convenience vars: (sel/sel1/cur/h)
+do
+    local mt = getmetatable(_G) or {}
+    local app = rawget(_G, 'app')
+    local scene = rawget(_G, 'scene')
+    do
+        local old_index = mt.__index
+        mt.__index = function(tbl, key)
+            local v
+            if old_index then
+                if type(old_index) == "function" then
+                    v = old_index(tbl, key)
+                else
+                    v = rawget(old_index, key)
+                end
+            else
+                v = rawget(tbl, key)
+            end
+            if v ~= nil then return v end
+            if (key == 'cur' or key == 'CUR') then return app.current end
+            if (key == 'sel' or key == 'SEL') then return scene.selection end
+            if (key == 'sel1' or key == 'SEL1') then return scene.selection[#scene.selection] end
+            if (key == 'h' or key == 'H') then return function(...) return scene:getObject(...) end end
+        end
+    end
+    do
+        local old_newindex = mt.__newindex
+        mt.__newindex = function(tbl, key, value)
+            if (key == 'cur' or key == 'CUR') then app.current = value return end
+            if (key == 'sel' or key == 'SEL') then scene.selection = value return end
+            if (key == 'sel1' or key == 'SEL1') then scene.selection = {value} return end
+            if old_newindex then
+                if type(old_newindex) == "function" then
+                    return old_newindex(tbl, key, value)
+                else
+                    return rawset(old_newindex, key, value)
+                end
+            else
+                return rawset(tbl, key, value)
+            end
+        end
+    end
+    setmetatable(_G, mt)
+end
