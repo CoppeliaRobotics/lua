@@ -38,7 +38,8 @@ function _moduleLazyLoader(name)
             else
                 if not __inLazyLoader then __inLazyLoader = 0 end
                 __inLazyLoader = __inLazyLoader + 1
-                _G[name] = require(name)
+                local reqname = name == 'sim' and 'sim-autoload' or name
+                _G[name] = require(reqname)
                 __inLazyLoader = __inLazyLoader - 1
                 addLog(430, "module '" .. name .. "' was implicitly loaded.")
                 __usedLazyLoaders = true

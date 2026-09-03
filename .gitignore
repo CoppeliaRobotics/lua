@@ -13,6 +13,7 @@ sim*.lua
 !sim-1-ce.lua
 !sim-2.lua
 !sim-2-ce.lua
+!sim-autoload.lua
 !sim-deprecated.lua
 getCallContexts.lua
 simBB.lua
