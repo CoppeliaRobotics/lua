@@ -522,19 +522,7 @@ end
 
 function _evalExec(inputStr)
     local sim = require 'sim'
-    local function setConvenienceVars()
-        local sim = _G.sim or require 'sim'
-        if H ~= nil and H ~= _S.getObject then
-            addLog(430 | 0x0f000, "cannot change 'H' variable")
-        end
-        H = _S.getObject
-        SEL = _S.getObjectSel()
-        SEL1 = SEL[#SEL]
-    end
     local function pfunc(theStr)
-        local setCv = sim.getBoolProperty(sim.handle_app, 'customData.simCmd.setConvenienceVars', {noError = true})
-        if setCv ~= false then setConvenienceVars() end
-
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
         if m then theStr = string.format('print(_S.tableToString(dump(%s, %d), {sort = {"key"}}))', theStr:sub(1, -#m-1), #m) end
@@ -567,8 +555,6 @@ function _evalExec(inputStr)
         else
             addLog(420 | 0x0f000, err)
         end
-
-        if setCv ~= false then setConvenienceVars() end
     end
     pcall(pfunc, inputStr)
 end
@@ -683,6 +669,34 @@ registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) then
     require 'deprecated.lazyLoaders'
     --require 'deprecated.matrixLazyLoaders' -- moved to sim-1.lua
+end
+
+-- convenience vars: (SEL/SEL1/H)
+do
+    local mt = getmetatable(_G) or {}
+    local old_index = mt.__index
+    mt.__index = function(tbl, key)
+        local v
+        if old_index then
+            if type(old_index) == "function" then
+                v = old_index(tbl, key)
+            else
+                v = rawget(old_index, key)
+            end
+        else
+            v = rawget(_G, key)
+        end
+        if v == nil and (key == 'SEL' or key == 'SEL1' or key == 'H') then
+            local scene = rawget(_G, 'scene')
+            if scene then
+                if key == 'SEL' then v = scene.selection end
+                if key == 'SEL1' then v = scene.selection[#scene.selection] end
+                if key == 'H' then v = function(...) return scene:getObject(...) end end
+            end
+        end
+        return v
+    end
+    setmetatable(_G, mt)
 end
 
 if _DEVMODE then
