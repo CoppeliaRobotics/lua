@@ -942,18 +942,19 @@ function _S.path.output_callback(ui, id, newVal)
         ctrlPts = ctrlPts:block(1, 1, ctrlPts:rows() - 1, ctrlPts:cols())
         pts = pts:block(1, 1, pts:rows() - 1, pts:cols())
     end
-    local pathM = simEigen.Pose(sim.getObjectPose(_S.path.model)):totransform()
+    local pathP = simEigen.Pose(sim.getObjectPose(_S.path.model))
     local relPts = 'relCtrlPts={'
     local absPts = 'absCtrlPts={'
     local pos = ctrlPts:block(1, 1, ctrlPts:rows(), 3):data()
     local quat = ctrlPts:block(1, 4, ctrlPts:rows(), 4):data()
     for i = 1, ctrlPts:rows(), 1 do
-        local relData = ctrlPts[i]:data()
-        local tr = simEigen.Pose(ctrlPts[i]):totransform()
-        local absData = simEigen.Pose((pathM * tr):data())
+        local subM = ctrlPts:block(i, 1, 1, -1)
+        local relData = subM:data()
+        local tr = simEigen.Pose(subM:data())
+        local absData = simEigen.Pose((pathP * tr):data())
         for j = 1, 7, 1 do
             relPts = relPts .. string.format("%.4e", relData[j])
-            absPts = absPts .. string.format("%.4e", absData[j])
+            absPts = absPts .. string.format("%.4e", absData:data()[j])
             if (j ~= 7) or (i ~= ctrlPts:rows()) then
                 relPts = relPts .. ','
                 absPts = absPts .. ','
@@ -969,12 +970,13 @@ function _S.path.output_callback(ui, id, newVal)
     local pos = pts:block(1, 1, pts:rows(), 3):data()
     local quat = pts:block(1, 4, pts:rows(), 4):data()
     for i = 1, pts:rows(), 1 do
-        local relData = pts[i]:data()
-        local tr = simEigen.Pose(pts[i]:data()):totransform()
-        local absData = simEigen.Pose((pathM * tr):data())
+        local subM = pts:block(i, 1, 1, -1)
+        local relData = subM:data()
+        local tr = simEigen.Pose(subM:data())
+        local absData = simEigen.Pose((pathP * tr):data())
         for j = 1, 7, 1 do
             relPts = relPts .. string.format("%.4e", relData[j])
-            absPts = absPts .. string.format("%.4e", absData[j])
+            absPts = absPts .. string.format("%.4e", absData:data()[j])
             if (j ~= 7) or (i ~= pts:rows()) then
                 relPts = relPts .. ','
                 absPts = absPts .. ','

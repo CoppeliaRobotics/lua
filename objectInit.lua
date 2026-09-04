@@ -308,6 +308,8 @@ function objInit.path(methodName)
         {name = 'hiddenDuringSim', type = 'bool', default = false},
         {name = 'closed', type = 'bool', default = false},
         {name = 'orientationMetric', type = 'float', default = 0.5},
+        {name = 'forwardAndUpAxes', type = 'string', default = 'xz'},
+        {name = 'upVector', type = 'vector', size = 3, nullable = true},
     }, objInit.p)
 
     local ctrlPts = objInit.extractValueOrDefault('ctrlPts')
@@ -357,6 +359,8 @@ function sysCall_init()
     opt.closed = false
     opt.hiddenDuringSim = false
     opt.orientationMetric = 0.5
+    opt.forwardAndUpAxes = 'xz'
+    opt.upVector = nil -- {0.0, 0.0, 1.0}
     opt.ctrlPoints = {}
     opt.ctrlPoints.pointType = 'none'
     opt.ctrlPoints.lineType = 'line'

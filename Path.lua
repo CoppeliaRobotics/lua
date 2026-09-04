@@ -32,6 +32,8 @@ function Path:initialize(ctrlPoints, opt, data)
         opt = opt or {}
         opt.ctrlPoints = opt.ctrlPoints or {}
         opt.pathPoints = opt.pathPoints or {}
+        -- opt.upVector
+        opt.forwardAndUpAxes = opt.forwardAndUpAxes or 'xz'
         checkargs.checkfields({funcName = "Path:new, options field 'ctrlPoints'"}, {
             {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'cube'},
             {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
@@ -59,6 +61,8 @@ function Path:initialize(ctrlPoints, opt, data)
             {name = 'onlyCtrlPoints', type = 'bool', default = false},
             {name = 'closed', type = 'bool', default = false},
             {name = 'closedRepeatsStart', type = 'bool', default = false},
+            {name = 'forwardAndUpAxes', type = 'string', default = 'xz'},
+            {name = 'upVector', type = 'vector3', nullable = true},
         }, opt)
 
         if ctrlPoints then
@@ -82,6 +86,11 @@ function Path:initialize(ctrlPoints, opt, data)
                 {name = 'bounds', type = 'table', size = opt.dim, default = table.rep({}, opt.dim)},
             }, opt)
             ctrlPoints = simEigen.Matrix(opt.dim, 0, {})
+        end
+        if (opt.forwardAndUpAxes ~= 'xy') and (opt.forwardAndUpAxes ~= 'xz') and
+            (opt.forwardAndUpAxes ~= 'yx') and (opt.forwardAndUpAxes ~= 'yz') and
+            (opt.forwardAndUpAxes ~= 'zx') and (opt.forwardAndUpAxes ~= 'zy') then
+            error("invalid 'forwardAxis' string")
         end
         local quatC = 0
         for i = 1, opt.dim do
@@ -708,6 +717,291 @@ function Path:configs(conf, noArgCheck)
     return retVal
 end
 
+-- Adjusts pose orientations so that:
+--   * the first axis in forwardAndUpAxes follows the path tangent;
+--   * the second axis points toward upVector as closely as possible.
+--
+-- Pose layout is assumed to be:
+--     {px, py, pz, qx, qy, qz, qw}
+local function orientPosesAlongPath(pts, opt)
+    if opt.upVector == nil or opt.displDim ~= 7 or #pts < 2 then
+        return pts
+    end
+
+    local axesSpec = opt.forwardAndUpAxes
+    local forwardAxis = axesSpec:sub(1, 1)
+    local upAxis = axesSpec:sub(2, 2)
+
+    local validAxes = {
+        xy = true, xz = true,
+        yx = true, yz = true,
+        zx = true, zy = true,
+    }
+    assert(validAxes[axesSpec], "invalid 'forwardAndUpAxes' string")
+
+    local sqrt, abs = math.sqrt, math.abs
+    local eps = 1e-12
+
+    local function dot(a, b)
+        return a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
+    end
+
+    local function cross(a, b)
+        return {
+            a[2] * b[3] - a[3] * b[2],
+            a[3] * b[1] - a[1] * b[3],
+            a[1] * b[2] - a[2] * b[1],
+        }
+    end
+
+    local function normSquared(v)
+        return dot(v, v)
+    end
+
+    local function normalized(v)
+        local n2 = normSquared(v)
+        if n2 <= eps then
+            return nil
+        end
+        local s = 1.0 / sqrt(n2)
+        return {v[1] * s, v[2] * s, v[3] * s}
+    end
+
+    local function subtractProjection(v, onto)
+        local d = dot(v, onto)
+        return {
+            v[1] - onto[1] * d,
+            v[2] - onto[2] * d,
+            v[3] - onto[3] * d,
+        }
+    end
+
+    local function positionDifference(a, b)
+        return {
+            a[1] - b[1],
+            a[2] - b[2],
+            a[3] - b[3],
+        }
+    end
+
+    -- Returns one world-space axis of the quaternion in a pose.
+    -- Quaternion layout is x, y, z, w.
+    local function quaternionAxis(pose, axis)
+        local x, y, z, w = pose[4], pose[5], pose[6], pose[7]
+
+        if axis == 'x' then
+            return {
+                1.0 - 2.0 * (y * y + z * z),
+                2.0 * (x * y + z * w),
+                2.0 * (x * z - y * w),
+            }
+        elseif axis == 'y' then
+            return {
+                2.0 * (x * y - z * w),
+                1.0 - 2.0 * (x * x + z * z),
+                2.0 * (y * z + x * w),
+            }
+        else -- z
+            return {
+                2.0 * (x * z + y * w),
+                2.0 * (y * z - x * w),
+                1.0 - 2.0 * (x * x + y * y),
+            }
+        end
+    end
+
+    -- Converts a right-handed rotation frame to {qx, qy, qz, qw}.
+    -- xAxis, yAxis and zAxis are the columns of the rotation matrix.
+    local function axesToQuaternion(xAxis, yAxis, zAxis)
+        local m00, m01, m02 = xAxis[1], yAxis[1], zAxis[1]
+        local m10, m11, m12 = xAxis[2], yAxis[2], zAxis[2]
+        local m20, m21, m22 = xAxis[3], yAxis[3], zAxis[3]
+
+        local x, y, z, w
+        local trace = m00 + m11 + m22
+
+        if trace > 0.0 then
+            local s = sqrt(trace + 1.0) * 2.0
+            w = 0.25 * s
+            x = (m21 - m12) / s
+            y = (m02 - m20) / s
+            z = (m10 - m01) / s
+        elseif m00 > m11 and m00 > m22 then
+            local s = sqrt(1.0 + m00 - m11 - m22) * 2.0
+            w = (m21 - m12) / s
+            x = 0.25 * s
+            y = (m01 + m10) / s
+            z = (m02 + m20) / s
+        elseif m11 > m22 then
+            local s = sqrt(1.0 + m11 - m00 - m22) * 2.0
+            w = (m02 - m20) / s
+            x = (m01 + m10) / s
+            y = 0.25 * s
+            z = (m12 + m21) / s
+        else
+            local s = sqrt(1.0 + m22 - m00 - m11) * 2.0
+            w = (m10 - m01) / s
+            x = (m02 + m20) / s
+            y = (m12 + m21) / s
+            z = 0.25 * s
+        end
+
+        local invNorm = 1.0 / sqrt(x * x + y * y + z * z + w * w)
+        return {
+            x * invNorm,
+            y * invNorm,
+            z * invNorm,
+            w * invNorm,
+        }
+    end
+
+    local upVector
+    if type(opt.upVector) == 'table' then
+        upVector = {
+            opt.upVector[1],
+            opt.upVector[2],
+            opt.upVector[3],
+        }
+    else
+        local u = opt.upVector:data()
+        upVector = {u[1], u[2], u[3]}
+    end
+    upVector = assert(normalized(upVector), "'upVector' must be non-zero")
+
+    local count = #pts
+    local previousForward
+    local previousQuaternion
+
+    local function pointAt(index)
+        if opt.closed then
+            return pts[((index - 1) % count) + 1]
+        end
+        return pts[math.max(1, math.min(count, index))]
+    end
+
+    local function tangentAt(index)
+        local tangent
+
+        -- Use a centered tangent where possible. This produces smoother
+        -- orientations than always using the following segment.
+        if opt.closed or (index > 1 and index < count) then
+            tangent = normalized(positionDifference(
+                pointAt(index + 1),
+                pointAt(index - 1)
+            ))
+        end
+
+        -- Fall back to the outgoing segment.
+        if tangent == nil and (opt.closed or index < count) then
+            tangent = normalized(positionDifference(
+                pointAt(index + 1),
+                pointAt(index)
+            ))
+        end
+
+        -- At the end of an open path, or for duplicate points, use the
+        -- incoming segment.
+        if tangent == nil and (opt.closed or index > 1) then
+            tangent = normalized(positionDifference(
+                pointAt(index),
+                pointAt(index - 1)
+            ))
+        end
+
+        return tangent or previousForward
+    end
+
+    for i = 1, count do
+        local pose = pts[i]
+        local forward = tangentAt(i)
+
+        if forward ~= nil then
+            previousForward = forward
+
+            -- Project the requested up direction onto the plane normal to
+            -- the forward axis. This is the closest possible up direction
+            -- while keeping the forward axis exact.
+            local adjustedUp = normalized(
+                subtractProjection(upVector, forward)
+            )
+
+            -- If forward is parallel to upVector, the requested up direction
+            -- is undefined. Preserve as much of the pose's existing roll as
+            -- possible.
+            if adjustedUp == nil then
+                local oldUpAxis = quaternionAxis(pose, upAxis)
+                adjustedUp = normalized(
+                    subtractProjection(oldUpAxis, forward)
+                )
+            end
+
+            -- Final deterministic fallback for fully degenerate input.
+            if adjustedUp == nil then
+                local fallback
+                if abs(forward[1]) <= abs(forward[2]) and
+                   abs(forward[1]) <= abs(forward[3]) then
+                    fallback = {1.0, 0.0, 0.0}
+                elseif abs(forward[2]) <= abs(forward[3]) then
+                    fallback = {0.0, 1.0, 0.0}
+                else
+                    fallback = {0.0, 0.0, 1.0}
+                end
+                adjustedUp = assert(normalized(
+                    subtractProjection(fallback, forward)
+                ))
+            end
+
+            local axis = {}
+            axis[forwardAxis] = forward
+            axis[upAxis] = adjustedUp
+
+            -- Complete a right-handed frame:
+            --     x cross y = z
+            if axis.x == nil then
+                axis.x = normalized(cross(axis.y, axis.z))
+            elseif axis.y == nil then
+                axis.y = normalized(cross(axis.z, axis.x))
+            else
+                axis.z = normalized(cross(axis.x, axis.y))
+            end
+
+            -- Recompute the requested secondary axis from the completed
+            -- frame. This removes accumulated floating-point error while
+            -- preserving its direction toward upVector.
+            if upAxis == 'x' then
+                axis.x = normalized(cross(axis.y, axis.z))
+            elseif upAxis == 'y' then
+                axis.y = normalized(cross(axis.z, axis.x))
+            else
+                axis.z = normalized(cross(axis.x, axis.y))
+            end
+
+            local q = axesToQuaternion(axis.x, axis.y, axis.z)
+
+            -- q and -q represent the same rotation. Pick the sign nearest
+            -- the preceding quaternion to avoid artificial discontinuities.
+            if previousQuaternion ~= nil then
+                local d =
+                    previousQuaternion[1] * q[1] +
+                    previousQuaternion[2] * q[2] +
+                    previousQuaternion[3] * q[3] +
+                    previousQuaternion[4] * q[4]
+
+                if d < 0.0 then
+                    q[1], q[2], q[3], q[4] =
+                        -q[1], -q[2], -q[3], -q[4]
+                end
+            end
+
+            pose[4], pose[5], pose[6], pose[7] =
+                q[1], q[2], q[3], q[4]
+
+            previousQuaternion = q
+        end
+    end
+
+    return pts
+end
 --[[
 function Path:_resample(points, resamplingType)
     local data = self._data
@@ -932,7 +1226,9 @@ function Path:_resample(points, resamplingType)
     local pts = pointTableFromMatrix(points)
 
     if resamplingType == 0 then
-        return matrixFromPointTable(dim, resampleLinear(pts))
+        local ret = resampleLinear(pts)
+        ret = orientPosesAlongPath(ret, data.opt)
+        return matrixFromPointTable(dim, ret)
     end
 
     -- Bezier resampling:
@@ -999,7 +1295,9 @@ function Path:_resample(points, resamplingType)
     end
 
     -- final pass: stay in table land, convert to matrix only once at the end:
-    return matrixFromPointTable(dim, resampleLinear(ret))
+    ret = resampleLinear(ret)
+    ret = orientPosesAlongPath(ret, data.opt)
+    return matrixFromPointTable(dim, ret)
 end
 
 function Path:createShape(opt)
