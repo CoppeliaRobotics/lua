@@ -60,7 +60,7 @@ function Path:initialize(ctrlPoints, opt, data)
             {name = 'closed', type = 'bool', default = false},
             {name = 'closedRepeatsStart', type = 'bool', default = false},
         }, opt)
-        
+
         if ctrlPoints then
             opt.dim = ctrlPoints:rows()
             assert(opt.dim > 0, 'invalid control points')
@@ -214,7 +214,7 @@ function Path:setPoints(ctrlPoints, noArgCheck)
     if ctrlPoints == nil then
         ctrlPoints = simEigen.Matrix(data.opt.dim, 0, {})
     end
-    
+
     if ctrlPoints:cols() > 1 then
         if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
             ctrlPoints = self:_removeDuplicates(ctrlPoints)
@@ -230,7 +230,7 @@ function Path:setPoints(ctrlPoints, noArgCheck)
             data.pathPoints.points = self:_resample(data.ctrlPoints.points)
             data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength = self:_computeArcLengths(data.pathPoints.points)
         end
-    else 
+    else
         if ctrlPoints:cols() == 1 then
             data.ctrlPoints.distancesAlongPath = simEigen.Vector{0.0}
             if not data.opt.onlyCtrlPoints then
@@ -639,7 +639,7 @@ function Path:configs(conf, noArgCheck)
     end
     local inputConfig = conf:data()
     sim.self:setStepping(true)
-    
+
     local lowLimits = table.rep(0.0, #inputConfig)
     local ranges = table.rep(0.0, #inputConfig)
     for i = 1, #inputConfig do
@@ -684,8 +684,8 @@ function Path:configs(conf, noArgCheck)
             if (inputConfig[i] >= lowLimits[i]) and (inputConfig[i] <= lowLimits[i] + ranges[i]) then
                 if inputConfig[i] - pi2 >= lowLimits[i] or inputConfig[i] + pi2 <= lowLimits[i] + ranges[i] then
                     local y = inputConfig[i]
-                    while y - pi2 >= lowLimits[i] do 
-                        y = y - pi2 
+                    while y - pi2 >= lowLimits[i] do
+                        y = y - pi2
                     end
                     x[i] = {y, lowLimits[i] + ranges[i]}
                 else
@@ -717,7 +717,7 @@ function Path:_resample(points, resamplingType)
     end
     local arcL, distances, totalL = self:_computeArcLengths(pts)
     local retPts = {} -- accumulate resampled points as table-of-tables
-    resamplingType = resamplingType or data.pathPoints.opt.type 
+    resamplingType = resamplingType or data.pathPoints.opt.type
     if resamplingType == 0 then
         retPts[#retPts + 1] = pts:block(1, 1, -1, 1):data()
         local cnt = math.floor(totalL / data.pathPoints.opt.samplingDistance)
@@ -1037,7 +1037,7 @@ function Path:createShape(opt)
     if data.opt.closed then
         pts = pts:horzcat(pts:block(1, 1, -1, 1))
     end
-    
+
     return callMethod(-1, 'createShapeFromPath', pts, opt)
 end
 
@@ -1119,7 +1119,7 @@ function Path:getPoint(distance)
         local l = distance * pathLength
         if data.opt.closed then
             pts = pts:horzcat(pts:block(1, 1, -1, 1))
-            distancesAlongPath = distancesAlongPath:horzcat(simEigen.Matrix(1, 1, {pathLength}))
+            distancesAlongPath = distancesAlongPath:vertcat(simEigen.Matrix(1, 1, {pathLength}))
         end
         local retVal
         for i = 1, distancesAlongPath:rows() - 1 do
@@ -1171,7 +1171,7 @@ function Path:createMarkers()
     if not data.opt.onlyCtrlPoints then
         data.pathPoints.markers = self:_createMarkers(data.pathPoints.points, data.pathPoints.opt)
     end
-    return {ctrlPointMarkers = data.ctrlPoints.markers, pathPointMarkers = data.pathPoints.markers} 
+    return {ctrlPointMarkers = data.ctrlPoints.markers, pathPointMarkers = data.pathPoints.markers}
 end
 
 function Path:_updateMarkers()

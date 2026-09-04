@@ -237,8 +237,8 @@ function pathModel.sysCall_afterCreate(inData)
 end
 
 function pathModel.sysCall_afterDelete(inData)
-    for i = 1, #inData.objectList do
-        local objHandle = inData.objectList[i]
+    for i = 1, #inData.objectHandleList do
+        local objHandle = inData.objectHandleList[i]
         if pathModel.ctrlDummyMap[objHandle] then
             pathModel.update()
             break
