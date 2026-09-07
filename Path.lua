@@ -235,11 +235,11 @@ function Path:setPoints(ctrlPoints, noArgCheck)
     data.ctrlPoints.points = ctrlPoints
     if data.ctrlPoints.points:cols() > 1 then
         data.ctrlPoints.points = self:_orientPosesAlongPath(data.ctrlPoints.points)
-        data.ctrlPoints.arcLengths, data.ctrlPoints.distancesAlongPath, data.ctrlPoints.pathLength = self:_computeArcLengths(data.ctrlPoints.points)
+        data.ctrlPoints.arcLengths, data.ctrlPoints.distancesAlongPath, data.ctrlPoints.pathLength, data.ctrlPoints.arcLengthsTable, data.ctrlPoints.distancesAlongPathTable = self:_computeArcLengths(data.ctrlPoints.points)
         if not data.opt.onlyCtrlPoints then
             data.pathPoints.points = self:_resample(data.ctrlPoints.points)
             data.pathPoints.points = self:_orientPosesAlongPath(data.pathPoints.points)
-            data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength = self:_computeArcLengths(data.pathPoints.points)
+            data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength, data.pathPoints.arcLengthsTable, data.pathPoints.distancesAlongPathTable = self:_computeArcLengths(data.pathPoints.points)
         end
     else
         if ctrlPoints:cols() == 1 then
@@ -540,27 +540,93 @@ end
 
 function Path:_computeArcLengths(points)
     local data = self._data
-    local pts = points
+    local dim = data.opt.dim
+    local types = data.opt.types
+    local bounds = data.opt.bounds
+    local metric = data.opt.metric:data()
+    local pts = pointTableFromMatrix(points)
 
-    local l = 0.0
-    local distances = {l}
-    local tot = {}
-    for i = 1, pts:cols() - 1 do
-        local p0 = pts:block(1, i, -1, 1)
-        local p1 = pts:block(1, i + 1, -1, 1)
-        local d = self:distance(p0, p1, true)
-        tot[#tot + 1] = d
-        l = l + d
-        distances[#distances + 1] = l
+    local sin, cos, atan2, acos, sqrt, abs =
+        math.sin, math.cos, math.atan2, math.acos, math.sqrt, math.abs
+
+    local modes = {}
+    do
+        local i = 1
+        while i <= dim do
+            if types[i] == 2 then
+                modes[i] = 2
+                i = i + 4
+            elseif types[i] == 0 or #bounds[i] == 2 then
+                modes[i] = 0
+                i = i + 1
+            else
+                modes[i] = 1
+                i = i + 1
+            end
+        end
     end
-    if data.opt.closed then
-        local p0 = pts:block(1, pts:cols(), -1, 1)
-        local p1 = pts:block(1, 1, -1, 1)
-        local d = self:distance(p0, p1, true)
-        tot[#tot + 1] = d
-        l = l + d
+
+    local function distance(a, b)
+        local squaredDistance = 0.0
+        local j = 1
+
+        while j <= dim do
+            local mode = modes[j]
+
+            if mode == 0 then
+                local d = (b[j] - a[j]) * metric[j]
+                squaredDistance = squaredDistance + d * d
+                j = j + 1
+            elseif mode == 1 then
+                local delta = b[j] - a[j]
+                local d = abs(atan2(sin(delta), cos(delta))) * metric[j]
+                squaredDistance = squaredDistance + d * d
+                j = j + 1
+            else
+                local dot =
+                    a[j]     * b[j] +
+                    a[j + 1] * b[j + 1] +
+                    a[j + 2] * b[j + 2] +
+                    a[j + 3] * b[j + 3]
+
+                -- Account for quaternion double covering.
+                dot = abs(dot)
+                if dot > 1.0 then
+                    dot = 1.0
+                end
+
+                local d = 2.0 * acos(dot) * metric[j]
+                squaredDistance = squaredDistance + d * d
+                j = j + 4
+            end
+        end
+
+        return sqrt(squaredDistance)
     end
-    return simEigen.Vector(tot), simEigen.Vector(distances), l
+
+    local count = #pts
+    local totalLength = 0.0
+    local arcLengths = {}
+    local distances = {0.0}
+
+    for i = 1, count - 1 do
+        local d = distance(pts[i], pts[i + 1])
+        arcLengths[i] = d
+        totalLength = totalLength + d
+        distances[i + 1] = totalLength
+    end
+
+    if data.opt.closed and count > 1 then
+        local d = distance(pts[count], pts[1])
+        arcLengths[count] = d
+        totalLength = totalLength + d
+    end
+
+    return simEigen.Vector(arcLengths),
+        simEigen.Vector(distances),
+        totalLength,
+        arcLengths,
+        distances
 end
 
 function Path:distance(conf1, conf2, noArgCheck)
@@ -602,6 +668,65 @@ function Path:distance(conf1, conf2, noArgCheck)
         d = d + dd * dd
     end
     return math.sqrt(d)
+end
+
+function Path:_interpolatePose(points, i1, i2, t)
+    local ax = points:item(1, i1)
+    local ay = points:item(2, i1)
+    local az = points:item(3, i1)
+    local aqx = points:item(4, i1)
+    local aqy = points:item(5, i1)
+    local aqz = points:item(6, i1)
+    local aqw = points:item(7, i1)
+
+    local bx = points:item(1, i2)
+    local by = points:item(2, i2)
+    local bz = points:item(3, i2)
+    local bqx = points:item(4, i2)
+    local bqy = points:item(5, i2)
+    local bqz = points:item(6, i2)
+    local bqw = points:item(7, i2)
+
+    local dot = aqx * bqx + aqy * bqy + aqz * bqz + aqw * bqw
+    if dot < 0.0 then
+        bqx, bqy, bqz, bqw = -bqx, -bqy, -bqz, -bqw
+        dot = -dot
+    end
+    if dot > 1.0 then
+        dot = 1.0
+    end
+
+    local qx, qy, qz, qw
+
+    if dot > 0.9995 then
+        qx = aqx + (bqx - aqx) * t
+        qy = aqy + (bqy - aqy) * t
+        qz = aqz + (bqz - aqz) * t
+        qw = aqw + (bqw - aqw) * t
+
+        local invNorm = 1.0 / math.sqrt(
+            qx * qx + qy * qy + qz * qz + qw * qw
+        )
+        qx, qy, qz, qw =
+            qx * invNorm, qy * invNorm, qz * invNorm, qw * invNorm
+    else
+        local theta = math.acos(dot)
+        local invSinTheta = 1.0 / math.sin(theta)
+        local s1 = math.sin((1.0 - t) * theta) * invSinTheta
+        local s2 = math.sin(t * theta) * invSinTheta
+
+        qx = aqx * s1 + bqx * s2
+        qy = aqy * s1 + bqy * s2
+        qz = aqz * s1 + bqz * s2
+        qw = aqw * s1 + bqw * s2
+    end
+
+    return simEigen.Vector {
+        ax + (bx - ax) * t,
+        ay + (by - ay) * t,
+        az + (bz - az) * t,
+        qx, qy, qz, qw,
+    }
 end
 
 function Path:interpolate(conf1, conf2, t, noArgCheck)
@@ -1326,7 +1451,7 @@ function Path:createShape(opt)
     return callMethod(-1, 'createShapeFromPath', pts, opt)
 end
 
-function Path:closest(point)
+function Path:closest(point, noArgCheck)
     local data = self._data
     if not noArgCheck then
         point = checkargs.checkargsEx({funcName = 'Path:closest'}, {
@@ -1353,7 +1478,7 @@ function Path:closest(point)
         if data.opt.closed then
             pts = pts:horzcat(pts:block(1, 1, -1, 1))
         end
-        opt = {metric = data.opt.metric}
+        local opt = {metric = data.opt.metric}
         opt.types = {}
         for i = 1, data.opt.dim do
             if (data.opt.types[i] == 0) or (#data.opt.bounds[i] == 2) then
@@ -1391,14 +1516,14 @@ function Path:getPoint(distance, noArgCheck)
     local pts, arcLengths, distancesAlongPath, pathLength
     if data.opt.onlyCtrlPoints then
         pts = data.ctrlPoints.points
-        arcLengths = data.ctrlPoints.arcLengths
-        distancesAlongPath = data.ctrlPoints.distancesAlongPath
         pathLength = data.ctrlPoints.pathLength
+        distancesAlongPath = data.ctrlPoints.distancesAlongPathTable
+        arcLengths = data.ctrlPoints.arcLengthsTable
     else
         pts = data.pathPoints.points
-        arcLengths = data.pathPoints.arcLengths
-        distancesAlongPath = data.pathPoints.distancesAlongPath
         pathLength = data.pathPoints.pathLength
+        distancesAlongPath = data.pathPoints.distancesAlongPathTable
+        arcLengths = data.pathPoints.arcLengthsTable
     end
 
     local pointCount = pts:cols()
@@ -1428,7 +1553,7 @@ function Path:getPoint(distance, noArgCheck)
     -- Find the first stored path distance strictly greater than l.
     -- This replaces the previous O(n) scan with an O(log n) search.
     local lo = 2
-    local hi = distancesAlongPath:rows()
+    local hi = #distancesAlongPath
     local upper = hi + 1
 
     while lo <= hi do
@@ -1447,7 +1572,7 @@ function Path:getPoint(distance, noArgCheck)
     local segmentStart
     local segmentLength
 
-    if upper <= distancesAlongPath:rows() then
+    if upper <= #distancesAlongPath then
         -- Regular segment between two stored points.
         segmentIndex = upper - 1
         nextPointIndex = segmentIndex + 1
@@ -1469,12 +1594,11 @@ function Path:getPoint(distance, noArgCheck)
 
     local t = (l - segmentStart) / segmentLength
 
-    return self:interpolate(
-        pts:block(1, segmentIndex, -1, 1),
-        pts:block(1, nextPointIndex, -1, 1),
-        t,
-        true -- skip redundant argument validation
-    )
+    if data.opt.dim == 7 and data.opt.displDim == 7 then
+        return self:_interpolatePose(pts, segmentIndex, nextPointIndex, t) -- specialized interpolation
+    end
+
+    return self:interpolate(pts:block(1, segmentIndex, -1, 1), pts:block(1, nextPointIndex, -1, 1), t, true) -- skip redundant argument validation
 end
 
 function Path:toBuffer()
