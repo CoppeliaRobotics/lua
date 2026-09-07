@@ -227,7 +227,7 @@ function Object.static.unittest()
     d2 = scene:createObject{
         type = 'dummy',
         name = 'd2',
-        dummyType = 0, -- dummyType = sim.dummytype_dynloopclosure,
+        ['dummy.type'] = 'neutral', -- ['dummy.type'] = 'dynLoopClosure',
         linkedDummy = d1,
     }
     assert(d2.linkedDummy == d1)
@@ -235,7 +235,7 @@ function Object.static.unittest()
     cbor = require 'simCBOR'
     ip = table.fromipairs(f.children)
     assert(cbor.encode(ip) == cbor.encode{b})
-    assert(b:getPosition(f):norm() < 1e-7)
+    assert(b:getPosition{relativeToObject = f}:norm() < 1e-7)
 
     -- remove any leftover object from a previously failed test:
     local olda = scene:getObject('/a', {noError = true})
@@ -247,9 +247,9 @@ function Object.static.unittest()
     c.parent = b
     b.parent = a
     a.modelBase = true
-    assert(c:getName(1) == '/a/c')
+    assert(c:getName 'shortPath' == '/a/c')
     b.modelBase = true
-    assert(c:getName(1) == '/a/b/c')
+    assert(c:getName 'shortPath' == '/a/b/c')
 
     a.customData.i = 2
     assert(math.type(a.customData.i) == 'integer')
