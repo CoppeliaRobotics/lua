@@ -249,7 +249,7 @@ function locals.schedulerCallback()
 
     fn(sim.app.systemTime, locals.scheduler.rtpq)
     if sim.getSimulationState() == sim.simulation_advancing_running then
-        fn(sim.scene.simulationTime, locals.scheduler.simpq)
+        fn(sim.scene.simulation.time, locals.scheduler.simpq)
     end
 
     if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
@@ -266,7 +266,7 @@ function locals.scheduleExecution(target, methodName, func, delay, options)
     options.args = options.args or {}
     local timePoint
     if options.simulationTime then
-        timePoint = delay + sim.scene.simulationTime
+        timePoint = delay + sim.scene.simulation.time
     else
         timePoint = delay + sim.app.systemTime
     end
@@ -358,8 +358,8 @@ function locals.wait(target, methodName, ...)
     local dt, simTime = checkargs({{type = 'float'}, {type = 'bool', default = true}}, ...)
 
     if simTime then
-        local st = sim.app.simulationTime
-        while sim.app.simulationTime - st < dt do sim.self:step() end
+        local st = sim.scene.simulation.time
+        while sim.scene.simulation.time - st < dt do sim.self:step() end
     else
         local st = sim.app.systemTime
         while sim.app.systemTime - st < dt do sim.self:step() end

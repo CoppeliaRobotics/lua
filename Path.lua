@@ -1371,20 +1371,23 @@ function Path:closest(point)
     end
 end
 
-function Path:getPoint(distance)
+function Path:getPoint(distance, noArgCheck)
+    local data = self._data
+
     if not noArgCheck then
         distance = checkargs.checkargsEx({funcName = 'Path:getPoint'}, {
             {type = 'float'},
         }, distance)
     end
+
     self:update()
-    local data = self._data
+
     if distance < 0.0 then
         distance = 0.0
-    end
-    if distance > 1.0 then
+    elseif distance > 1.0 then
         distance = 1.0
     end
+
     local pts, arcLengths, distancesAlongPath, pathLength
     if data.opt.onlyCtrlPoints then
         pts = data.ctrlPoints.points
@@ -1397,33 +1400,81 @@ function Path:getPoint(distance)
         distancesAlongPath = data.pathPoints.distancesAlongPath
         pathLength = data.pathPoints.pathLength
     end
-    assert(pts:cols() > 0, 'path is empty.')
-    if pts:cols() == 1 then
+
+    local pointCount = pts:cols()
+    assert(pointCount > 0, 'path is empty.')
+
+    if pointCount == 1 then
         return pts:copy()
-    else
-        local l = distance * pathLength
-        if data.opt.closed then
-            pts = pts:horzcat(pts:block(1, 1, -1, 1))
-            distancesAlongPath = distancesAlongPath:vertcat(simEigen.Matrix(1, 1, {pathLength}))
-        end
-        local retVal
-        for i = 1, distancesAlongPath:rows() - 1 do
-            if distancesAlongPath[i + 1] > l then
-                local d2 = distancesAlongPath[i + 1] - distancesAlongPath[i + 0]
-                local d1 = l - distancesAlongPath[i + 0]
-                retVal = self:interpolate(pts:block(1, i, -1, 1), pts:block(1, i + 1, -1, 1), d1 / d2)
-                break
-            end
-        end
-        if retVal == nil then
-            if data.opt.closed then
-                retVal = pts:block(1, 1, -1, 1)
-            else
-                retVal = pts:block(1, pts:cols(), -1, 1)
-            end
-        end
-        return retVal
     end
+
+    local closed = data.opt.closed
+    local l = distance * pathLength
+
+    -- Match the endpoint semantics of the previous implementation.
+    if pathLength <= 0.0 then
+        if closed then
+            return pts:block(1, 1, -1, 1)
+        end
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    if closed and l >= pathLength then
+        return pts:block(1, 1, -1, 1)
+    elseif not closed and l >= pathLength then
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    -- Find the first stored path distance strictly greater than l.
+    -- This replaces the previous O(n) scan with an O(log n) search.
+    local lo = 2
+    local hi = distancesAlongPath:rows()
+    local upper = hi + 1
+
+    while lo <= hi do
+        local mid = math.floor((lo + hi) * 0.5)
+
+        if distancesAlongPath[mid] > l then
+            upper = mid
+            hi = mid - 1
+        else
+            lo = mid + 1
+        end
+    end
+
+    local segmentIndex
+    local nextPointIndex
+    local segmentStart
+    local segmentLength
+
+    if upper <= distancesAlongPath:rows() then
+        -- Regular segment between two stored points.
+        segmentIndex = upper - 1
+        nextPointIndex = segmentIndex + 1
+        segmentStart = distancesAlongPath[segmentIndex]
+        segmentLength = arcLengths[segmentIndex]
+    elseif closed then
+        -- Closing segment from the last point to the first point.
+        segmentIndex = pointCount
+        nextPointIndex = 1
+        segmentStart = distancesAlongPath[pointCount]
+        segmentLength = arcLengths[pointCount]
+    else
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    if segmentLength <= 0.0 then
+        return pts:block(1, segmentIndex, -1, 1)
+    end
+
+    local t = (l - segmentStart) / segmentLength
+
+    return self:interpolate(
+        pts:block(1, segmentIndex, -1, 1),
+        pts:block(1, nextPointIndex, -1, 1),
+        t,
+        true -- skip redundant argument validation
+    )
 end
 
 function Path:toBuffer()
