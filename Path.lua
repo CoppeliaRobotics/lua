@@ -234,9 +234,11 @@ function Path:setPoints(ctrlPoints, noArgCheck)
     end
     data.ctrlPoints.points = ctrlPoints
     if data.ctrlPoints.points:cols() > 1 then
+        data.ctrlPoints.points = self:_orientPosesAlongPath(data.ctrlPoints.points)
         data.ctrlPoints.arcLengths, data.ctrlPoints.distancesAlongPath, data.ctrlPoints.pathLength = self:_computeArcLengths(data.ctrlPoints.points)
         if not data.opt.onlyCtrlPoints then
             data.pathPoints.points = self:_resample(data.ctrlPoints.points)
+            data.pathPoints.points = self:_orientPosesAlongPath(data.pathPoints.points)
             data.pathPoints.arcLengths, data.pathPoints.distancesAlongPath, data.pathPoints.pathLength = self:_computeArcLengths(data.pathPoints.points)
         end
     else
@@ -717,27 +719,27 @@ function Path:configs(conf, noArgCheck)
     return retVal
 end
 
--- Adjusts pose orientations so that:
---   * the first axis in forwardAndUpAxes follows the path tangent;
---   * the second axis points toward upVector as closely as possible.
---
--- Pose layout is assumed to be:
---     {px, py, pz, qx, qy, qz, qw}
-local function orientPosesAlongPath(pts, opt)
-    if opt.upVector == nil or opt.displDim ~= 7 or #pts < 2 then
-        return pts
+function Path:_orientPosesAlongPath(points)
+    local data = self._data
+    local opt = data.opt
+
+    -- Preserve the previous behavior unless explicitly applicable:
+    if opt.upVector == nil or opt.displDim ~= 7 or points:cols() < 2 then
+        return points
     end
 
     local axesSpec = opt.forwardAndUpAxes
-    local forwardAxis = axesSpec:sub(1, 1)
-    local upAxis = axesSpec:sub(2, 2)
-
     local validAxes = {
         xy = true, xz = true,
         yx = true, yz = true,
         zx = true, zy = true,
     }
     assert(validAxes[axesSpec], "invalid 'forwardAndUpAxes' string")
+
+    local forwardAxis = axesSpec:sub(1, 1)
+    local upAxis = axesSpec:sub(2, 2)
+    local closed = opt.closed
+    local count = points:cols()
 
     local sqrt, abs = math.sqrt, math.abs
     local eps = 1e-12
@@ -754,17 +756,17 @@ local function orientPosesAlongPath(pts, opt)
         }
     end
 
-    local function normSquared(v)
-        return dot(v, v)
-    end
-
     local function normalized(v)
-        local n2 = normSquared(v)
+        local n2 = dot(v, v)
         if n2 <= eps then
             return nil
         end
         local s = 1.0 / sqrt(n2)
-        return {v[1] * s, v[2] * s, v[3] * s}
+        return {
+            v[1] * s,
+            v[2] * s,
+            v[3] * s,
+        }
     end
 
     local function subtractProjection(v, onto)
@@ -776,7 +778,27 @@ local function orientPosesAlongPath(pts, opt)
         }
     end
 
-    local function positionDifference(a, b)
+    local function wrappedIndex(index)
+        return ((index - 1) % count) + 1
+    end
+
+    local function positionAt(index)
+        if closed then
+            index = wrappedIndex(index)
+        else
+            index = math.max(1, math.min(count, index))
+        end
+
+        return {
+            points:item(1, index),
+            points:item(2, index),
+            points:item(3, index),
+        }
+    end
+
+    local function positionDifference(indexA, indexB)
+        local a = positionAt(indexA)
+        local b = positionAt(indexB)
         return {
             a[1] - b[1],
             a[2] - b[2],
@@ -784,10 +806,34 @@ local function orientPosesAlongPath(pts, opt)
         }
     end
 
-    -- Returns one world-space axis of the quaternion in a pose.
-    -- Quaternion layout is x, y, z, w.
-    local function quaternionAxis(pose, axis)
-        local x, y, z, w = pose[4], pose[5], pose[6], pose[7]
+    local function quaternionAt(index)
+        return {
+            points:item(4, index),
+            points:item(5, index),
+            points:item(6, index),
+            points:item(7, index),
+        }
+    end
+
+    -- Returns one local orientation axis expressed in world coordinates.
+    -- Quaternion layout is {x, y, z, w}.
+    local function quaternionAxis(q, axis)
+        local x, y, z, w = q[1], q[2], q[3], q[4]
+
+        -- Normalize defensively:
+        local n2 = x * x + y * y + z * z + w * w
+        if n2 <= eps then
+            if axis == 'x' then
+                return {1.0, 0.0, 0.0}
+            elseif axis == 'y' then
+                return {0.0, 1.0, 0.0}
+            else
+                return {0.0, 0.0, 1.0}
+            end
+        end
+
+        local s = 1.0 / sqrt(n2)
+        x, y, z, w = x * s, y * s, z * s, w * s
 
         if axis == 'x' then
             return {
@@ -801,7 +847,7 @@ local function orientPosesAlongPath(pts, opt)
                 1.0 - 2.0 * (x * x + z * z),
                 2.0 * (y * z + x * w),
             }
-        else -- z
+        else
             return {
                 2.0 * (x * z + y * w),
                 2.0 * (y * z - x * w),
@@ -810,7 +856,6 @@ local function orientPosesAlongPath(pts, opt)
         end
     end
 
-    -- Converts a right-handed rotation frame to {qx, qy, qz, qw}.
     -- xAxis, yAxis and zAxis are the columns of the rotation matrix.
     local function axesToQuaternion(xAxis, yAxis, zAxis)
         local m00, m01, m02 = xAxis[1], yAxis[1], zAxis[1]
@@ -846,12 +891,12 @@ local function orientPosesAlongPath(pts, opt)
             z = 0.25 * s
         end
 
-        local invNorm = 1.0 / sqrt(x * x + y * y + z * z + w * w)
+        local n = sqrt(x * x + y * y + z * z + w * w)
         return {
-            x * invNorm,
-            y * invNorm,
-            z * invNorm,
-            w * invNorm,
+            x / n,
+            y / n,
+            z / n,
+            w / n,
         }
     end
 
@@ -866,78 +911,98 @@ local function orientPosesAlongPath(pts, opt)
         local u = opt.upVector:data()
         upVector = {u[1], u[2], u[3]}
     end
-    upVector = assert(normalized(upVector), "'upVector' must be non-zero")
 
-    local count = #pts
+    upVector = assert(
+        normalized(upVector),
+        "'upVector' must be non-zero"
+    )
+
+    -- Prefer a centered tangent. If it is degenerate, search outward for
+    -- the nearest non-coincident path point.
+    local function tangentAt(index)
+        if closed or (index > 1 and index < count) then
+            local tangent = normalized(
+                positionDifference(index + 1, index - 1)
+            )
+            if tangent then
+                return tangent
+            end
+        end
+
+        -- Search forward:
+        for offset = 1, count - 1 do
+            local other = index + offset
+            if not closed and other > count then
+                break
+            end
+
+            local tangent = normalized(
+                positionDifference(other, index)
+            )
+            if tangent then
+                return tangent
+            end
+        end
+
+        -- Search backward. Keep the direction pointing along increasing
+        -- path index by subtracting the previous point from this point.
+        for offset = 1, count - 1 do
+            local other = index - offset
+            if not closed and other < 1 then
+                break
+            end
+
+            local tangent = normalized(
+                positionDifference(index, other)
+            )
+            if tangent then
+                return tangent
+            end
+        end
+
+        return nil
+    end
+
+    -- Build only the replacement quaternion matrix. Positions and any
+    -- components after row 7 remain in matrix form throughout.
+    local quaternionRows = {
+        {}, -- qx
+        {}, -- qy
+        {}, -- qz
+        {}, -- qw
+    }
+
     local previousForward
     local previousQuaternion
 
-    local function pointAt(index)
-        if opt.closed then
-            return pts[((index - 1) % count) + 1]
-        end
-        return pts[math.max(1, math.min(count, index))]
-    end
-
-    local function tangentAt(index)
-        local tangent
-
-        -- Use a centered tangent where possible. This produces smoother
-        -- orientations than always using the following segment.
-        if opt.closed or (index > 1 and index < count) then
-            tangent = normalized(positionDifference(
-                pointAt(index + 1),
-                pointAt(index - 1)
-            ))
-        end
-
-        -- Fall back to the outgoing segment.
-        if tangent == nil and (opt.closed or index < count) then
-            tangent = normalized(positionDifference(
-                pointAt(index + 1),
-                pointAt(index)
-            ))
-        end
-
-        -- At the end of an open path, or for duplicate points, use the
-        -- incoming segment.
-        if tangent == nil and (opt.closed or index > 1) then
-            tangent = normalized(positionDifference(
-                pointAt(index),
-                pointAt(index - 1)
-            ))
-        end
-
-        return tangent or previousForward
-    end
-
     for i = 1, count do
-        local pose = pts[i]
-        local forward = tangentAt(i)
+        local oldQuaternion = quaternionAt(i)
+        local forward = tangentAt(i) or previousForward
+        local q = oldQuaternion
 
-        if forward ~= nil then
+        if forward then
             previousForward = forward
 
-            -- Project the requested up direction onto the plane normal to
-            -- the forward axis. This is the closest possible up direction
-            -- while keeping the forward axis exact.
+            -- This is the direction closest to upVector that remains
+            -- perpendicular to the exact forward direction.
             local adjustedUp = normalized(
                 subtractProjection(upVector, forward)
             )
 
-            -- If forward is parallel to upVector, the requested up direction
-            -- is undefined. Preserve as much of the pose's existing roll as
-            -- possible.
+            -- If forward and upVector are parallel, preserve the existing
+            -- pose's roll to the extent possible.
             if adjustedUp == nil then
-                local oldUpAxis = quaternionAxis(pose, upAxis)
+                local oldUp = quaternionAxis(oldQuaternion, upAxis)
                 adjustedUp = normalized(
-                    subtractProjection(oldUpAxis, forward)
+                    subtractProjection(oldUp, forward)
                 )
             end
 
-            -- Final deterministic fallback for fully degenerate input.
+            -- Deterministic fallback if the existing up axis is also
+            -- unusable.
             if adjustedUp == nil then
                 local fallback
+
                 if abs(forward[1]) <= abs(forward[2]) and
                    abs(forward[1]) <= abs(forward[3]) then
                     fallback = {1.0, 0.0, 0.0}
@@ -946,6 +1011,7 @@ local function orientPosesAlongPath(pts, opt)
                 else
                     fallback = {0.0, 0.0, 1.0}
                 end
+
                 adjustedUp = assert(normalized(
                     subtractProjection(fallback, forward)
                 ))
@@ -955,32 +1021,29 @@ local function orientPosesAlongPath(pts, opt)
             axis[forwardAxis] = forward
             axis[upAxis] = adjustedUp
 
-            -- Complete a right-handed frame:
-            --     x cross y = z
+            -- Complete the right-handed frame according to x × y = z.
             if axis.x == nil then
-                axis.x = normalized(cross(axis.y, axis.z))
+                axis.x = assert(normalized(cross(axis.y, axis.z)))
             elseif axis.y == nil then
-                axis.y = normalized(cross(axis.z, axis.x))
+                axis.y = assert(normalized(cross(axis.z, axis.x)))
             else
-                axis.z = normalized(cross(axis.x, axis.y))
+                axis.z = assert(normalized(cross(axis.x, axis.y)))
             end
 
-            -- Recompute the requested secondary axis from the completed
-            -- frame. This removes accumulated floating-point error while
-            -- preserving its direction toward upVector.
+            -- Recompute the secondary axis to remove numerical
+            -- non-orthogonality without changing the forward axis.
             if upAxis == 'x' then
-                axis.x = normalized(cross(axis.y, axis.z))
+                axis.x = assert(normalized(cross(axis.y, axis.z)))
             elseif upAxis == 'y' then
-                axis.y = normalized(cross(axis.z, axis.x))
+                axis.y = assert(normalized(cross(axis.z, axis.x)))
             else
-                axis.z = normalized(cross(axis.x, axis.y))
+                axis.z = assert(normalized(cross(axis.x, axis.y)))
             end
 
-            local q = axesToQuaternion(axis.x, axis.y, axis.z)
+            q = axesToQuaternion(axis.x, axis.y, axis.z)
 
-            -- q and -q represent the same rotation. Pick the sign nearest
-            -- the preceding quaternion to avoid artificial discontinuities.
-            if previousQuaternion ~= nil then
+            -- Select a consistent quaternion hemisphere.
+            if previousQuaternion then
                 local d =
                     previousQuaternion[1] * q[1] +
                     previousQuaternion[2] * q[2] +
@@ -988,103 +1051,31 @@ local function orientPosesAlongPath(pts, opt)
                     previousQuaternion[4] * q[4]
 
                 if d < 0.0 then
-                    q[1], q[2], q[3], q[4] =
-                        -q[1], -q[2], -q[3], -q[4]
+                    q = {-q[1], -q[2], -q[3], -q[4]}
                 end
             end
-
-            pose[4], pose[5], pose[6], pose[7] =
-                q[1], q[2], q[3], q[4]
-
-            previousQuaternion = q
         end
+
+        quaternionRows[1][i] = q[1]
+        quaternionRows[2][i] = q[2]
+        quaternionRows[3][i] = q[3]
+        quaternionRows[4][i] = q[4]
+        previousQuaternion = q
     end
 
-    return pts
+    local result = points:block(1, 1, 3, count)
+        :vertcat(simEigen.Matrix(quaternionRows))
+
+    -- Although displDim is 7, dim can potentially be greater than 7.
+    -- Preserve all additional configuration components.
+    if points:rows() > 7 then
+        result = result:vertcat(
+            points:block(8, 1, points:rows() - 7, count)
+        )
+    end
+
+    return result
 end
---[[
-function Path:_resample(points, resamplingType)
-    local data = self._data
-    local pts = points
-    if data.opt.closed then
-        pts = pts:horzcat(pts:block(1, 1, -1, 1))
-    end
-    local arcL, distances, totalL = self:_computeArcLengths(pts)
-    local retPts = {} -- accumulate resampled points as table-of-tables
-    resamplingType = resamplingType or data.pathPoints.opt.type
-    if resamplingType == 0 then
-        retPts[#retPts + 1] = pts:block(1, 1, -1, 1):data()
-        local cnt = math.floor(totalL / data.pathPoints.opt.samplingDistance)
-        local sd = totalL / (cnt + 1.0)
-        local l = 0.0
-        local paInd = 1
-        for i = 1, cnt do
-            l = l + sd
-            while l > distances[paInd + 1] do
-                paInd = paInd + 1
-            end
-            local pa = pts:block(1, paInd, -1, 1)
-            local pb = pts:block(1, paInd + 1, -1, 1)
-            local r = (l - distances[paInd + 0]) / (distances[paInd + 1] - distances[paInd + 0])
-            retPts[#retPts + 1] = self:interpolate(pa, pb, r, true):data()
-        end
-        if not data.opt.closed then
-            retPts[#retPts + 1] = pts:block(1, pts:cols(), -1, 1):data()
-        end
-        return matrixFromPointTable(data.opt.dim, retPts)
-    else
-        local function getBezierPt(a, b, c, t)
-            local pia = self:interpolate(a, b, 0.5, true)
-            local pib = self:interpolate(b, c, 0.5, true)
-            if data.pathPoints.opt.bezierSmoothing < 0.999 then
-                pia = self:interpolate(b, pia, data.pathPoints.opt.bezierSmoothing, true)
-                pib = self:interpolate(b, pib, data.pathPoints.opt.bezierSmoothing, true)
-            end
-
-            local p1 = self:interpolate(pia, b, t, true)
-            local p2 = self:interpolate(b, pib, t, true)
-            return self:interpolate(p1, p2, t, true)
-        end
-        if data.opt.closed then
-            pts = pts:horzcat(pts:block(1, 2, -1, 1))
-            pts = pts:block(1, pts:cols() - 2, -1, 1):horzcat(pts)
-        else
-            local a = pts:block(1, pts:cols() - 1, -1, 1)
-            local b = pts:block(1, pts:cols() - 0, -1, 1)
-            pts = pts:horzcat(self:interpolate(a, b, 2.0, true))
-            local a = pts:block(1, 2, -1, 1)
-            local b = pts:block(1, 1, -1, 1)
-            pts = self:interpolate(a, b, 2.0, true):horzcat(pts)
-        end
-        local cnt = math.floor(totalL * 2.0 / data.pathPoints.opt.samplingDistance) + 1.0 -- first a smaller sampling
-        local sd = totalL / cnt
-        local l = 0.0
-        local paInd = 1
-        for i = 1, cnt + 1 do
-            while (l > distances[paInd + 1]) and (distances:rows() > paInd + 1) do
-                paInd = paInd + 1
-            end
-            local px = pts:block(1, paInd + 0, -1, 1)
-            local pa = pts:block(1, paInd + 1, -1, 1)
-            local pb = pts:block(1, paInd + 2, -1, 1)
-            local py = pts:block(1, paInd + 3, -1, 1)
-            local r = (l - distances[paInd + 0]) / (distances[paInd + 1] - distances[paInd + 0])
-            local pi
-            if r >= 0.5 then
-                pi = getBezierPt(pa, pb, py, r - 0.5)
-            else
-                pi = getBezierPt(px, pa, pb, r + 0.5)
-            end
-            retPts[#retPts + 1] = pi:data()
-            l = l + sd
-        end
-        if not data.opt.closed then
-            retPts[#retPts + 1] = pts:block(1, pts:cols() - 1, -1, 1):data()
-        end
-        return self:_resample(matrixFromPointTable(data.opt.dim, retPts), 0)
-    end
-end
---]]
 
 function Path:_resample(points, resamplingType)
     -- Faster version. Original version is above
@@ -1226,9 +1217,7 @@ function Path:_resample(points, resamplingType)
     local pts = pointTableFromMatrix(points)
 
     if resamplingType == 0 then
-        local ret = resampleLinear(pts)
-        ret = orientPosesAlongPath(ret, data.opt)
-        return matrixFromPointTable(dim, ret)
+        return matrixFromPointTable(dim, resampleLinear(pts))
     end
 
     -- Bezier resampling:
@@ -1295,9 +1284,7 @@ function Path:_resample(points, resamplingType)
     end
 
     -- final pass: stay in table land, convert to matrix only once at the end:
-    ret = resampleLinear(ret)
-    ret = orientPosesAlongPath(ret, data.opt)
-    return matrixFromPointTable(dim, ret)
+    return matrixFromPointTable(dim, resampleLinear(ret))
 end
 
 function Path:createShape(opt)
