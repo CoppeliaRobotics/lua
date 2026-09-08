@@ -229,15 +229,6 @@ function checkargs.checkargsEx(opts, types, ...)
     end
     -- offset for argument number in error messages:
     local argOffset = opts.argOffset
-    if funcName and __proxyFuncName__ then
-        local method = __proxyFuncName__:endswith('@method')
-        local matchFunc, target = table.unpack(__proxyFuncName__:stripsuffix('@method'):split(','))
-        if matchFunc == funcName then
-            __proxyFuncName__ = nil
-            funcName = target
-            if method and argOffset == nil then argOffset = -1 end
-        end
-    end
 
     -- level at which we should output the error (1 is current, 2 parent, etc...)
     local errorLevel = 2 + level
