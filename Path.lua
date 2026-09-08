@@ -7,6 +7,10 @@ local simIK = require('simIK-1')
 
 local Path = class('Path')
 
+local sin, cos, atan2, acos, sqrt, abs, floor =
+    math.sin, math.cos, math.atan2, math.acos,
+    math.sqrt, math.abs, math.floor
+
 local function pointTableFromMatrix(m)
     local t = {}
     for i = 1, m:cols() do
@@ -19,12 +23,103 @@ local function matrixFromPointTable(rows, t)
     if #t == 0 then
         return simEigen.Matrix(rows, 0, {})
     end
-    return simEigen.Matrix(t).T -- each inner table is one point, i.e. one column
+    return simEigen.Matrix(t).T
+end
+
+-- Copies only the outer table. Individual point tables are treated as
+-- immutable once installed in a path cache.
+local function copyPointTable(t)
+    local r = {}
+    for i = 1, #t do
+        r[i] = t[i]
+    end
+    return r
+end
+
+function Path:_initializeRuntimeCache()
+    local data = self._data
+    local opt = data.opt
+
+    local cache = {
+        dim = opt.dim,
+        metric = opt.metric:data(),
+        modes = {},
+        ctrlPoints = {},
+        pathPoints = {},
+    }
+
+    -- 0: linear/bounded angular
+    -- 1: cyclic angular
+    -- 2: first component of quaternion
+    -- 3: remaining quaternion component, skipped by kernels
+    local i = 1
+    while i <= opt.dim do
+        if opt.types[i] == 2 then
+            cache.modes[i] = 2
+            cache.modes[i + 1] = 3
+            cache.modes[i + 2] = 3
+            cache.modes[i + 3] = 3
+            i = i + 4
+        elseif opt.types[i] == 0 or #opt.bounds[i] == 2 then
+            cache.modes[i] = 0
+            i = i + 1
+        else
+            cache.modes[i] = 1
+            i = i + 1
+        end
+    end
+
+    self._cache = cache
+end
+
+function Path:_rebuildPointCache(name)
+    local src = self._data[name]
+    local dst = self._cache[name]
+
+    dst.points = pointTableFromMatrix(src.points)
+
+    if src.arcLengthsTable then
+        dst.arcLengths = src.arcLengthsTable
+    elseif src.arcLengths then
+        dst.arcLengths = src.arcLengths:data()
+    else
+        dst.arcLengths = {}
+    end
+
+    if src.distancesAlongPathTable then
+        dst.distancesAlongPath = src.distancesAlongPathTable
+    elseif src.distancesAlongPath then
+        dst.distancesAlongPath = src.distancesAlongPath:data()
+    else
+        dst.distancesAlongPath = {}
+    end
+
+    dst.pathLength = src.pathLength or 0.0
+end
+
+function Path:_rebuildRuntimePointCaches()
+    self:_rebuildPointCache('ctrlPoints')
+
+    if not self._data.opt.onlyCtrlPoints then
+        self:_rebuildPointCache('pathPoints')
+    end
+end
+
+function Path:_selectedPointCache()
+    if self._data.opt.onlyCtrlPoints then
+        return self._cache.ctrlPoints
+    end
+    return self._cache.pathPoints
 end
 
 function Path:initialize(ctrlPoints, opt, data)
     if data then
         self._data = data
+
+        -- Runtime-only cache is deliberately not serialized:
+        self:_initializeRuntimeCache()
+        self:_rebuildRuntimePointCaches()
+        return
     else
         ctrlPoints = checkargs.checkargsEx({funcName = 'Path:new'}, {
             {type = 'matrix', nullable = true},
@@ -157,7 +252,8 @@ function Path:initialize(ctrlPoints, opt, data)
                 data.opt.displDim = 0
             end
         end
-        self:setPoints(ctrlPoints, true)
+    self:_initializeRuntimeCache()
+    self:setPoints(ctrlPoints, true)
     end
 end
 
@@ -244,24 +340,38 @@ function Path:setPoints(ctrlPoints, noArgCheck)
     else
         if ctrlPoints:cols() == 1 then
             data.ctrlPoints.distancesAlongPath = simEigen.Vector{0.0}
+            data.ctrlPoints.distancesAlongPathTable = {0.0}
+            data.ctrlPoints.arcLengthsTable = {}
+
             if not data.opt.onlyCtrlPoints then
                 data.pathPoints.points = copy.copy(ctrlPoints)
                 data.pathPoints.distancesAlongPath = simEigen.Vector{0.0}
+                data.pathPoints.distancesAlongPathTable = {0.0}
+                data.pathPoints.arcLengthsTable = {}
             end
         else
             data.ctrlPoints.distancesAlongPath = simEigen.Vector{}
+            data.ctrlPoints.distancesAlongPathTable = {}
+            data.ctrlPoints.arcLengthsTable = {}
+
             if not data.opt.onlyCtrlPoints then
-                data.pathPoints.points = simEigen.Matrix(data.opt.dim, 0, {})
+                data.pathPoints.points =
+                    simEigen.Matrix(data.opt.dim, 0, {})
                 data.pathPoints.distancesAlongPath = simEigen.Vector{}
+                data.pathPoints.distancesAlongPathTable = {}
+                data.pathPoints.arcLengthsTable = {}
             end
         end
+
         data.ctrlPoints.arcLengths = simEigen.Vector{}
         data.ctrlPoints.pathLength = 0.0
+
         if not data.opt.onlyCtrlPoints then
             data.pathPoints.arcLengths = simEigen.Vector{}
             data.pathPoints.pathLength = 0.0
         end
     end
+    self:_rebuildRuntimePointCaches()
     self:_updateMarkers()
     sim.self:setStepping(false)
 end
@@ -276,17 +386,22 @@ function Path:appendPoints(ctrlPoints, update)
     }, ctrlPoints)
     assert(ctrlPoints:cols() > 0, 'invalid points')
 
-    -- accumulate pending points in a table-of-tables, matrix is built in update():
-    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
-    for i = 1, ctrlPoints:cols() do
-        toUpdate[#toUpdate + 1] = ctrlPoints:block(1, i, -1, 1):data()
+    local toUpdate = data.ctrlPoints.toUpdate
+    if not toUpdate then
+        toUpdate = copyPointTable(self._cache.ctrlPoints.points)
     end
+
+    local newPoints = pointTableFromMatrix(ctrlPoints)
+    for i = 1, #newPoints do
+        toUpdate[#toUpdate + 1] = newPoints[i]
+    end
+
     data.ctrlPoints.toUpdate = toUpdate
+
     if update then
         self:update()
     end
 end
-
 function Path:appendFromJoints(update)
     if update == nil then
         update = true
@@ -301,11 +416,15 @@ function Path:appendFromJoints(update)
             table.add(ctrlPoint, data.opt.joints[i].joint.quaternion:data())
         end
     end
-    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
+    local toUpdate = data.ctrlPoints.toUpdate
+    if not toUpdate then
+        -- Do not mutate the installed cache while points are pending.
+        toUpdate = copyPointTable(self._cache.ctrlPoints.points)
+    end
     local newPt = ctrlPoint
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
         if #toUpdate > 0 then
-            if self:distance(simEigen.Vector(toUpdate[#toUpdate]), simEigen.Vector(newPt), true) < data.ctrlPoints.opt.duplicateThreshold then
+            if self:_distanceTables(toUpdate[#toUpdate], newPt) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
@@ -325,11 +444,15 @@ function Path:appendFromObject(update)
     end
     local data = self._data
     assert(data.opt.object, 'no object specified')
-    local toUpdate = data.ctrlPoints.toUpdate or pointTableFromMatrix(data.ctrlPoints.points)
+    local toUpdate = data.ctrlPoints.toUpdate
+    if not toUpdate then
+        -- Do not mutate the installed cache while points are pending.
+        toUpdate = copyPointTable(self._cache.ctrlPoints.points)
+    end
     local newPt = data.opt.object.worldPose:data()
     if data.ctrlPoints.opt.duplicateThreshold > 0.0 then
         if #toUpdate > 0 then
-            if self:distance(simEigen.Vector(toUpdate[#toUpdate]), simEigen.Vector(newPt), true) < data.ctrlPoints.opt.duplicateThreshold then
+            if self:_distanceTables(toUpdate[#toUpdate], newPt) < data.ctrlPoints.opt.duplicateThreshold then
                 newPt = nil
             end
         end
@@ -539,85 +662,26 @@ function Path:_removeColinearSegments(points)
 end
 
 function Path:_computeArcLengths(points)
-    local data = self._data
-    local dim = data.opt.dim
-    local types = data.opt.types
-    local bounds = data.opt.bounds
-    local metric = data.opt.metric:data()
     local pts = pointTableFromMatrix(points)
-
-    local sin, cos, atan2, acos, sqrt, abs =
-        math.sin, math.cos, math.atan2, math.acos, math.sqrt, math.abs
-
-    local modes = {}
-    do
-        local i = 1
-        while i <= dim do
-            if types[i] == 2 then
-                modes[i] = 2
-                i = i + 4
-            elseif types[i] == 0 or #bounds[i] == 2 then
-                modes[i] = 0
-                i = i + 1
-            else
-                modes[i] = 1
-                i = i + 1
-            end
-        end
-    end
-
-    local function distance(a, b)
-        local squaredDistance = 0.0
-        local j = 1
-
-        while j <= dim do
-            local mode = modes[j]
-
-            if mode == 0 then
-                local d = (b[j] - a[j]) * metric[j]
-                squaredDistance = squaredDistance + d * d
-                j = j + 1
-            elseif mode == 1 then
-                local delta = b[j] - a[j]
-                local d = abs(atan2(sin(delta), cos(delta))) * metric[j]
-                squaredDistance = squaredDistance + d * d
-                j = j + 1
-            else
-                local dot =
-                    a[j]     * b[j] +
-                    a[j + 1] * b[j + 1] +
-                    a[j + 2] * b[j + 2] +
-                    a[j + 3] * b[j + 3]
-
-                -- Account for quaternion double covering.
-                dot = abs(dot)
-                if dot > 1.0 then
-                    dot = 1.0
-                end
-
-                local d = 2.0 * acos(dot) * metric[j]
-                squaredDistance = squaredDistance + d * d
-                j = j + 4
-            end
-        end
-
-        return sqrt(squaredDistance)
-    end
-
     local count = #pts
+
     local totalLength = 0.0
     local arcLengths = {}
-    local distances = {0.0}
+    local distances = {}
+
+    if count > 0 then
+        distances[1] = 0.0
+    end
 
     for i = 1, count - 1 do
-        local d = distance(pts[i], pts[i + 1])
+        local d = self:_distanceTables(pts[i], pts[i + 1])
         arcLengths[i] = d
         totalLength = totalLength + d
         distances[i + 1] = totalLength
     end
 
-    if data.opt.closed and count > 1 then
-        local d = distance(pts[count], pts[1])
+    if self._data.opt.closed and count > 1 then
+        local d = self:_distanceTables(pts[count], pts[1])
         arcLengths[count] = d
         totalLength = totalLength + d
     end
@@ -629,45 +693,67 @@ function Path:_computeArcLengths(points)
         distances
 end
 
+function Path:_distanceTables(a, b)
+    local cache = self._cache
+    local modes = cache.modes
+    local metric = cache.metric
+    local dim = cache.dim
+
+    local squaredDistance = 0.0
+    local i = 1
+
+    while i <= dim do
+        local mode = modes[i]
+
+        if mode == 0 then
+            local d = (b[i] - a[i]) * metric[i]
+            squaredDistance = squaredDistance + d * d
+            i = i + 1
+
+        elseif mode == 1 then
+            local delta = b[i] - a[i]
+            local d = abs(atan2(sin(delta), cos(delta))) * metric[i]
+            squaredDistance = squaredDistance + d * d
+            i = i + 1
+
+        else -- quaternion
+            local dot =
+                a[i]     * b[i] +
+                a[i + 1] * b[i + 1] +
+                a[i + 2] * b[i + 2] +
+                a[i + 3] * b[i + 3]
+
+            -- q and -q represent the same orientation.
+            dot = abs(dot)
+            if dot > 1.0 then
+                dot = 1.0
+            end
+
+            local d = 2.0 * acos(dot) * metric[i]
+            squaredDistance = squaredDistance + d * d
+            i = i + 4
+        end
+    end
+
+    return sqrt(squaredDistance)
+end
+
 function Path:distance(conf1, conf2, noArgCheck)
     local data = self._data
-    local confA = conf1
-    local confB = conf2
+    local confA, confB = conf1, conf2
+
     if not noArgCheck then
-        confA, confB = checkargs.checkargsEx({funcName = 'Path:distance'}, {
-            {type = 'vector', size = data.opt.dim},
-            {type = 'vector', size = data.opt.dim},
-        }, conf1, conf2)
+        confA, confB = checkargs.checkargsEx(
+            {funcName = 'Path:distance'},
+            {
+                {type = 'vector', size = data.opt.dim},
+                {type = 'vector', size = data.opt.dim},
+            },
+            conf1, conf2
+        )
     end
-    confA = confA:data()
-    confB = confB:data()
-    local d = 0
-    local qcnt = 0
-    for j = 1, #confA, 1 do
-        local dd = 0
-        if (data.opt.types[j] == 0) or (#data.opt.bounds[j] == 2) then
-            dd = (confB[j] - confA[j]) * data.opt.metric[j] -- e.g. joint with limits
-        elseif data.opt.types[j] == 1 then
-            local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
-            dd = math.abs(dx) * data.opt.metric[j]
-            --[[
-            local dx = math.atan2(math.sin(confB[j] - confA[j]), math.cos(confB[j] - confA[j]))
-            local v = confA[j] + dx
-            dd = math.atan2(math.sin(v), math.cos(v)) * data.opt.metric[j] -- cyclic rev. joint (-pi;pi)
-            --]]
-        elseif data.opt.types[j] == 2 then
-            qcnt = qcnt + 1
-            if qcnt == 4 then
-                qcnt = 0
-                local q1 = simEigen.Quaternion({confA[j - 3], confA[j - 2], confA[j - 1], confA[j - 0]})
-                local q2 = simEigen.Quaternion({confB[j - 3], confB[j - 2], confB[j - 1], confB[j - 0]})
-                local axis, angle = q1:axisangle(q2)
-                dd = angle * data.opt.metric[j - 3]
-            end
-        end
-        d = d + dd * dd
-    end
-    return math.sqrt(d)
+
+    return self:_distanceTables(confA:data(), confB:data())
 end
 
 function Path:_interpolatePose(points, i1, i2, t)
@@ -729,41 +815,110 @@ function Path:_interpolatePose(points, i1, i2, t)
     }
 end
 
-function Path:interpolate(conf1, conf2, t, noArgCheck)
-    local data = self._data
-    local confA = conf1
-    local confB = conf2
-    if not noArgCheck then
-        confA, confB, t = checkargs.checkargsEx({funcName = 'Path:interpolate'}, {
-            {type = 'vector', size = data.opt.dim},
-            {type = 'vector', size = data.opt.dim},
-            {type = 'float'},
-        }, conf1, conf2, t)
-    end
-    confA = confA:data()
-    confB = confB:data()
+function Path:_interpolateTables(a, b, t, out)
+    local cache = self._cache
+    local modes = cache.modes
+    local dim = cache.dim
 
-    local retVal = {}
-    local qcnt = 0
-    for i = 1, #confA, 1 do
-        if (data.opt.types[i] == 0) or (#data.opt.bounds[i] == 2) then
-            retVal[i] = confA[i] * (1 - t) + confB[i] * t -- e.g. joint with limits
-        elseif data.opt.types[i] == 1 then
-            local dx = math.atan2(math.sin(confB[i] - confA[i]), math.cos(confB[i] - confA[i]))
-            local v = confA[i] + dx * t
-            retVal[i] = math.atan2(math.sin(v), math.cos(v)) -- cyclic rev. joint (-pi;pi)
-        elseif data.opt.types[i] == 2 then
-            qcnt = qcnt + 1
-            if qcnt == 4 then
-                qcnt = 0
-                local q1 = simEigen.Quaternion({confA[i - 3], confA[i - 2], confA[i - 1], confA[i - 0]})
-                local q2 = simEigen.Quaternion({confB[i - 3], confB[i - 2], confB[i - 1], confB[i - 0]})
-                local q = q1:slerp(t, q2)
-                retVal = table.add(retVal, q:data())
+    out = out or {}
+
+    local omt = 1.0 - t
+    local i = 1
+
+    while i <= dim do
+        local mode = modes[i]
+
+        if mode == 0 then
+            out[i] = a[i] * omt + b[i] * t
+            i = i + 1
+
+        elseif mode == 1 then
+            local dx = atan2(
+                sin(b[i] - a[i]),
+                cos(b[i] - a[i])
+            )
+            local v = a[i] + dx * t
+            out[i] = atan2(sin(v), cos(v))
+            i = i + 1
+
+        else -- quaternion
+            local ax, ay, az, aw =
+                a[i], a[i + 1], a[i + 2], a[i + 3]
+            local bx, by, bz, bw =
+                b[i], b[i + 1], b[i + 2], b[i + 3]
+
+            local dot = ax * bx + ay * by + az * bz + aw * bw
+
+            if dot < 0.0 then
+                bx, by, bz, bw = -bx, -by, -bz, -bw
+                dot = -dot
             end
+
+            if dot > 1.0 then
+                dot = 1.0
+            end
+
+            local x, y, z, w
+
+            if dot > 0.9995 then
+                x = ax + (bx - ax) * t
+                y = ay + (by - ay) * t
+                z = az + (bz - az) * t
+                w = aw + (bw - aw) * t
+
+                local n2 = x * x + y * y + z * z + w * w
+                if n2 > 0.0 then
+                    local invNorm = 1.0 / sqrt(n2)
+                    x, y, z, w =
+                        x * invNorm,
+                        y * invNorm,
+                        z * invNorm,
+                        w * invNorm
+                else
+                    x, y, z, w = ax, ay, az, aw
+                end
+            else
+                local theta = acos(dot)
+                local invSinTheta = 1.0 / sin(theta)
+                local s1 = sin(omt * theta) * invSinTheta
+                local s2 = sin(t * theta) * invSinTheta
+
+                x = ax * s1 + bx * s2
+                y = ay * s1 + by * s2
+                z = az * s1 + bz * s2
+                w = aw * s1 + bw * s2
+            end
+
+            out[i] = x
+            out[i + 1] = y
+            out[i + 2] = z
+            out[i + 3] = w
+            i = i + 4
         end
     end
-    return simEigen.Vector(retVal)
+
+    return out
+end
+
+function Path:interpolate(conf1, conf2, t, noArgCheck)
+    local data = self._data
+    local confA, confB = conf1, conf2
+
+    if not noArgCheck then
+        confA, confB, t = checkargs.checkargsEx(
+            {funcName = 'Path:interpolate'},
+            {
+                {type = 'vector', size = data.opt.dim},
+                {type = 'vector', size = data.opt.dim},
+                {type = 'float'},
+            },
+            conf1, conf2, t
+        )
+    end
+
+    return simEigen.Vector(
+        self:_interpolateTables(confA:data(), confB:data(), t)
+    )
 end
 
 function Path:configs(conf, noArgCheck)
@@ -1488,21 +1643,38 @@ function Path:closest(point, noArgCheck)
             end
         end
         local pt, ind = callMethod(-1, 'getClosestOnPath', pts, point, opt)
-        local pt1 = pts:block(1, ind + 1, -1, 1)
-        local pt2 = pts:block(1, ind + 2, -1, 1)
-        local t = self:distance(pt1, pt) / self:distance(pt1, pt2)
-        local l = distancesAlongPath[ind + 1] + t * arcLengths[ind + 1]
+        local selectedCache = self:_selectedPointCache()
+        local pTable = pt:data()
+        local p1Table = selectedCache.points[ind + 1]
+
+        local nextIndex = ind + 2
+        if nextIndex > #selectedCache.points then
+            nextIndex = 1
+        end
+
+        local p2Table = selectedCache.points[nextIndex]
+        local segmentLength = self:_distanceTables(p1Table, p2Table)
+
+        local t = 0.0
+        if segmentLength > 0.0 then
+            t = self:_distanceTables(p1Table, pTable) / segmentLength
+        end
+
+        local l = selectedCache.distancesAlongPath[ind + 1] + t * selectedCache.arcLengths[ind + 1]
+
         return pt, l / pathLength
     end
 end
 
 function Path:getPoint(distance, noArgCheck)
-    local data = self._data
-
     if not noArgCheck then
-        distance = checkargs.checkargsEx({funcName = 'Path:getPoint'}, {
-            {type = 'float'},
-        }, distance)
+        distance = checkargs.checkargsEx(
+            {funcName = 'Path:getPoint'},
+            {
+                {type = 'float'},
+            },
+            distance
+        )
     end
 
     self:update()
@@ -1513,53 +1685,45 @@ function Path:getPoint(distance, noArgCheck)
         distance = 1.0
     end
 
-    local pts, arcLengths, distancesAlongPath, pathLength
-    if data.opt.onlyCtrlPoints then
-        pts = data.ctrlPoints.points
-        pathLength = data.ctrlPoints.pathLength
-        distancesAlongPath = data.ctrlPoints.distancesAlongPathTable
-        arcLengths = data.ctrlPoints.arcLengthsTable
-    else
-        pts = data.pathPoints.points
-        pathLength = data.pathPoints.pathLength
-        distancesAlongPath = data.pathPoints.distancesAlongPathTable
-        arcLengths = data.pathPoints.arcLengthsTable
-    end
+    local pointData = self:_selectedPointCache()
+    local points = pointData.points
+    local pointCount = #points
 
-    local pointCount = pts:cols()
     assert(pointCount > 0, 'path is empty.')
 
     if pointCount == 1 then
-        return pts:copy()
+        return simEigen.Vector(points[1])
     end
 
-    local closed = data.opt.closed
+    local closed = self._data.opt.closed
+    local pathLength = pointData.pathLength
+    local distances = pointData.distancesAlongPath
+    local arcLengths = pointData.arcLengths
     local l = distance * pathLength
 
-    -- Match the endpoint semantics of the previous implementation.
     if pathLength <= 0.0 then
         if closed then
-            return pts:block(1, 1, -1, 1)
+            return simEigen.Vector(points[1])
         end
-        return pts:block(1, pointCount, -1, 1)
+        return simEigen.Vector(points[pointCount])
     end
 
-    if closed and l >= pathLength then
-        return pts:block(1, 1, -1, 1)
-    elseif not closed and l >= pathLength then
-        return pts:block(1, pointCount, -1, 1)
+    if l >= pathLength then
+        if closed then
+            return simEigen.Vector(points[1])
+        end
+        return simEigen.Vector(points[pointCount])
     end
 
-    -- Find the first stored path distance strictly greater than l.
-    -- This replaces the previous O(n) scan with an O(log n) search.
+    -- Find the first stored point distance strictly greater than l.
     local lo = 2
-    local hi = #distancesAlongPath
+    local hi = #distances
     local upper = hi + 1
 
     while lo <= hi do
-        local mid = math.floor((lo + hi) * 0.5)
+        local mid = floor((lo + hi) * 0.5)
 
-        if distancesAlongPath[mid] > l then
+        if distances[mid] > l then
             upper = mid
             hi = mid - 1
         else
@@ -1572,33 +1736,33 @@ function Path:getPoint(distance, noArgCheck)
     local segmentStart
     local segmentLength
 
-    if upper <= #distancesAlongPath then
-        -- Regular segment between two stored points.
+    if upper <= #distances then
         segmentIndex = upper - 1
-        nextPointIndex = segmentIndex + 1
-        segmentStart = distancesAlongPath[segmentIndex]
+        nextPointIndex = upper
+        segmentStart = distances[segmentIndex]
         segmentLength = arcLengths[segmentIndex]
     elseif closed then
-        -- Closing segment from the last point to the first point.
         segmentIndex = pointCount
         nextPointIndex = 1
-        segmentStart = distancesAlongPath[pointCount]
+        segmentStart = distances[pointCount]
         segmentLength = arcLengths[pointCount]
     else
-        return pts:block(1, pointCount, -1, 1)
+        return simEigen.Vector(points[pointCount])
     end
 
     if segmentLength <= 0.0 then
-        return pts:block(1, segmentIndex, -1, 1)
+        return simEigen.Vector(points[segmentIndex])
     end
 
     local t = (l - segmentStart) / segmentLength
 
-    if data.opt.dim == 7 and data.opt.displDim == 7 then
-        return self:_interpolatePose(pts, segmentIndex, nextPointIndex, t) -- specialized interpolation
-    end
-
-    return self:interpolate(pts:block(1, segmentIndex, -1, 1), pts:block(1, nextPointIndex, -1, 1), t, true) -- skip redundant argument validation
+    return simEigen.Vector(
+        self:_interpolateTables(
+            points[segmentIndex],
+            points[nextPointIndex],
+            t
+        )
+    )
 end
 
 function Path:toBuffer()
