@@ -518,6 +518,7 @@ function locals.getPropertiesInfos(target, methodName, opts)
         end
         propertiesInfos[pname].class = pclass
 
+        --[[ (as of Sep 2026, this part is probably obsolete)
         -- coppeliaSim won't report group properties via getPropertyName
         -- infer them via pname dots:
         if opts.groups ~= false then
@@ -532,6 +533,7 @@ function locals.getPropertiesInfos(target, methodName, opts)
                 end
             end
         end
+        ]]--
     end
     return propertiesInfos
 end
