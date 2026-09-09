@@ -77,6 +77,7 @@ require = wrap(require, function(origRequire)
     return function(...)
         local requiredName = table.unpack {...}
         local fl = setYieldAllowed(false) -- important when called from coroutine
+        setAppWideAutoYield(getAppWideAutoYield() + 1)
         local retVals = {origRequire(...)}
         if _DEVMODE then
             local resolved, err = package.searchpath(requiredName, package.path)
@@ -84,6 +85,7 @@ require = wrap(require, function(origRequire)
                 error(("require('%s'): filename case mismatch (actual file exists with different case)"):format(requiredName))
             end
         end
+        setAppWideAutoYield(getAppWideAutoYield() - 1)
         setYieldAllowed(fl)
         auxFunc('usedmodule', requiredName)
         return table.unpack(retVals)
@@ -473,9 +475,9 @@ function _S.sysCallBase_nonSimulation()
                 setAutoYield(_S.coroutineAutoYields[__coroutine__])
             end
             local tmp = getAppWideAutoYield()
-            setAppWideAutoYield(0);
+            setAppWideAutoYield(0)
             local ok, errorMsg = coroutine.resume(__coroutine__)
-            setAppWideAutoYield(tmp);
+            setAppWideAutoYield(tmp)
             _, _S.coroutineAutoYields[__coroutine__] = getAutoYield()
             setAutoYield(ays) -- restore
             if errorMsg then error(debug.traceback(__coroutine__, errorMsg), 2) end
@@ -492,9 +494,9 @@ function _S.sysCallBase_actuation()
                 setAutoYield(_S.coroutineAutoYields[__coroutine__])
             end
             local tmp = getAppWideAutoYield()
-            setAppWideAutoYield(0);
+            setAppWideAutoYield(0)
             local ok, errorMsg = coroutine.resume(__coroutine__)
-            setAppWideAutoYield(tmp);
+            setAppWideAutoYield(tmp)
             _, _S.coroutineAutoYields[__coroutine__] = getAutoYield()
             setAutoYield(ays) -- restore
             if errorMsg then error(debug.traceback(__coroutine__, errorMsg), 2) end
