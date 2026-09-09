@@ -1,4 +1,7 @@
-sim = require 'sim'
+sim = require 'sim-1'
+local m = require 'matrix-2'
+local Matrix = m.Matrix
+local Vector = m.Vector
 
 function sysCall_init()
     _S.path.init()
@@ -245,7 +248,7 @@ function _S.path.createNew(ctrlPts, onlyPosData, options, pointCount, smoothing,
 
     local children = sim.getObjectsInTree(_S.path.model, sim.sceneobject_dummy, 1)
     sim.removeObjects(children)
-    
+
     local dof = 7
     if onlyPosData then dof = 3 end
     local function fp(p, i)

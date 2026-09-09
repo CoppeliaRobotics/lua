@@ -1,6 +1,6 @@
 local extModel = {}
 
-local sim = require 'sim'
+local sim = require 'sim-1'
 
 function extModel.customPropertyName(pname)
     return 'customData.extModel.' .. pname

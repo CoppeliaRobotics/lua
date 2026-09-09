@@ -1,4 +1,7 @@
-local sim = require 'sim'
+local sim = require 'sim-1'
+local m = require 'matrix-2'
+local Matrix = m.Matrix
+local Vector = m.Vector
 
 function sysCall_init()
     self = sim.getObject '.'

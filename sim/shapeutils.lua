@@ -1,6 +1,6 @@
 local shapeutils = {}
 
-local sim = require 'sim'
+local sim = require 'sim-1'
 local simEigen = require 'simEigen'
 local Vector = simEigen.Vector
 local Matrix = simEigen.Matrix

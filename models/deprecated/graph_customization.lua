@@ -1,4 +1,4 @@
-sim = require('sim')
+sim = require('sim-1')
 simUI = require('simUI')
 
 -- e.g. to record data constantly, i.e. also when simulation is not running:

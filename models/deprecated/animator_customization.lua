@@ -1,4 +1,4 @@
-sim = require 'sim'
+sim = require 'sim-1'
 
 _S.animator = {}
 

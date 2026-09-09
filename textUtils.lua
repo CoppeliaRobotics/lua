@@ -1,5 +1,5 @@
 local textUtils = {}
-local sim = require 'sim'
+local sim = require 'sim-1'
 
 function textUtils.generateTextShape(txt, color, height, centered, alphabetModel, parentDummy, shapeOnly)
     height = height or 0.1
@@ -96,7 +96,7 @@ function textUtils.generateTextShape(txt, color, height, centered, alphabetModel
         sim.setObjectProperty(retVal, sim.objectproperty_selectable | sim.objectproperty_collapsed)
         sim.setObjectInt32Param(retVal, sim.objintparam_visibility_layer, 1024)
         sim.setObjectSelection({retVal})
-    end    
+    end
     if #txt == 0 then txt = "txt" end
     sim.setObjectAlias(retVal, txt)
     sim.alignShapeBB(s, {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0})

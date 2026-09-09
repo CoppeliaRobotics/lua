@@ -2,7 +2,7 @@ if _DEVMODE and false then addLog(430, 'loaded deprecated.matrixLazyLoaders') en
 
 for _, cls in ipairs{'Matrix', 'Vector', 'Vector3', 'Vector4', 'Vector7', 'Matrix3x3', 'Matrix4x4'} do
     local function _implicitMatrixLoad()
-        local sim = require 'sim'
+        local sim = require 'sim-1'
         sim.addLog(sim.verbosity_warnings, 'module \'matrix\' was implicitly loaded.')
         require('matrix')
     end

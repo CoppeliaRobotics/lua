@@ -1,6 +1,6 @@
 local autoStart = {}
 
-local sim = require 'sim'
+local sim = require 'sim-1'
 
 function autoStart.get(opts)
     local v

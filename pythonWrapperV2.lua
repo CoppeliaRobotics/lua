@@ -1,5 +1,5 @@
 local startTimeout = initTimeout or 10
-local sim = require('sim') -- keep here, since we have several sim-functions defined/redefined here
+local sim = require('sim-1') -- keep here, since we have several sim-functions defined/redefined here
 if _DEVMODE then
     sim.addLog(sim.verbosity_warnings, 'sim-1 has been loaded from PythonWrapper')
 end
@@ -184,12 +184,12 @@ function sysCall_init(...)
     local tmp = ''
     if _additionalPaths then
         for i = 1, #_additionalPaths, 1 do
-            tmp = tmp .. 'sys.path.append("' .. _additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
+            tmp = tmp .. 'sys.path.append("' .. _additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code)
         end
     end
     if additionalPaths then
         for i = 1, #additionalPaths, 1 do
-            tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
+            tmp = tmp .. 'sys.path.append("' .. additionalPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code)
         end
     end
     local additionalPythonPaths = {
@@ -200,7 +200,7 @@ function sysCall_init(...)
         }
     for i = 1, #additionalPythonPaths, 1 do
         if additionalPythonPaths[i] ~= '' then
-            tmp = tmp .. 'sys.path.append("' .. additionalPythonPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code) 
+            tmp = tmp .. 'sys.path.append("' .. additionalPythonPaths[i] .. '"); ' -- ';' instead of '\n'! (since that would change the size of the boilerplate code)
         end
     end
     prog = prog:gsub("XXXadditionalPathsXXX", tmp)
@@ -647,7 +647,7 @@ function handleRequest(req)
                             elseif args[i] == 2 and type(ret[i]) == 'string' then
                                 ret[i] = tobin(ret[i])
                             elseif type(ret[i]) == 'table' then
-                                if (not isbuffer(ret[i])) and (getmetatable(ret[i]) ~= cbornil) then 
+                                if (not isbuffer(ret[i])) and (getmetatable(ret[i]) ~= cbornil) then
                                     if table.isarray(ret[i]) then
                                         ret[i] = toarray(ret[i])
                                     else
@@ -929,7 +929,7 @@ function checkPythonError()
                             end
                         end
                         --]]
-                        
+
                         pythonErrorMsg = nil
                         protectedCallDepth = 0
                         protectedCallErrorDepth = 0
@@ -968,7 +968,7 @@ function getFreePortStr()
         end
         sim.writeCustomBufferData(sim.handle_appstorage, 'nextPythonWrapperCommPort', sim.packInt32Table({np}))
         sim.systemSemaphore('pythonWrapper', false)
-    
+
         local tmpContext = simZMQ.ctx_new()
         local tmpSocket = simZMQ.socket(tmpContext, simZMQ.REP)
         if simZMQ.__noError.bind(tmpSocket, string.format('tcp://127.0.0.1:%d', p)) == 0 then
@@ -1060,7 +1060,7 @@ function initPython(prog)
         errMsg = "The Python interpreter was not set. Specify it in " .. usrSysLoc ..
                      "/usrset.txt with 'defaultPython', or via the named string parameter 'python' from the command line"
     end
-    
+
     if sim.getStringProperty(sim.handle_self, 'detachedScript.type') == 'sandbox' then
         sim.setBoolProperty(sim.handle_app, 'signal.pythonSandboxInitFailed', errMsg ~= nil)
     end
@@ -1309,7 +1309,7 @@ class RemoteAPIClient:
                 if funcStr:
                     self.callbackFuncs[funcStr] = arg
                     retArg = funcStr + "@func"
-            return retArg 
+            return retArg
 
         # convert a possible function to string (up to a depth of 2):
         if 'args' in req and req['args'] != None and isinstance(req['args'], (tuple, list)):
@@ -1347,8 +1347,8 @@ class RemoteAPIClient:
                     return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
-            return False    
-        
+            return False
+
         while True:
             try:
                 rawResp = self.socket.recv()
@@ -1447,11 +1447,11 @@ class RemoteAPIClient:
                     lambda *args:
                         sim.callScriptFunction(func, scriptHandle, *args)
         })()
-        
+
     def copyTable(self, table):
-        import copy 
+        import copy
         return copy.deepcopy(table)
-        
+
     def _packXTable(self, table, w, start, cnt):
         import array
         if cnt == 0:
@@ -1476,37 +1476,37 @@ class RemoteAPIClient:
 
     def unpackUInt8Table(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'B', start, cnt, off)
-        
+
     def packUInt16Table(self, table, start=0, cnt=0):
         return self._packXTable(table, 'H', start, cnt)
-        
+
     def unpackUInt16Table(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'H', start, cnt, off)
-        
+
     def packUInt32Table(self, table, start=0, cnt=0):
         return self._packXTable(table, 'L', start, cnt)
-        
+
     def unpackUInt32Table(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'L', start, cnt, off)
-        
+
     def packInt32Table(self, table, start=0, cnt=0):
         return self._packXTable(table, 'l', start, cnt)
-        
+
     def unpackInt32Table(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'l', start, cnt, off)
-        
+
     def packFloatTable(self, table, start=0, cnt=0):
         return self._packXTable(table, 'f', start, cnt)
-        
+
     def unpackFloatTable(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'f', start, cnt, off)
-        
+
     def packDoubleTable(self, table, start=0, cnt=0):
         return self._packXTable(table, 'd', start, cnt)
 
     def unpackDoubleTable(self, data, start=0, cnt=0, off=0):
         return self._unpackXTable(data, 'd', start, cnt, off)
-        
+
 def _evalExec(theStr):
     sim.protectedCalls(True)
     try:

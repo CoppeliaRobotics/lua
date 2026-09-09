@@ -43,7 +43,7 @@ simCBOR.Tags = {
     },
 }
 
-local sim = require 'sim'
+local sim = require 'sim-1'
 local cbor = require 'org.conman.cbor'
 
 local type_tags = {}

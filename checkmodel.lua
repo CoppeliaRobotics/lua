@@ -1,6 +1,6 @@
 local checkmodel = {}
 
-local sim = require 'sim'
+local sim = require 'sim-1'
 local Graph = require 'Graph'
 
 local function getInfo(handle)

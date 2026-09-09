@@ -244,7 +244,7 @@ function dump(x, maxDepth)
 end
 
 function _S.funcToString(f)
-    local sim = require 'sim'
+    local sim = require 'sim-1'
     local allModules = sim.getProperty(sim.handle_app, 'pluginNames')
     table.insert(allModules, 1, 'sim')
     for _, objName in ipairs(allModules) do
@@ -260,7 +260,7 @@ function _S.funcToString(f)
 end
 
 function help(what)
-    local sim = require 'sim'
+    local sim = require 'sim-1'
     if what == nil then
         local simCmd = require 'simCmd'
         simCmd.help()
@@ -529,7 +529,7 @@ function _S.getObjectSel(n)
 end
 
 function _evalExec(inputStr)
-    local sim = require 'sim'
+    local sim = require 'sim-1'
     local function pfunc(theStr)
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
@@ -626,7 +626,7 @@ function _getCompletion(input, pos)
 end
 
 function _getCalltip(input, pos, scriptHandle)
-    local sim = require 'sim'
+    local sim = require 'sim-1'
     local parserx = require 'parserx'
     local cc = parserx.getCallContexts(input, pos)
     if cc and #cc > 0 then

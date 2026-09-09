@@ -1,4 +1,4 @@
-local sim = require 'sim'
+local sim = require 'sim-1'
 require 'configUi'
 
 function sysCall_init()

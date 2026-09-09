@@ -332,7 +332,7 @@ end
 
 -- Render to image
 function Graph:render(opts)
-    local sim = require 'sim'
+    local sim = require 'sim-1'
     local simSubprocess = require 'simSubprocess'
     local usp = false
     local enginePath = sim.getStringProperty(sim.handle_app, 'customData.graphvizPath', {noError = true})

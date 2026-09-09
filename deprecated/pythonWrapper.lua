@@ -1,5 +1,5 @@
 startTimeout = 5
-sim = require('sim')
+sim = require('sim-1')
 simZMQ = require('simZMQ')
 simSubprocess = require('simSubprocess')
 simUI = require('simUI')
@@ -914,8 +914,8 @@ def _handleExtCalls():
             client.call('serviceCall',['setExtCall', arg])
     except Exception as e:
         raise RuntimeError("sim.handleExtCalls failed")
-    
-    
+
+
 def print(a):
     global sim
     sim.addLog(sim.verbosity_scriptinfos|sim.verbosity_undecorated,str(a))
@@ -987,7 +987,7 @@ def _moveToConfig(flags,currentPos,currentVel,currentAccel,maxVel,maxAccel,maxJe
             currentPosVelAccel.append(0)
             outAccel.append(0)
         maxVelAccelJerk.append(maxJerk[i])
-    
+
     if len(maxVel) > len(currentPos):
         for i in range(len(maxVel)-len(currentPos)):
             currentPosVelAccel.append(maxVel[len(currentPos)+i])
@@ -1132,7 +1132,7 @@ def __startClientScript__():
         if callable(glob[k]):
             l[k]=True
     client.call('serviceCall', ["pythonFuncs",l])
-    
+
     sim.switchThread = _switchThread
     sim.setThreadAutomaticSwitch = _setThreadAutomaticSwitch
     sim.wait = _wait
@@ -1154,7 +1154,7 @@ def __startClientScript__():
                     if (func!=None):
                         if args:
                             ret=func(*args)
-                        else:    
+                        else:
                             ret=func()
                     client.call('serviceCall', ["callDone",ret])
                     f = client.call('serviceCall', ["getNextCall"])

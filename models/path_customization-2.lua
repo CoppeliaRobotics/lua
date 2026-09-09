@@ -1,4 +1,4 @@
-sim = require 'sim' -- keep it global, otherwise we might get errors with old scenes. 
+sim = require 'sim-1' -- keep it global, otherwise we might get errors with old scenes.
 local simUI = require 'simUI'
 local simEigen = require('simEigen')
 

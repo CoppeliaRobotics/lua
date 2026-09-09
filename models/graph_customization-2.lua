@@ -1,4 +1,4 @@
-local sim = require('sim')
+local sim = require('sim-1')
 local simUI
 if sim.getIntProperty(sim.handle_app, 'headlessMode') == 0 then
     simUI = require('simUI')
@@ -256,7 +256,7 @@ function _S.graph.updateCurves(forceUpdate)
             _S.graph.remove3dCurves()
             _S.graph.createOrRemovePlotIfNeeded(sim.getSimulationState() ~= sim.simulation_stopped)
         end
-        
+
         -- events ---
         ---[[
         local currentCurves = {}
@@ -302,7 +302,7 @@ function _S.graph.updateCurves(forceUpdate)
         end
         --]]
         -------------
-        
+
         if _S.graph.plotUi then
             for pl = 1, #_S.graph.plots, 1 do
                 local minMax = nil
