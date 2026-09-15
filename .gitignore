@@ -22,3 +22,4 @@ booleanMesh.lua
 sim-2-typewrappers.lua
 sim/ZMQRemoteAPI-2-worker.lua
 sim/ZMQRemoteAPI-2.lua
+sim/ZMQAsyncRemoteAPI-2.lua

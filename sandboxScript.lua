@@ -14,7 +14,9 @@ require('base-ce')
 local l = auxFunc('getfiles', sim.app.paths.lua, '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
---_setupLazyLoaders() -- because those were cleared out by our explicit requires
+sim.app.customData.serverPort_start = 20000
+sim.app.customData.serverPort_range = 1000
+sim.app.customData.serverPort_next = sim.app.customData.serverPort_start
 
 function s_init()
     sim.app:logInfo("Simulator launched, welcome! ")

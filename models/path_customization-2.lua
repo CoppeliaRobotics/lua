@@ -211,6 +211,8 @@ function _S.path.openUserConfigDlg()
             <group layout="vbox" flat="true">
             <button text="Copy to status bar" on-click="_S.path.output_callback" id="31"/>
             </group>
+
+            <button text="Generate equivalent" on-click="_S.path.equivalent_callback" id="32"/>
         </ui>]]
         _S.path.ui = simUI.create(xml)
         _S.path.setDlgItemContent()
@@ -987,6 +989,37 @@ function _S.path.output_callback(ui, id, newVal)
     absPts = absPts .. '}'
     sim.addLog(sim.verbosity_scriptinfos, relPts)
     sim.addLog(sim.verbosity_scriptinfos, absPts)
+end
+
+function _S.path.equivalent_callback(ui, id, newVal)
+    local c = _S.path.readInfo()
+    local ctrlPts = simEigen.Matrix(#_S.path.paths[1] // 7, 7, _S.path.paths[1])
+    local pts = simEigen.Matrix(#_S.path.paths[2] // 7, 7, _S.path.paths[2])
+    if (c.bitCoded & 2) ~= 0 then -- path is closed. First and last pts are duplicate
+        ctrlPts = ctrlPts:block(1, 1, ctrlPts:rows() - 1, ctrlPts:cols())
+        pts = pts:block(1, 1, pts:rows() - 1, pts:cols())
+    end
+    local sim2 = require'sim-2'
+    local upV
+    local forwardAndUpAxes = 'xy'
+    if (c.bitCoded & 16) ~= 0 then
+        upV = c.upVector
+        if c.autoOrientation == 0 then
+            forwardAndUpAxes = 'xy'
+        elseif c.autoOrientation == 1 then
+            forwardAndUpAxes = 'xz'
+        elseif c.autoOrientation == 2 then
+            forwardAndUpAxes = 'yx'
+        elseif c.autoOrientation == 3 then
+            forwardAndUpAxes = 'yz'
+        elseif c.autoOrientation == 4 then
+            forwardAndUpAxes = 'zx'
+        elseif c.autoOrientation == 5 then
+            forwardAndUpAxes = 'zy'
+        end
+    end
+    local eqiv = sim2.scene:createObject({type = 'path', ctrlPts = ctrlPts.T, closed = ((c.bitCoded & 2) ~= 0), forwardAndUpAxes = forwardAndUpAxes, upVector = upV})
+    eqiv.worldPose = sim.getObjectPose(_S.path.model)
 end
 
 function _S.path.generate_callback(ui, id, newVal)
