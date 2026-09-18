@@ -50,11 +50,11 @@ function TextEditor:init()
     }
     local simUI = require 'simUI'
     self.ui = simUI.create(xml)
-    
-    if sim.self.detachedScript.type ~= 'sandbox' and sim.self.detachedScript.type ~= 'addon' then
+
+    if sim.self.script.type ~= 'sandbox' and sim.self.script.type ~= 'addon' then
         self.sceneUid = sim.scene.uid
     end
-    
+
     sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
     sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 

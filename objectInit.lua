@@ -93,20 +93,20 @@ function objInit.console(methodName)
 end
 ]]--
 
-function objInit.detachedScript(methodName)
+function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'detachedScript.type', enum = sim.scriptType, default = 'addon'},
+        {name = 'script.type', enum = sim.scriptType, default = 'addon'},
         {name = 'code', type = 'string', default = [[local sim = require 'sim-2'
 function sysCall_init()
     print('Hello from sysCall_init')
 end]]},
         {name = 'language', type = 'string', default = 'lua'},
     }, objInit.p)
-    local scriptType = objInit.extractValueOrDefault('detachedScript.type')
+    local scriptType = objInit.extractValueOrDefault('script.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    assert(scriptType == sim.scripttype_addon, 'invalid detached script type.')
-    local retVal = sim.Object(sim1.createDetachedScript(scriptType, code, lang))
+    assert(scriptType == sim.scripttype_addon, 'invalid script type.')
+    local retVal = sim.Object(sim1.createNakedScript(scriptType, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
 end
@@ -389,7 +389,7 @@ function sysCall_init()
 end]]
 
     setYieldAllowed(false)
-    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'script', ['script.type'] = 'customization', code = code})
+    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'scriptObject', ['scriptObject.type'] = 'customization', code = code})
     retVal.name = 'Path'
     retVal.size = 0.025
     retVal.color.diffuse = Color'#00ffff'
@@ -404,20 +404,20 @@ end]]
     retVal.model.propertyFlags = (retVal.model.propertyFlags | sim1.modelproperty_not_model) - sim1.modelproperty_not_model
     retVal.objectPropertyFlags = retVal.objectPropertyFlags | sim1.objectproperty_collapsed
     retVal.customData.pathCreationInfo = sim.app:pack(objInit.p)
-    retVal.detachedScript:init()
+    retVal.script:init()
     setYieldAllowed(true)
     --retVal:setProperties(objInit.p)
     return retVal
 end
 
-function objInit.script(methodName)
+function objInit.scriptObject(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'script.type', enum = sim.scriptType, default = 'simulation'},
+        {name = 'scriptObject.type', enum = sim.scriptType, default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
         {name = 'language', type = 'string', default = 'lua'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
-    local scriptType = objInit.extractValueOrDefault('script.type')
+    local scriptType = objInit.extractValueOrDefault('scriptObject.type')
     assert(scriptType == sim.scripttype_simulation or scriptType == sim.scripttype_customization, 'invalid script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0

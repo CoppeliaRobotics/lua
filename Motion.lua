@@ -1053,8 +1053,8 @@ def cbb(req):
     if not self._script then
         self._script =
             sim.app:createObject({
-                type = 'detachedScript',
-                ['detachedScript.type'] = 'addon',
+                type = 'script',
+                ['script.type'] = 'addon',
                 code = code,
                 language = 'python'
             })

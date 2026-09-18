@@ -39,7 +39,7 @@ function sim.moveToConfig_init(pparams)
     params.maxVel = params.maxVel or table.rep(9999.0, dim)
     params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
     params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
-    
+
     if type(params.maxVel) == 'number' then
         params.maxvel = table.rep(params.maxvel, dim)
     end
@@ -64,7 +64,7 @@ function sim.moveToConfig_init(pparams)
             error("invalid 'maxJerk' field.")
         end
     end
-    
+
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
@@ -129,7 +129,7 @@ function sim.moveToConfig_init(pparams)
     local maxVelAccelJerk = table.add(params.maxVel, params.maxAccel, params.maxJerk, params.minVel, params.minAccel)
     local targetPosVel = table.add(params.targetPos, params.targetVel)
     local sel = table.rep(1, dim)
-    
+
     params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, sel, targetPosVel)
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
@@ -140,7 +140,7 @@ function sim.moveToConfig_init(pparams)
     _S.simMoveToConfig_callbacks[params] = params.callback
     params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
     params.timeLeft = 0
-    
+
     return params
 end
 
@@ -175,7 +175,7 @@ function sim.moveToConfig_step(data)
                 for i = 1, #data.joints do
                     if sim.isDynamicallyEnabled(data.joints[i]) then
                         sim.setJointTargetPosition(data.joints[i], data.pos[i])
-                    else    
+                    else
                         sim.setJointPosition(data.joints[i], data.pos[i])
                     end
                 end
@@ -196,7 +196,7 @@ end
 
 function sim.moveToConfig(...)
     local params = ...
-    
+
     -- backw. compatibility part:
     -----------------------------
     if type(params) == 'number' then
@@ -304,7 +304,7 @@ function sim.moveToPose_init(pparams)
             end
         end
     end
-    
+
     if params.targetPose == nil or type(params.targetPose) ~= 'table' or #params.targetPose ~= 7 then
         error("missing or invalid 'targetPose' field.")
     end
@@ -316,7 +316,7 @@ function sim.moveToPose_init(pparams)
     params.maxVel = params.maxVel or table.rep(9999.0, dim)
     params.maxAccel = params.maxAccel or table.rep(99999.0, dim)
     params.maxJerk = params.maxJerk or table.rep(9999999.0, dim)
-    
+
     if type(params.maxVel) == 'number' then
         params.maxVel = table.rep(params.maxVel, dim)
     end
@@ -341,7 +341,7 @@ function sim.moveToPose_init(pparams)
             error("invalid 'maxJerk' field.")
         end
     end
-    
+
     params.flags = params.flags or -1
     if params.flags == -1 then params.flags = sim.ruckig_phasesync end
     params.flags = params.flags | sim.ruckig_minvel | sim.ruckig_minaccel
@@ -402,7 +402,7 @@ function sim.moveToPose_init(pparams)
     params.vel = params.vel or table.rep(0.0, dim)
     params.accel = params.accel or table.rep(0.0, dim)
     params.targetVel = params.targetVel or table.rep(0.0, dim)
-    
+
     params.timeStep = params.timeStep or 0
     table.slice(params.maxVel, 1, dim)
     table.slice(params.minVel, 1, dim)
@@ -413,7 +413,7 @@ function sim.moveToPose_init(pparams)
     params.startMatrix = sim.poseToMatrix(params.pose)
     params.targetMatrix = sim.poseToMatrix(params.targetPose)
     params.matrix = table.clone(params.startMatrix)
-    
+
     if type(params.callback) == 'string' then
         params.callback = _G[params.callback]
     end
@@ -422,10 +422,10 @@ function sim.moveToPose_init(pparams)
     end
     _S.simMoveToPose_callbacks[params] = params.callback
     params.callback = nil -- callback are not convenient to transport back and forth to (possibly) Python
-    
+
     params.timeLeft = 0
     params.dist = 1.0
-    
+
     local axis, angle = sim.getRotationAxis(params.startMatrix, params.targetMatrix)
     params.angle = angle
     if params.metric then
@@ -455,10 +455,10 @@ function sim.moveToPose_init(pparams)
         local targetPosVel = table.add(dx, params.targetVel)
         params.ruckigObj = sim.ruckigPos(dim, 0.0001, params.flags, currentPosVelAccel, maxVelAccelJerk, table.rep(1, dim), targetPosVel)
     end
-    
+
     return params
 end
-            
+
 function sim.moveToPose_step(data)
     local res
     local dt = data.timeStep
@@ -577,7 +577,7 @@ end
 
 function sim.moveToPose(...)
     local params = ...
-    
+
     -- backw. compatibility part:
     -----------------------------
     if type(params) == 'number' then
@@ -633,7 +633,7 @@ function sim.moveToPose(...)
         end
     end
     -----------------------------
-    
+
     local lb = sim.setStepping(true)
     local data = sim.moveToPose_init(params)
     local outParams = {}
@@ -750,7 +750,7 @@ def cbb(req):
         script = nil
     end
     sim.setStepping(lb)
-    
+
     if s ~= true then
         error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.getProperty(sim.handle_app, 'defaultPython') .. ' -m pip install pyzmq cbor2 psutil numpy toppra.')
     end
