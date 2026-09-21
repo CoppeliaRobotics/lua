@@ -341,16 +341,13 @@ function _S.anyToString(x, opts)
     if t == 'nil' then
         return tostring(nil)
     elseif t == 'table' then
-        if isbuffer(x) then
-            return string.format('[buffer (%s bytes)]', #x)
-        else
-            local mt = getmetatable(x) or {}
-            if opts.display and mt.__todisplay then return mt.__todisplay(x, opts) end
-            if mt.__tostring then return tostring(x) end
-            -- displays inside table won't render good:
-            opts = table.update({}, opts, {display = false})
-            return _S.tableToString(x, opts)
-        end
+        local mt = getmetatable(x) or {}
+        if opts.display and mt.__todisplay then return mt.__todisplay(x, opts) end
+        if isbuffer(x) then return mt.__todisplay(x, opts) end
+        if mt.__tostring then return mt.__tostring(x, opts) end
+        -- displays inside table won't render good:
+        opts = table.update({}, opts, {display = false})
+        return _S.tableToString(x, opts)
     elseif t == 'string' then
         return _S.getShortString(x, opts)
     elseif t == 'number' then
