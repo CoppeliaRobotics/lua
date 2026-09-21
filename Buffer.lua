@@ -30,6 +30,10 @@ function Buffer:__tostring()
     return self.__buff__
 end
 
+function Buffer:__todisplay()
+    return 'Buffer([' .. #self.__buff__ .. ' bytes])'
+end
+
 function Buffer:__tocbor()
     local cbor = require('simCBOR')
     return cbor.TYPE.BIN(self.__buff__)
