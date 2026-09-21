@@ -247,9 +247,9 @@ function Object.static.unittest()
     c.parent = b
     b.parent = a
     a.modelBase = true
-    assert(c:getName 'shortPath' == '/a/c')
+    assert(c:getName{mode = 'shortPath'} == '/a/c')
     b.modelBase = true
-    assert(c:getName 'shortPath' == '/a/b/c')
+    assert(c:getName{mode = 'shortPath'} == '/a/b/c')
 
     a.customData.i = 2
     assert(math.type(a.customData.i) == 'integer')
