@@ -1320,7 +1320,7 @@ function sim.convertPropertyValue(value, fromType, toType)
         local ok, val = pcall(fn)
         if ok then return val, nil else return nil, val end
     elseif toType == sim.propertytype_string then
-        return _S.anyToString(value)
+        return string.anytostring(value)
     end
     error 'unsupported type of conversion'
 end

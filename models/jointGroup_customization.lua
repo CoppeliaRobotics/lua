@@ -107,7 +107,7 @@ end
 function followPath(path, params)
     local code = [[require 'models.followPath_simulation']]
     if params then
-        code = code .. 'params = ' .. _S.anyToString(params) .. '\n'
+        code = code .. 'params = ' .. string.anytostring(params) .. '\n'
     end
     local script = sim.createScript(sim.scripttype_simulation, code, 0, 'lua')
     sim.setObjectAlias(script, 'followPathScript_tmp')

@@ -806,7 +806,7 @@ end
 function Matrix:__todisplay(opts)
     opts = opts or {}
     local out = ''
-    opts.numToString = opts.numToString or function(x) return _S.anyToString(x) end
+    opts.numToString = opts.numToString or function(x) return string.anytostring(x) end
     local s = {}
     local colwi, colwd = {}, {}
     for i = 1, self:rows() do

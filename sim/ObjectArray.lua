@@ -96,7 +96,7 @@ function ObjectArray:__newindex(k, v)
 end
 
 function ObjectArray:__tostring()
-    return self.class.name .. _S.anyToString(self:totable())
+    return self.class.name .. string.anytostring(self:totable())
 end
 
 function ObjectArray:__isobjectarray()
