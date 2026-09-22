@@ -265,10 +265,10 @@ function table.tostring(tt, opts, visitedTables, _)
             end
             local keyStr = key
             if type(keyStr) == 'string' and not string.isidentifier(keyStr) then
-                keyStr = '[' .. string.getshortstring(x) .. ']'
+                keyStr = '[' .. string.getshortstring(keyStr) .. ']'
             end
             if type(keyStr) ~= 'string' then
-                keyStr = '[' .. tostring(x) .. ']'
+                keyStr = '[' .. tostring(keyStr) .. ']'
             end
             table.insert(sb, keyStr)
             table.insert(sb, ' = ')
