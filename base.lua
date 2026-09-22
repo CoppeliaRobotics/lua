@@ -243,32 +243,12 @@ function dump(x, maxDepth)
     return x
 end
 
-function _S.funcToString(f)
-    local sim = require 'sim-1'
-    local allModules = sim.getProperty(sim.handle_app, 'pluginNames')
-    table.insert(allModules, 1, 'sim')
-    for _, objName in ipairs(allModules) do
-        local obj = _G[objName]
-        if obj then
-            for funcName, func in pairs(obj) do
-                if type(func) == 'function' and func == f then
-                    return objName .. '.' .. funcName
-                end
-            end
-        end
-    end
-end
-
 function help(what)
     local sim = require 'sim-1'
     if what == nil then
         local simCmd = require 'simCmd'
         simCmd.help()
         return
-    end
-    if type(what) == 'function' then
-        what = _S.funcToString(what)
-        assert(what, "name not known")
     end
     assert(type(what) == 'string', 'bad type')
     print(sim.getApiInfo(-1, what))
