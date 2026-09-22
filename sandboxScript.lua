@@ -106,6 +106,7 @@ do
             if (key == 'sel' or key == 'SEL') then return scene.selection end
             if (key == 'sel1' or key == 'SEL1') then return scene.selection[#scene.selection] end
             if (key == 'h' or key == 'H') then return function(...) return scene:getObject(...) end end
+            if key == 'pe' then return utils.pe end
         end
     end
     do
