@@ -390,7 +390,7 @@ end]]
 
     setYieldAllowed(false)
     local retVal = objInit.init(sim.handle_scene, methodName, {type = 'scriptObject', ['scriptObject.type'] = 'customization', code = code})
-    retVal.name = 'Path'
+    retVal.name = 'path'
     retVal.size = 0.025
     retVal.color.diffuse = Color'#00ffff'
     retVal.layer = 4
@@ -726,7 +726,7 @@ function objInit.shape(methodName)
         objInit.p.heightField = nil
     elseif objInit.p.string then
         checkargs.checkfields({funcName = methodName .. ' (text field)'}, {
-            {name = 'text', type = 'string', default = 'Hello'},
+            {name = 'text', type = 'string', default = 'hello'},
             {name = 'height', type = 'float', default = 0.5},
             {name = 'center', type = 'bool', default = true},
         }, objInit.p.string)
