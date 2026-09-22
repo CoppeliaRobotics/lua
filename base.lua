@@ -196,7 +196,7 @@ function print(...)
     local a = table.pack(...)
     local s = ''
     for i = 1, a.n do
-        s = s .. (i > 1 and ', ' or '') .. _S.anyToString(a[i], {omitQuotes = true, escapeNewline = false})
+        s = s .. (i > 1 and ', ' or '') .. string.anytostring(a[i], {omitQuotes = true, escapeNewline = false})
     end
     _S.printAsync(s)
     setAutoYield(lb)
@@ -207,7 +207,7 @@ function printf(fmt, ...)
     local a = table.pack(...)
     for i = 1, a.n do
         if type(a[i]) == 'table' then
-            a[i] = _S.anyToString(a[i])
+            a[i] = string.anytostring(a[i])
         elseif a[i] == nil then
             a[i] = 'nil'
         end
@@ -254,147 +254,7 @@ function help(what)
     print(sim.getApiInfo(-1, what))
 end
 
-function _S.tableToString(tt, opts)
-    opts = opts and table.clone(opts) or {}
-    opts.visitedTables = opts.visitedTables and table.clone(opts.visitedTables) or {}
-    opts.maxLevel = opts.maxLevel or 99
-    opts.indentString = opts.indentString or '    '
-    opts.maxLevel = opts.maxLevel - 1
-    opts.omitQuotes = false
-    opts.escapeNewline = true
-    opts.longStringThreshold = 160
-
-    if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
-
-    -- if type(tt) ~= 'table' then
-    --    return _S.anyToString(tt, opts)
-    -- end
-
-    if opts.maxLevel <= 0 or opts.visitedTables[tt] then
-        return tostring(tt) .. (opts.maxLevel <= 0 and ' (too deep)' or ' (already visited)')
-    end
-
-    -- print short tables in single line, unless explicitly wanted otherwise:
-    if opts.indent == nil then
-        opts.indent = false
-        local s = _S.tableToString(tt, opts)
-        if #s <= opts.longStringThreshold then return s end
-        opts.indent = true
-    end
-
-    if opts.indent == true then opts.indent = 0 end
-    if opts.indent then opts.indent = opts.indent + 1 end
-    opts.visitedTables[tt] = true
-    local sb = {}
-    if table.isarray(tt) then
-        table.insert(sb, '{')
-        for i = 1, #tt do
-            if i > 1 then table.insert(sb, ', ') end
-            table.insert(sb, _S.anyToString(tt[i], opts))
-        end
-        table.insert(sb, '}')
-    else
-        local sort = opts.sort
-        if sort == nil then sort = true end
-        if sort == true then sort = {'type', 'key'} end
-        local entries = table.items(tt, {sort = sort})
-        table.insert(sb, '{' .. (opts.indent and '\n' or ''))
-        for _, entry in ipairs(entries) do
-            local key, val = table.unpack(entry)
-            if opts.indent then
-                table.insert(sb, string.rep(opts.indentString, opts.indent))
-            end
-            table.insert(sb, _S.tableKeyToString(key))
-            table.insert(sb, ' = ')
-            table.insert(sb, _S.anyToString(val, opts))
-            table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
-        end
-        if opts.indent then table.insert(sb, string.rep(opts.indentString, opts.indent - 1)) end
-        table.insert(sb, '}')
-    end
-    return table.concat(sb)
-end
-
-function _S.anyToString(x, opts)
-    opts = opts or {}
-    local t = type(x)
-    if t == 'nil' then
-        return tostring(nil)
-    elseif t == 'table' then
-        local mt = getmetatable(x) or {}
-        if opts.display and mt.__todisplay then return mt.__todisplay(x, opts) end
-        if isbuffer(x) then return mt.__todisplay(x, opts) end
-        if mt.__tostring then return mt.__tostring(x, opts) end
-        -- displays inside table won't render good:
-        opts = table.update({}, opts, {display = false})
-        return _S.tableToString(x, opts)
-    elseif t == 'string' then
-        return _S.getShortString(x, opts)
-    elseif t == 'number' then
-        return _S.numberToString(x, opts)
-    else
-        return tostring(x)
-    end
-end
-
-function _S.numberToString(x, opts)
-    if math.type(x) ~= 'float' then
-        return tostring(x)
-    end
-
-    opts = opts and table.clone(opts) or {}
-    opts.numFloatDigits = math.max(0, opts.numFloatDigits or 6)
-    opts.stripTrailingZeros = opts.stripTrailingZeros ~= false
-
-    local s = string.format('%.' .. opts.numFloatDigits .. 'f', x)
-    if opts.stripTrailingZeros then
-        local i, d = table.unpack(string.split(s, '%.'))
-        d = string.gsub(d or '', '0*$', '')
-        s = i .. '.' .. d
-    end
-    return s
-end
-
-function _S.getShortString(x, opts)
-    opts = opts or {}
-    opts.omitQuotes = opts.omitQuotes == true
-    opts.escapeNewline = opts.escapeNewline ~= false
-    opts.allowBinary = opts.allowBinary == true
-    opts.allowBinary = true
-
-    if type(x) == 'string' then
-        if not string.isprintable(x) and not opts.allowBinary then
-            return string.format('[binary string (%s bytes)]', #x)
-        end
-        if opts.longStringThreshold and #x > opts.longStringThreshold then
-            return string.format('[long string (%s bytes)]', #x)
-        end
-        if not opts.omitQuotes then
-            x = "'" .. string.escapequotes(x, '\'') .. "'"
-        end
-        if opts.escapeNewline then
-            x = x:gsub('\n', '\\n')
-        end
-        return x
-    end
-    return "[not a string]"
-end
-
-function _S.isIdentifier(x)
-    return type(x) == 'string' and x:match('^[a-zA-Z_][a-zA-Z0-9_]*$') ~= nil
-end
-
-function _S.tableKeyToString(x)
-    if type(x) == 'string' then
-        if _S.isIdentifier(x) then
-            return x
-        else
-            return '[' .. _S.getShortString(x) .. ']'
-        end
-    else
-        return '[' .. tostring(x) .. ']'
-    end
-end
+require 'deprecated.stringConversions'
 
 function getAsString(...)
     local lb = setAutoYield(false)
@@ -402,7 +262,7 @@ function getAsString(...)
     local s = ''
     for i = 1, a.n do
         if i > 1 then s = s .. ', ' end
-        s = s .. _S.anyToString(a[i])
+        s = s .. string.anytostring(a[i])
     end
     setAutoYield(lb)
     return s
@@ -415,7 +275,7 @@ function getAsDisplayString(...)
     local s = {}
     for i = 1, a.n do
         if i > 1 then table.insert(s, ', ') end
-        table.insert(s, _S.anyToString(a[i], {display = true}))
+        table.insert(s, string.anytostring(a[i], {display = true}))
     end
     local str
     if a.n == 1 then -- nothing to h-stack
@@ -427,7 +287,7 @@ function getAsDisplayString(...)
             s = {}
             for i = 1, a.n do
                 if i > 1 then table.insert(s, ', ') end
-                table.insert(s, _S.anyToString(a[i], {display = false}))
+                table.insert(s, string.anytostring(a[i], {display = false}))
             end
             str = table.concat(s)
         else
@@ -510,7 +370,7 @@ function _evalExec(inputStr)
     local function pfunc(theStr)
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
-        if m then theStr = string.format('print(_S.tableToString(dump(%s, %d), {sort = {"key"}}))', theStr:sub(1, -#m-1), #m) end
+        if m then theStr = string.format('print(table.tostring(dump(%s, %d), {sort = {"key"}}))', theStr:sub(1, -#m-1), #m) end
 
         local func, err = load('return ' .. theStr)
         local rr = true

@@ -175,6 +175,7 @@ function table.join(t, sep, opts, visited)
     return s
 end
 
+--[[
 function table.tostring(t, sep, opts, visited)
     opts = opts and table.clone(opts) or {}
     opts.indentString = opts.indentString or '    '
@@ -189,6 +190,95 @@ function table.tostring(t, sep, opts, visited)
     end
     s = s .. '}'
     return s
+end
+]]--
+
+function table.tostring(tt, opts, visitedTables, _)
+    require 'stringx'
+
+    -- backward compatibility with previous table.tostring implementation
+    -- where second arg was the separator:
+    local sep
+    if type(opts) == 'string' then
+        sep = opts
+        opts = visitedTables
+        visitedTables = _
+    end
+
+    opts = opts and table.clone(opts) or {}
+
+    opts.separator = sep or opts.separator or ', '
+
+    -- backward compatibility with omitQuotes opt:
+    if opts.quoteStrings ~= nil and opts.omitQuotes == nil then
+        opts.omitQuotes = not opts.quoteStrings
+    end
+
+    visitedTables = visitedTables or {}
+    opts.maxLevel = opts.maxLevel or 99
+    opts.indentString = opts.indentString or '    '
+    opts.maxLevel = opts.maxLevel - 1
+    opts.escapeNewline = true
+    opts.longStringThreshold = 160
+
+    if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
+
+    --[[
+    if type(tt) ~= 'table' then
+        return string.anytostring(tt, opts)
+    end
+    ]]--
+
+    if opts.maxLevel <= 0 or visitedTables[tt] then
+        return tostring(tt) .. (opts.maxLevel <= 0 and ' (too deep)' or ' (already visited)')
+    end
+
+    -- print short tables in single line, unless explicitly wanted otherwise:
+    if opts.indent == nil then
+        opts.indent = false
+        local s = table.tostring(tt, opts)
+        if #s <= opts.longStringThreshold then return s end
+        opts.indent = true
+    end
+
+    if opts.indent == true then opts.indent = 0 end
+    if opts.indent then opts.indent = opts.indent + 1 end
+    visitedTables[tt] = true
+    local sb = {}
+    if table.isarray(tt) then
+        table.insert(sb, '{')
+        for i = 1, #tt do
+            if i > 1 then table.insert(sb, ', ') end
+            table.insert(sb, string.anytostring(tt[i], opts))
+        end
+        table.insert(sb, '}')
+    else
+        local sort = opts.sort
+        if sort == nil then sort = true end
+        if sort == true then sort = {'type', 'key'} end
+        local entries = table.items(tt, {sort = sort})
+        table.insert(sb, '{' .. (opts.indent and '\n' or ''))
+        for _, entry in ipairs(entries) do
+            local key, val = table.unpack(entry)
+            if opts.indent then
+                table.insert(sb, string.rep(opts.indentString, opts.indent))
+            end
+            local keyStr = key
+            if type(keyStr) == 'string' and not string.isidentifier(keyStr) then
+                keyStr = '[' .. string.getshortstring(x) .. ']'
+            end
+            if type(keyStr) ~= 'string' then
+                keyStr = '[' .. tostring(x) .. ']'
+            end
+            table.insert(sb, keyStr)
+            table.insert(sb, ' = ')
+            table.insert(sb, string.anytostring(val, opts))
+            table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
+        end
+        if opts.indent then table.insert(sb, string.rep(opts.indentString, opts.indent - 1)) end
+        table.insert(sb, '}')
+    end
+    return table.concat(sb)
 end
 
 function table.slice(t, first, last, step)

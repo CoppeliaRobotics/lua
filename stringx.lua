@@ -495,6 +495,76 @@ function string.blockhstack(blocks, spacing)
     return table.join(r, '\n')
 end
 
+function string.numbertostring(x, opts)
+    if math.type(x) ~= 'float' then
+        return tostring(x)
+    end
+
+    opts = opts and table.clone(opts) or {}
+    opts.numFloatDigits = math.max(0, opts.numFloatDigits or 6)
+    opts.stripTrailingZeros = opts.stripTrailingZeros ~= false
+
+    local s = string.format('%.' .. opts.numFloatDigits .. 'f', x)
+    if opts.stripTrailingZeros then
+        local i, d = table.unpack(string.split(s, '%.'))
+        d = string.gsub(d or '', '0*$', '')
+        s = i .. '.' .. d
+    end
+    return s
+end
+
+function string.getshortstring(x, opts)
+    opts = opts or {}
+    opts.omitQuotes = opts.omitQuotes == true
+    opts.escapeNewline = opts.escapeNewline ~= false
+    opts.allowBinary = opts.allowBinary == true
+    opts.allowBinary = true
+
+    if type(x) == 'string' then
+        if not string.isprintable(x) and not opts.allowBinary then
+            return string.format('[binary string (%s bytes)]', #x)
+        end
+        if opts.longStringThreshold and #x > opts.longStringThreshold then
+            return string.format('[long string (%s bytes)]', #x)
+        end
+        if not opts.omitQuotes then
+            x = "'" .. string.escapequotes(x, '\'') .. "'"
+        end
+        if opts.escapeNewline then
+            x = x:gsub('\n', '\\n')
+        end
+        return x
+    end
+    return "[not a string]"
+end
+
+function string.isidentifier(x)
+    return type(x) == 'string' and x:match('^[a-zA-Z_][a-zA-Z0-9_]*$') ~= nil
+end
+
+function string.anytostring(x, opts)
+    opts = opts or {}
+    local t = type(x)
+    if t == 'nil' then
+        return tostring(nil)
+    elseif t == 'table' then
+        local mt = getmetatable(x) or {}
+        if opts.display and mt.__todisplay then return mt.__todisplay(x, opts) end
+        if isbuffer(x) then return mt.__todisplay(x, opts) end
+        if mt.__tostring then return mt.__tostring(x, opts) end
+        -- displays inside table won't render good:
+        opts = table.update({}, opts, {display = false})
+        require 'tablex'
+        return table.tostring(x, opts)
+    elseif t == 'string' then
+        return string.getshortstring(x, opts)
+    elseif t == 'number' then
+        return string.numbertostring(x, opts)
+    else
+        return tostring(x)
+    end
+end
+
 function string.unittest()
     -- fix for "attempt to call a nil value (global 'isbuffer')"
     isbuffer = isbuffer or function(x) return false end
