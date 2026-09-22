@@ -81,7 +81,7 @@ require = wrap(require, function(origRequire)
         local retVals = {origRequire(...)}
         if _DEVMODE then
             local resolved, err = package.searchpath(requiredName, package.path)
-            if resolved and lfsx.realpath(resolved) ~= lfs.pathsanitize(resolved) then
+            if resolved and lfsx.realpath(resolved) ~= lfsx.pathsanitize(resolved) then
                 error(("require('%s'): filename case mismatch (actual file exists with different case)"):format(requiredName))
             end
         end
