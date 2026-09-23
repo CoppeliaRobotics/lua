@@ -266,8 +266,11 @@ function string.stripmarkdown(s, opts)
     end
     opts = opts or {}
 
-    -- Remove headers (##, ###, ####, etc.)
-    s = s:gsub("##+ ([^\n]*)\n", "%1")
+    -- Remove headers at start of a line, with or without trailing newline
+    s = s:gsub("^##+ ([^\n]*)\n", "%1\n")
+    s = s:gsub("\n##+ ([^\n]*)\n", "\n%1\n")
+    s = s:gsub("^##+ ([^\n]*)$", "%1")
+    s = s:gsub("\n##+ ([^\n]*)$", "\n%1")
 
     -- Remove bold
     s = s:gsub("%*%*([^*]+)%*%*", "%1")
