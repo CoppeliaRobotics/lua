@@ -1,6 +1,7 @@
 import 'sim-2'
 import 'sim-2.*' -- for global 'app', 'scene', 'self'
 import 'simEigen.*'
+import 'utils'
 
 if _DEVMODE then sim.app:logInfo("Developer Mode is active") end
 
@@ -8,6 +9,8 @@ pythonFailWarnOnly = true -- error msg can be read via sim.getNamedBoolParam("py
 
 base16 = require('base16')
 base64 = require('base64')
+
+apropos = utils.apropos
 
 require('base-ce')
 

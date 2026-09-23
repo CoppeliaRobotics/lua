@@ -1689,10 +1689,6 @@ function sim.openFile(f)
     end
 end
 
-apropos = apropos or function(what) -- other sim-versions also have a global apropos function...
-    utils.apropos(what)
-end
-
 -- wrap require() to load embedded scripts' code when called with a script handle, e.g. require(sim.getObject '/foo')
 if not _S.requireWrapped then
     _S.requireWrapped = true -- other sim-versions might already have wrapped it

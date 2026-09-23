@@ -12,7 +12,8 @@ return function(mod, modName)
     local runnercfg = {include = {modName, modName .. '/.+'}}
     printf('luacov runner config: %s', runnercfg)
     runner(runnercfg)
-    utils.unittest(mod)
+    local unittest = require 'utils.unittest'
+    unittest(mod)
     local reporter = require('luacov.reporter.' .. defaults.reporter)
     reporter.report()
     printf('Report file: %s', defaults.reportfile)
