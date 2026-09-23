@@ -181,6 +181,80 @@ function lfs.realpath(path)
     end
 end
 
+--- Recursively visit every file under `dir`.
+-- @param dir  string  starting directory
+-- @param fn   function(path, attr) called for each regular file
+-- @param opts table   optional:
+--     onDir   (function(path)) called for each directory (before descending)
+--     onOther (function(path, mode)) called for symlinks, sockets, etc.
+--     follow  (bool)  follow symlinks (default false → avoids loops)
+--     sort    (bool)  sort entries per directory (default false)
+function lfs.walk(dir, fn, opts)
+    opts = opts or {}
+    dir  = dir or '.'
+
+    -- collect first: safer than iterating while recursing on some platforms
+    local entries = {}
+    for entry in lfs.dir(dir) do
+        if entry ~= '.' and entry ~= '..' then
+            entries[#entries + 1] = entry
+        end
+    end
+    if opts.sort then table.sort(entries) end
+
+    for _, entry in ipairs(entries) do
+        local path = lfs.pathjoin(dir, entry)
+        local attr = opts.follow and lfs.attributes(path)
+                     or lfs.symlinkattributes(path)
+        local mode = attr and attr.mode
+
+        if mode == 'directory' then
+            if opts.onDir then opts.onDir(path) end
+            lfs.walk(path, fn, opts)
+        elseif mode == 'file' then
+            fn(path, attr)
+        else
+            if opts.onOther then opts.onOther(path, mode) end
+        end
+    end
+end
+
+-- iterator-style walk, e.g.:
+-- for path, attr in lfs.iwalk('src') do … end
+function lfs.iwalk(root, opts)
+    opts = opts or {}
+    local function walk(dir)
+        local entries = {}
+        for entry in lfs.dir(dir) do
+            if entry ~= '.' and entry ~= '..' then
+                entries[#entries + 1] = entry
+            end
+        end
+        if opts.sort then table.sort(entries) end
+        for _, entry in ipairs(entries) do
+            local path = lfs.pathjoin(dir, entry)
+            local attr = opts.follow and lfs.attributes(path)
+                         or lfs.symlinkattributes(path)
+            local mode = attr and attr.mode
+            if mode == 'directory' then
+                walk(path)
+            elseif mode == 'file' then
+                coroutine.yield(path, attr)
+            elseif opts.onOther then
+                opts.onOther(path, mode)
+            end
+        end
+    end
+
+    local co = coroutine.create(function() walk(root or '.') end)
+    return function()
+        local ok, path, attr = coroutine.resume(co)
+        if not ok then error(path, 0) end
+        if coroutine.status(co) == 'dead' then return nil end
+        return path, attr
+    end
+end
+
 function lfs.unittest()
     require 'tablex'
     if lfs.pathsep() == '\\' then
