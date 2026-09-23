@@ -573,62 +573,237 @@ function string.unittest()
     isbuffer = isbuffer or function(x) return false end
 
     require 'tablex'
-    assert(table.eq(string.split('a%b%c', '%', true), {'a', 'b', 'c'}))
-    assert(table.eq(string.split('a', '%', true), {'a'}))
-    assert(table.eq(string.split('a%', '%', true), {'a', ''}))
-    assert(table.eq(string.split('a%--b', '%-', true), {'a', '-b'}))
-    assert(table.eq(string.split('"a b" "c d"', '"', true), {'', 'a b', ' ', 'c d', ''}))
-    assert(table.eq(string.split('"a b" "c d"', ' ', true), {'"a', 'b"', '"c', 'd"'}))
-    assert(table.eq(string.qsplit('"a b" "c d"', ' '), {'"a b"', '"c d"'}))
-    assert(table.eq(string.qsplit("'a b' 'c d'", ' '), {"'a b'", "'c d'"}))
-    assert(table.eq(string.qsplit('"a\' b" "c d"', ' '), {'"a\' b"', '"c d"'}))
-    assert(table.eq(string.qsplit("'a\" b' 'c d'", ' '), {"'a\" b'", "'c d'"}))
+
+    -- helpers:
+    local function assert_eq(actual, expected, msg)
+        if not table.eq(actual, expected) then
+            error(string.format('%s\nactual: %s\nexpected: %s', msg or 'assert_eq failed', table.tostring(actual), table.tostring(expected)), 2)
+        end
+    end
+
+    local function assert_eq_s(actual, expected, msg)
+        if actual ~= expected then
+            error(string.format('%s\nactual: %s\nexpected: %s', msg or 'assert_eq_s failed', tostring(actual), tostring(expected)), 2)
+        end
+    end
+
+    do
+        local it = string.gsplit('a,b,c', ',')
+        assert_eq_s(it(), 'a')
+        assert_eq_s(it(), 'b')
+        assert_eq_s(it(), 'c')
+        assert(it() == nil)
+    end
+
+    assert_eq(string.split('a%b%c', '%', true), {'a', 'b', 'c'})
+    assert_eq(string.split('a', '%', true), {'a'})
+    assert_eq(string.split('a%', '%', true), {'a', ''})
+    assert_eq(string.split('a%--b', '%-', true), {'a', '-b'})
+    assert_eq(string.split('"a b" "c d"', '"', true), {'', 'a b', ' ', 'c d', ''})
+    assert_eq(string.split('"a b" "c d"', ' ', true), {'"a', 'b"', '"c', 'd"'})
+    assert_eq(string.split('', ','), {''})
+    assert_eq(string.split('a,b,', ','), {'a', 'b', ''})
+    assert_eq(string.split(',a,b', ','), {'', 'a', 'b'})
+    assert_eq(string.split('a,,b', ','), {'a', '', 'b'})
+    assert_eq(string.split('abc', ''), {'a', 'b', 'c'})
+    assert_eq(string.split('abc', 'b'), {'a', 'c'})
+
+    assert_eq(string.qsplit('"a b" "c d"', ' '), {'"a b"', '"c d"'})
+    assert_eq(string.qsplit("'a b' 'c d'", ' '), {"'a b'", "'c d'"})
+    assert_eq(string.qsplit('"a\' b" "c d"', ' '), {'"a\' b"', '"c d"'})
+    assert_eq(string.qsplit("'a\" b' 'c d'", ' '), {"'a\" b'", "'c d'"})
+    assert_eq(string.qsplit('', ' '), {})
+    assert_eq(string.qsplit('   ', ' '), {})
+    assert_eq(string.qsplit('a  b', ' '), {'a', 'b'})
+    assert_eq(string.qsplit('a "b c" d', ' '), {'a', '"b c"', 'd'})
+    assert_eq(string.qsplit('"a \'b\' c" d', ' '), {'"a \'b\' c"', 'd'})
+    assert_eq(string.qsplit('a "b c', ' '), {'a', '"b c'})
+
     assert(string.startswith('abcde', 'abc'))
     assert(string.startswith('abc', 'abc'))
     assert(not string.startswith('bcde', 'abc'))
+    assert(string.startswith('abc', ''))
+    assert(not string.startswith('', 'a'))
+
     assert(string.endswith('abcde', 'cde'))
     assert(string.endswith('abc', 'abc'))
     assert(not string.endswith('bcde', 'bcd'))
-    assert(string.trim(' abc ') == 'abc')
-    assert(string.ltrim(' abc ') == 'abc ')
-    assert(string.rtrim(' abc ') == ' abc')
-    assert(table.eq(string.chars('abc'), {'a', 'b', 'c'}))
-    assert(table.eq(string.bytes('abc'), {0x61, 0x62, 0x63}))
-    assert(string.escpat('[[--x') == '%[%[%-%-x')
+    assert(string.endswith('abc', ''))
+    assert(not string.endswith('', 'a'))
+
+    assert_eq_s(string.trim(' abc '), 'abc')
+    assert_eq_s(string.ltrim(' abc '), 'abc ')
+    assert_eq_s(string.rtrim(' abc '), ' abc')
+    assert_eq_s(string.trim(''), '')
+    assert_eq_s(string.trim('   '), '')
+    assert_eq_s(string.ltrim('   '), '')
+    assert_eq_s(string.rtrim('   '), '')
+
+    assert_eq(string.chars('abc'), {'a', 'b', 'c'})
+    assert_eq(string.chars(''), {})
+    assert_eq(string.chars('\xC3\xA9'), {'\xC3', '\xA9'})
+
+    assert_eq(string.bytes('abc'), {0x61, 0x62, 0x63})
+    assert_eq(string.bytes(''), {})
+    assert_eq(string.bytes('\xC3\xA9'), {0xC3, 0xA9}) -- UTF-8 é
+
+    assert_eq_s(string.escpat('[[--x'), '%[%[%-%-x')
+    assert_eq_s(string.escpat('^()%.[]*+-?$'), '%^%(%)%%%.%[%]%*%+%-%?%$')
+
     assert(string.isalnum 'abcABC123')
     assert(not string.isalnum 'abc-ABC123')
+    assert(string.isalnum '')
+
     assert(string.isalpha 'abcABC')
     assert(not string.isalpha 'abcABC123')
+    assert(string.isalpha '')
+
+    assert(string.islower 'abc123')
+    assert(not string.islower 'abcABC123')
+    assert(string.islower '')
+
+    assert(string.isupper 'ABC123')
+    assert(not string.isupper 'abcABC123')
+    assert(string.isupper '')
+
+    assert(string.isnumeric '123')
+    assert(not string.isnumeric '123abcABC')
+    assert(string.isnumeric '')
+
+    assert(string.isspace ' 	\n')
+    assert(not string.isspace 'abc ABC')
+    assert(string.isspace '')
+
     assert(string.isidentifier 'abcABC3')
     assert(string.isidentifier '_3')
     assert(not string.isidentifier '3abcABC123')
     assert(not string.isidentifier 'abc ABC123')
-    assert(string.islower 'abc123')
-    assert(not string.islower 'abcABC123')
-    assert(string.isnumeric '123')
-    assert(not string.isnumeric '123abcABC')
+    assert(not string.isidentifier '')
+
     assert(string.isprintable 'abc,:ABC!123')
     assert(not string.isprintable '\xff\x00123abcABC')
-    assert(string.isspace ' 	\n')
-    assert(not string.isspace 'abc ABC')
-    assert(string.isupper 'ABC123')
-    assert(not string.isupper 'abcABC123')
-    assert(string.capitalize 'robot' == 'Robot')
-    assert(string.capitalize 'robot' == 'Robot')
-    assert(string.capitalize 'robotArray' == 'RobotArray')
-    assert(string.escapequotes('abc') == 'abc')
-    assert(string.escapequotes('a = \'b\'', '\'') == 'a = \\\'b\\\'')
-    assert(string.escapequotes('a = \'b\'', '\"') == 'a = \'b\'')
-    assert(string.escapequotes('a = "b"', '\'') == 'a = "b"')
-    assert(string.escapequotes('a = "b"', '"') == 'a = \\"b\\"')
-    assert(string.pad('aaa', 4) == 'aaa ')
-    assert(string.pad('aaa', -4) == ' aaa')
-    assert(string.pad('aaa', 2) == 'aaa')
-    assert(string.pad('aaa', 2, true) == 'aa')
-    assert(table.eq({string.blocksize('aaa\naaa')}, {3, 2}))
-    assert(string.blockpad('a\naa', 4, 3) == 'a   \naa  \n    ')
-    assert(string.blockhstack({'aa\naa', 'bbb\nbbb\nbbb'}) == '   bbb\naa bbb\naa bbb')
-    assert(
+    assert(not string.isprintable '\001')
+    assert(string.isprintable '\xC3\xA9') -- é
+    assert(not string.isprintable '\255') -- invalid UTF-8
+    assert(string.isprintable '')
+
+    assert_eq_s(string.capitalize 'robot', 'Robot')
+    assert_eq_s(string.capitalize 'robot', 'Robot')
+    assert_eq_s(string.capitalize 'robotArray', 'RobotArray')
+    assert_eq_s(string.capitalize '', '')
+
+    assert_eq_s(string.escapequotes('abc'), 'abc')
+    assert_eq_s(string.escapequotes('a = \'b\'', '\''), 'a = \\\'b\\\'')
+    assert_eq_s(string.escapequotes('a = \'b\'', '\"'), 'a = \'b\'')
+    assert_eq_s(string.escapequotes('a = "b"', '\''), 'a = "b"')
+    assert_eq_s(string.escapequotes('a = "b"', '"'), 'a = \\"b\\"')
+    assert_eq_s(string.escapequotes('a\\b', "'"), 'a\\\\b')
+    assert_eq_s(string.escapequotes('a\\b', '"'), 'a\\\\b')
+    do
+        local ok = pcall(string.escapequotes, 'x', '`')
+        assert(not ok)
+    end
+
+    assert_eq_s(string.escapehtml('&<>"\''), '&amp;&lt;&gt;&quot;&apos;')
+    assert_eq_s(string.escapehtml('&<>', {entities = false}), '&<>')
+
+    assert_eq_s(string.stripmarkdown('## Header\n**bold** _italic_ `code` [link](url)'), 'Header\nbold italic code link')
+    assert_eq_s(string.stripmarkdown('[link](url)', {keeplinks = true}), '[link](url)')
+
+    assert_eq_s(string.stripprefix('foobar', 'foo'), 'bar')
+    assert_eq_s(string.stripprefix('foobar', 'bar'), 'foobar')
+
+    assert_eq_s(string.stripsuffix('foobar', 'bar'), 'foo')
+    assert_eq_s(string.stripsuffix('foobar', 'foo'), 'foobar')
+
+    assert_eq_s(string.elide('abcdef', 3), 'abc...')
+    assert_eq_s(string.elide('abc', 5), 'abc')
+    assert_eq_s(string.elide('a\nb', 10, {truncateAtNewLine = true}), 'a...')
+
+    local e = '\xC3\xA9'  -- é
+
+    do
+        local s = 'a' .. e .. 'bc'
+        assert_eq_s(string.utf8sub(s, 1, 1), 'a')
+        assert_eq_s(string.utf8sub(s, 2, 2), e)
+        assert_eq_s(string.utf8sub(s, 3, 3), 'b')
+        assert_eq_s(string.utf8sub(s, 4, 4), 'c')
+        assert_eq_s(string.utf8sub(s, 1, 4), s)
+        assert_eq_s(string.utf8sub(s, 2), e .. 'bc')   -- j omitted → to end
+        assert_eq_s(string.utf8sub(s, 2, 100), e .. 'bc') -- j past end
+        assert_eq_s(string.utf8sub(s, 5, 5), '')       -- i past end
+
+        assert_eq_s(string._len('a' .. e .. 'bc'), 4)
+        assert_eq_s(string._len(''), 0)
+    end
+
+    assert_eq_s(string.pad(e, 2), e .. ' ')
+    assert_eq_s(string.pad(e, -2), ' ' .. e)
+    assert_eq_s(string.pad('aaa', 4), 'aaa ')
+    assert_eq_s(string.pad('aaa', -4), ' aaa')
+    assert_eq_s(string.pad('aaa', 2), 'aaa')
+    assert_eq_s(string.pad('aaa', 2, true), 'aa')
+
+    assert_eq({string.blocksize(e .. '\nabc')}, {3, 2})
+    assert_eq({string.blocksize('aaa\naaa')}, {3, 2})
+
+    assert_eq_s(string.blockpad('a\nbb', 3, -3), '   \na  \nbb ')
+    assert_eq_s(string.blockpad('a\naa', 4, 3), 'a   \naa  \n    ')
+
+    assert_eq_s(string.blockhstack({'aa', 'bbb'}, 2), 'aa  bbb')
+    assert_eq_s(string.blockhstack({'aa\naa', 'bbb\nbbb\nbbb'}), '   bbb\naa bbb\naa bbb')
+
+    assert_eq_s(string.numbertostring(42), '42')
+    assert_eq_s(string.numbertostring(1.23456789, {numFloatDigits = 2}), '1.23')
+    assert_eq_s(string.numbertostring(1.2, {stripTrailingZeros = false, numFloatDigits = 4}), '1.2000')
+    assert_eq_s(string.numbertostring(1.2, {numFloatDigits = 4}), '1.2')
+
+    assert_eq_s(string.getshortstring('abc'), "'abc'")
+    assert_eq_s(string.getshortstring("a'b"), "'a\\'b'")
+    assert_eq_s(string.getshortstring('a\nb'), "'a\\nb'")
+    assert_eq_s(string.getshortstring('abcdef', {longStringThreshold = 3}), '[long string (6 bytes)]')
+    assert_eq_s(string.getshortstring('abc', {omitQuotes = true}), 'abc')
+
+    assert_eq_s(string.anytostring(nil), 'nil')
+    assert_eq_s(string.anytostring(42), '42')
+    assert_eq_s(string.anytostring('abc'), "'abc'")
+
+    do
+        local opts = {
+            attrsOrder = {
+                'title', 'closeable', 'resizable', 'on-close',
+                'id', 'style', 'read-only'
+            }
+        }
+        local xml = string.renderxml({
+            tag = 'ui',
+            attrs = {
+                title = 'thetitle',
+                closeable = true,
+                resizable = 4,
+                ['on-close'] = ':onClose'
+            },
+            children = {
+                {
+                    tag = 'text-browser',
+                    attrs = {
+                        id = 1,
+                        style = 'color: red;',
+                        ['read-only'] = true
+                    }
+                }
+            }
+        }, opts)
+        assert_eq_s(
+            xml,
+            '<ui title="thetitle" closeable="true" resizable="4" on-close=":onClose">\n' ..
+            '  <text-browser id="1" style="color: red;" read-only="true" />\n' ..
+            '</ui>'
+        )
+    end
+    assert_eq_s(string.renderxml{tag = 'p', children = {'hello'}}, '<p>hello</p>')
+    assert_eq_s(string.renderxml{'br'}, '<br />')
+    assert_eq_s(
         string.renderxml{
             tag = 'ui',
             attrs = {
@@ -647,8 +822,7 @@ function string.unittest()
                     }
                 },
             },
-        }
-        ==
+        },
         string.renderxml{
             'ui',
             title = 'thetitle',
