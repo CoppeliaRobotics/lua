@@ -235,7 +235,9 @@ function table.tostring(tt, opts, _)
     -- print short tables in single line, unless explicitly wanted otherwise:
     if opts.indent == nil then
         opts.indent = false
-        local s = table.tostring(tt, opts)
+        local probeOpts = table.clone(opts)
+        probeOpts.visitedTables = table.clone(opts.visitedTables)  -- isolate
+        local s = table.tostring(tt, probeOpts)
         if #s <= opts.longStringThreshold then return s end
         opts.indent = true
     end
