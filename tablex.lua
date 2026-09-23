@@ -193,7 +193,7 @@ function table.tostring(t, sep, opts, visited)
 end
 ]]--
 
-function table.tostring(tt, opts, visitedTables, _)
+function table.tostring(tt, opts, _)
     require 'stringx'
 
     -- backward compatibility with previous table.tostring implementation
@@ -201,8 +201,7 @@ function table.tostring(tt, opts, visitedTables, _)
     local sep
     if type(opts) == 'string' then
         sep = opts
-        opts = visitedTables
-        visitedTables = _
+        opts = _
     end
 
     opts = opts and table.clone(opts) or {}
@@ -214,7 +213,7 @@ function table.tostring(tt, opts, visitedTables, _)
         opts.omitQuotes = not opts.quoteStrings
     end
 
-    visitedTables = visitedTables or {}
+    opts.visitedTables = opts.visitedTables or {}
     opts.maxLevel = opts.maxLevel or 99
     opts.indentString = opts.indentString or '    '
     opts.maxLevel = opts.maxLevel - 1
@@ -229,7 +228,7 @@ function table.tostring(tt, opts, visitedTables, _)
     end
     ]]--
 
-    if opts.maxLevel <= 0 or visitedTables[tt] then
+    if opts.maxLevel <= 0 or opts.visitedTables[tt] then
         return tostring(tt) .. (opts.maxLevel <= 0 and ' (too deep)' or ' (already visited)')
     end
 
@@ -243,7 +242,7 @@ function table.tostring(tt, opts, visitedTables, _)
 
     if opts.indent == true then opts.indent = 0 end
     if opts.indent then opts.indent = opts.indent + 1 end
-    visitedTables[tt] = true
+    opts.visitedTables[tt] = true
     local sb = {}
     if table.isarray(tt) then
         table.insert(sb, '{')
@@ -574,5 +573,233 @@ function table.unittest()
     assert(table.eq(table.items({a = 'A', b = 3, c = {'c', 'd'}}, {sort = true}), {{'a', 'A'}, {'b', 3}, {'c', {'c', 'd'}}}))
     assert(table.eq(table.frompairs{a = 10, b = 20}, {a = 10, b = 20}))
     assert(table.eq(table.fromipairs{10, 20}, {10, 20}))
+
+    local function assert_eq(actual, expected, msg)
+        if not table.eq(actual, expected) then
+            error((msg or 'assert_eq failed') ..
+                '\nactual: ' .. table.tostring(actual) ..
+                '\nexpected: ' .. table.tostring(expected), 2)
+        end
+    end
+
+    local function assert_eq_s(actual, expected, msg)
+        if actual ~= expected then
+            error((msg or 'assert_eq_s failed') ..
+                '\nactual: ' .. tostring(actual) ..
+                '\nexpected: ' .. tostring(expected), 2)
+        end
+    end
+
+    local function assert_error(f, msg)
+        local ok = pcall(f)
+        if ok then
+            error('expected error but got none: ' .. (msg or ''), 2)
+        end
+    end
+
+    -- table.getn
+    assert_eq_s(table.getn({1, 2, 3}), 3)
+
+    -- table.unpackx
+    do
+        local a, b, c = table.unpackx({10, 20, 30}, 3)
+        assert_eq_s(a, 10); assert_eq_s(b, 20); assert_eq_s(c, 30)
+        local x, y = table.unpackx({10, 20, 30}, 2)
+        assert_eq_s(x, 10); assert_eq_s(y, 20)
+        local p, q = table.unpackx({10, 20, 30}, 3, 2)
+        assert_eq_s(p, 20); assert_eq_s(q, 30)
+        assert_eq_s(table.unpackx({}, 0), nil)
+    end
+
+    -- table.index
+    do
+        local t = {a = 1, b = 2}
+        local f = table.index(t)
+        assert_eq_s(f('a'), 1)
+        assert_eq_s(f('c'), nil)
+    end
+
+    -- table.keys (order-independent)
+    do
+        local t = {a = 1, b = 2, 3, 4}
+        local keys = table.keys(t)
+        local set = {}
+        for _, k in ipairs(keys) do set[k] = true end
+        assert(set[1] and set[2] and set.a and set.b)
+        assert_eq_s(#keys, 4)
+    end
+
+    -- table.filter
+    do
+        local t = {foo_a = 1, foo_b = 2, bar_a = 3, baz = 4}
+        assert_eq(table.filter(t, {matchKeyPrefix = 'foo_'}), {foo_a = 1, foo_b = 2})
+        assert_eq(table.filter(t, {matchKeyPrefix = 'foo_', stripKeyPrefix = true}), {a = 1, b = 2})
+        assert_eq(table.filter(t), t)
+    end
+
+    -- table.invert
+    do
+        assert_eq(table.invert({a = 1, b = 2, c = 3}), {[1] = 'a', [2] = 'b', [3] = 'c'})
+        assert_error(function() table.invert({a = 1, b = 1}) end)
+        local ok = pcall(table.invert, {a = 1, b = 1}, {errorOnClash = false})
+        assert(ok)
+    end
+
+    -- table.isarray
+    do
+        assert(table.isarray({}))
+        assert(table.isarray({1, 2, 3}))
+        assert(table.isarray({1, 2.0}))
+        local t = {1, 2}; t[4] = 4
+        assert(not table.isarray(t))
+        assert(not table.isarray({a = 1}))
+        --assert(not table.isarray({[1.0] = 'a'}))
+    end
+
+    -- table.join
+    do
+        assert_eq_s(table.join({1, 2, 3}), '1, 2, 3')
+        assert_eq_s(table.join({a = 1, b = 2}), 'a = 1, b = 2')
+        assert_eq_s(table.join({1, 2, a = 3}), '1, 2, a = 3')
+    end
+
+    -- table.slice
+    do
+        assert_eq(table.slice({1, 2, 3, 4, 5}, 2, 4), {2, 3, 4})
+        assert_eq(table.slice({1, 2, 3}, 2), {2, 3})
+        assert_eq(table.slice({1, 2, 3}), {1, 2, 3})
+    end
+
+    -- table.sorted
+    do
+        assert_eq(table.sorted({3, 1, 2}), {1, 2, 3})
+        assert_eq(table.sorted({3, 1, 2}, function(a, b) return a > b end), {3, 2, 1})
+    end
+
+    -- table.clone (shallow)
+    do
+        local t = {a = 1, b = {2}}
+        local c = table.clone(t)
+        assert_eq(c, t)
+        assert(c ~= t)
+        assert(c.b == t.b) -- shallow
+    end
+
+    -- table.extend
+    do
+        local t = {1, 2}
+        table.extend(t, {3, 4}, {5})
+        assert_eq(t, {1, 2, 3, 4, 5})
+    end
+
+    -- table.collapse
+    do
+        assert_eq(table.collapse({{1, 2}, {3, 4}}), {1, 2, 3, 4})
+        assert_eq(table.collapse({{1, 2}, {3, {4, 5}}}), {1, 2, 3, {4, 5}})
+        assert_eq(table.collapse({{1, 2}, {3, {4, 5}}}, 2), {1, 2, 3, 4, 5})
+    end
+
+    -- table.update
+    do
+        local t = {a = 1}
+        table.update(t, {b = 2}, {a = 3})
+        assert_eq(t, {a = 3, b = 2})
+    end
+
+    -- table.items sorting
+    do
+        local t = {b = 2, a = 1, [1] = 'one', [true] = 'bool'}
+        local byKey = table.items(t, {sort = {'key'}})
+        assert_eq(byKey[1], {1, 'one'})
+        assert_eq(byKey[2], {'a', 1})
+        assert_eq(byKey[3], {'b', 2})
+        assert_eq(byKey[4], {true, 'bool'})
+
+        local byType = table.items(t, {sort = {'type', 'key'}})
+        assert_eq(byType[1], {'a', 1})        -- value is number
+        assert_eq(byType[2], {'b', 2})        -- value is number
+        assert_eq(byType[3], {1, 'one'})      -- value is string, key tostring = '1'
+        assert_eq(byType[4], {true, 'bool'})  -- value is string, key tostring = 'true'
+
+        assert_error(function() table.items(t, {sort = {'invalid'}}) end)
+    end
+
+    -- table.tostring exact output
+    do
+        assert_eq_s(table.tostring({1, 2, 3}), '{1, 2, 3}')
+        assert_eq_s(table.tostring({b = 2, a = 1}), '{a = 1, b = 2, }')
+        --assert_eq_s(table.tostring({[1] = 'one', a = 1}), '{a = 1, [1] = \'one\', }')
+
+        assert_eq_s(table.tostring({a = 1, b = 2}, {indent = true}), '{\n    a = 1,\n    b = 2,\n}')
+
+        -- maxLevel
+        local s = table.tostring({a = {b = {c = 1}}}, {maxLevel = 2})
+        assert(s:find('too deep') ~= nil)
+
+        -- circular reference
+        local t = {}; t.self = t
+        local s2 = table.tostring(t)
+        assert(s2:find('already visited') ~= nil)
+    end
+
+    -- table.eq nested / mixed keys
+    do
+        assert(table.eq({a = {1, 2}}, {a = {1, 2}}))
+        assert(not table.eq({a = {1, 2}}, {a = {1, 3}}))
+        assert(table.eq({a = 1, b = 2}, {b = 2, a = 1}))
+        assert(not table.eq({a = 1}, {a = 1, b = 2}))
+    end
+
+    -- table.compare custom comparator
+    do
+        local function cmp(a, b)
+            if a == b then return 0 end
+            if a < b then return -1 end
+            if a > b then return 1 end
+        end
+        assert(table.compare({1, 2}, {1, 3}, cmp) < 0)
+        assert(table.compare({1, 3}, {1, 3}, cmp) == 0)
+        assert(table.compare({}, {1}) < 0)
+        assert(table.compare({1}, {}) > 0)
+    end
+
+    -- table.find custom equalsFunc
+    do
+        assert_eq_s(table.find({1, 2, 3}, 2, function(x) return x % 2 == 0 end), 2)
+        assert_eq_s(table.find({1, 3, 5}, 2, function(x) return x % 2 == 0 end), nil)
+    end
+
+    -- table.reversed with non-array keys
+    do
+        local t = {a = 1, 1, 2, 3}
+        local r = table.reversed(t)
+        assert_eq_s(r[1], 3)
+        assert_eq_s(r[2], 2)
+        assert_eq_s(r[3], 1)
+        assert_eq_s(r.a, 1)
+    end
+
+    -- table.batched non-divisible
+    do
+        assert_eq(table.batched({1, 2, 3, 4, 5}, 2), {{1, 2}, {3, 4}, {5}})
+    end
+
+    -- table.flatten error on non-string key
+    do
+        assert_error(function() table.flatten({[1] = 'a'}) end)
+        assert_eq(table.flatten({a = {1, 2}}), {a = {1, 2}}) -- arrays not flattened
+    end
+
+    -- table.unflatten deep
+    do
+        assert_eq(table.unflatten({['a.b.c'] = 1}), {a = {b = {c = 1}}})
+    end
+
+    -- table.frompairs / fromipairs
+    do
+        assert_eq(table.frompairs({a = 10, b = 20}), {a = 10, b = 20})
+        assert_eq(table.fromipairs({10, 20}), {10, 20})
+    end
+
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
