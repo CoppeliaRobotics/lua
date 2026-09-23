@@ -568,6 +568,131 @@ function string.anytostring(x, opts)
     end
 end
 
+--- Grep-like search over a multiline string.
+-- @param text  string  The haystack.
+-- @param expr  string  Lua pattern (default) or plain substring (opts.plain = true).
+-- @param opts  table   Optional:
+--     plain       (bool)   treat expr as a literal string
+--     ignorecase  (bool)   case-insensitive match
+--     context     (number) lines of context before & after
+--     before      (number) override lines before
+--     after       (number) override lines after
+-- @return table list of matches, each = {
+--     line       number  1-based line number
+--     column     number  1-based column of match start within the line
+--     start      number  1-based absolute start offset in text
+--     stop, end  number  1-based absolute end offset in text
+--     match,text string  the matched substring
+--     lineStart  number  absolute offset of line start
+--     lineEnd    number  absolute offset of line end (before \n)
+--     lineText   string  the full line
+--     captures   table   capture groups from the pattern
+--     context    table|nil  surrounding lines (includes the matched line)
+-- }
+function string.grep(text, expr, opts)
+    opts = opts or {}
+
+    if type(text) ~= "string" then
+        error("string.grep: text must be a string", 2)
+    end
+    if type(expr) ~= "string" then
+        error("string.grep: expr must be a string", 2)
+    end
+
+    local results = {}
+    if expr == "" then return results end
+
+    local plain    = opts.plain or false
+    local icase    = opts.ignorecase or false
+    local before   = opts.before or opts.context or 0
+    local after    = opts.after  or opts.context or 0
+
+    -- ---- 1. Split text into lines, tracking absolute offsets -------------
+    local lines = {}
+    do
+        local n = #text
+        if n == 0 then
+            lines[1] = { num = 1, start = 1, stop = 0, text = "" }
+        else
+            local i, num = 1, 0
+            while i <= n do
+                num = num + 1
+                local nl    = text:find("\n", i, true)
+                local stop  = nl and (nl - 1) or n
+                local body  = text:sub(i, stop)
+                if body:sub(-1) == "\r" then       -- strip CR in CRLF
+                    body = body:sub(1, -2)
+                    stop = stop - 1
+                end
+                lines[#lines + 1] = {
+                    num = num, start = i, stop = stop, text = body,
+                }
+                if not nl then break end
+                i = nl + 1
+            end
+        end
+    end
+
+    -- ---- 2. Prepare the search pattern -----------------------------------
+    local pat = expr
+    if plain then
+        pat = (expr:gsub("([%^%$%(%)%%%.%[%]%*%+%-%?])", "%%%1"))
+    end
+
+    -- ---- 3. Scan every line ---------------------------------------------
+    for li = 1, #lines do
+        local line          = lines[li]
+        local content       = line.text
+        local searchContent = icase and content:lower() or content
+        local searchPat     = icase and pat:lower()     or pat
+
+        local init = 1
+        local clen = #searchContent
+        while init <= clen + 1 do
+            local f = { searchContent:find(searchPat, init) }
+            local ms, me = f[1], f[2]
+            if not ms then break end
+
+            local captures = {}
+            for k = 3, #f do captures[#captures + 1] = f[k] end
+
+            local matchText = content:sub(ms, me)
+            local absStart  = line.start + ms - 1
+            local absStop   = line.start + me - 1
+
+            local context = nil
+            if before > 0 or after > 0 then
+                context = {}
+                local lo = math.max(1, li - before)
+                local hi = math.min(#lines, li + after)
+                for k = lo, hi do
+                    context[#context + 1] = lines[k].text
+                end
+            end
+
+            results[#results + 1] = {
+                line      = line.num,
+                column    = ms,
+                start     = absStart,
+                stop      = absStop,
+                ["end"]   = absStop,
+                match     = matchText,
+                text      = matchText,
+                lineStart = line.start,
+                lineEnd   = line.stop,
+                lineText  = content,
+                captures  = captures,
+                context   = context,
+            }
+
+            -- advance; guard against zero-width matches
+            init = (me < ms) and (ms + 1) or (me + 1)
+        end
+    end
+
+    return results
+end
+
 function string.unittest()
     -- fix for "attempt to call a nil value (global 'isbuffer')"
     isbuffer = isbuffer or function(x) return false end
