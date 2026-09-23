@@ -801,5 +801,265 @@ function table.unittest()
         assert_eq(table.fromipairs({10, 20}), {10, 20})
     end
 
+    -- ============================================================
+    -- table.tostring: deeper / more extensive coverage
+    -- ============================================================
+    do
+        local function pcall_tostring(t, opts)
+            local ok, result = pcall(table.tostring, t, opts)
+            assert(ok, 'table.tostring errored: ' .. tostring(result))
+            assert(type(result) == 'string', 'expected string result')
+            return result
+        end
+
+        -- entry appears as a whole chunk: '{' or ',' before, ',' or '}' after
+        local function assert_entry(s, chunk, msg)
+            local pat = chunk:gsub('([%^%$%(%)%%%.%[%]%*%+%-%?])', '%%%1')
+            if not s:find('[{,]%s*' .. pat .. '%s*[,}]') then
+                error((msg or 'expected entry not found') ..
+                    ': ' .. chunk .. '\nin: ' .. s, 2)
+            end
+        end
+
+        local function assert_order(s, chunk1, chunk2, msg)
+            local pat1 = chunk1:gsub('([%^%$%(%)%%%.%[%]%*%+%-%?])', '%%%1')
+            local pat2 = chunk2:gsub('([%^%$%(%)%%%.%[%]%*%+%-%?])', '%%%1')
+            local p1, p2 = s:find(pat1), s:find(pat2)
+            if not p1 or not p2 or p1 >= p2 then
+                error((msg or 'expected order') .. ': ' .. chunk1 ..
+                    ' before ' .. chunk2 .. '\nin: ' .. s, 2)
+            end
+        end
+
+        local function assert_contains(s, chunk, msg)
+            local pat = chunk:gsub('([%^%$%(%)%%%.%[%]%*%+%-%?])', '%%%1')
+            if not s:find(pat) then
+                error((msg or 'expected substring not found') ..
+                    ': ' .. chunk .. '\nin: ' .. s, 2)
+            end
+        end
+
+        -- ---------- empty / trivial ----------
+        assert_eq_s(pcall_tostring({}), '{}')
+
+        -- ---------- arrays: deterministic, exact match ----------
+        assert_eq_s(pcall_tostring({1, 2, 3}), '{1, 2, 3}')
+        assert_eq_s(pcall_tostring({'a', 'b', 'c'}), "{'a', 'b', 'c'}")
+        assert_eq_s(pcall_tostring({true, false}), '{true, false}')
+        assert_eq_s(pcall_tostring({{1, 2}, {3, 4}}), '{{1, 2}, {3, 4}}')
+        assert_eq_s(pcall_tostring({1, {2, 3}, 4}), '{1, {2, 3}, 4}')
+
+        -- ---------- maps: chunk-based ----------
+        do
+            local s = pcall_tostring({a = 1, b = 2})
+            assert_entry(s, 'a = 1')
+            assert_entry(s, 'b = 2')
+        end
+
+        do
+            local s = pcall_tostring({only = 'x'})
+            assert_entry(s, "only = 'x'")
+        end
+
+        -- non-identifier string key -> bracketed & quoted
+        do
+            local s = pcall_tostring({['foo-bar'] = 1})
+            assert_entry(s, "['foo-bar'] = 1")
+        end
+
+        -- string key containing a single quote -> escaped
+        do
+            local s = pcall_tostring({["it's"] = 1})
+            assert_entry(s, "['it\\'s'] = 1")
+        end
+
+        -- numeric key -> [n]
+        do
+            local s = pcall_tostring({[5] = 'five'})
+            assert_entry(s, "[5] = 'five'")
+        end
+
+        -- float key (non-integral, so it is not normalised to an integer)
+        do
+            local s = pcall_tostring({[1.5] = 'x'})
+            assert_entry(s, "[1.5] = 'x'")
+        end
+
+        -- boolean keys -> [true] / [false]
+        do
+            local s = pcall_tostring({[true] = 'yes', [false] = 'no'})
+            assert_entry(s, "[true] = 'yes'")
+            assert_entry(s, "[false] = 'no'")
+        end
+
+        -- mixed array + string key -> not isarray -> map path with [i] keys
+        do
+            local t = {1, 2, x = 'y'}
+            local s = pcall_tostring(t)
+            assert_entry(s, '[1] = 1')
+            assert_entry(s, '[2] = 2')
+            assert_entry(s, "x = 'y'")
+        end
+
+        -- ---------- string escaping ----------
+        do
+            local s = pcall_tostring({a = "it's"})
+            assert_entry(s, "a = 'it\\'s'")
+        end
+
+        do
+            local s = pcall_tostring({a = 'line1\nline2'})
+            assert_entry(s, "a = 'line1\\nline2'")
+        end
+
+        do
+            -- strings are single-quote wrapped, so double quotes are not escaped
+            local s = pcall_tostring({a = 'has "dq"'})
+            assert_entry(s, 'a = \'has "dq"\'')
+        end
+
+        -- ---------- boolean / number values ----------
+        do
+            local s = pcall_tostring({t = true, f = false})
+            assert_entry(s, 't = true')
+            assert_entry(s, 'f = false')
+        end
+
+        do
+            local s = pcall_tostring({i = 1, f = 1.5})
+            assert_entry(s, 'i = 1')
+            assert_entry(s, 'f = 1.5')
+        end
+
+        -- ---------- omitQuotes / quoteStrings ----------
+        do
+            local s = pcall_tostring({a = 'x'}, {omitQuotes = true})
+            assert_entry(s, 'a = x')
+        end
+
+        do
+            local s = pcall_tostring({a = 'x'}, {quoteStrings = false})
+            assert_entry(s, 'a = x')
+        end
+
+        -- ---------- indent = true ----------
+        do
+            local s = pcall_tostring({a = 1, b = 2}, {indent = true})
+            assert(s:sub(1, 1) == '{', 'should start with {')
+            assert(s:sub(-1) == '}', 'should end with }')
+            assert(s:find('\n') ~= nil, 'indented output should span lines')
+            assert_entry(s, 'a = 1')
+            assert_entry(s, 'b = 2')
+        end
+
+        -- ---------- indent = true, nested ----------
+        do
+            local s = pcall_tostring({a = {b = 1}}, {indent = true})
+            assert_contains(s, 'a = {')
+            assert_contains(s, 'b = 1')
+        end
+
+        -- ---------- indent = number (starting level) ----------
+        do
+            local s = pcall_tostring({a = 1}, {indent = 2})
+            -- indent goes 2 -> 3, so entry is prefixed by 3 * 4 = 12 spaces
+            -- and the closing brace gets (indent - 1) * 4 = 8 spaces
+            assert_eq_s(s, '{\n            a = 1,\n        }')
+        end
+
+        -- ---------- indentString ----------
+        do
+            local s = pcall_tostring({a = 1}, {indent = true, indentString = '\t'})
+            assert_eq_s(s, '{\n\ta = 1,\n}')
+        end
+
+        do
+            local s = pcall_tostring({a = 1}, {indent = true, indentString = '--'})
+            assert_eq_s(s, '{\n--a = 1,\n}')
+        end
+
+        -- ---------- positional separator (backward compat) ----------
+        -- accepted; note: opts.separator is currently set but never used by
+        -- the map rendering, so we only assert it does not crash
+        do
+            local s = pcall_tostring({a = 1}, ', ')
+            assert_entry(s, 'a = 1')
+        end
+
+        -- ---------- auto indent toggle (long single-line output) ----------
+        do
+            -- short: stays inline (no newline)
+            local short = pcall_tostring({a = 1, b = 2})
+            assert(short:find('\n') == nil, 'expected inline output')
+
+            -- long: single-line exceeds the internal 160-char threshold,
+            -- so table.tostring switches to indented multi-line output
+            local t = {}
+            for i = 1, 40 do t['key' .. i] = i end
+            local long = pcall_tostring(t)
+            assert(long:find('\n') ~= nil, 'expected auto-indent for long output')
+        end
+
+        -- ---------- sort options ----------
+        do
+            -- sort = false: order not guaranteed, all entries must appear
+            local s = pcall_tostring({b = 1, a = 2}, {sort = false})
+            assert_entry(s, 'a = 2')
+            assert_entry(s, 'b = 1')
+        end
+
+        do
+            -- sort = {'key'}: alphabetical by key
+            local s = pcall_tostring({b = 1, a = 2}, {sort = {'key'}})
+            assert_order(s, 'a = 2', 'b = 1')
+        end
+
+        do
+            -- sort = {'type', 'key'}: by the VALUE's type, then by key
+            -- numbers come before strings
+            local s = pcall_tostring({s = 'str', n = 1}, {sort = {'type', 'key'}})
+            assert_order(s, 'n = 1', "s = 'str'")
+        end
+
+        -- ---------- __tostring metamethod ----------
+        do
+            local mt = {__tostring = function() return 'CUSTOM' end}
+            assert_eq_s(pcall_tostring(setmetatable({}, mt)), 'CUSTOM')
+        end
+
+        do
+            local mt = {__tostring = function() return 'INNER' end}
+            local inner = setmetatable({}, mt)
+            local s = pcall_tostring({x = inner})
+            assert_entry(s, 'x = INNER')
+        end
+
+        -- ---------- maxLevel ----------
+        do
+            -- top-level itself is cut
+            local s = pcall_tostring({a = 1}, {maxLevel = 1})
+            assert(s:find('too deep') ~= nil, 'got: ' .. s)
+        end
+
+        do
+            -- nested is cut
+            local s = pcall_tostring({a = {b = 1}}, {maxLevel = 2})
+            assert(s:find('too deep') ~= nil, 'got: ' .. s)
+        end
+
+        do
+            -- deep nesting but generous maxLevel: no cutoff
+            local s = pcall_tostring({a = {b = 1}}, {maxLevel = 10})
+            assert(s:find('too deep') == nil, 'got: ' .. s)
+        end
+
+        -- ---------- cycles ----------
+        do
+            local t = {}; t.self = t
+            local s = pcall_tostring(t)
+            assert(s:find('already visited') ~= nil, 'got: ' .. s)
+        end
+    end
+
     print(debug.getinfo(1, 'S').source, 'tests passed')
 end
