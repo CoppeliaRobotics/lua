@@ -3,26 +3,41 @@ return function(expr, opts)
 
     opts = opts or {}
 
-    local sceneContext = '(current scene)'
+    local sceneContext, objectContext = '(current scene)', '?'
     local loadedOneScene = false
     local numHits = 0
 
+    local function reportHit(matchContext)
+        if sceneContext then
+            print(sceneContext .. ':')
+            sceneContext = nil
+        end
+        if objectContext then
+            print('    ' .. objectContext .. ':')
+            objectContext = nil
+        end
+        print('        ' .. matchContext)
+        numHits = numHits + 1
+    end
+
     local function processCurrentScene()
-        for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
-            local objectContext = obj:getName {mode = 'fullPath'}
-            local matches = string.grep(obj.script.code, expr)
-            for _, match in ipairs(matches) do
-                if sceneContext then
-                    print(sceneContext .. ':')
-                    sceneContext = nil
+        if type(expr) == 'string' then
+            for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
+                objectContext = obj:getName {mode = 'fullPath'}
+                local matches = string.grep(obj.script.code, expr)
+                for _, match in ipairs(matches) do
+                    reportHit('line ' .. match.line .. ': ' .. match.lineText)
                 end
-                if objectContext then
-                    print('    ' .. objectContext .. ':')
-                    objectContext = nil
-                end
-                print('        line ' .. match.line .. ': ' .. match.lineText)
             end
-            numHits = numHits + #matches
+        end
+
+        if isbuffer(expr) then
+            for _, obj in ipairs(sim.scene.objects) do
+                if obj.dna == expr then
+                    objectContext = obj:getName {mode = 'fullPath'}
+                    reportHit('object\'s "dna" property matches')
+                end
+            end
         end
     end
 
