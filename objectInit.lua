@@ -230,24 +230,24 @@ end
 
 function objInit.forceSensor(methodName)
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'filterType', type = 'int', default = 0},
-        {name = 'filterSampleSize', type = 'int', default = 1},
-        {name = 'consecutiveViolationsToTrigger', type = 'int', default = 1},
         {name = 'size', type = 'float', default = 0.01},
-        {name = 'forceThreshold', type = 'float', default = 5.0},
-        {name = 'torqueThreshold', type = 'float', default = 5.0},
+        {name = 'dynamics.filter', type = 'int', default = 0},
+        {name = 'dynamics.filterSampleSize', type = 'int', default = 1},
+        {name = 'dynamics.consecutiveViolationsToTrigger', type = 'int', default = 1},
+        {name = 'dynamics.forceThreshold', type = 'float', default = 5.0},
+        {name = 'dynamics.torqueThreshold', type = 'float', default = 5.0},
     }, objInit.p)
     local options = 0
     if objInit.p.forceThreshold then options = options + 1 end
     if objInit.p.torqueThreshold then options = options + 2 end
     local intParams = table.rep(0, 5)
-    intParams[1] = objInit.extractValueOrDefault('filterType')
-    intParams[2] = objInit.extractValueOrDefault('filterSampleSize')
-    intParams[3] = objInit.extractValueOrDefault('consecutiveViolationsToTrigger')
+    intParams[1] = objInit.extractValueOrDefault('dynamics.filter')
+    intParams[2] = objInit.extractValueOrDefault('dynamics.filterSampleSize')
+    intParams[3] = objInit.extractValueOrDefault('dynamics.consecutiveViolationsToTrigger')
     local floatParams = table.rep(0., 5)
     floatParams[1] = objInit.extractValueOrDefault('size')
-    floatParams[2] = objInit.extractValueOrDefault('forceThreshold')
-    floatParams[3] = objInit.extractValueOrDefault('torqueThreshold')
+    floatParams[2] = objInit.extractValueOrDefault('dynamics.forceThreshold')
+    floatParams[3] = objInit.extractValueOrDefault('dynamics.torqueThreshold')
     local retVal = sim.Object(sim1.createForceSensor(options, intParams, floatParams))
     retVal:setProperties(objInit.p)
     return retVal
@@ -452,17 +452,17 @@ function objInit.proximitySensor(methodName)
         {name = 'backFaceDetection', type = 'bool', default = true},
         {name = 'exactMode', type = 'bool', default = true},
         {name = 'randomizedDetection', type = 'bool', default = false},
-        {name = 'volume_faces', type = 'table', item_type = 'int', size = 2, default = {32, 1}},
-        {name = 'volume_subdivisions', type = 'table', item_type = 'int', size = 2, default = {1, 16}},
-        {name = 'volume_offset', type = 'float', default = 0.0},
-        {name = 'volume_range', type = 'float', default = 0.2},
-        {name = 'volume_angle', type = 'float', default = 90.0 * math.pi / 180.0},
+        {name = 'volume.faces', type = 'table', item_type = 'int', size = 2, default = {32, 1}},
+        {name = 'volume.subdivisions', type = 'table', item_type = 'int', size = 2, default = {1, 16}},
+        {name = 'volume.offset', type = 'float', default = 0.0},
+        {name = 'volume.range', type = 'float', default = 0.2},
+        {name = 'volume.angle', type = 'float', default = 90.0 * math.pi / 180.0},
         {name = 'pointSize', type = 'float', default = 0.005},
         {name = 'angleThreshold', type = 'float', nullable = true},
         {name = 'closeThreshold', type = 'float', nullable = true},
-        {name = 'volume_xSize', type = 'table', item_type = 'float', size = 2, default = {0.2, 0.4}},
-        {name = 'volume_ySize', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
-        {name = 'volume_radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
+        {name = 'volume.xSize', type = 'table', item_type = 'float', size = 2, default = {0.2, 0.4}},
+        {name = 'volume.ySize', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
+        {name = 'volume.radius', type = 'table', item_type = 'float', size = 2, default = {0.1, 0.2}},
     }, objInit.p)
     local sensorType = objInit.extractValueOrDefault('proximitySensor.type')
     local options = 0
@@ -474,27 +474,27 @@ function objInit.proximitySensor(methodName)
         + v(32, not objInit.extractValueOrDefault('exactMode'))
         + v(512, objInit.extractValueOrDefault('randomizedDetection'))
     local intParams = table.rep(0, 8)
-    local volume_faces = objInit.extractValueOrDefault('volume_faces')
+    local volume_faces = objInit.extractValueOrDefault('volume.faces')
     intParams[1] = volume_faces[1]
     intParams[2] = volume_faces[2]
-    local volume_subdivisions = objInit.extractValueOrDefault('volume_subdivisions')
+    local volume_subdivisions = objInit.extractValueOrDefault('volume.subdivisions')
     intParams[3] = volume_subdivisions[1]
     intParams[4] = volume_subdivisions[2]
     intParams[5] = 1
     intParams[6] = 1
     local floatParams = table.rep(0., 15)
-    floatParams[1] = objInit.extractValueOrDefault('volume_offset')
-    floatParams[2] = objInit.extractValueOrDefault('volume_range')
-    local xSize = objInit.extractValueOrDefault('volume_xSize')
-    local ySize = objInit.extractValueOrDefault('volume_ySize')
+    floatParams[1] = objInit.extractValueOrDefault('volume.offset')
+    floatParams[2] = objInit.extractValueOrDefault('volume.range')
+    local xSize = objInit.extractValueOrDefault('volume.xSize')
+    local ySize = objInit.extractValueOrDefault('volume.ySize')
     floatParams[3] =  xSize[1]
     floatParams[4] =  ySize[1]
     floatParams[5] =  xSize[2]
     floatParams[6] =  ySize[2]
-    local radius = objInit.extractValueOrDefault('volume_radius')
+    local radius = objInit.extractValueOrDefault('volume.radius')
     floatParams[8] = radius[1]
     floatParams[9] = radius[2]
-    floatParams[10] = objInit.extractValueOrDefault('volume_angle')
+    floatParams[10] = objInit.extractValueOrDefault('volume.angle')
     floatParams[11] = objInit.extractValueOrDefault('angleThreshold', nil)
     if floatParams[11] then
         options = options + 64
@@ -608,7 +608,7 @@ function objInit.shape(methodName)
         {name = 'text', type = 'table', nullable = true},
         {name = 'shadingAngle', type = 'float', default = 0.0},
         {name = 'culling', type = 'bool', default = false},
-        {name = 'dynamic', type = 'bool', default = false},
+        {name = 'dynamics.dynamic', type = 'bool', default = false},
         {name = 'showEdges', type = 'bool', default = false},
         {name = 'color.diffuse', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
         {name = 'color.specular', type = 'color', default = Color:rgb(0.2, 0.2, 0.2)},
@@ -826,7 +826,7 @@ function objInit.shape(methodName)
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         retVal.applyShadingAngle = shadingAngle
     end
-    retVal.dynamic = objInit.extractValueOrDefault('dynamic', false)
+    retVal.dynamic = objInit.extractValueOrDefault('dynamics.dynamic', false)
     if objInit.extractValueOrDefault('showEdges') then
         retVal:applyShowEdges(true)
     end
