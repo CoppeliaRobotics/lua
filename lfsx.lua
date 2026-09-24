@@ -204,8 +204,12 @@ function lfs.walk(dir, fn, opts)
 
     for _, entry in ipairs(entries) do
         local path = lfs.pathjoin(dir, entry)
-        local attr = opts.follow and lfs.attributes(path)
-                     or lfs.symlinkattributes(path)
+        local attr
+        if opts.follow or not lfs.symlinkattributes then
+            attr = lfs.attributes(path)
+        else
+            attr = lfs.symlinkattributes(path)
+        end
         local mode = attr and attr.mode
 
         if mode == 'directory' then
@@ -233,8 +237,12 @@ function lfs.iwalk(root, opts)
         if opts.sort then table.sort(entries) end
         for _, entry in ipairs(entries) do
             local path = lfs.pathjoin(dir, entry)
-            local attr = opts.follow and lfs.attributes(path)
-                         or lfs.symlinkattributes(path)
+            local attr
+            if opts.follow or not lfs.symlinkattributes then
+                attr = lfs.attributes(path)
+            else
+                attr = lfs.symlinkattributes(path)
+            end
             local mode = attr and attr.mode
             if mode == 'directory' then
                 walk(path)
