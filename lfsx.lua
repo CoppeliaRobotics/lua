@@ -181,6 +181,30 @@ function lfs.realpath(path)
     end
 end
 
+local function getWalkAttributes(path, follow)
+    path = lfs.pathsanitize(path)
+
+    if follow then
+        return lfs.attributes(path)
+    end
+
+    if not lfs.symlinkattributes then
+        return nil, "symlinkattributes is unavailable; cannot honor follow=false"
+    end
+
+    local mode, err = lfs.symlinkattributes(path, "mode")
+    if not mode then
+        return nil, err
+    end
+
+    if mode == "link" then
+        -- Do not retrieve target attributes or follow the link.
+        return {mode = mode}
+    end
+
+    return lfs.attributes(path)
+end
+
 --- Recursively visit every file under `dir`.
 -- @param dir  string  starting directory
 -- @param fn   function(path, attr) called for each regular file
@@ -204,13 +228,18 @@ function lfs.walk(dir, fn, opts)
 
     for _, entry in ipairs(entries) do
         local path = lfs.pathjoin(dir, entry)
-        local attr
-        if opts.follow or not lfs.symlinkattributes then
-            attr = lfs.attributes(path)
-        else
-            attr = lfs.symlinkattributes(path)
+        local ok, attr, err = pcall(getWalkAttributes, path, opts.follow)
+
+        if not ok then
+            -- On an exception, the error message is in attr.
+            error(("Cannot inspect %q: %s"):format(path, tostring(attr)), 0)
         end
-        local mode = attr and attr.mode
+
+        if not attr then
+            error(("Cannot inspect %q: %s"):format(path, tostring(err)), 0)
+        end
+
+        local mode = attr.mode
 
         if mode == 'directory' then
             if opts.onDir then opts.onDir(path) end
@@ -237,13 +266,18 @@ function lfs.iwalk(root, opts)
         if opts.sort then table.sort(entries) end
         for _, entry in ipairs(entries) do
             local path = lfs.pathjoin(dir, entry)
-            local attr
-            if opts.follow or not lfs.symlinkattributes then
-                attr = lfs.attributes(path)
-            else
-                attr = lfs.symlinkattributes(path)
+            local ok, attr, err = pcall(getWalkAttributes, path, opts.follow)
+
+            if not ok then
+                -- On an exception, the error message is in attr.
+                error(("Cannot inspect %q: %s"):format(path, tostring(attr)), 0)
             end
-            local mode = attr and attr.mode
+
+            if not attr then
+                error(("Cannot inspect %q: %s"):format(path, tostring(err)), 0)
+            end
+
+            local mode = attr.mode
             if mode == 'directory' then
                 walk(path)
             elseif mode == 'file' then
