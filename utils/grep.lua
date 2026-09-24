@@ -1,16 +1,23 @@
 return function(expr, opts)
     local sim = require 'sim-2'
+
     opts = opts or {}
-    assert(opts.files or opts.dirs, 'at least files or dirs must be set')
+
+    local sceneContext = '(current scene)'
     local loadedOneScene = false
     local numHits = 0
-    local function processScene(scenePath)
+
+    local function loadAndProcessScene(scenePath)
         if opts.verbose then
             sim.app:logInfo('Loading scene ' .. scenePath .. '...')
         end
         sim.app:loadScene(scenePath, {createNew = not loadedOneScene})
         loadedOneScene = true
-        local sceneContext = scenePath
+        sceneContext = scenePath
+        processCurrentScene()
+    end
+
+    local function processCurrentScene()
         for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
             local objectContext = obj:getName {mode = 'fullPath'}
             local matches = string.grep(obj.script.code, expr)
@@ -32,7 +39,7 @@ return function(expr, opts)
     if opts.files then
         assert(type(opts.files) == 'table', 'files must be a table')
         for _, file in ipairs(opts.files) do
-            processScene(file)
+            loadAndProcessScene(file)
         end
     end
 
@@ -42,10 +49,14 @@ return function(expr, opts)
         for _, dir in ipairs(opts.dirs) do
             for path, attr in lfsx.iwalk(dir) do
                 if path:endswith '.ttt' then
-                    processScene(path)
+                    loadAndProcessScene(path)
                 end
             end
         end
+    end
+
+    if not opts.files and not opts.dirs then
+        processCurrentScene()
     end
 
     print('(' .. numHits .. ' hits)')
