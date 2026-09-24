@@ -48,7 +48,10 @@ return function(expr, opts)
         local lfsx = require 'lfsx'
         for _, dir in ipairs(opts.dirs) do
             for path, attr in lfsx.iwalk(dir) do
-                if path:endswith '.ttt' then
+                if false
+                    or (opts.scenes ~= false and (path:endswith '.ttt' or path:endswith '.simscene.xml'))
+                    or (opts.models ~= false and (path:endswith '.ttm' or path:endswith '.simmodel.xml'))
+                then
                     loadAndProcessScene(path)
                 end
             end
