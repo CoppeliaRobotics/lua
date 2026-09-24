@@ -7,16 +7,6 @@ return function(expr, opts)
     local loadedOneScene = false
     local numHits = 0
 
-    local function loadAndProcessScene(scenePath)
-        if opts.verbose then
-            sim.app:logInfo('Loading scene ' .. scenePath .. '...')
-        end
-        sim.app:loadScene(scenePath, {createNew = not loadedOneScene})
-        loadedOneScene = true
-        sceneContext = scenePath
-        processCurrentScene()
-    end
-
     local function processCurrentScene()
         for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
             local objectContext = obj:getName {mode = 'fullPath'}
@@ -34,6 +24,16 @@ return function(expr, opts)
             end
             numHits = numHits + #matches
         end
+    end
+
+    local function loadAndProcessScene(scenePath)
+        if opts.verbose then
+            sim.app:logInfo('Loading scene ' .. scenePath .. '...')
+        end
+        sim.app:loadScene(scenePath, {createNew = not loadedOneScene})
+        loadedOneScene = true
+        sceneContext = scenePath
+        processCurrentScene()
     end
 
     if opts.files then
