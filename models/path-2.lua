@@ -171,6 +171,7 @@ function pathModel.update(opt)
         pathModel.ctrlPointConfig = pathModel.getCtrlPointConfig()
         pathModel.createExtrusionShape()
     end
+    return pathModel.extrusionShape
 end
 
 function pathModel.createExtrusionShape()

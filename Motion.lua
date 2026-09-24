@@ -945,35 +945,11 @@ function TimeOptimalTrajectory:generate(params)
         {name = 'boundaryCondition', type = 'string', default = 'not-a-knot'},
     }, params)
 
-    local maxVel = params.maxVel:data()
-    local maxAccel = params.maxAccel:data()
-
-    local minVel =
-        params.minVel and
-        params.minVel:data() or
-        negateData(maxVel)
-
-    local minAccel =
-        params.minAccel and
-        params.minAccel:data() or
-        negateData(maxAccel)
-
-    -- Direct construction instead of horzcat().
-    local velocityLimits = {}
-    local accelerationLimits = {}
-
-    for i = 1, dof do
-        velocityLimits[i] = {
-            minVel[i],
-            maxVel[i]
-        }
-
-        accelerationLimits[i] = {
-            minAccel[i],
-            maxAccel[i]
-        }
-    end
-
+    local pM = params.path
+    local minVel = params.minVel or params.maxVel * -1.0
+    local minAccel = params.minAccel or params.maxAccel * -1.0
+    local mmvM = minVel:horzcat(params.maxVel)
+    local mmaM = minAccel:horzcat(params.maxAccel)
     sim.self:setStepping(true)
 
     local code = [=[
@@ -996,117 +972,55 @@ def cb(req):
         resp = {'success': False, 'error': str(e)}
     return resp
 
+def rs(a):
+    flattened = [item for sublist in a for item in sublist]
+    reshaped_matrix = [flattened[i:i + 2] for i in range(0, len(flattened), 2)]
+    return reshaped_matrix
+
 def cbb(req):
-    coefficients = ta.SplineInterpolator(
-        req['ss_waypoints'],
-        req['waypoints'],
-        req.get('bc_type', 'not-a-knot')
-    )
-
-    pc_vel = constraint.JointVelocityConstraint(
-        req['velocity_limits']
-    )
-
-    pc_acc = constraint.JointAccelerationConstraint(
-        req['acceleration_limits'],
-        discretization_scheme=constraint.DiscretizationType.Interpolation
-    )
-
-    instance = algo.TOPPRA(
-        [pc_vel, pc_acc],
-        coefficients,
-        solver_wrapper='seidel'
-    )
-
+    coefficients = ta.SplineInterpolator(req['ss_waypoints'], req['waypoints'], req.get('bc_type', 'not-a-knot'))
+    pc_vel = constraint.JointVelocityConstraint(req['velocity_limits'])
+    pc_acc = constraint.JointAccelerationConstraint(req['acceleration_limits'], discretization_scheme=constraint.DiscretizationType.Interpolation)
+    instance = algo.TOPPRA([pc_vel, pc_acc], coefficients, solver_wrapper='seidel')
     jnt_traj = instance.compute_trajectory(0, 0)
-
     duration = jnt_traj.duration
     n = coefficients.dof
-
-    resp = dict(
-        qs=[[] for _ in range(n)],
-        qds=[[] for _ in range(n)],
-        qdds=[[] for _ in range(n)]
-    )
-
-    ts = np.linspace(
-        0,
-        duration,
-        req.get('samples', 100)
-    )
-
-    # Evaluate each quantity only once:
-    qs = jnt_traj.eval(ts)
-    qds = jnt_traj.evald(ts)
-    qdds = jnt_traj.evaldd(ts)
-
+    resp = dict(qs=[[]]*n, qds=[[]]*n, qdds=[[]]*n)
+    ts = np.linspace(0, duration, req.get('samples', 100))
     for i in range(n):
-        resp['qs'][i] = qs[:, i].tolist()
-        resp['qds'][i] = qds[:, i].tolist()
-        resp['qdds'][i] = qdds[:, i].tolist()
-
+        resp['qs'][i] = jnt_traj.eval(ts).tolist()
+        resp['qds'][i] = jnt_traj.evald(ts).tolist()
+        resp['qdds'][i] = jnt_traj.evaldd(ts).tolist()
     resp['ts'] = ts.tolist()
-
     return resp
 ]=]
 
+    -- Reuse or create the Python script
     if not self._script then
-        self._script =
-            sim.app:createObject({
-                type = 'script',
-                ['script.type'] = 'addon',
-                code = code,
-                language = 'python'
-            })
-
-        self._script.addOnMenuPath =
-            'Motion:TimeOptimalTrajectory'
-
+        self._script = sim.app:createObject({type = 'script', ['script.type'] = 'addon', code = code, language = 'python'})
+        self._script.addOnMenuPath = 'Motion:TimeOptimalTrajectory'
         self._script:init()
     end
 
     local toSend = {
         samples = params.samples,
         ss_waypoints = params.pathLengths:data(),
-
-        -- This conversion is only needed at the Lua/Python boundary:
         waypoints = params.path.T:totable(),
-
-        velocity_limits = velocityLimits,
-        acceleration_limits = accelerationLimits,
-
+        velocity_limits = mmvM:totable(),
+        acceleration_limits = mmaM:totable(),
         bc_type = params.boundaryCondition,
     }
-
-    local success, result =
-        pcall(
-            self._script.callFunction,
-            self._script,
-            'cb',
-            toSend
-        )
-
+    local s, r = pcall(self._script.callFunction, self._script, 'cb', toSend)
     sim.self:setStepping(false)
 
-    if success ~= true then
-        error(
-            'Failed calling TOPPRA via the generated Python script. ' ..
-            'Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' ..
-            sim.app.defaultPython ..
-            ' -m pip install pyzmq cbor2 psutil numpy toppra.'
-        )
+    if s ~= true then
+        error('Failed calling TOPPRA via the generated Python script. Make sure Python is configured for CoppeliaSim, and toppra as well as numpy are installed: ' .. sim.app.defaultPython .. ' -m pip install pyzmq cbor2 psutil numpy toppra.')
     end
 
-    if not result.success then
-        error(
-            'toppra failed with following message: ' ..
-            result.error
-        )
+    if not r.success then
+        error('toppra failed with following message: ' .. r.error)
     end
-
-    return
-        simEigen.Matrix(result.qs[1]).T,
-        simEigen.Matrix(#result.ts, 1, result.ts)
+    return simEigen.Matrix(r.qs[1]).T, simEigen.Matrix(#r.ts, 1, r.ts)
 end
 
 
