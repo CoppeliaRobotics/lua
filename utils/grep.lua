@@ -21,7 +21,7 @@ return function(expr, opts)
     end
 
     local function processObject(obj)
-        local matches = string.grep(obj.script.code, expr)
+        local matches = string.grep(obj.code, expr)
         for _, match in ipairs(matches) do
             reportHit('line ' .. match.line .. ': ' .. match.lineText)
         end
@@ -34,7 +34,7 @@ return function(expr, opts)
 
             for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
                 objectContext = obj:getName {mode = 'fullPath'}
-                processObject(obj)
+                processObject(obj.script)
             end
         end
 
