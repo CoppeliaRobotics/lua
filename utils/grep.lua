@@ -20,14 +20,21 @@ return function(expr, opts)
         numHits = numHits + 1
     end
 
+    local function processObject(obj)
+        local matches = string.grep(obj.script.code, expr)
+        for _, match in ipairs(matches) do
+            reportHit('line ' .. match.line .. ': ' .. match.lineText)
+        end
+    end
+
     local function processCurrentScene()
         if type(expr) == 'string' then
+            objectContext = 'scene.mainScript'
+            processObject(sim.scene.mainScript)
+
             for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
                 objectContext = obj:getName {mode = 'fullPath'}
-                local matches = string.grep(obj.script.code, expr)
-                for _, match in ipairs(matches) do
-                    reportHit('line ' .. match.line .. ': ' .. match.lineText)
-                end
+                processObject(obj)
             end
         end
 
