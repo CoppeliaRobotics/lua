@@ -36,7 +36,7 @@ return function(expr, opts)
         end
     end
 
-    local function processCurrentScene(fileType)
+    local function processCurrentScene()
         processObject(sim.scene.mainScript, 'scene.mainScript')
         for _, obj in ipairs(sim.scene.objects) do
             processObject(obj, obj:getName {mode = 'fullPath'})
