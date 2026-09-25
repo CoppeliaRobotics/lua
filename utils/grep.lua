@@ -29,8 +29,10 @@ return function(expr, opts)
 
     local function processCurrentScene()
         if type(expr) == 'string' then
-            objectContext = 'scene.mainScript'
-            processObject(sim.scene.mainScript)
+            if sim.scene.mainScript then -- for models opened as scene, mainScript is not set
+                objectContext = 'scene.mainScript'
+                processObject(sim.scene.mainScript)
+            end
 
             for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
                 objectContext = obj:getName {mode = 'fullPath'}
