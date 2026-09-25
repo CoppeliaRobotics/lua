@@ -20,34 +20,37 @@ return function(expr, opts)
         numHits = numHits + 1
     end
 
-    local function grepInScript(obj)
-        local matches = string.grep(obj.code, expr)
-        for _, match in ipairs(matches) do
-            reportHit('line ' .. match.line .. ': ' .. match.lineText)
+    local function processObject(obj)
+        if obj == sim.scene.mainScript then
+            objectContext = 'scene.mainScript'
+        elseif obj.getName then
+            objectContext = obj:getName {mode = 'fullPath'}
+        else
+            objectContext = '?'
+        end
+
+        if type(expr) == 'string' and (obj.type == 'script' or obj.type == 'scriptObject') then
+            local targetObj = obj.type == 'scriptObject' and obj.script or obj
+            local matches = string.grep(obj.code, expr)
+            for _, match in ipairs(matches) do
+                reportHit('line ' .. match.line .. ': ' .. match.lineText)
+            end
+        end
+
+        if isbuffer(expr) and obj.dna == expr then
+            reportHit('object\'s "dna" property matches')
+        end
+    end
+
+    local function processObjects(objs)
+        for _, obj in ipairs(objs) do
+            processObject(obj)
         end
     end
 
     local function processCurrentScene()
-        if type(expr) == 'string' then
-            if sim.scene.mainScript then -- for models opened as scene, mainScript is not set
-                objectContext = 'scene.mainScript'
-                grepInScript(sim.scene.mainScript)
-            end
-
-            for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
-                objectContext = obj:getName {mode = 'fullPath'}
-                grepInScript(obj.script)
-            end
-        end
-
-        if isbuffer(expr) then
-            for _, obj in ipairs(sim.scene.objects) do
-                if obj.dna == expr then
-                    objectContext = obj:getName {mode = 'fullPath'}
-                    reportHit('object\'s "dna" property matches')
-                end
-            end
-        end
+        local objs = table.add({sim.scene.mainScript}, sim.scene.objects)
+        processObjects(objs)
     end
 
     local function loadAndProcessScene(scenePath)
@@ -58,6 +61,18 @@ return function(expr, opts)
         loadedOneScene = true
         sceneContext = scenePath
         processCurrentScene()
+    end
+
+    local function loadAndProcessModel(modelPath)
+        if opts.verbose then
+            sim.app:logInfo('Loading model ' .. modelPath .. '...')
+        end
+        sim.app:loadScene(app.paths.system .. '/dfltscn.ttt', {createNew = not loadedOneScene})
+        local model = sim.scene:loadModel(modelPath)
+        loadedOneScene = true
+        sceneContext = modelPath
+        processCurrentScene()
+        model:removeModel()
     end
 
     if opts.files then
@@ -72,11 +87,10 @@ return function(expr, opts)
         local lfsx = require 'lfsx'
         for _, dir in ipairs(opts.dirs) do
             for path, attr in lfsx.iwalk(dir) do
-                if false
-                    or (opts.scenes ~= false and (path:endswith '.ttt' or path:endswith '.simscene.xml'))
-                    or (opts.models ~= false and (path:endswith '.ttm' or path:endswith '.simmodel.xml'))
-                then
+                if opts.scenes ~= false and (path:endswith '.ttt' or path:endswith '.simscene.xml') then
                     loadAndProcessScene(path)
+                elseif opts.models ~= false and (path:endswith '.ttm' or path:endswith '.simmodel.xml') then
+                    loadAndProcessModel(path)
                 end
             end
         end
