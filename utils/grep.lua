@@ -20,7 +20,7 @@ return function(expr, opts)
         numHits = numHits + 1
     end
 
-    local function processObject(obj)
+    local function grepInScript(obj)
         local matches = string.grep(obj.code, expr)
         for _, match in ipairs(matches) do
             reportHit('line ' .. match.line .. ': ' .. match.lineText)
@@ -31,12 +31,12 @@ return function(expr, opts)
         if type(expr) == 'string' then
             if sim.scene.mainScript then -- for models opened as scene, mainScript is not set
                 objectContext = 'scene.mainScript'
-                processObject(sim.scene.mainScript)
+                grepInScript(sim.scene.mainScript)
             end
 
             for _, obj in ipairs(sim.scene:getObjects{types={'scriptObject'}}) do
                 objectContext = obj:getName {mode = 'fullPath'}
-                processObject(obj.script)
+                grepInScript(obj.script)
             end
         end
 
