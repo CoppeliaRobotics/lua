@@ -826,7 +826,10 @@ function objInit.shape(methodName)
         local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         retVal.applyShadingAngle = shadingAngle
     end
-    retVal.dynamic = objInit.extractValueOrDefault('dynamics.dynamic', false)
+    if retVal.dynamics == nil then
+        retVal.dynamics = {}
+    end
+    retVal.dynamics.dynamic = objInit.extractValueOrDefault('dynamics.dynamic', false)
     if objInit.extractValueOrDefault('showEdges') then
         retVal:applyShowEdges(true)
     end
