@@ -20,13 +20,11 @@ return function(expr, opts)
         numHits = numHits + 1
     end
 
-    local function processObject(obj)
-        if obj == sim.scene.mainScript then
-            objectContext = 'scene.mainScript'
-        elseif obj.getName then
-            objectContext = obj:getName {mode = 'fullPath'}
-        else
-            objectContext = '?'
+    local function processObject(obj, ctx)
+        objectContext = ctx
+
+        if isbuffer(expr) and obj.dna == expr then
+            reportHit('object\'s "dna" property matches')
         end
 
         if type(expr) == 'string' and (obj.type == 'script' or obj.type == 'scriptObject') then
@@ -36,21 +34,13 @@ return function(expr, opts)
                 reportHit('line ' .. match.line .. ': ' .. match.lineText)
             end
         end
-
-        if isbuffer(expr) and obj.dna == expr then
-            reportHit('object\'s "dna" property matches')
-        end
     end
 
-    local function processObjects(objs)
-        for _, obj in ipairs(objs) do
-            processObject(obj)
+    local function processCurrentScene(fileType)
+        processObject(sim.scene.mainScript, 'scene.mainScript')
+        for _, obj in ipairs(sim.scene.objects) do
+            processObject(obj, obj:getName {mode = 'fullPath'})
         end
-    end
-
-    local function processCurrentScene()
-        local objs = table.add({sim.scene.mainScript}, sim.scene.objects)
-        processObjects(objs)
     end
 
     local function loadAndProcessScene(scenePath)
@@ -71,14 +61,28 @@ return function(expr, opts)
         local model = sim.scene:loadModel(modelPath)
         loadedOneScene = true
         fileContext = modelPath
-        processCurrentScene()
+        for _, obj in ipairs(model.tree) do
+            processObject(obj, obj:getName {mode = 'fullPath'})
+        end
         model:removeModel()
+    end
+
+    local function isModelFile(path)
+        return path:endswith '.ttm' or path:endswith '.simmodel.xml'
+    end
+
+    local function isSceneFile(path)
+        return path:endswith '.ttt' or path:endswith '.simscene.xml'
     end
 
     if opts.files then
         assert(type(opts.files) == 'table', 'files must be a table')
         for _, file in ipairs(opts.files) do
-            loadAndProcessScene(file)
+            if isSceneFile(file) then
+                loadAndProcessScene(file)
+            elseif isModelFile(file) then
+                loadAndProcessModel(file)
+            end
         end
     end
 
@@ -87,9 +91,9 @@ return function(expr, opts)
         local lfsx = require 'lfsx'
         for _, dir in ipairs(opts.dirs) do
             for path, attr in lfsx.iwalk(dir) do
-                if opts.scenes ~= false and (path:endswith '.ttt' or path:endswith '.simscene.xml') then
+                if opts.scenes ~= false and isSceneFile(path) then
                     loadAndProcessScene(path)
-                elseif opts.models ~= false and (path:endswith '.ttm' or path:endswith '.simmodel.xml') then
+                elseif opts.models ~= false and isModelFile(path) then
                     loadAndProcessModel(path)
                 end
             end
