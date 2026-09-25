@@ -3,14 +3,14 @@ return function(expr, opts)
 
     opts = opts or {}
 
-    local sceneContext, objectContext = '(current scene)', '?'
+    local fileContext, objectContext = '(current scene)', '?'
     local loadedOneScene = false
     local numHits = 0
 
     local function reportHit(matchContext)
-        if sceneContext then
-            print(sceneContext .. ':')
-            sceneContext = nil
+        if fileContext then
+            print(fileContext .. ':')
+            fileContext = nil
         end
         if objectContext then
             print('    ' .. objectContext .. ':')
@@ -59,7 +59,7 @@ return function(expr, opts)
         end
         sim.app:loadScene(scenePath, {createNew = not loadedOneScene})
         loadedOneScene = true
-        sceneContext = scenePath
+        fileContext = scenePath
         processCurrentScene()
     end
 
@@ -70,7 +70,7 @@ return function(expr, opts)
         sim.app:loadScene(app.paths.system .. '/dfltscn.ttt', {createNew = not loadedOneScene})
         local model = sim.scene:loadModel(modelPath)
         loadedOneScene = true
-        sceneContext = modelPath
+        fileContext = modelPath
         processCurrentScene()
         model:removeModel()
     end
