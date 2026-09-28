@@ -33,12 +33,14 @@ local function find(opts)
         end
     end
 
+    local ret = {}
+
     local function found(path)
         if opts.exec then
             assert(type(opts.exec) == 'function', 'exec must be a function')
             opts.exec(path)
         else
-            print(path)
+            table.insert(ret, path)
         end
     end
 
@@ -61,6 +63,10 @@ local function find(opts)
                 end
             end
         end
+    end
+
+    if opts.exec == nil then
+        return ret
     end
 end
 
