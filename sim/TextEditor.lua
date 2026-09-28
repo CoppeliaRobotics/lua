@@ -58,7 +58,7 @@ function TextEditor:init()
     sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
     sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 
-    if sim.self.type ~= sim.scripttype_simulation and sim.self.type ~= sim.scripttype_main then
+    if sim.self.type ~= sim.scriptType.simulation and sim.self.type ~= sim.scriptType.main then
         sim.self:registerFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
         sim.self:registerFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
     end
@@ -123,7 +123,7 @@ function TextEditor:cleanup()
     sim.self:removeFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
     sim.self:removeFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
 
-    if sim.self.type ~= sim.scripttype_simulation and sim.self.type ~= sim.scripttype_main then
+    if sim.self.type ~= sim.scriptType.simulation and sim.self.type ~= sim.scriptType.main then
         sim.self:removeFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
         sim.self:removeFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
     end

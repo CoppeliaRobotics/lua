@@ -761,296 +761,6 @@ end
 
 sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
 
--- Backward compatibility functions, to be eventually removed:
---------------------------------------------------------------
---[=[
-function sim.getReferencedHandle(...)
-    local sim1 = require('sim-1')
-    return sim1.getReferencedHandle(...)
-end
-
-function sim.addReferencedHandle(...)
-    local sim1 = require('sim-1')
-    return sim1.addReferencedHandle(...)
-end
-
-function sim.removeReferencedObjects(...)
-    local sim1 = require('sim-1')
-    return sim1.removeReferencedObjects(...)
-end
-
-function sim.getObjectAliasRelative(...)
-    local sim1 = require('sim-1')
-    return sim1.getObjectAliasRelative(...)
-end
-
-function sim.fastIdleLoop(enable)
-    locals.fastIdleLoop(-1, '', enable)
-end
-
-function sim.throttle(t, func, ...)
-    locals.throttle(-1, '', func, t, {args = table.pack(...)})
-end
-
-function sim.scheduleExecution(func, args, timePoint, simTime)
-    if simTime then
-        timePoint = timePoint - sim.scene.simulationTime
-    else
-        timePoint = timePoint - sim.app.systemTime
-    end
-    return locals.scheduleExecution(-1, '', func, timePoint, {simulationTime = simTime, args = args})
-end
-
-function sim.cancelScheduledExecution(id)
-    return locals.cancelScheduledExecution(-1, '', id)
-end
-
-function sim.closePath(...)
-    local sim1 = require('sim-1')
-    return sim1.closePath(...)
-end
-
-function sim.getPathInterpolatedConfig(...)
-    local sim1 = require('sim-1')
-    return sim1.getPathInterpolatedConfig(...)
-end
-
-function sim.resamplePath(...)
-    local sim1 = require('sim-1')
-    return sim1.resamplePath(...)
-end
-
-function sim.getConfigDistance(...)
-    local sim1 = require('sim-1')
-    return sim1.getConfigDistance(...)
-end
-
-function sim.getPathLengths(...)
-    local sim1 = require('sim-1')
-    return sim1.getPathLengths(...)
-end
-
-function sim.changeEntityColor(target, color, comp)
-    return locals.changeColor(target, '', color, comp)
-end
-
-function sim.restoreEntityColor(data)
-    locals.restoreColor(-1, '', data)
-end
-
-function sim.wait(...)
-    locals.wait(-1, '', ...)
-end
-
-function sim.getSettingString(...)
-    local sim1 = require('sim-1')
-    return sim1.getSettingString(...)
-end
-
-function sim.getSettingBool(...)
-    local sim1 = require('sim-1')
-    return sim1.getSettingBool(...)
-end
-
-function sim.getSettingFloat(...)
-    local sim1 = require('sim-1')
-    return sim1.getSettingFloat(...)
-end
-
-function sim.getSettingInt32(...)
-    local sim1 = require('sim-1')
-    return sim1.getSettingInt32(...)
-end
-
-function sim.setShapeAppearance(target, savedData)
-    locals.setAppearance(target, '', savedData)
-end
-
-function sim.openFile(file)
-    locals.openFile(-1, '', file)
-end
-
-function sim.getShapeAppearance(target)
-    return locals.getAppearance(target, '')
-end
-
-function sim.getBoolProperty(t, ...)
-    return sim.callMethod(t, 'getBoolProperty', ...)
-end
-
-function sim.setBoolProperty(t, ...)
-    sim.callMethod(t, 'setBoolProperty', ...)
-end
-
-function sim.getIntProperty(t, ...)
-    return sim.callMethod(t, 'getIntProperty', ...)
-end
-
-function sim.setIntProperty(t, ...)
-    sim.callMethod(t, 'setIntProperty', ...)
-end
-
-function sim.getLongProperty(t, ...)
-    return sim.callMethod(t, 'getLongProperty', ...)
-end
-
-function sim.setLongProperty(t, ...)
-    sim.callMethod(t, 'setLongProperty', ...)
-end
-
-function sim.getFloatProperty(t, ...)
-    return sim.callMethod(t, 'getFloatProperty', ...)
-end
-
-function sim.setFloatProperty(t, ...)
-    sim.callMethod(t, 'setFloatProperty', ...)
-end
-
-function sim.getStringProperty(t, ...)
-    return sim.callMethod(t, 'getStringProperty', ...)
-end
-
-function sim.setStringProperty(t, ...)
-    sim.callMethod(t, 'setStringProperty', ...)
-end
-
-function sim.getBufferProperty(t, ...)
-    return sim.callMethod(t, 'getBufferProperty', ...)
-end
-
-function sim.setBufferProperty(t, ...)
-    sim.callMethod(t, 'setBufferProperty', ...)
-end
-
-function sim.getIntArray2Property(t, ...)
-    return sim.callMethod(t, 'getIntArray2Property', ...)
-end
-
-function sim.setIntArray2Property(t, ...)
-    sim.callMethod(t, 'setIntArray2Property', ...)
-end
-
-function sim.getIntArrayProperty(t, ...)
-    return sim.callMethod(t, 'getIntArrayProperty', ...)
-end
-
-function sim.setIntArrayProperty(t, ...)
-    sim.callMethod(t, 'setIntArrayProperty', ...)
-end
-
-function sim.getFloatArrayProperty(t, ...)
-    return sim.callMethod(t, 'getFloatArrayProperty', ...)
-end
-
-function sim.setFloatArrayProperty(t, ...)
-    sim.callMethod(t, 'setFloatArrayProperty', ...)
-end
-
-function sim.getStringArrayProperty(t, ...)
-    return sim.callMethod(t, 'getStringArrayProperty', ...)
-end
-
-function sim.setStringArrayProperty(t, ...)
-    sim.callMethod(t, 'setStringArrayProperty', ...)
-end
-
-function sim.getVector3Property(t, ...)
-    return sim.callMethod(t, 'getVector3Property', ...)
-end
-
-function sim.setVector3Property(t, ...)
-    sim.callMethod(t, 'setVector3Property', ...)
-end
-
-function sim.getColorProperty(t, ...)
-    return sim.callMethod(t, 'getColorProperty', ...)
-end
-
-function sim.setColorProperty(t, ...)
-    sim.callMethod(t, 'setColorProperty', ...)
-end
-
-function sim.getPoseProperty(t, ...)
-    return sim.callMethod(t, 'getPoseProperty', ...)
-end
-
-function sim.setPoseProperty(t, ...)
-    sim.callMethod(t, 'setPoseProperty', ...)
-end
-
-function sim.getQuaternionProperty(t, ...)
-    return sim.callMethod(t, 'getQuaternionProperty', ...)
-end
-
-function sim.setQuaternionProperty(t, ...)
-    sim.callMethod(t, 'setQuaternionProperty', ...)
-end
-
-function sim.getHandleProperty(t, ...)
-    return sim.callMethod(t, 'getHandleProperty', ...)
-end
-
-function sim.setHandleProperty(t, ...)
-    sim.callMethod(t, 'setHandleProperty', ...)
-end
-
-function sim.getHandleArrayProperty(t, ...)
-    return sim.callMethod(t, 'getHandleArrayProperty', ...)
-end
-
-function sim.setHandleArrayProperty(t, ...)
-    sim.callMethod(t, 'setHandleArrayProperty', ...)
-end
-
-function sim.getTableProperty(t, ...)
-    return sim.callMethod(t, 'getTableProperty', ...)
-end
-
-function sim.setTableProperty(t, ...)
-    sim.callMethod(t, 'setTableProperty', ...)
-end
-
-function sim.removeProperty(t, ...)
-    sim.callMethod(t, 'removeProperty', ...)
-end
-
-function sim.getPropertyName(t, ...)
-    return sim.callMethod(t, 'getPropertyName', ...)
-end
-
-function sim.getPropertyInfo(t, ...)
-    return sim.callMethod(t, 'getPropertyInfo', ...)
-end
-
-function sim.getPropertyTypeString(...)
-    return locals.getPropertyTypeString(-1, '', ...)
-end
-
-function sim.getPropertiesInfos(t, ...)
-    return locals.getPropertiesInfos(t, '', ...)
-end
-
-function sim.getProperties(t, ...)
-    return locals.getProperties(t, '', ...)
-end
-
-function sim.setProperties(t, ...)
-    locals.setProperties(t, '', ...)
-end
-
-function sim.getProperty(t, ...)
-    return locals.getProperty(t, '', ...)
-end
-
-function sim.setProperty(t, ...)
-    return locals.setProperty(t, '', ...)
-end
-
-function sim.getPropertyInfos(t, ...)
-    return locals.getPropertyInfos(t, '', ...)
-end
---]=]
---------------------------------------------------------------
 ---[[
 sim._qhull = nil
 sim._serialClose = nil
@@ -1581,6 +1291,109 @@ sim.volume_pyramid = nil
 sim.volume_randomizedray = nil
 sim.volume_ray = nil
 
+sim.appflavor_edu = nil
+sim.appflavor_lite = nil
+sim.appflavor_pro = nil
+
+sim.dummytype_assembly = nil
+sim.dummytype_default = nil
+sim.dummytype_dynloopclosure = nil
+sim.dummytype_dyntendon = nil
+
+sim.handle.world = nil
+sim.handle_world = nil
+
+sim.jointType = nil
+sim.lightType = nil
+sim.markerOptions = nil
+sim.materialComponent = nil
+sim.parentingMode = nil
+sim.propertyReturns = nil
+
+sim.jointdynctrl_callback = nil
+sim.jointdynctrl_force = nil
+sim.jointdynctrl_free = nil
+sim.jointdynctrl_position = nil
+sim.jointdynctrl_spring = nil
+sim.jointdynctrl_velocity = nil
+sim.jointmode_dependent = nil
+sim.jointmode_dynamic = nil
+sim.jointmode_kinematic = nil
+
+sim.handle_all_except_explicit = nil
+sim.handle_all_except_self = nil
+
+sim.headlessmode_disabled = nil
+sim.headlessmode_emulated = nil
+sim.headlessmode_enabled = nil
+
+sim.codeLang = nil
+sim.dummyType = nil
+
+sim.lang_lua = nil
+sim.lang_python = nil
+sim.lang_undefined = nil
+sim.light_directional = nil
+sim.light_omnidirectional = nil
+sim.light_spot = nil
+sim.markertype_axes = nil
+sim.markertype_cubes = nil
+sim.markertype_custom = nil
+sim.markertype_cylinders = nil
+sim.markertype_discs = nil
+sim.markertype_lines = nil
+sim.markertype_points = nil
+sim.markertype_spheres = nil
+sim.markertype_squares = nil
+sim.markertype_triangles = nil
+sim.markertype_tubes = nil
+sim.object_scriptend = nil
+sim.object_scriptstart = nil
+sim.physics_bullet = nil
+sim.physics_drake = nil
+sim.physics_mujoco = nil
+sim.physics_newton = nil
+sim.physics_ode = nil
+sim.physics_vortex = nil
+sim.platform_linux = nil
+sim.platform_macos = nil
+sim.platform_windows = nil
+
+sim.proximitySensorType = nil
+sim.sceneObjectType = nil
+
+sim.shapeType = nil
+
+sim.proximitysensor_cone = nil
+sim.proximitysensor_cylinder = nil
+sim.proximitysensor_disc = nil
+sim.proximitysensor_pyramid = nil
+sim.proximitysensor_ray = nil
+
+sim.sceneobject_scriptobject = nil
+
+sim.scriptexecorder_first = nil
+sim.scriptexecorder_last = nil
+sim.scriptexecorder_normal = nil
+
+sim.scriptstate_ended = nil
+sim.scriptstate_error = nil
+sim.scriptstate_initialized = nil
+sim.scriptstate_suspended = nil
+sim.scriptstate_uninitialized = nil
+sim.scriptstate_unloaded = nil
+
+sim.scripttype_addon = nil
+sim.scripttype_customization = nil
+sim.scripttype_main = nil
+sim.scripttype_passive = nil
+sim.scripttype_sandbox = nil
+sim.scripttype_simulation = nil
+
+sim.simulation_lastbeforestop = nil
+sim.simulation_paused = nil
+sim.simulation_running = nil
+sim.simulation_stopped = nil
 
 --]]
 return sim

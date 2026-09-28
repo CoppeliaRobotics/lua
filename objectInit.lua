@@ -72,27 +72,6 @@ function objInit.collection(methodName)
     return retVal
 end
 
---[[
-function objInit.console(methodName)
-    checkargs.checkfields({funcName = methodName}, {
-        {name = 'title', type = 'string', default = "Console"},
-        {name = 'size', type = 'table', item_type = 'int', size = 2, default = {800, 600}},
-        {name = 'position', type = 'table', item_type = 'int', size = 2, default = {50, 50}},
-        {name = 'fontSize', type = 'int', default = 12},
-        {name = 'closeable', type = 'bool', default = true},
-        {name = 'hiddenInSimulation', type = 'bool', default = false},
-        {name = 'resizable', type = 'bool', default = true},
-        {name = 'style', type = 'string', nullable = true},
-        {name = 'color', type = 'color', default = Color:rgb(0.0, 0.0, 0.0)},
-        {name = 'background', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
-    }, objInit.p)
-    local Console = require'Console'
-    local retVal = Console(p)
-    -- retVal:setProperties(objInit.p)
-    return retVal
-end
-]]--
-
 function objInit.script(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'script.type', enum = sim.scriptType, default = 'addon'},
@@ -105,7 +84,7 @@ end]]},
     local scriptType = objInit.extractValueOrDefault('script.type')
     local code = objInit.extractValueOrDefault('code')
     local lang = objInit.extractValueOrDefault('language')
-    assert(scriptType == sim.scripttype_addon, 'invalid script type.')
+    assert(scriptType == sim.scriptType.addon, 'invalid script type.')
     local retVal = sim.Object(sim1.createNakedScript(scriptType, code, lang))
     retVal:setProperties(objInit.p)
     return retVal
@@ -178,7 +157,7 @@ function objInit.marker(methodName)
     local duplicateTol = objInit.extractValueOrDefault('duplicateTolerance')
     local cnt = objInit.extractValueOrDefault('itemCnt')
     local vertices, indices, normals
-    if itemType == sim.markertype_custom then
+    if itemType == sim.markerType.custom then
         local mesh = objInit.extractValueOrDefault('mesh')
         if type(mesh) ~= 'table' then
             mesh = {}
@@ -389,13 +368,13 @@ function sysCall_init()
 end]]
 
     setYieldAllowed(false)
-    local retVal = objInit.init(sim.handle_scene, methodName, {type = 'scriptObject', ['scriptObject.type'] = 'customization', code = code})
+    local retVal = objInit.init(sim.handle.scene, methodName, {type = 'scriptObject', ['scriptObject.type'] = 'customization', code = code})
     retVal.name = 'path'
     retVal.size = 0.025
     retVal.color.diffuse = Color'#00ffff'
     retVal.layer = 4
     for i = 1, ctrlPts:cols() do
-        local dummy = objInit.init(sim.handle_scene, methodName, {type = 'dummy'})
+        local dummy = objInit.init(sim.handle.scene, methodName, {type = 'dummy'})
         dummy.name = 'ctrlPt'
         dummy.customData.ctrlPtInfo = sim.app:pack({index = i})
         dummy:setParent(retVal)
@@ -418,7 +397,7 @@ function objInit.scriptObject(methodName)
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('scriptObject.type')
-    assert(scriptType == sim.scripttype_simulation or scriptType == sim.scripttype_customization, 'invalid script type.')
+    assert(scriptType == sim.scriptType.simulation or scriptType == sim.scriptType.customization, 'invalid script type.')
     local scriptText = objInit.extractValueOrDefault('code')
     local options = 0
         + v(1, objInit.extractValueOrDefault('scriptDisabled'))
