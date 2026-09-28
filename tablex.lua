@@ -218,7 +218,7 @@ function table.tostring(tt, opts, _)
     opts.indentString = opts.indentString or '    '
     opts.maxLevel = opts.maxLevel - 1
     opts.escapeNewline = true
-    opts.longStringThreshold = 160
+    opts.longStringThreshold = 250
 
     if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
 
