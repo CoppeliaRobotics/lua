@@ -29,7 +29,7 @@ return function(expr, opts)
 
         if type(expr) == 'string' and (obj.type == 'script' or obj.type == 'scriptObject') then
             local targetObj = obj.type == 'scriptObject' and obj.script or obj
-            local matches = string.grep(obj.code, expr)
+            local matches = string.grep(targetObj.code, expr)
             for _, match in ipairs(matches) do
                 reportHit('line ' .. match.line .. ': ' .. match.lineText)
             end
