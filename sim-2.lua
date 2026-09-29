@@ -58,7 +58,7 @@ end
 function locals.removeObjects(target, methodName, objects, delayed)
     local list = {}
     for i = 1, #objects do
-        local obj = objects[i]
+        local obj = sim.Object:toobject(objects[i])
         if obj:isValid() then
             if obj.isCustomObject then
                 sim.callMethod(obj, 'remove')
