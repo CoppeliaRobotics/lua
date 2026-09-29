@@ -1681,7 +1681,7 @@ function Path:getPoint(distance, options)
         distance = 1.0
     end
 
-    if type(options) == 'table' and options.points then
+    if type(options) == 'table' and (options.pathPoints or options.distancesAlongPath or options.arcLengths) then
         return self:_getPointWithOverride(distance, options)
     end
 
@@ -1770,11 +1770,10 @@ end
 function Path:_getPointWithOverride(distance, options)
     local data = self._data
     local closed = data.opt.closed
-
     checkargs.checkfields({funcName = 'Path:_getPointWithOverride, options argument'}, {
         {name = 'distancesAlongPath', type = 'vector', nullable = true},
         {name = 'arcLengths', type = 'vector', nullable = true},
-        {name = 'points', type = 'matrix'},
+        {name = 'pathPoints', type = 'matrix'},
     }, options)
 
     assert(options.arcLengths or options.distancesAlongPath,
@@ -1782,8 +1781,8 @@ function Path:_getPointWithOverride(distance, options)
     assert(not (options.arcLengths and options.distancesAlongPath),
         'specify only one of arcLengths or distancesAlongPath.')
 
-    local pts = options.points
-    assert(pts:rows() == data.opt.dim, 'points with invalid dimension.')
+    local pts = options.pathPoints
+    assert(pts:rows() == data.opt.dim, 'pathPoints with invalid dimension.')
 
     local pointCount = pts:cols()
     assert(pointCount > 0, 'path is empty.')
