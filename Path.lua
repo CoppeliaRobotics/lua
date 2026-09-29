@@ -1666,24 +1666,26 @@ function Path:closest(point, noArgCheck)
     end
 end
 
-function Path:getPoint(distance, noArgCheck)
-    if not noArgCheck then
-        distance = checkargs.checkargsEx(
-            {funcName = 'Path:getPoint'},
-            {
-                {type = 'float'},
-            },
-            distance
-        )
-    end
-
-    self:update()
+function Path:getPoint(distance, options)
+    distance = checkargs.checkargsEx(
+        {funcName = 'Path:getPoint'},
+        {
+            {type = 'float'},
+        },
+        distance
+    )
 
     if distance < 0.0 then
         distance = 0.0
     elseif distance > 1.0 then
         distance = 1.0
     end
+
+    if type(options) == 'table' and options.points then
+        return self:_getPointWithOverride(distance, options)
+    end
+
+    self:update()
 
     local pointData = self:_selectedPointCache()
     local points = pointData.points
@@ -1764,6 +1766,147 @@ function Path:getPoint(distance, noArgCheck)
         )
     )
 end
+
+function Path:_getPointWithOverride(distance, options)
+    local data = self._data
+    local closed = data.opt.closed
+
+    checkargs.checkfields({funcName = 'Path:_getPointWithOverride, options argument'}, {
+        {name = 'distancesAlongPath', type = 'vector', nullable = true},
+        {name = 'arcLengths', type = 'vector', nullable = true},
+        {name = 'points', type = 'matrix'},
+    }, options)
+
+    assert(options.arcLengths or options.distancesAlongPath,
+        'either arcLengths or distancesAlongPath must be specified.')
+    assert(not (options.arcLengths and options.distancesAlongPath),
+        'specify only one of arcLengths or distancesAlongPath.')
+
+    local pts = options.points
+    assert(pts:rows() == data.opt.dim, 'points with invalid dimension.')
+
+    local pointCount = pts:cols()
+    assert(pointCount > 0, 'path is empty.')
+
+    -- Pull the simEigen vectors into plain Lua tables once. Per-element
+    -- reads (`arcLengths[i]`) go through the indexing metamethod, which
+    -- dominates the loops below (and the search/interp below that) for
+    -- anything but tiny paths.
+    local arcLengths, distancesAlongPath, pathLength
+
+    if options.arcLengths ~= nil then
+        arcLengths = options.arcLengths:data()
+
+        if closed then
+            assert(#arcLengths == pointCount, 'arcLengths with invalid size.')
+        else
+            assert(#arcLengths == (pointCount - 1), 'arcLengths with invalid size.')
+        end
+
+        distancesAlongPath = {0.0}
+        local segCount = #arcLengths
+        local pointSegCount = closed and (segCount - 1) or segCount
+        local total = 0.0
+        for i = 1, pointSegCount do
+            total = total + arcLengths[i]
+            distancesAlongPath[i + 1] = total
+        end
+        for i = pointSegCount + 1, segCount do
+            total = total + arcLengths[i]
+        end
+        pathLength = total
+
+    else
+        distancesAlongPath = options.distancesAlongPath:data()
+        assert(#distancesAlongPath == pointCount, 'distancesAlongPath with invalid size.')
+
+        arcLengths = {}
+        for i = 1, pointCount - 1 do
+            arcLengths[i] = distancesAlongPath[i + 1] - distancesAlongPath[i]
+        end
+        pathLength = distancesAlongPath[pointCount]
+
+        if closed and pointCount > 1 then
+            -- The closing segment is not represented by the per-point
+            -- distances, so derive its length from the points.
+            local p1 = pts:block(1, pointCount, -1, 1):data()
+            local p2 = pts:block(1, 1, -1, 1):data()
+            arcLengths[pointCount] = self:_distanceTables(p1, p2)
+            pathLength = pathLength + arcLengths[pointCount]
+        end
+    end
+
+    local pointCount = pts:cols()
+    assert(pointCount > 0, 'path is empty.')
+
+    if pointCount == 1 then
+        return pts:copy()
+    end
+
+    local l = distance * pathLength
+
+    -- Match the endpoint semantics of the default implementation.
+    if pathLength <= 0.0 then
+        if closed then
+            return pts:block(1, 1, -1, 1)
+        end
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    if closed and l >= pathLength then
+        return pts:block(1, 1, -1, 1)
+    elseif not closed and l >= pathLength then
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    -- Find the first supplied path distance strictly greater than l.
+    local lo = 2
+    local hi = #distancesAlongPath
+    local upper = hi + 1
+
+    while lo <= hi do
+        local mid = math.floor((lo + hi) * 0.5)
+
+        if distancesAlongPath[mid] > l then
+            upper = mid
+            hi = mid - 1
+        else
+            lo = mid + 1
+        end
+    end
+
+    local segmentIndex
+    local nextPointIndex
+    local segmentStart
+    local segmentLength
+
+    if upper <= #distancesAlongPath then
+        segmentIndex = upper - 1
+        nextPointIndex = segmentIndex + 1
+        segmentStart = distancesAlongPath[segmentIndex]
+        segmentLength = arcLengths[segmentIndex]
+    elseif closed then
+        segmentIndex = pointCount
+        nextPointIndex = 1
+        segmentStart = distancesAlongPath[pointCount]
+        segmentLength = arcLengths[pointCount]
+    else
+        return pts:block(1, pointCount, -1, 1)
+    end
+
+    if segmentLength <= 0.0 then
+        return pts:block(1, segmentIndex, -1, 1)
+    end
+
+    local t = (l - segmentStart) / segmentLength
+
+    if data.opt.dim == 7 and data.opt.displDim == 7 then
+        return self:_interpolatePose(pts, segmentIndex, nextPointIndex, t)
+    end
+
+    return self:interpolate(pts:block(1, segmentIndex, -1, 1), pts:block(1, nextPointIndex, -1, 1), t, true)
+end
+
 
 function Path:toBuffer()
     self:update()
