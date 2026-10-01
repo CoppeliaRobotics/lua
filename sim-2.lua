@@ -366,38 +366,6 @@ function locals.wait(target, methodName, ...)
     end
 end
 
-function locals.visitTree(target, methodName, ...)
-    target = sim.Object:toobject(target)
-    local visitorFunc, objTypes, objTypesMap = ...
-    if #methodName > 0 then
-        -- Do not verify again with reentrance
-        visitorFunc, options, objTypesMap = checkargs({
-            {type = 'func'},
-            {type = 'table', default = {types = {'sceneObject'}}},
-            {type = 'table', default_nil = true, nullable = true},
-        }, ...)
-    end
-
-    local types = {}
-    if objTypesMap then
-        types = objTypesMap
-    else
-        for i = 1, #options.types do
-            types[options.types[i]] = true
-        end
-    end
-
-    if types[target.type] or types['sceneObject'] then
-        if visitorFunc(target) == false then
-            return
-        end
-    end
-
-    for i = 1, #target.children do
-        locals.visitTree(target.children[i], '', visitorFunc, {}, types)
-    end
-end
-
 function locals.createObject(target, methodName, initialProperties)
     local objectInit = require 'objectInit'
     local retVal = objectInit.init(target, methodName, initialProperties)
