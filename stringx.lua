@@ -516,6 +516,13 @@ function string.numbertostring(x, opts)
     return s
 end
 
+function string.functostring(x, opts)
+    assert(type(x) == 'function', 'bad type')
+    local s = tostring(x)
+    s = s::gsub(': 0x*', '_')
+    return s
+end
+
 function string.getshortstring(x, opts)
     opts = opts or {}
     opts.omitQuotes = opts.omitQuotes == true
