@@ -7,6 +7,7 @@ local objInit = {}
 local knownCustomClasses = {
     console = 'sim.Console',
     textEditor = 'sim.TextEditor',
+    test = 'sim.Test',
 }
 
 function objInit.extractValueOrDefault(key, default, map)
