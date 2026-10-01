@@ -207,6 +207,13 @@ function Object:toobject(o)
     error 'bad type'
 end
 
+function Object:tohandle(arg)
+    assert(self == Object, 'class method')
+    if math.type(arg) == 'integer' then return arg end
+    if Object:isobject(o) then return o.handle end
+    error 'bad type'
+end
+
 function Object.static.unittest()
     local sim = require 'sim-2'
     local scene = Object.scene
