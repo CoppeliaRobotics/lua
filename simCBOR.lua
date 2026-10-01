@@ -144,8 +144,8 @@ function simCBOR.decode(data, opts)
 
     local _type_tags = type_tags
 
-    if opts.type_tags then
-        _type_tags = table.update({}, _type_tags, opts.type_tags)
+    if opts.typeTags then
+        _type_tags = table.update({}, _type_tags, opts.typeTags)
     end
 
     if isbuffer(data) then
@@ -153,6 +153,29 @@ function simCBOR.decode(data, opts)
     end
 
     return cbor.decode(data, 1, _type_tags)
+end
+
+function simCBOR.encode(value, opts)
+    opts = opts or {}
+
+    local old_encode_map
+    if opts.encodeMap then
+        old_encode_map = {}
+        for k, v in pairs(opts.encodeMap) do
+            old_encode_map = cbor.__ENCODE_MAP[k]
+            cbor.__ENCODE_MAP[k] = v
+        end
+    end
+
+    local ret = cbor.encode(value)
+
+    if old_encode_map then
+        for k, v in pairs(old_encode_map) do
+            cbor.__ENCODE_MAP[k] = v
+        end
+    end
+
+    return ret
 end
 
 for _, name in ipairs {
