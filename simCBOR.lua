@@ -43,7 +43,8 @@ simCBOR.Tags = {
     },
 }
 
-local sim = require 'sim-1'
+local sim1 = require 'sim-1'
+local sim = require 'sim-2'
 local cbor = require 'org.conman.cbor'
 
 local type_tags = {}
@@ -76,41 +77,41 @@ end)
 
 -- RFC8746 typed-arrays: uint8 Typed Array
 registerTag(simCBOR.Tags.Array.U8)(function(values)
-    return sim.unpackUInt8Table(values)
+    return sim1.unpackUInt8Table(values)
 end)
 
 -- RFC8746 typed-arrays: uint16, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.U16LE)(function(values)
-    return sim.unpackUInt16Table(values)
+    return sim1.unpackUInt16Table(values)
 end)
 
 -- RFC8746 typed-arrays: uint32, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.U32LE)(function(values)
-    return sim.unpackUInt32Table(values)
+    return sim1.unpackUInt32Table(values)
 end)
 
 -- RFC8746 typed-arrays: sint32, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.S32LE)(function(values)
-    return sim.unpackInt32Table(values)
+    return sim1.unpackInt32Table(values)
 end)
 
 -- RFC8746 typed-arrays: sint64, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.S64LE)(function(values)
-    return sim.unpackInt64Table(values)
+    return sim1.unpackInt64Table(values)
 end)
 
 -- RFC8746 typed-arrays: IEEE 754 binary32, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.F32LE)(function(values)
-    return sim.unpackFloatTable(values)
+    return sim1.unpackFloatTable(values)
 end)
 
 -- RFC8746 typed-arrays: IEEE 754 binary64, little endian, Typed Array
 registerTag(simCBOR.Tags.Array.F64LE)(function(values)
-    return sim.unpackDoubleTable(values)
+    return sim1.unpackDoubleTable(values)
 end)
 
 registerTag(simCBOR.Tags.Sim.Color)(function(value)
-    local rgba = sim.unpackUInt8Table(value)
+    local rgba = sim1.unpackUInt8Table(value)
     for i = 1, 4 do rgba[i] = rgba[i] / 255. end
     return Color(rgba)
 end)
@@ -126,26 +127,32 @@ registerTag(simCBOR.Tags.Sim.Pose)(function(value)
 end)
 
 registerTag(simCBOR.Tags.Sim.Handle)(function(value)
-    local sim = require 'sim-2'
     if value ~= -1 then
         return sim.Object(value)
     end
 end)
 
 registerTag(simCBOR.Tags.Sim.HandleArray)(function(value)
-    local sim = require 'sim-2'
     return map(function(h)
         if h == -1 then return nil end
         return sim.Object(h)
     end, value)
 end)
 
-function simCBOR.decode(data)
-    local sim = require 'sim-2'
+function simCBOR.decode(data, opts)
+    opts = opts or {}
+
+    local _type_tags = type_tags
+
+    if opts.type_tags then
+        _type_tags = table.update({}, _type_tags, opts.type_tags)
+    end
+
     if isbuffer(data) then
         data = tostring(data)
     end
-    return cbor.decode(data, 1, type_tags)
+
+    return cbor.decode(data, 1, _type_tags)
 end
 
 for _, name in ipairs {
