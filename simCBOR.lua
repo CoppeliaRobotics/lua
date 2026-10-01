@@ -160,26 +160,20 @@ function simCBOR.encode(value, opts)
 
     local old_encode_map
     if opts.encodeMap then
-        old_encode_map = {}
-        for k, v in pairs(opts.encodeMap) do
-            old_encode_map = cbor.__ENCODE_MAP[k]
-            cbor.__ENCODE_MAP[k] = v
-        end
+        old_encode_map = cbor.__ENCODE_MAP
+        cbor.__ENCODE_MAP = table.update({}, cbor.__ENCODE_MAP, opts.encodeMap)
     end
 
     local ret = cbor.encode(value)
 
     if old_encode_map then
-        for k, v in pairs(old_encode_map) do
-            cbor.__ENCODE_MAP[k] = v
-        end
+        cbor.__ENCODE_MAP = old_encode_map
     end
 
     return ret
 end
 
 for _, name in ipairs {
-    'encode',
     'isfloat',
     'isinteger',
     'isnumber',
