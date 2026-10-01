@@ -48,8 +48,9 @@ function objInit.init(target, methodName, initialProperties)
                 end
             end
             assert(cls ~= nil, 'unknown type: ' .. _type)
-            assert(target == sim.app or target == sim.scene, 'target can only be app or scene')
-            retVal = sim.Object(cls:makeObject{appScope = (target == sim.app)})
+            local targetHandle = sim.Object:tohandle(target)
+            assert(targetHandle == sim.handle_app or targetHandle == sim.handle_scene, 'target can only be app or scene')
+            retVal = sim.Object(cls:makeObject{appScope = (targetHandle == sim.handle_app)})
             retVal:setProperties(objInit.p)
             if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
                 retVal:getMethodProperty('init')(retVal)
