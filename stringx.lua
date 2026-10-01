@@ -519,7 +519,7 @@ end
 function string.functostring(x, opts)
     assert(type(x) == 'function', 'bad type')
     local s = tostring(x)
-    s = s::gsub(': 0x*', '_')
+    s = s:gsub(': 0x*', '_')
     return s
 end
 
