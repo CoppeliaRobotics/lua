@@ -246,27 +246,33 @@ function table.tostring(tt, opts, _)
     if opts.indent then opts.indent = opts.indent + 1 end
     opts.visitedTables[tt] = true
     local sb = {}
+    local sbw = 0
+    local function sb_append(s)
+        table.insert(sb, s)
+        sbw = sbw + #s
+    end
     if table.isarray(tt) then
-        table.insert(sb, '{')
+        sb_append('{')
+        local w = 1
         for i = 1, #tt do
-            if i > 1 then table.insert(sb, ', ') end
-            if opts.longStringThreshold >= 0 and #sb > opts.longStringThreshold then
-                table.insert(sb, string.format('... (%d more)', #tt - i + 1))
+            if i > 1 then sb_append(', ') end
+            if opts.longStringThreshold >= 0 and sbw > opts.longStringThreshold then
+                sb_append(string.format('... (%d more)', #tt - i + 1))
                 break
             end
-            table.insert(sb, string.anytostring(tt[i], opts))
+            sb_append(string.anytostring(tt[i], opts))
         end
-        table.insert(sb, '}')
+        sb_append('}')
     else
         local sort = opts.sort
         if sort == nil then sort = true end
         if sort == true then sort = {'type', 'key'} end
         local entries = table.items(tt, {sort = sort})
-        table.insert(sb, '{' .. (opts.indent and '\n' or ''))
+        sb_append('{' .. (opts.indent and '\n' or ''))
         for _, entry in ipairs(entries) do
             local key, val = table.unpack(entry)
             if opts.indent then
-                table.insert(sb, string.rep(opts.indentString, opts.indent))
+                sb_append(string.rep(opts.indentString, opts.indent))
             end
             local keyStr = key
             if type(keyStr) == 'string' and not string.isidentifier(keyStr) then
@@ -275,13 +281,13 @@ function table.tostring(tt, opts, _)
             if type(keyStr) ~= 'string' then
                 keyStr = '[' .. tostring(keyStr) .. ']'
             end
-            table.insert(sb, keyStr)
-            table.insert(sb, ' = ')
-            table.insert(sb, string.anytostring(val, opts))
-            table.insert(sb, ',' .. (opts.indent and '\n' or ' '))
+            sb_append(keyStr)
+            sb_append(' = ')
+            sb_append(string.anytostring(val, opts))
+            sb_append(',' .. (opts.indent and '\n' or ' '))
         end
-        if opts.indent then table.insert(sb, string.rep(opts.indentString, opts.indent - 1)) end
-        table.insert(sb, '}')
+        if opts.indent then sb_append(string.rep(opts.indentString, opts.indent - 1)) end
+        sb_append('}')
     end
     return table.concat(sb)
 end
