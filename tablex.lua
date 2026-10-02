@@ -245,18 +245,18 @@ function table.tostring(tt, opts, _)
     if opts.indent == true then opts.indent = 0 end
     if opts.indent then opts.indent = opts.indent + 1 end
     opts.visitedTables[tt] = true
-    local sb = {}
-    local sbw = 0
+    local sb, sbw, sbnl = {}, 0, false
     local function sb_append(s)
         table.insert(sb, s)
         sbw = sbw + #s
+        if s:find('\n', 1, true) then sbnl = true end
     end
     if table.isarray(tt) then
         sb_append('{')
         local w = 1
         for i = 1, #tt do
             if i > 1 then sb_append(', ') end
-            if opts.longStringThreshold >= 0 and sbw > opts.longStringThreshold then
+            if opts.longStringThreshold >= 0 and sbw > opts.longStringThreshold and not sbnl then
                 sb_append(string.format('... (%d more)', #tt - i + 1))
                 break
             end
