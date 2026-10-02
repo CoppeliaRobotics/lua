@@ -195,8 +195,13 @@ function print(...)
     local lb = setAutoYield(false)
     local a = table.pack(...)
     local s = ''
-    for i = 1, a.n do
-        s = s .. (i > 1 and ', ' or '') .. string.anytostring(a[i], {omitQuotes = true, escapeNewline = false})
+    if a.n == 1 and type(a[1]) == 'string' then
+        -- "bare" print:
+        s = a[1]
+    else
+        for i = 1, a.n do
+            s = s .. (i > 1 and ', ' or '') .. string.anytostring(a[i])
+        end
     end
     _S.printAsync(s)
     setAutoYield(lb)
