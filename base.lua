@@ -217,12 +217,42 @@ function printf(fmt, ...)
 end
 
 function todisplay(x)
-    return callmeta(x, '__todisplay')
+    --return callmeta(x, '__todisplay')
+    return string.anytostring(x, {display = true})
 end
 
-function display(x)
-    local s = todisplay(x)
-    if s then print(s) end
+function display(...)
+    -- for simCmd statusbar output etc...
+    local opts = {
+        longStringThreshold = 200,
+        display = true,
+    }
+    local lb = setAutoYield(false)
+    local a = table.pack(...)
+    local s = {}
+    for i = 1, a.n do
+        if i > 1 then table.insert(s, ', ') end
+        table.insert(s, string.anytostring(a[i], opts))
+    end
+    local str
+    if a.n == 1 then -- nothing to h-stack
+        str = s[1]
+    else
+        local stacked = string.blockhstack(s, 0)
+        local width = (string.find(stacked, "\n") or (#stacked + 1)) - 1
+        if width > 200 then
+            s = {}
+            for i = 1, a.n do
+                if i > 1 then table.insert(s, ', ') end
+                table.insert(s, string.anytostring(a[i], table.update({}, opts, {display = false})))
+            end
+            str = table.concat(s)
+        else
+            str = stacked
+        end
+    end
+    setAutoYield(lb)
+    if str then print(str) end
 end
 
 function dump(x, maxDepth)
@@ -266,36 +296,6 @@ function getAsString(...)
     end
     setAutoYield(lb)
     return s
-end
-
-function getAsDisplayString(...)
-    -- for simCmd statusbar output etc...
-    local lb = setAutoYield(false)
-    local a = table.pack(...)
-    local s = {}
-    for i = 1, a.n do
-        if i > 1 then table.insert(s, ', ') end
-        table.insert(s, string.anytostring(a[i], {display = true}))
-    end
-    local str
-    if a.n == 1 then -- nothing to h-stack
-        str = s[1]
-    else
-        local stacked = string.blockhstack(s, 0)
-        local width = (string.find(stacked, "\n") or (#stacked + 1)) - 1
-        if width > 200 then
-            s = {}
-            for i = 1, a.n do
-                if i > 1 then table.insert(s, ', ') end
-                table.insert(s, string.anytostring(a[i], {display = false}))
-            end
-            str = table.concat(s)
-        else
-            str = stacked
-        end
-    end
-    setAutoYield(lb)
-    return str
 end
 
 function _S.sysCallBase_init()
@@ -370,7 +370,7 @@ function _evalExec(inputStr)
     local function pfunc(theStr)
         -- shortcut for dump(...) by appending 1+ exclamation points:
         local m = theStr:match("!+$")
-        if m then theStr = string.format('print(table.tostring(dump(%s, %d), {sort = {"key"}}))', theStr:sub(1, -#m-1), #m) end
+        if m then theStr = string.format('display(dump(%s, %d))', theStr:sub(1, -#m-1), #m) end
 
         local func, err = load('return ' .. theStr)
         local rr = true
@@ -392,7 +392,7 @@ function _evalExec(inputStr)
             )
             if success then
                 if ret.n > 0 and rr then
-                    print(getAsDisplayString(table.unpack(ret, 1, ret.n)))
+                    display(table.unpack(ret, 1, ret.n))
                 end
             else
                 addLog(420 | 0x0f000, err)

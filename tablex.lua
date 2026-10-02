@@ -206,19 +206,19 @@ function table.tostring(tt, opts, _)
 
     opts = opts and table.clone(opts) or {}
 
-    opts.separator = sep or opts.separator or ', '
-
     -- backward compatibility with omitQuotes opt:
     if opts.quoteStrings ~= nil and opts.omitQuotes == nil then
         opts.omitQuotes = not opts.quoteStrings
     end
 
+    opts.separator = sep or opts.separator or ', '
     opts.visitedTables = opts.visitedTables or {}
     opts.maxLevel = opts.maxLevel or 99
     opts.indentString = opts.indentString or '    '
+    opts.escapeNewline = opts.escapeNewline ~= false
+    opts.longStringThreshold = opts.longStringThreshold or -1
+
     opts.maxLevel = opts.maxLevel - 1
-    opts.escapeNewline = true
-    opts.longStringThreshold = 250
 
     if (getmetatable(tt) or {}).__tostring then return tostring(tt) end
 
@@ -238,7 +238,7 @@ function table.tostring(tt, opts, _)
         local probeOpts = table.clone(opts)
         probeOpts.visitedTables = table.clone(opts.visitedTables)  -- isolate
         local s = table.tostring(tt, probeOpts)
-        if #s <= opts.longStringThreshold then return s end
+        if opts.longStringThreshold < 0 or #s <= opts.longStringThreshold then return s end
         opts.indent = true
     end
 
@@ -250,6 +250,10 @@ function table.tostring(tt, opts, _)
         table.insert(sb, '{')
         for i = 1, #tt do
             if i > 1 then table.insert(sb, ', ') end
+            if opts.longStringThreshold >= 0 and #sb > opts.longStringThreshold then
+                table.insert(sb, string.format('... (%d more)', #tt - i + 1))
+                break
+            end
             table.insert(sb, string.anytostring(tt[i], opts))
         end
         table.insert(sb, '}')

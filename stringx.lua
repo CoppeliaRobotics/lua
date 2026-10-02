@@ -529,12 +529,13 @@ function string.getshortstring(x, opts)
     opts.escapeNewline = opts.escapeNewline ~= false
     opts.allowBinary = opts.allowBinary == true
     opts.allowBinary = true
+    opts.longStringThreshold = opts.longStringThreshold or -1
 
     if type(x) == 'string' then
         if not string.isprintable(x) and not opts.allowBinary then
             return string.format('[binary string (%s bytes)]', #x)
         end
-        if opts.longStringThreshold and #x > opts.longStringThreshold then
+        if opts.longStringThreshold >= 0 and #x > opts.longStringThreshold then
             return string.format('[long string (%s bytes)]', #x)
         end
         if not opts.omitQuotes then
@@ -563,8 +564,8 @@ function string.anytostring(x, opts)
         if isbuffer(x) then return mt.__todisplay(x, opts) end
         if mt.__tostring then return mt.__tostring(x, opts) end
         -- displays inside table won't render good:
-        opts = table.update({}, opts, {display = false})
         require 'tablex'
+        opts = table.update({}, opts, {display = false})
         return table.tostring(x, opts)
     elseif t == 'string' then
         return string.getshortstring(x, opts)
