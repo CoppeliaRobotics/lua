@@ -18,15 +18,16 @@ function Buffer:__eq(other)
     return Buffer:isbuffer(self) and Buffer:isbuffer(other) and self.__buff__ == other.__buff__
 end
 
-function Buffer:__index(k)
-    return self.__buff__[k]
-end
+--function Buffer:__index(k)
+--    return self.__buff__[k]
+--end
 
 --function Buffer:__newindex(k, v)
 --    error('attempt to modify a buffer value')
 --end
 
 function Buffer:__tostring()
+    --addLog(0x20000 | 300, 'using tostring() on Buffer is deprecated. use buf:str() instead.')
     return self.__buff__
 end
 
@@ -46,6 +47,10 @@ end
 function Buffer:isbuffer(o)
     assert(self == Buffer, 'class method')
     return Buffer.isInstanceOf(o, Buffer)
+end
+
+function Buffer:str()
+    return self.__buff__
 end
 
 function Buffer:tobuffer(o)
