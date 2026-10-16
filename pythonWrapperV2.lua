@@ -1003,9 +1003,9 @@ function initPython(prog)
             virtualPythonFilename = virtualPythonFilename .. '_' ..
                                         tostring(sim.getInt32Param(sim.intparam_scene_unique_id))
             virtualPythonFilename = virtualPythonFilename ..
-                                        sim.getObjectStringParam(
+                                        tostring(sim.getObjectStringParam(
                                             sim.getScript(sim.handle_self), sim.scriptstringparam_nameext
-                                        )
+                                        ))
             if sim.getInt32Param(sim.intparam_platform) == 0 then
                 virtualPythonFilename = "z:\\" .. virtualPythonFilename
             else

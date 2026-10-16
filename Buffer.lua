@@ -3,11 +3,23 @@ local class = require 'middleclass'
 local Buffer = class 'Buffer'
 
 function Buffer:initialize(s)
-    self.__buff__ = tostring(s)
+    if Buffer:isbuffer(s) then
+        self.__buff__ = s.__buff__
+    elseif type(s) == 'string' then
+        self.__buff__ = s
+    else
+        error('bad type: ' .. type(s))
+    end
 end
 
 function Buffer:__concat(other)
-    return Buffer(tostring(self) .. tostring(other))
+    if Buffer:isbuffer(s) then
+        return Buffer(self.__buff__ .. other.__buff__)
+    elseif type(s) == 'string' then
+        return Buffer(self.__buff__ .. other)
+    else
+        error('bad type: ' .. type(other))
+    end
 end
 
 function Buffer:__len()
@@ -27,7 +39,6 @@ end
 --end
 
 function Buffer:__tostring()
-    --addLog(0x20000 | 300, 'using tostring() on Buffer is deprecated. use buf:str() instead.')
     return self.__buff__
 end
 
