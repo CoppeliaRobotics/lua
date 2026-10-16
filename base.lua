@@ -504,11 +504,28 @@ end
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
 Buffer = require('Buffer')
 Color = require('Color')
+require('deprecated.bufferConversions')
 require('mathx')
 require('stringx')
 require('tablex')
 import('functional', '*')
 import('var', '*')
+
+function isbuffer(obj)
+    if auxFunc('useBuffers') then
+        return Buffer:isbuffer(obj)
+    else
+        addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
+    end
+end
+
+function tobuffer(txt)
+    if auxFunc('useBuffers') then
+        return Buffer:tobuffer(txt)
+    else
+        return tostring(txt)
+    end
+end
 
 _S.coroutineAutoYields = {}
 registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on *before* init is incompatible with implicit module load...
