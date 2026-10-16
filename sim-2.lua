@@ -1,6 +1,9 @@
 local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
-sim.__all = {'app', 'scene', 'self'}
+sim.__all = {'app', 'scene', 'self', 'Buffer', 'Color'}
+
+sim.Buffer = require 'sim.Buffer'
+sim.Color = require 'sim.Color'
 
 local locals = {}
 __2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only for sim-2)
@@ -581,9 +584,9 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
             ptype = sim.propertytype_method
         elseif ltype == 'table' then
             local simEigen = require 'simEigen'
-            if Buffer:isbuffer(pvalue) then
+            if sim.Buffer:isbuffer(pvalue) then
                 ptype = sim.propertytype_buffer
-            elseif Color:iscolor(pvalue) then
+            elseif sim.Color:iscolor(pvalue) then
                 ptype = sim.propertytype_color
             elseif sim.Object:isobject(pvalue) then
                 ptype = sim.propertytype_handle

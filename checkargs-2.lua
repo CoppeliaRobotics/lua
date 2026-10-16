@@ -194,6 +194,7 @@ function checkargs.checkarg.pose(v, t)
 end
 
 function checkargs.checkarg.color(v, t)
+    local Color = require 'sim.Color'
     if t.strict and not Color:iscolor(v) then
         error('must be a color', 0)
     end

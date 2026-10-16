@@ -1,5 +1,5 @@
 import 'sim-2'
-import 'sim-2.*' -- for global 'app', 'scene', 'self'
+import 'sim-2.*' -- for global 'app', 'scene', 'self', etc...
 import 'simEigen.*'
 import 'utils'
 

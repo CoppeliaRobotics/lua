@@ -2,7 +2,7 @@
 
 local function implicitBufferToString(origFunc)
     return function(stringOrBuffer, ...)
-        local Buffer = require 'Buffer'
+        local Buffer = require 'sim.Buffer'
         if Buffer:isbuffer(stringOrBuffer) then
             stringOrBuffer = stringOrBuffer:str()
         end

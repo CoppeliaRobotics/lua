@@ -1,6 +1,6 @@
 local class = require 'middleclass'
 
-local Color = class 'Color'
+local Color = class 'sim.Color'
 
 local ColorNames = {}
 
@@ -315,11 +315,11 @@ end
 
 function Color:__todisplay(opts)
     opts = opts or {}
-    return string.format("Color '%s'", self:html())
+    return string.format("%s '%s'", self.class.name, self:html())
 end
 
 function Color:__tostring()
-    return string.format("Color '%s'", self:html())
+    return string.format("%s '%s'", self.class.name, self:html())
 end
 
 function Color:__iscolor()

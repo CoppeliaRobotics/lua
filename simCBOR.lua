@@ -51,6 +51,7 @@ local type_tags = {}
 
 type_tags.BIN = function(value, iskey)
     if not iskey then
+        local Buffer = require 'sim.Buffer'
         value = Buffer(value)
     end
     return value
@@ -113,7 +114,7 @@ end)
 registerTag(simCBOR.Tags.Sim.Color)(function(value)
     local rgba = sim1.unpackUInt8Table(value)
     for i = 1, 4 do rgba[i] = rgba[i] / 255. end
-    return Color(rgba)
+    return sim.Color(rgba)
 end)
 
 registerTag(simCBOR.Tags.Sim.Quaternion)(function(value)

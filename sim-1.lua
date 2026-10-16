@@ -6,6 +6,9 @@ for k, v in pairs(_S.internalApi.sim1) do
     sim[k] = v
 end
 
+sim.Buffer = require 'sim.Buffer'
+sim.Color = require 'sim.Color'
+
 local locals = {}
 __1 = {} -- sometimes globals are needed (but __1 only for sim-1)
 

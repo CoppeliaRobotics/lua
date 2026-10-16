@@ -1,6 +1,6 @@
 local class = require 'middleclass'
 
-local Buffer = class 'Buffer'
+local Buffer = class 'sim.Buffer'
 
 function Buffer:initialize(s)
     if Buffer:isbuffer(s) then
@@ -43,7 +43,7 @@ function Buffer:__tostring()
 end
 
 function Buffer:__todisplay()
-    return 'Buffer([' .. #self.__buff__ .. ' bytes])'
+    return self.class.name .. '([' .. #self.__buff__ .. ' bytes])'
 end
 
 function Buffer:__tocbor()

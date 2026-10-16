@@ -502,8 +502,6 @@ end
 
 -- IMPORTANT: put std module requires here, after wrap(require, ...) otherwise
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
-Buffer = require('Buffer')
-Color = require('Color')
 require('mathx')
 require('stringx')
 require('tablex')
@@ -513,6 +511,7 @@ import('var', '*')
 
 function isbuffer(obj)
     if auxFunc('useBuffers') then
+        local Buffer = require('sim.Buffer')
         return Buffer:isbuffer(obj)
     else
         addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
@@ -521,6 +520,7 @@ end
 
 function tobuffer(txt)
     if auxFunc('useBuffers') then
+        local Buffer = require('sim.Buffer')
         return Buffer:tobuffer(txt)
     else
         return tostring(txt)
