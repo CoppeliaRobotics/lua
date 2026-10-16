@@ -504,10 +504,10 @@ end
 --            code editor won't load the -ce files (see auxFunc('usedmodule' ...))
 Buffer = require('Buffer')
 Color = require('Color')
-require('deprecated.bufferConversions')
 require('mathx')
 require('stringx')
 require('tablex')
+require('deprecated.bufferConversions')
 import('functional', '*')
 import('var', '*')
 
