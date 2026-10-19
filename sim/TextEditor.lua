@@ -1,8 +1,8 @@
 local CustomClass = require 'sim.CustomClass'
 local TextEditor = CustomClass 'textEditor'
 
-TextEditor:setColorProperty('background', Color 'white')
-TextEditor:setColorProperty('defaultColor', Color 'black')
+TextEditor:setColorProperty('background', sim.Color 'white')
+TextEditor:setColorProperty('defaultColor', sim.Color 'black')
 TextEditor:setBoolProperty('hiddenInSimulation', false)
 TextEditor:setBoolProperty('visible', true)
 TextEditor:setStringProperty('ui', '')

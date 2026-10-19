@@ -103,7 +103,7 @@ function objInit.drawingObject(methodName)
         {name = 'duplicateTolerance', type = 'float', default = 0.0},
         {name = 'parentObject', type = 'handle', nullable = true},
         {name = 'itemCnt', type = 'int', default = 0},
-        {name = 'color', type = 'color', default = Color:rgb(1.0, 1.0, 0.0)},
+        {name = 'color', type = 'color', default = sim.Color:rgb(1.0, 1.0, 0.0)},
     }, objInit.p)
     local itemType = objInit.extractValueOrDefault('itemType')
     if objInit.extractValueOrDefault('cyclic') then
@@ -139,7 +139,7 @@ function objInit.marker(methodName)
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
         {name = 'itemSize', type = 'vector3', default = simEigen.Vector({0.005, 0.005, 0.005})},
-        {name = 'itemColor', type = 'color', default = Color:rgb(1.0, 1.0, 0.0)},
+        {name = 'itemColor', type = 'color', default = sim.Color:rgb(1.0, 1.0, 0.0)},
         {name = 'duplicateTolerance', type = 'float', default = 0.0},
         {name = 'itemCnt', type = 'int', default = 0},
     }, objInit.p)
@@ -299,7 +299,7 @@ function objInit.path(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 0},
         {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 1},
-        {name = 'lineColor', type = 'color', default = Color'#00ffa0'},
+        {name = 'lineColor', type = 'color', default = sim.Color'#00ffa0'},
         {name = 'showAxes', type = 'bool', default = false},
         {name = 'duplicateThreshold', type = 'float', default = 0.01},
         {name = 'linearityTolerance', type = 'float', default = 0.01},
@@ -309,7 +309,7 @@ function objInit.path(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 0},
         {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 1},
-        {name = 'lineColor', type = 'color', default = Color'#00dd00'},
+        {name = 'lineColor', type = 'color', default = sim.Color'#00dd00'},
         {name = 'showAxes', type = 'bool', default = false},
         {name = 'type', enum = {linear = 0, quadraticBezier = 1}, default = 1},
         {name = 'bezierSmoothing', type = 'float', default = 1.0},
@@ -319,7 +319,7 @@ function objInit.path(methodName)
     objInit.p.extrusion = objInit.p.extrusion or {}
     checkargs.checkfields({funcName = methodName}, {
         {name = 'section', type = 'matrix', rows = 2, nullable = true},
-        {name = 'color', type = 'color', default = Color'#ffffff'},
+        {name = 'color', type = 'color', default = sim.Color'#ffffff'},
         {name = 'selectable', type = 'bool', default = false},
         {name = 'axis', type = 'int', default = 0},
         {name = 'upVector', type = 'vector', size = 3, default = simEigen.Vector({0.0, 0.0, 1.0})},
@@ -328,7 +328,7 @@ function objInit.path(methodName)
     objInit.p.dummy = objInit.p.dummy or {}
     checkargs.checkfields({funcName = methodName}, {
         {name = 'size', type = 'float', default = 0.01},
-        {name = 'color', type = 'color', default = Color'#00ccff'},
+        {name = 'color', type = 'color', default = sim.Color'#00ccff'},
         {name = 'visible', type = 'bool', default = true},
     }, objInit.p.dummy)
 
@@ -345,26 +345,26 @@ function sysCall_init()
     opt.ctrlPoints = {}
     opt.ctrlPoints.pointType = 'none'
     opt.ctrlPoints.lineType = 'line'
-    opt.ctrlPoints.lineColor = Color'#00ffa0'
+    opt.ctrlPoints.lineColor = sim.Color'#00ffa0'
     opt.ctrlPoints.showAxes = false
     opt.ctrlPoints.duplicateThreshold = 0.01
     opt.ctrlPoints.linearityTolerance = 0.01
     opt.pathPoints = {}
     opt.pathPoints.pointType = 'none'
     opt.pathPoints.lineType = 'line'
-    opt.pathPoints.lineColor = Color'#00dd00'
+    opt.pathPoints.lineColor = sim.Color'#00dd00'
     opt.pathPoints.showAxes = false
     opt.pathPoints.type = 'quadraticBezier'
     opt.pathPoints.bezierSmoothing = 1.0
     opt.pathPoints.samplingDistance = 0.05
     opt.extrusion = {}
     opt.extrusion.section = nil --{0.02,-0.02,0.02,0.02,-0.02,0.02,-0.02,-0.02,0.02,-0.02}
-    opt.extrusion.color = Color'#ffffff'
+    opt.extrusion.color = sim.Color'#ffffff'
     opt.extrusion.selectable = false
     opt.extrusion.upVector = nil
     opt.dummy = {}
     opt.dummy.size = 0.01
-    opt.dummy.color = Color'#00ccff'
+    opt.dummy.color = sim.Color'#00ccff'
     opt.dummy.visible = true
     -- pathModel.update(opt)
 end]]
@@ -373,7 +373,7 @@ end]]
     local retVal = objInit.init(sim.handle.scene, methodName, {type = 'scriptObject', ['scriptObject.type'] = 'customization', code = code})
     retVal.name = 'path'
     retVal.size = 0.025
-    retVal.color.diffuse = Color'#00ffff'
+    retVal.color.diffuse = sim.Color'#00ffff'
     retVal.layer = 4
     for i = 1, ctrlPts:cols() do
         local dummy = objInit.init(sim.handle.scene, methodName, {type = 'dummy'})
@@ -591,9 +591,9 @@ function objInit.shape(methodName)
         {name = 'culling', type = 'bool', default = false},
         {name = 'dynamics.dynamic', type = 'bool', default = false},
         {name = 'showEdges', type = 'bool', default = false},
-        {name = 'color.diffuse', type = 'color', default = Color:rgb(1.0, 1.0, 1.0)},
-        {name = 'color.specular', type = 'color', default = Color:rgb(0.2, 0.2, 0.2)},
-        {name = 'color.emission', type = 'color', default = Color:rgb(0.0, 0.0, 0.0)},
+        {name = 'color.diffuse', type = 'color', default = sim.Color:rgb(1.0, 1.0, 1.0)},
+        {name = 'color.specular', type = 'color', default = sim.Color:rgb(0.2, 0.2, 0.2)},
+        {name = 'color.emission', type = 'color', default = sim.Color:rgb(0.0, 0.0, 0.0)},
     }, objInit.p)
     if objInit.p.mesh then
         if objInit.p.mesh.handle then

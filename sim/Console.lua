@@ -2,8 +2,8 @@ local CustomClass = require 'sim.CustomClass'
 
 local Console = CustomClass 'console'
 
-Console:setColorProperty('background', Color 'white')
-Console:setColorProperty('defaultColor', Color 'black')
+Console:setColorProperty('background', sim.Color 'white')
+Console:setColorProperty('defaultColor', sim.Color 'black')
 Console:setBoolProperty('hiddenInSimulation', false)
 Console:setBoolProperty('visible', true)
 Console:setStringProperty('ui', '')
@@ -117,7 +117,7 @@ function Console:print(text, color)
 
     self.html = self.html .. string.format(
         '<span style="color: %s;">%s</span>',
-        Color:tocolor(color or self.defaultColor):html(),
+        sim.Color:tocolor(color or self.defaultColor):html(),
         string.escapehtml(text):gsub("\n", "<br>")
     )
 

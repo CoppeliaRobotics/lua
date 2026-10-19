@@ -132,10 +132,10 @@ function Path:initialize(ctrlPoints, opt, data)
         checkargs.checkfields({funcName = "Path:new, options field 'ctrlPoints'"}, {
             {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'cube'},
             {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
-            {name = 'pointColor', type = 'color', default = Color('#ffff00')},
+            {name = 'pointColor', type = 'color', default = sim.Color('#ffff00')},
             {name = 'showAxes', type = 'bool', default = false},
             {name = 'pointRadius', type = 'float', default = 0.005},
-            {name = 'lineColor', type = 'color', default = Color('#ff8800')},
+            {name = 'lineColor', type = 'color', default = sim.Color('#ff8800')},
             {name = 'tubeRadius', type = 'float', default = 0.0025},
             {name = 'duplicateThreshold', type = 'float', default = 0.02},
             {name = 'linearityTolerance', type = 'float', default = 0.001}, -- in percent
@@ -143,10 +143,10 @@ function Path:initialize(ctrlPoints, opt, data)
         checkargs.checkfields({funcName = "Path:new, options field 'pathPoints'"}, {
             {name = 'pointType', enum = {none = 0, sphere = 1, cube = 2}, default = 'none'},
             {name = 'lineType', enum = {none = 0, line = 1, tube = 2}, default = 'line'},
-            {name = 'pointColor', type = 'color', default = Color('#000000')},
+            {name = 'pointColor', type = 'color', default = sim.Color('#000000')},
             {name = 'showAxes', type = 'bool', default = false},
             {name = 'pointRadius', type = 'float', default = 0.002},
-            {name = 'lineColor', type = 'color', default = Color('#050505')},
+            {name = 'lineColor', type = 'color', default = sim.Color('#050505')},
             {name = 'tubeRadius', type = 'float', default = 0.0025},
             {name = 'samplingDistance', type = 'float', default = 0.02},
             {name = 'bezierSmoothing', type = 'float', range = {0.05, 1.0}, default = 1.0},

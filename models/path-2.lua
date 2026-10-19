@@ -9,19 +9,19 @@ function pathModel.sysCall_init()
     pathModel.start()
 end
 
-function pathModel.start()    
+function pathModel.start()
     local opt = {}
     opt.ctrlPoints = {}
     opt.ctrlPoints.pointType = 'none'
     opt.ctrlPoints.lineType = 'line'
-    opt.ctrlPoints.lineColor = Color'#00ffa0'
+    opt.ctrlPoints.lineColor = sim.Color'#00ffa0'
     opt.ctrlPoints.showAxes = false
     opt.ctrlPoints.duplicateThreshold = 0.01
     opt.ctrlPoints.linearityTolerance = 0.01
     opt.pathPoints = {}
     opt.pathPoints.pointType = 'none'
     opt.pathPoints.lineType = 'line'
-    opt.pathPoints.lineColor = Color'#00dd00'
+    opt.pathPoints.lineColor = sim.Color'#00dd00'
     opt.pathPoints.showAxes = false
     opt.pathPoints.type = 'quadraticBezier'
     opt.pathPoints.bezierSmoothing = 1.0
@@ -29,12 +29,12 @@ function pathModel.start()
     opt.closed = false
     opt.extrusion = {}
     opt.extrusion.section = nil
-    opt.extrusion.color = Color'#ffffff'
+    opt.extrusion.color = sim.Color'#ffffff'
     opt.extrusion.selectable = false
     opt.extrusion.upVector = nil
     opt.dummy = {}
     opt.dummy.size = 0.01
-    opt.dummy.color = Color'#00ccff'
+    opt.dummy.color = sim.Color'#00ccff'
     opt.dummy.visible = true
 
     pathModel.opt = opt
@@ -46,7 +46,7 @@ function pathModel.start()
     pathModel.path = nil
     pathModel.ctrlDummyList = {}
     pathModel.ctrlDummyMap = {}
-    
+
     -- Remove children, except for control point dummies:
     local obj = pathModel.modelRoot:getDescendants({depth = 1})
     for i = 1, #obj do
@@ -73,7 +73,7 @@ function pathModel.start()
         pathModel.ctrlDummyList[i].color.diffuse = pathModel.opt.dummy.color
         pathModel.ctrlDummyList[i].layer = l
     end
-    
+
     local dat = pathModel.modelRoot.customData.pathInfo
     if dat == nil then
         local dat2 = pathModel.modelRoot.customData.pathCreationInfo
@@ -92,7 +92,7 @@ function pathModel.start()
         pathModel.path = Path.fromBuffer(dat)
     end
     pathModel.createExtrusionShape()
-    
+
     -- Create and handle markers:
     markers = pathModel.path:createMarkers()
     for k, v in pairs(markers.ctrlPointMarkers) do

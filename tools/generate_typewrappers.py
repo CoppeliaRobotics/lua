@@ -42,7 +42,7 @@ return {
         end
 
         local function write_color(v)
-            return Color(v)
+            return sim.Color(v)
         end
 
         local function write_handle(v)
@@ -89,7 +89,7 @@ return {
 
         local function read_color(v, def)
             if v == nil then v = def end
-            if Color:iscolor(v) then v = v:data() end
+            if sim.Color:iscolor(v) then v = v:data() end
             return v
         end
 
