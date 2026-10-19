@@ -207,9 +207,9 @@ function Object:toobject(o)
     error 'bad type'
 end
 
-function Object:tohandle(arg)
+function Object:tohandle(o)
     assert(self == Object, 'class method')
-    if math.type(arg) == 'integer' then return arg end
+    if math.type(o) == 'integer' then return o end
     if Object:isobject(o) then return o.handle end
     error 'bad type'
 end
