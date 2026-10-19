@@ -1,9 +1,13 @@
 local sim = table.clone(_S.internalApi.sim)
 sim.version = 2
-sim.__all = {'app', 'scene', 'self', 'Buffer', 'Color'}
+sim.__all = {'app', 'scene', 'self', 'Buffer', 'Color', 'Vector', 'Matrix', 'Quaternion', 'Pose'}
 
 sim.Buffer = require 'sim.Buffer'
 sim.Color = require 'sim.Color'
+sim.Vector = require 'simEigen.Vector'
+sim.Matrix = require 'simEigen.Matrix'
+sim.Quaternion = require 'simEigen.Quaternion'
+sim.Pose = require 'simEigen.Pose'
 
 local locals = {}
 __2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only for sim-2)
