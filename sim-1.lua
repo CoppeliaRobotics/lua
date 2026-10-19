@@ -8,6 +8,10 @@ end
 
 sim.Buffer = require 'sim.Buffer'
 sim.Color = require 'sim.Color'
+sim.Vector = require 'simEigen.Vector'
+sim.Matrix = require 'simEigen.Matrix'
+sim.Quaternion = require 'simEigen.Quaternion'
+sim.Pose = require 'simEigen.Pose'
 
 local locals = {}
 __1 = {} -- sometimes globals are needed (but __1 only for sim-1)
