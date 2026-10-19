@@ -336,6 +336,7 @@ function objInit.path(methodName)
     local code = [[pathModel = require'models/path-2'
 
 function sysCall_init()
+    local sim = require'sim-2'
     local opt = {}
     opt.closed = false
     opt.hiddenDuringSim = false
