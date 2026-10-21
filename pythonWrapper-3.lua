@@ -61,6 +61,9 @@ function sysCall_init()
         verbose = verbose or 0,
     }
     rapi.callMethod = sim.callMethod
+    if barePrint then
+        rapi.print = printToConsole
+    end
 
     local ready = false
     rapi:registerCallback('__ready', function() ready = true end)
@@ -80,8 +83,9 @@ rapi = ZMQRemoteAPI({
     'port': args["PORT"],
     'verbose': args["VERBOSE"],
 })
-rapi.print = lambda *args: rapi.call(None, '__print', *map(str, args))
-print = rapi.print
+if args["BARE_PRINT"] is False:
+    rapi.print = lambda *args: rapi.call(None, '__print', *map(str, args))
+    print = rapi.print
 sim.Object._callMethod = rapi.call
 rapi.log(1, 'initializing...')
 
@@ -106,6 +110,7 @@ while 1: rapi.spinSome()
         SCRIPT_ID = sim.self.handle,
         SYSCALLS = sysCalls,
         VERBOSE = rapi.verbose,
+        BARE_PRINT = not not barePrint,
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
