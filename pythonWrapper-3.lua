@@ -55,10 +55,10 @@ function sysCall_init()
     local port = getFreePort()
 
     rapi = sim.ZMQRemoteAPI{
-        name = 'worker-' .. port,
+        name = 'pythonWrapper-luaServer-' .. port,
         port = port,
         server = true,
-        verbose = 0,
+        verbose = verbose or 0,
     }
     rapi.callMethod = sim.callMethod
 
@@ -75,32 +75,37 @@ import sim
 from sim.zmqremoteapi import ZMQRemoteAPI
 
 rapi = ZMQRemoteAPI({
-    'name': f'client-{args["SCRIPT_ID"]}',
+    'name': f'pythonWrapper-pyClient-{args["SCRIPT_ID"]}',
     'server': False,
-    'port': args["WORKER_PORT"],
-    'verbose': 1,
+    'port': args["PORT"],
+    'verbose': args["VERBOSE"],
 })
+rapi.print = lambda *args: rapi.call(None, '__print', *map(str, args))
+print = rapi.print
 sim.Object._callMethod = rapi.call
-
-def print(*args):
-    rapi.call(None, '__print', *args)
+rapi.log(1, 'initializing...')
 
 ]] .. (pythonUserCode or '') .. [[
 
+rapi.log(1, 'registering sysCalls...')
 for name in args["SYSCALLS"]:
     if callable(func := globals().get(name)):
+        rapi.log(2, f'registering sysCall {name}...')
         rapi.registerCallback(name, func, False)
 
+rapi.log(1, 'ready')
 rapi.call(None, '__ready')
 
+rapi.log(1, 'spinning')
 while 1: rapi.spinSome()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
         PYTHON_PATH = sim.app.paths.python,
-        WORKER_PORT = port,
+        PORT = port,
         SCRIPT_ID = sim.self.handle,
         SYSCALLS = sysCalls,
+        VERBOSE = rapi.verbose,
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
