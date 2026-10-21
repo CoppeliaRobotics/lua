@@ -46,6 +46,12 @@ sysCalls = {
     'sysCall_vision',
 }
 
+function __callSysCall(sysCall)
+    if rapi._callables[sysCall] then
+        rapi:call(nil, sysCall)
+    end
+end
+
 function sysCall_init()
     local port = getFreePort()
 
@@ -107,7 +113,7 @@ while 1: rapi.spinSome()
     end
     rapi:log(1, 'python subprocess is ready')
 
-    rapi:call(nil, 'sysCall_init')
+    __callSysCall('sysCall_init')
 
     local excludeSysCalls = {
         sysCall_init = true,
@@ -117,7 +123,7 @@ while 1: rapi.spinSome()
     for _, sysCall in ipairs(sysCalls) do
         if not excludeSysCalls[sysCall] and rapi._callables[sysCall] then
             _G[sysCall] = function()
-                rapi:call(nil, sysCall)
+                __callSysCall(sysCall)
             end
         end
     end
@@ -136,10 +142,8 @@ end
 function sysCall_cleanup()
     rapi:log(1, 'terminating script (handle=' .. sim.self.handle ..') [cleanup]')
 
-    rapi:call(nil, 'sysCall_cleanup')
-
+    __callSysCall('sysCall_cleanup')
     rapi:cleanup()
-
     rapi = nil
 
     if procHandle then
