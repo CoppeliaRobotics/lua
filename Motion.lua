@@ -953,6 +953,7 @@ function TimeOptimalTrajectory:generate(params)
     sim.self:setStepping(true)
 
     local code = [=[
+#luaExec wrapper = 'pythonWrapper-2'
 def sysCall_init():
     global ta, constraint, algo, np
     import toppra as ta

@@ -683,6 +683,7 @@ function sim.generateTimeOptimalTrajectory(...)
     local mmaM = simEigen.Matrix(dof, 2, minMaxAccel)
 
     local code = [=[
+#luaExec wrapper = 'pythonWrapper-2'
 def sysCall_init():
     global ta, constraint, algo, np
     import toppra as ta
