@@ -77,13 +77,20 @@ function locals.removeObjects(target, methodName, objects, delayed)
     callMethod(target, methodName, list, delayed)
 end
 
-function locals.registerFunctionHook(target, methodName, funcNm, func, before)
-    if before == nil then before = true end
+function locals.registerFunctionHook(target, methodName, funcNm, func, opt)
+    local after = false
+    if opt ~= nil then
+        assert(type(opt) == 'table', 'invalid options')
+        if opt.when ~= nil then
+            assert(opt.when == 'before' or opt.when == 'after', "invalid 'when' value (must be 'before' or 'after')")
+            after = (opt.when == 'after')
+        end
+    end
     if type(func) == 'string' then
-        registerScriptFuncHook(funcNm, func, before, false)
+        registerScriptFuncHook(funcNm, func, not after, false)
     else
         local str = tostring(func):gsub("[%s:]", "_") -- typical tostring(func) typically produces: "function: xxxxxxx", and : is reserved
-        registerScriptFuncHook(funcNm, '__2.' .. str, before, false)
+        registerScriptFuncHook(funcNm, '__2.' .. str, not after, false)
         __2[str] = func
     end
 end
@@ -260,9 +267,9 @@ function locals.schedulerCallback()
     end
 
     if locals.scheduler.simpq:isempty() and locals.scheduler.rtpq:isempty() then
-        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, true)
-        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, true)
-        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, {when = 'before'})
+        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, {when = 'before'})
+        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, {when = 'before'})
         locals.scheduler.hook = false
     end
 end
@@ -304,9 +311,9 @@ function locals.scheduleExecution(target, methodName, func, delay, options)
         simTime = options.simulationTime,
     })
     if not locals.scheduler.hook then
-        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, true)
-        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, true)
-        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, true)
+        sim.self:registerFunctionHook('sysCall_nonSimulation', locals.schedulerCallback, {when = 'before'})
+        sim.self:registerFunctionHook('sysCall_sensing', locals.schedulerCallback, {when = 'before'})
+        sim.self:registerFunctionHook('sysCall_suspended', locals.schedulerCallback, {when = 'before'})
         locals.scheduler.hook = true
     end
     return id
@@ -734,7 +741,7 @@ for _, n in ipairs(sim.app.enumTypes) do
     sim[n] = sim.app:getEnumInfo(n)
 end
 
-sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', false) -- hook on *before* init is incompatible with implicit module load...
+sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', {when = 'after'}) -- hook on *before* init is incompatible with implicit module load...
 
 ---[[
 sim._qhull = nil

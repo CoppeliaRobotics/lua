@@ -292,15 +292,15 @@ function pathModel.getCtrlPointConfig()
     return retVal
 end
 
-sim.self:registerFunctionHook('sysCall_init', pathModel.sysCall_init, true)
-sim.self:registerFunctionHook('sysCall_cleanup', pathModel.sysCall_cleanup, true)
-sim.self:registerFunctionHook('sysCall_beforeCopy', pathModel.sysCall_beforeCopy, true)
-sim.self:registerFunctionHook('sysCall_afterCopy', pathModel.sysCall_afterCopy, true)
-sim.self:registerFunctionHook('sysCall_afterCreate', pathModel.sysCall_afterCreate, true)
-sim.self:registerFunctionHook('sysCall_afterDelete', pathModel.sysCall_afterDelete, true)
-sim.self:registerFunctionHook('sysCall_nonSimulation', pathModel.sysCall_nonSimulation, true)
-sim.self:registerFunctionHook('sysCall_beforeSimulation', pathModel.sysCall_beforeSimulation, true)
-sim.self:registerFunctionHook('sysCall_afterSimulation', pathModel.sysCall_afterSimulation, true)
+sim.self:registerFunctionHook('sysCall_init', pathModel.sysCall_init, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_cleanup', pathModel.sysCall_cleanup, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_beforeCopy', pathModel.sysCall_beforeCopy, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_afterCopy', pathModel.sysCall_afterCopy, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_afterCreate', pathModel.sysCall_afterCreate, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_afterDelete', pathModel.sysCall_afterDelete, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_nonSimulation', pathModel.sysCall_nonSimulation, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_beforeSimulation', pathModel.sysCall_beforeSimulation, {when = 'before'})
+sim.self:registerFunctionHook('sysCall_afterSimulation', pathModel.sysCall_afterSimulation, {when = 'before'})
 
 return pathModel
 

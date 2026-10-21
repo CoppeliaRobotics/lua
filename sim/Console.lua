@@ -55,12 +55,12 @@ function Console:init()
     self.ui = simUI.create(xml)
 
     local sim = require 'sim-2'
-    sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
-    sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
+    sim.self:registerFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', {when = 'after'})
+    sim.self:registerFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', {when = 'after'})
 
     if sim.self.type ~= sim.scriptType.simulation and sim.self.type ~= sim.scriptType.main then
-        sim.self:registerFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
-        sim.self:registerFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
+        sim.self:registerFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', {when = 'after'})
+        sim.self:registerFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', {when = 'after'})
     end
 end
 

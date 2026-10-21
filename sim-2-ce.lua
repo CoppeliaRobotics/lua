@@ -3,6 +3,11 @@ sim.app
 sim.scene
 sim.self
 
+sim.Vector
+sim.Matrix
+sim.Quaternion
+sim.Pose
+
 sim.appFlavor.edu
 sim.appFlavor.lite
 sim.appFlavor.pro

@@ -74,16 +74,16 @@ function s_suspended()
     if __restart then return {cmd = 'restart'} end
 end
 
-sim.self:registerFunctionHook('sysCall_init', 's_init', false) -- hook on *before* init is incompatible with implicit module load...
-sim.self:registerFunctionHook('sysCall_cleanup', 's_cleanup', false)
-sim.self:registerFunctionHook('sysCall_beforeSimulation', 's_beforeSimulation', false)
-sim.self:registerFunctionHook('sysCall_afterSimulation', 's_afterSimulation', false)
-sim.self:registerFunctionHook('sysCall_sensing', 's_sensing', false)
-sim.self:registerFunctionHook('sysCall_suspend', 's_suspend', false)
-sim.self:registerFunctionHook('sysCall_resume', 's_resume', false)
-sim.self:registerFunctionHook('sysCall_nonSimulation', 's_nonSimulation', false)
-sim.self:registerFunctionHook('sysCall_actuation', 's_actuation', false)
-sim.self:registerFunctionHook('sysCall_suspended', 's_suspended', false)
+sim.self:registerFunctionHook('sysCall_init', 's_init', {when = 'after'}) -- hook on *before* init is incompatible with implicit module load...
+sim.self:registerFunctionHook('sysCall_cleanup', 's_cleanup', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_beforeSimulation', 's_beforeSimulation', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_afterSimulation', 's_afterSimulation', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_sensing', 's_sensing', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_suspend', 's_suspend', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_resume', 's_resume', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_nonSimulation', 's_nonSimulation', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_actuation', 's_actuation', {when = 'after'})
+sim.self:registerFunctionHook('sysCall_suspended', 's_suspended', {when = 'after'})
 
 -- convenience vars: (sel/sel1/cur/h)
 do
