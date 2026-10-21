@@ -47,9 +47,8 @@ sysCalls = {
 }
 
 function __callSysCall(sysCall)
-    if rapi._callables[sysCall] then
-        rapi:call(nil, sysCall)
-    end
+    if not rapi._callables[sysCall] then return end
+    return rapi:call(nil, sysCall)
 end
 
 function sysCall_init()
@@ -113,8 +112,6 @@ while 1: rapi.spinSome()
     end
     rapi:log(1, 'python subprocess is ready')
 
-    __callSysCall('sysCall_init')
-
     local excludeSysCalls = {
         sysCall_init = true,
         sysCall_thread = true,
@@ -123,10 +120,12 @@ while 1: rapi.spinSome()
     for _, sysCall in ipairs(sysCalls) do
         if not excludeSysCalls[sysCall] and rapi._callables[sysCall] then
             _G[sysCall] = function()
-                __callSysCall(sysCall)
+                return __callSysCall(sysCall)
             end
         end
     end
+
+    return __callSysCall('sysCall_init')
 end
 
 function sysCall_thread()
