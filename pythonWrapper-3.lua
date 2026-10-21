@@ -57,7 +57,8 @@ while 1: rapi.spinSome()
         WORKER_PORT = port,
         SCRIPT_ID = sim.self.handle,
     }
-    procHandle = simSubprocess.execAsync(sim.app.defaultPython, {'-c', code, args})
+    local pyInterp = pythonInterpreter or sim.app.defaultPython
+    procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
     while not ready do
