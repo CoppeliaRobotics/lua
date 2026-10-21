@@ -2,6 +2,50 @@ import 'sim-2'
 import 'sim.ZMQRemoteAPI-2'
 import 'simSubprocess'
 
+sysCalls = {
+    'sysCall_actuation',
+    'sysCall_addOnScriptResume',
+    'sysCall_addOnScriptSuspend',
+    'sysCall_afterCopy',
+    'sysCall_afterCreate',
+    'sysCall_afterDelete',
+    'sysCall_afterInstanceSwitch',
+    'sysCall_afterLoad',
+    'sysCall_afterSave',
+    'sysCall_afterSimulation',
+    'sysCall_beforeCopy',
+    'sysCall_beforeDelete',
+    'sysCall_beforeInstanceSwitch',
+    'sysCall_beforeMainScript',
+    'sysCall_beforeSave',
+    'sysCall_beforeSimulation',
+    'sysCall_cleanup',
+    'sysCall_contact',
+    'sysCall_contactCallback',
+    'sysCall_data',
+    'sysCall_dyn',
+    'sysCall_dynCallback',
+    'sysCall_event',
+    'sysCall_ext',
+    'sysCall_info',
+    'sysCall_init',
+    'sysCall_joint',
+    'sysCall_jointCallback',
+    'sysCall_moduleEntry',
+    'sysCall_msg',
+    'sysCall_nonSimulation',
+    'sysCall_realTimeIdle',
+    'sysCall_resume',
+    'sysCall_selChange',
+    'sysCall_sensing',
+    'sysCall_suspend',
+    'sysCall_suspended',
+    'sysCall_thread',
+    'sysCall_trigger',
+    'sysCall_userConfig',
+    'sysCall_vision',
+}
+
 function sysCall_init()
     local port = getFreePort()
 
@@ -38,12 +82,7 @@ def print(*args):
 
 ]] .. (pythonUserCode or '') .. [[
 
-for name in (
-    'sysCall_init',
-    'sysCall_sensing',
-    'sysCall_actuation',
-    'sysCall_cleanup',
-):
+for name in args["SYSCALLS"]:
     if callable(func := globals().get(name)):
         rapi.registerCallback(name, func, False)
 
@@ -56,6 +95,7 @@ while 1: rapi.spinSome()
         PYTHON_PATH = sim.app.paths.python,
         WORKER_PORT = port,
         SCRIPT_ID = sim.self.handle,
+        SYSCALLS = sysCalls,
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
@@ -68,14 +108,19 @@ while 1: rapi.spinSome()
     rapi:log(1, 'python subprocess is ready')
 
     rapi:call(nil, 'sysCall_init')
-end
 
-function sysCall_sensing()
-    rapi:call(nil, 'sysCall_sensing')
-end
-
-function sysCall_actuation()
-    rapi:call(nil, 'sysCall_actuation')
+    local excludeSysCalls = {
+        sysCall_init = true,
+        sysCall_thread = true,
+        sysCall_cleanup = true,
+    }
+    for _, sysCall in ipairs(sysCalls) do
+        if not excludeSysCalls[sysCall] and rapi._callables[sysCall] then
+            _G[sysCall] = function()
+                rapi:call(nil, sysCall)
+            end
+        end
+    end
 end
 
 function sysCall_thread()
