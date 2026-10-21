@@ -21,7 +21,7 @@ sim.app.customData.serverPort_range = 1000
 sim.app.customData.serverPort_next = sim.app.customData.serverPort_start
 
 function s_init()
-    sim.app:logInfo("Simulator launched, welcome! ")
+    sim.app:logInfo(sim.self.language:capitalize() .. " sandbox script initialized")
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
         if sim.app:getBoolProperty('signal.pythonSandboxInitFailed', {noError = true}) ~= true then
