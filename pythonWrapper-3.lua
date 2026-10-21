@@ -112,6 +112,8 @@ while 1: rapi.spinSome()
     end
     rapi:log(1, 'python subprocess is ready')
 
+    __callSysCall('sysCall_init')
+
     local excludeSysCalls = {
         sysCall_init = true,
         sysCall_thread = true,
@@ -124,8 +126,6 @@ while 1: rapi.spinSome()
             end
         end
     end
-
-    return __callSysCall('sysCall_init')
 end
 
 function sysCall_thread()
