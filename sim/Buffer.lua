@@ -47,7 +47,7 @@ function Buffer:__index(k)
         if strFunc and type(strFunc) == 'function' then
             -- Return a function that, when called, applies the string function to the buffer's content
             return function(bufferObj, ...)
-                return strFunc(bufferObj.__buff__, ...) -- return a string
+                return Buffer(strFunc(bufferObj.__buff__, ...))
             end
         end
     end
