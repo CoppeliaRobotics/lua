@@ -13,13 +13,22 @@ function Buffer:initialize(s)
 end
 
 function Buffer:__concat(other)
-    if Buffer:isbuffer(other) then
-        return Buffer(self.__buff__ .. other.__buff__)
-    elseif type(other) == 'string' then
-        return Buffer(self.__buff__ .. other)
+    local lhs, rhs
+    if Buffer:isbuffer(self) then
+        lhs = self.__buff__
+    elseif type(self) == 'string' then
+        lhs = self
     else
-        error('bad type: ' .. type(other))
+        error('bad LHS type: ' .. type(self))
     end
+    if Buffer:isbuffer(other) then
+        rhs = other.__buff__
+    elseif type(other) == 'string' then
+        rhs = other
+    else
+        error('bad RHS type: ' .. type(other))
+    end
+    return Buffer(lhs .. rhs)
 end
 
 function Buffer:__len()
