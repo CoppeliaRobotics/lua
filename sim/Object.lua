@@ -36,22 +36,22 @@ function Object:__setupPropertyGroups()
     self.__properties:registerLocalProperty('__methods', function()
         local methods = {}
         for i = 0, 1e9 do
-            local pname = self:callMethod('getPropertyName', i)
+            local pname = self:_callMethod('getPropertyName', i)
             if not pname then break end
-            local ptype = self:callMethod('getPropertyInfo', pname)
+            local ptype = self:_callMethod('getPropertyInfo', pname)
             if ptype == sim.propertytype_method then
                 methods[pname] = function(o, ...)
-                    return o:callMethod(pname, ...)
+                    return o:_callMethod(pname, ...)
                 end
             end
         end
         return methods
     end)
 
-    local _type = self:callMethod('getStringProperty', 'type')
+    local _type = self:_callMethod('getStringProperty', 'type')
     rawset(self, 'type', _type)
 
-    local namespaces = self:callMethod('getStringArrayProperty', 'metaInfo.namespaces')
+    local namespaces = self:_callMethod('getStringArrayProperty', 'metaInfo.namespaces')
     for _, ns in pairs(namespaces) do
         rawset(self, ns, PropertyGroup(self, {prefix = ns, newPropertyForcedType = (ns == 'refs' or ns == 'origRefs') and 22 or nil}))
     end
@@ -122,7 +122,7 @@ function Object:isobject(o)
     return Object.isInstanceOf(o, Object)
 end
 
-function Object:callMethod(method, ...)
+function Object:_callMethod(method, ...)
     -- note: this method will be overwritten by sim-2.lua, thus changing from
     --       sim.callMethod==[C]callMethod, to [Lua]sim.callMethod
     return sim.callMethod(self, method, ...)
@@ -133,11 +133,11 @@ function Object:isValid()
 end
 
 function Object:getPropertyInfo(pname, opts)
-    return self:callMethod('getPropertyInfo', pname, opts)
+    return self:_callMethod('getPropertyInfo', pname, opts)
 end
 
 function Object:getPropertyInfos(pname, opts)
-    return self:callMethod('getPropertyInfos', pname, opts)
+    return self:_callMethod('getPropertyInfos', pname, opts)
 end
 
 --[[
@@ -154,7 +154,7 @@ function Object:getPropertyInfo(pname, opts)
     if propertyInfo[self.type][pname] then
         ptype, pflags, descr = table.unpack(propertyInfo[self.type][pname])
     else
-        ptype, pflags, descr = self:callMethod('getPropertyInfo', pname, table.update(opts, {bitCoded = 1}))
+        ptype, pflags, descr = self:_callMethod('getPropertyInfo', pname, table.update(opts, {bitCoded = 1}))
         if pflags and (pflags & sim.propertyinfo_removable) > 0 then
             return ptype, pflags, descr
         end

@@ -729,7 +729,7 @@ function __2.sysCallEx_init()
 end
 
 sim.Object = require 'sim.Object'
-sim.Object.callMethod = sim.callMethod -- replace [C]callMethod with [Lua]sim.callMethod
+sim.Object._callMethod = sim.callMethod -- replace [C]callMethod with [Lua]sim.callMethod
 sim.ObjectArray = require 'sim.ObjectArray'
 sim.PropertyGroup = require 'sim.PropertyGroup'
 

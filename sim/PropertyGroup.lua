@@ -33,12 +33,12 @@ function PropertyGroup:__index(k)
     local ptype = object:getPropertyInfo(k, {noError = true})
     if ptype == sim.propertytype_method then
         return function(_, ...)
-            return object:callMethod(k, ...)
+            return object:_callMethod(k, ...)
         end
     elseif ptype == sim.propertytype_group then
         return PropertyGroup(object, {prefix = k})
     elseif ptype then
-        local v = object:callMethod('getProperty', k, {type = ptype})
+        local v = object:_callMethod('getProperty', k, {type = ptype})
 
         local simEigen = require 'simEigen'
         if simEigen.Matrix:ismatrix(v) or simEigen.Quaternion:isquaternion(v) then
@@ -69,7 +69,7 @@ function PropertyGroup:__newindex(k, v)
     if prefix ~= '' then k = prefix .. '.' .. k end
 
     local object = rawget(self, '__object')
-    object:callMethod('setProperty', k, v, {type = self.__opts.newPropertyForcedType})
+    object:_callMethod('setProperty', k, v, {type = self.__opts.newPropertyForcedType})
 end
 
 function PropertyGroup:__tostring()
@@ -89,17 +89,17 @@ function PropertyGroup:__pairs(opts)
     local props = {}
     local i = 0
     while true do
-        local pnameFull = object:callMethod('getPropertyName', i, {prefix = prefix})
+        local pnameFull = object:_callMethod('getPropertyName', i, {prefix = prefix})
         if pnameFull == nil then break end
         local pname = string.stripprefix(pnameFull, prefix)
         pname = pname:gsub('%..*', '') -- strip everything after first dot
         if not props[pname] then
-            local ptype, pflags, metaInfo = object:callMethod('getPropertyInfo', prefix .. pname)
+            local ptype, pflags, metaInfo = object:_callMethod('getPropertyInfo', prefix .. pname)
             local readable = pflags & 2 == 0
             if ptype == sim.propertytype_group then
                 props[pname] = PropertyGroup(object, {prefix = prefix .. pname})
             elseif readable then
-                props[pname] = object:callMethod('getProperty', prefix .. pname, {type = ptype})
+                props[pname] = object:_callMethod('getProperty', prefix .. pname, {type = ptype})
                 if opts.dump and ptype == sim.propertytype_enum then
                     props[pname] = setmetatable({}, {__tostring = function(self)
                         return string.format('%d (%s)', object:getIntProperty(pnameFull), object:getStringProperty(pnameFull))
