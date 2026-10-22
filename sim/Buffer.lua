@@ -39,13 +39,22 @@ function Buffer:__eq(other)
     return Buffer:isbuffer(self) and Buffer:isbuffer(other) and self.__buff__ == other.__buff__
 end
 
---function Buffer:__index(k)
---    return self.__buff__[k]
---end
+function Buffer:__index(k)
+    if type(k) == 'string' and Buffer[k] == nil then
+        -- Allow access to string methods, e.g., bufferObj:find(...)
+        local strFunc = string[k]
+        if strFunc and type(strFunc) == 'function' then
+            -- Return a function that, when called, applies the string function to the buffer's content
+            return function(bufferObj, ...)
+                return strFunc(bufferObj.__buff__, ...) -- return a string
+            end
+        end
+    end
+end
 
---function Buffer:__newindex(k, v)
---    error('attempt to modify a buffer value')
---end
+function Buffer:__newindex(k, v)
+    error('attempt to modify a buffer value')
+end
 
 function Buffer:__tostring()
     return self.__buff__
