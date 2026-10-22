@@ -46,9 +46,9 @@ sysCalls = {
     'sysCall_vision',
 }
 
-function __callSysCall(sysCall)
+function __callSysCall(sysCall, ...)
     if not rapi._callables[sysCall] then return end
-    return rapi:call(nil, sysCall)
+    return rapi:call(nil, sysCall, ...)
 end
 
 function sysCall_init()
@@ -72,45 +72,23 @@ function sysCall_init()
     code = [[
 import sys
 import json
-args = json.loads(sys.argv[1])
-sys.path.insert(0, args["PYTHON_PATH"])
-import sim
-from sim.zmqremoteapi import ZMQRemoteAPI
-
-rapi = ZMQRemoteAPI({
-    'name': f'pythonWrapper-pyClient-{args["SCRIPT_ID"]}',
-    'server': False,
-    'port': args["PORT"],
-    'verbose': args["VERBOSE"],
-})
-if args["BARE_PRINT"] is False:
-    rapi.print = lambda *args: rapi.call(None, '__print', *map(str, args))
-    print = rapi.print
-sim.Object._callMethod = rapi.call
-rapi.log(1, 'initializing...')
-
+__args = json.loads(sys.argv[1])
+sys.path.insert(0, __args["pythonPath"])
+from sim.zmqremoteapi import PythonWrapper
+__wrapper = PythonWrapper(**__args)
+print = __wrapper.rapi.print
 ]] .. (pythonUserCode or '') .. [[
-
-rapi.log(1, 'registering sysCalls...')
-for name in args["SYSCALLS"]:
-    if callable(func := globals().get(name)):
-        rapi.log(2, f'registering sysCall {name}...')
-        rapi.registerCallback(name, func, False)
-
-rapi.log(1, 'ready')
-rapi.call(None, '__ready')
-
-rapi.log(1, 'spinning')
-while 1: rapi.spinSome()
+__wrapper.registerSysCalls(globals())
+__wrapper.spin()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
-        PYTHON_PATH = sim.app.paths.python,
-        PORT = port,
-        SCRIPT_ID = sim.self.handle,
-        SYSCALLS = sysCalls,
-        VERBOSE = rapi.verbose,
-        BARE_PRINT = not not barePrint,
+        pythonPath = sim.app.paths.python,
+        port = port,
+        client_id = sim.self.handle,
+        sysCalls = sysCalls,
+        verbose = rapi.verbose,
+        barePrint = not not barePrint,
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
@@ -131,8 +109,8 @@ while 1: rapi.spinSome()
     }
     for _, sysCall in ipairs(sysCalls) do
         if not excludeSysCalls[sysCall] and rapi._callables[sysCall] then
-            _G[sysCall] = function()
-                return __callSysCall(sysCall)
+            _G[sysCall] = function(...)
+                return __callSysCall(sysCall, ...)
             end
         end
     end
