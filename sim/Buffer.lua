@@ -4,12 +4,13 @@ local Buffer = class 'sim.Buffer'
 
 function Buffer:initialize(s)
     if Buffer:isbuffer(s) then
-        self.__buff__ = s.__buff__
+        s = s.__buff__
     elseif type(s) == 'string' then
-        self.__buff__ = s
+        -- already string
     else
         error('bad type: ' .. type(s))
     end
+    rawset(self, '__buff__', s)
 end
 
 function Buffer:__concat(other)
