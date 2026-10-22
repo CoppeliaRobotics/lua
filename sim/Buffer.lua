@@ -13,9 +13,9 @@ function Buffer:initialize(s)
 end
 
 function Buffer:__concat(other)
-    if Buffer:isbuffer(s) then
+    if Buffer:isbuffer(other) then
         return Buffer(self.__buff__ .. other.__buff__)
-    elseif type(s) == 'string' then
+    elseif type(other) == 'string' then
         return Buffer(self.__buff__ .. other)
     else
         error('bad type: ' .. type(other))
