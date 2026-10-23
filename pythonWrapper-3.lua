@@ -143,15 +143,11 @@ end
 
 function getFreePort()
     local simZMQ = require 'simZMQ'
-    local function nextPort(v)
-        local k = 'zmqRemoteApi2.embeddedScriptNextPort'
-        if v == nil then return sim.app.signal[k] end
-        sim.app.sandbox:executeString("require('sim-2').app.signal['" .. k .. "']=" .. v)
-    end
     while true do
         sim.app:systemLock('pythonWrapper-3', true)
-        local port = nextPort() or 43210
-        nextPort(port + 1)
+        local n = 'signal.zmqRemoteApi2.embeddedScriptNextPort'
+        local port = sim.app[n] or 43210
+        sim.app.sandbox:callMethod(sim.app, 'setIntProperty', n, port + 1)
         sim.app:systemLock('pythonWrapper-3', false)
 
         local ctx = simZMQ.ctx_new()
