@@ -73,8 +73,18 @@ from sim.zmqremoteapi import PythonWrapper
 __wrapper = PythonWrapper(**__args)
 print = __wrapper.rapi.print
 ]] .. (pythonUserCode or '') .. [[
-__wrapper.registerSysCalls(globals())
-__wrapper.spin()
+__g = globals()
+__wrapper.registerSysCalls(__g)
+import inspect
+if inspect.iscoroutinefunction(f := __g.get('sysCall_thread')):
+    import asyncio
+    async def main():
+        spin = asyncio.create_task(__wrapper.spinAsync(), name='spin')
+        poll = asyncio.create_task(f(), name='sysCall_thread')
+        await asyncio.gather(spin, poll)
+    asyncio.run(main())
+else:
+    __wrapper.spin()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
