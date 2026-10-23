@@ -16,9 +16,12 @@ require('base-ce')
 local l = auxFunc('getfiles', sim.app.paths.lua, '*-ce', 'lua')
 for i = 1, #l, 1 do require(string.gsub(l[i], "%.lua$", "")) end
 
-sim.app.customData.serverPort_start = 20000
-sim.app.customData.serverPort_range = 1000
-sim.app.customData.serverPort_next = sim.app.customData.serverPort_start
+if sim.app.customData.lastSession ~= sim.app.sessionId then
+    sim.app.customData.lastSession = sim.app.sessionId
+    sim.app.customData.serverPort_start = 20000
+    sim.app.customData.serverPort_range = 1000
+    sim.app.customData.serverPort_next = sim.app.customData.serverPort_start
+end
 
 function s_init()
     sim.app:logInfo(sim.self.language:capitalize() .. " sandbox script initialized")
