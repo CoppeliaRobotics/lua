@@ -46,13 +46,8 @@ sysCalls = {
     'sysCall_vision',
 }
 
-function __callSysCall(sysCall, ...)
-    if not rapi._callables[sysCall] then return end
-    return rapi:call(nil, sysCall, ...)
-end
-
-function sysCall_init()
-    local port = getFreePort()
+function __pythonWrapper_init()
+    local port = __pythonWrapper_getFreePort()
 
     rapi = sim.ZMQRemoteAPI{
         name = 'pythonWrapper-luaServer-' .. port,
@@ -100,23 +95,20 @@ __wrapper.spin()
     end
     rapi:log(1, 'python subprocess is ready')
 
-    __callSysCall('sysCall_init')
-
-    local excludeSysCalls = {
-        sysCall_init = true,
-        sysCall_thread = true,
-        sysCall_cleanup = true,
-    }
     for _, sysCall in ipairs(sysCalls) do
-        if not excludeSysCalls[sysCall] and rapi._callables[sysCall] then
-            _G[sysCall] = function(...)
-                return __callSysCall(sysCall, ...)
-            end
+        local funcName = '__pythonWrapper_call_' .. sysCall
+        _G[funcName] = function(...)
+            if not rapi._callables[sysCall] then return end
+            return rapi:call(nil, sysCall, ...)
+        end
+        if rapi._callables[sysCall] then
+            local opts = {when = sysCall == 'sysCall_cleanup' and 'before' or 'after'}
+            sim.self:registerFunctionHook(sysCall, funcName, opts)
         end
     end
 end
 
-function sysCall_thread()
+function __pythonWrapper_thread()
     rapi:log(1, 'thread running')
     while rapi:isRemoteAlive() do
         rapi:spinSome()
@@ -126,10 +118,9 @@ function sysCall_thread()
     sim.self:remove()
 end
 
-function sysCall_cleanup()
+function __pythonWrapper_cleanup()
     rapi:log(1, 'terminating script (handle=' .. sim.self.handle ..') [cleanup]')
 
-    __callSysCall('sysCall_cleanup')
     rapi:cleanup()
     rapi = nil
 
@@ -141,7 +132,7 @@ function sysCall_cleanup()
     end
 end
 
-function getFreePort()
+function __pythonWrapper_getFreePort()
     local simZMQ = require 'simZMQ'
     while true do
         sim.app:systemLock('pythonWrapper-3', true)
@@ -159,3 +150,7 @@ function getFreePort()
         end
     end
 end
+
+sim.self:registerFunctionHook('sysCall_init', '__pythonWrapper_init', {when = 'before'})
+sim.self:registerFunctionHook('sysCall_thread', '__pythonWrapper_thread', {when = 'before'})
+sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
