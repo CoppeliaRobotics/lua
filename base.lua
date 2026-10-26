@@ -539,7 +539,7 @@ if _DEVMODE then
             if info then
                 local sloc = info.short_src .. ':' .. info.currentline
                 if info.name then sloc = info.name .. ' in ' .. sloc end
-                addLog(430, sloc .. ": write to global '" .. key .. "'!")
+                addLog(430, sloc .. ": created global variable '" .. key .. "'!")
             end
         end
         if old_newindex then
