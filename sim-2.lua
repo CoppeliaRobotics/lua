@@ -673,7 +673,7 @@ function locals.getTableProperty(target, methodName, ...)
     if buf then
         local retVal = {}
         if #buf > 0 then
-            if string.byte(buf, 1) == 0 or string.byte(buf, 1) == 5 then
+            if buf:byte(1) == 0 or buf:byte(1) == 5 then
                 retVal = sim.app:unpack(buf)
             else
                 retVal = sim.app:deserialize(buf)
