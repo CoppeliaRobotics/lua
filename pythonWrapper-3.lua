@@ -72,6 +72,7 @@ sys.path.insert(0, __args["pythonPath"])
 from sim.zmqremoteapi import PythonWrapper
 __wrapper = PythonWrapper(**__args)
 print = __wrapper.rapi.print
+__wrapper.registerCmdInterface()
 ]] .. (pythonUserCode or '') .. [[
 __g = globals()
 __wrapper.registerSysCalls(__g)
@@ -164,3 +165,19 @@ end
 sim.self:registerFunctionHook('sysCall_init', '__pythonWrapper_init', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_thread', '__pythonWrapper_thread', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
+
+function _evalExec(...)
+    rapi:call(nil, 'evalExec', ...)
+end
+
+function _evalExecRet(...)
+    rapi:call(nil, 'evalExecRet', ...)
+end
+
+function _getCompletion(...)
+    rapi:call(nil, 'getCompletion', ...)
+end
+
+function _getCalltip(...)
+    rapi:call(nil, 'getCalltip', ...)
+end
