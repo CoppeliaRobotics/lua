@@ -481,7 +481,7 @@ end
 require('mathx')
 require('stringx')
 require('tablex')
-require('deprecated.bufferConversions')
+--require('deprecated.bufferConversions')
 import('functional', '*')
 import('var', '*')
 
