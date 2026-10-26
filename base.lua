@@ -346,30 +346,6 @@ function _S.sysCallBase_actuation()
     end
 end
 
-function _S.getObject(n)
-    -- shorthand assigned to H, for quick object retrieval in sandbox
-    -- e.g.: H'/Floor'.pose
-    local sim = _G.sim or require 'sim-2' -- typically, global 'sim' will be set in the sandbox
-    assert(sim.version, 'sim.version is not set')
-    if sim.version == 1 then
-        return sim.getObject(n)
-    elseif sim.version == 2 then
-        return sim.scene:getObject(n)
-    end
-    error('unsupported value in sim.version: ' .. sim.version)
-end
-
-function _S.getObjectSel(n)
-    local sim = _G.sim or require 'sim-2' -- typically, global 'sim' will be set in the sandbox
-    assert(sim.version, 'sim.version is not set')
-    if sim.version == 1 then
-        return sim.getObjectSel()
-    elseif sim.version == 2 then
-        return sim.scene.selection
-    end
-    error('unsupported value in sim.version: ' .. sim.version)
-end
-
 function _evalExec(inputStr)
     local sim = require 'sim-1'
     local function pfunc(theStr)
