@@ -536,9 +536,11 @@ if _DEVMODE then
     mt.__newindex = function(tbl, key, value)
         if watchGlobalsFilter == '*' or table.find(watchGlobalsFilter, key) then
             local info = debug.getinfo(2, "nSl")
-            local sloc = info.short_src .. ':' .. info.currentline
-            if info.name then sloc = info.name .. ' in ' .. sloc end
-            addLog(430, sloc .. ": write to global '" .. key .. "'!")
+            if info then
+                local sloc = info.short_src .. ':' .. info.currentline
+                if info.name then sloc = info.name .. ' in ' .. sloc end
+                addLog(430, sloc .. ": write to global '" .. key .. "'!")
+            end
         end
         if old_newindex then
             if type(old_newindex) == "function" then
