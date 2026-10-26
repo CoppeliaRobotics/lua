@@ -4,7 +4,7 @@ return function(arg)
     if not i then return end
     local pe = sim.app.addOns[i]
     if not pe then return end
-    if pe.state ~= sim.scriptstate_initialized then
+    if pe.state ~= sim.scriptState.initialized then
         pe:init()
     end
     if arg then

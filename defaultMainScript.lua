@@ -76,7 +76,7 @@ function sysCall_resume()
 end
 
 function sysCall_joint(inData)
-    if inData.mode == sim.jointmode_kinematic then
+    if inData.mode == sim.jointMode.kinematic then
         if _S.kinJointMotionData == nil then _S.kinJointMotionData = {} end
         if _S.kinJointMotionData[inData.joint.handle] == nil then
             _S.kinJointMotionData[inData.joint.handle] = {vel = 0, accel = 0}

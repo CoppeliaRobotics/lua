@@ -237,7 +237,7 @@ end
 function objInit.joint(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'joint.type', enum = sim.jointType, default = 'revolute'},
-        {name = 'mode', type = 'int', default = sim.jointmode_dynamic},
+        {name = 'mode', type = 'int', default = sim.jointMode.dynamic},
         {name = 'length', type = 'float', default = 0.15},
         {name = 'diameter', type = 'float', default = 0.02},
         {name = 'bounds', type = 'table', item_type = 'float', size = "0..2", nullable = true},

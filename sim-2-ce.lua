@@ -112,6 +112,12 @@ sim.verbosity.traceLua
 sim.verbosity.useGlobal
 sim.verbosity.warnings
 
+sim.jointType
+sim.lightType
+sim.dummyType
+sim.proximitySensorType
+sim.shapeType
+
 
 sim.propertyinfo_constant
 sim.propertyinfo_deprecated

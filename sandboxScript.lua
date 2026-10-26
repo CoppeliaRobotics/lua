@@ -47,7 +47,7 @@ function s_afterSimulation()
 end
 
 function s_sensing()
-    if sim.scene.simulation.state == sim.simulation_advancing_lastbeforestop and not ___m then
+    if sim.scene.simulation.state == sim.simulationState.lastBeforeStop and not ___m then
         sim.app:logInfo("Simulation stopping...")
         ___m = true
     end

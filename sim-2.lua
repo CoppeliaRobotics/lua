@@ -436,6 +436,7 @@ function locals.openFile(target, methodName, file)
     end
 end
 
+--[[
 -- wrap require() to load embedded scripts' code when called with a script handle, e.g. require(sim.getObject '/foo')
 if not _S.requireWrapped then
     _S.requireWrapped = true -- other sim-versions might already have wrapped it
@@ -450,6 +451,7 @@ if not _S.requireWrapped then
         end
     end)
 end
+--]]
 
 function locals.serialize(target, methodName, data)
     local cbor = require 'simCBOR'
@@ -1285,8 +1287,22 @@ sim.dummytype_dyntendon = nil
 sim.handle.world = nil
 sim.handle_world = nil
 
-sim.jointType = nil
-sim.lightType = nil
+--sim.dummyType = nil
+--sim.jointType = nil
+--sim.lightType = nil
+--sim.proximitySensorType = nil
+--sim.shapeType = nil
+
+sim.scriptstate_ended = nil
+sim.scriptstate_error = nil
+sim.scriptstate_initialized = nil
+sim.scriptstate_suspended = nil
+sim.scriptstate_uninitialized = nil
+sim.scriptstate_unloaded = nil
+
+
+sim.sceneObjectType = nil
+
 sim.markerOptions = nil
 sim.materialComponent = nil
 sim.parentingMode = nil
@@ -1310,7 +1326,6 @@ sim.headlessmode_emulated = nil
 sim.headlessmode_enabled = nil
 
 sim.codeLang = nil
-sim.dummyType = nil
 
 sim.lang_lua = nil
 sim.lang_python = nil
@@ -1341,10 +1356,6 @@ sim.platform_linux = nil
 sim.platform_macos = nil
 sim.platform_windows = nil
 
-sim.proximitySensorType = nil
-sim.sceneObjectType = nil
-
-sim.shapeType = nil
 
 sim.proximitysensor_cone = nil
 sim.proximitysensor_cylinder = nil
@@ -1358,12 +1369,6 @@ sim.scriptexecorder_first = nil
 sim.scriptexecorder_last = nil
 sim.scriptexecorder_normal = nil
 
-sim.scriptstate_ended = nil
-sim.scriptstate_error = nil
-sim.scriptstate_initialized = nil
-sim.scriptstate_suspended = nil
-sim.scriptstate_uninitialized = nil
-sim.scriptstate_unloaded = nil
 
 sim.scripttype_addon = nil
 sim.scripttype_customization = nil
