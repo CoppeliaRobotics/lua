@@ -42,7 +42,22 @@ if _VERSION ~= 'Lua 5.1' then
     loadstring = load
 end
 
-pcall(require, 'devmode')
+if _DEVMODE then
+    -- if --devmode (short: -D) is passed as command-line option, _DEVMODE will be set to true;
+    -- the user can place a devmode.lua script in its user scripts dir (~/.CoppeliaSim/lua/devmode.lua)
+    -- to control devmode options
+    -- from now on, _DEVMODE becomes a table (checks such as `if _DEVMODE then ... end` remain valid)
+    local ok, devModeOpts = pcall(require, 'devmode')
+    _DEVMODE = {}
+    if ok then
+        local t = type(devModeOpts)
+        if t == 'table' then
+            _DEVMODE = devModeOpts
+        elseif t ~= 'boolean' and t ~= 'nil' then
+            addLog(300, 'devmode.lua should return a table (got: ' .. t .. ')')
+        end
+    end
+end
 
 function wrap(originalFunction, wrapperFunctionGenerator)
     --[[
@@ -508,17 +523,18 @@ registerScriptFuncHook('sysCall_init', '_S.sysCallBase_init', false) -- hook on 
 registerScriptFuncHook('sysCall_nonSimulation', '_S.sysCallBase_nonSimulation', true)
 registerScriptFuncHook('sysCall_actuation', '_S.sysCallBase_actuation', true)
 
-if not _DEVMODE or not (type(_DEVMODE) == 'table' and _DEVMODE.NO_LAZYLOADERS) then
+if not _DEVMODE or _DEVMODE.NO_LAZYLOADERS then
     require 'deprecated.lazyLoaders'
     --require 'deprecated.matrixLazyLoaders' -- moved to sim-1.lua
 end
 
 if _DEVMODE then
-    -- DEBUG: print each time global variable "sim" is about to be wrote to:
+    -- print each time global variables matching _DEVMODE.WATCH_GLOBALS are about to be wrote to:
     local mt = getmetatable(_G) or {}
     local old_newindex = mt.__newindex
+    local watchGlobalsFilter = _DEVMODE.WATCH_GLOBALS or {'sim', 'simIK', 'simUI', 'simGeom', 'simMujoco', 'simAssimp', 'simBubble', 'simCHAI3D', 'simMTB', 'simOMPL', 'simOpenMesh', 'simQHull', 'simRRS1', 'simSDF', 'simSubprocess', 'simSurfRec', 'simURDF', 'simVision', 'simWS', 'simZMQ', 'simIM', 'simEigen', 'simIGL', 'simICP', 'simROS', 'simROS2', 'simEvent'}
     mt.__newindex = function(tbl, key, value)
-        if key == 'sim' or key == 'simIK' or key == 'simUI' or key == 'simGeom' or key == 'simMujoco' or key == 'simAssimp' or key == 'simBubble' or key == 'simCHAI3D' or key == 'simMTB' or key == 'simOMPL' or key == 'simOpenMesh' or key == 'simQHull' or key == 'simRRS1' or key == 'simSDF' or key == 'simSubprocess' or key == 'simSurfRec' or key == 'simURDF' or key == 'simVision' or key == 'simWS' or key == 'simZMQ' or key == 'simIM' or key == 'simEigen' or key == 'simIGL' or key == 'simICP' or key == 'simROS' or key == 'simROS2' or key == 'simEvent' then
+        if watchGlobalsFilter == '*' or table.find(watchGlobalsFilter, key) then
             local info = debug.getinfo(2, "nSl")
             local sloc = info.short_src .. ':' .. info.currentline
             if info.name then sloc = info.name .. ' in ' .. sloc end
