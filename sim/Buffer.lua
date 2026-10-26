@@ -47,7 +47,11 @@ function Buffer:__index(k)
         if strFunc and type(strFunc) == 'function' then
             -- Return a function that, when called, applies the string function to the buffer's content
             return function(bufferObj, ...)
-                return Buffer(strFunc(bufferObj.__buff__, ...))
+                local ret = {strFunc(bufferObj.__buff__, ...)}
+                if type(ret[1]) == 'string' then
+                    ret[1] = Buffer(ret[1])
+                end
+                return table.unpack(ret)
             end
         end
     end
