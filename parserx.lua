@@ -14,7 +14,7 @@ function parserx.parseIncomplete(s, f, d)
     local ast, error_msg = parser.parse(s, f)
     if ast then return s, ast end
 
-    sym = error_msg:match " expected '(.*)' "
+    local sym = error_msg:match " expected '(.*)' "
     if sym then return parserx.parseIncomplete(s .. ' ' .. sym, f, d) end
 
     if error_msg:match ' unclosed string%f[%A]' then
@@ -127,12 +127,12 @@ function parserx.dump(o, indent)
 end
 
 function parserx.getCallContexts(s, pos)
-    s1, ast = parserx.parseIncomplete(s)
+    local s1, ast = parserx.parseIncomplete(s)
     if verbose then
         print(s)
         print(s1)
     end
-    rs = parserx.findCallsAtPosition(ast, pos)
+    local rs = parserx.findCallsAtPosition(ast, pos)
     return rs
 end
 
