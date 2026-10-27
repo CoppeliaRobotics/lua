@@ -107,7 +107,7 @@ function ObjectArray:__tocbor()
     local cbor = require 'simCBOR'
     local cbor_c = require 'org.conman.cbor_c'
     return cbor_c.encode(0xC0, cbor.Tags.Sim.HandleArray)
-        .. cbor.encode(self.handle)
+        .. cbor.TYPE.ARRAY(self.handle)
 end
 
 function ObjectArray:__dump(maxDepth)
