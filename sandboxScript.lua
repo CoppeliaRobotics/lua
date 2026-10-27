@@ -24,7 +24,7 @@ if sim.app.customData.lastSession ~= sim.app.sessionId then
 end
 
 function s_init()
-    sim.app:logInfo(sim.self.language:capitalize() .. " sandbox initialized")
+    sim.app:logInfo("Lua sandbox initialized")
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
     end
