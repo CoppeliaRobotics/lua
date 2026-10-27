@@ -243,7 +243,6 @@ sim.stringparam_usersettingsdir
 sim.stringparam_verbosity
 sim.stringparam_video_filename
 sim.stringparam_addondir
-sim.stringparam_sandboxlang
 sim.visionfarrayparam_viewfrustum
 sim.visionfloatparam_far_clipping
 sim.visionfloatparam_near_clipping

@@ -24,17 +24,14 @@ if sim.app.customData.lastSession ~= sim.app.sessionId then
 end
 
 function s_init()
-    sim.app:logInfo(sim.self.language:capitalize() .. " sandbox script initialized")
+    sim.app:logInfo(sim.self.language:capitalize() .. " sandbox initialized")
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
-        if sim.app:getBoolProperty('signal.pythonSandboxInitFailed', {noError = true}) ~= true then
-            require('pythonLuaSetupAssistant')
-        end
     end
 end
 
 function s_cleanup()
-    sim.app:logInfo("Leaving...")
+    sim.app:logInfo("Leaving... (" .. sim.self.language:capitalize() .. " sandbox)")
 end
 
 function s_beforeSimulation()
@@ -79,14 +76,16 @@ end
 
 sim.self:registerFunctionHook('sysCall_init', 's_init', {when = 'after'}) -- hook on *before* init is incompatible with implicit module load...
 sim.self:registerFunctionHook('sysCall_cleanup', 's_cleanup', {when = 'after'})
-sim.self:registerFunctionHook('sysCall_beforeSimulation', 's_beforeSimulation', {when = 'after'})
-sim.self:registerFunctionHook('sysCall_afterSimulation', 's_afterSimulation', {when = 'after'})
-sim.self:registerFunctionHook('sysCall_sensing', 's_sensing', {when = 'after'})
-sim.self:registerFunctionHook('sysCall_suspend', 's_suspend', {when = 'after'})
-sim.self:registerFunctionHook('sysCall_resume', 's_resume', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_nonSimulation', 's_nonSimulation', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_actuation', 's_actuation', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_suspended', 's_suspended', {when = 'after'})
+if sim.scene.sandboxLua == sim.self then
+    sim.self:registerFunctionHook('sysCall_beforeSimulation', 's_beforeSimulation', {when = 'after'})
+    sim.self:registerFunctionHook('sysCall_afterSimulation', 's_afterSimulation', {when = 'after'})
+    sim.self:registerFunctionHook('sysCall_sensing', 's_sensing', {when = 'after'})
+    sim.self:registerFunctionHook('sysCall_suspend', 's_suspend', {when = 'after'})
+    sim.self:registerFunctionHook('sysCall_resume', 's_resume', {when = 'after'})
+end
 
 -- convenience vars: (sel/sel1/cur/h)
 do

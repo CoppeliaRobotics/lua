@@ -149,7 +149,7 @@ function __pythonWrapper_getFreePort()
         sim.app:systemLock('pythonWrapper-3', true)
         local n = 'signal.zmqRemoteApi2.embeddedScriptNextPort'
         local port = sim.app[n] or 43210
-        sim.app.sandbox:callMethod(sim.app, 'setIntProperty', n, port + 1)
+        sim.app.sandboxLua:callMethod(sim.app, 'setIntProperty', n, port + 1)
         sim.app:systemLock('pythonWrapper-3', false)
 
         local ctx = simZMQ.ctx_new()
