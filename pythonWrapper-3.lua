@@ -65,27 +65,42 @@ function __pythonWrapper_init()
     rapi:registerCallback('__print', print)
 
     code = [[
-import sys
-import json
-__args = json.loads(sys.argv[1])
-sys.path.insert(0, __args["pythonPath"])
-from sim.zmqremoteapi import PythonWrapper
-__wrapper = PythonWrapper(**__args)
-print = __wrapper.rapi.print
-__wrapper.registerCmdInterface()
+def __init():
+    import sys
+    import json
+    __args = json.loads(sys.argv[1])
+    sys.path.insert(0, __args["pythonPath"])
+
+    global __wrapper
+    from sim.zmqremoteapi import PythonWrapper
+    __wrapper = PythonWrapper(**__args)
+
+    global print
+    print = __wrapper.rapi.print
+
+    __wrapper.registerCmdInterface()
+
+
+def __postInit():
+    __g = globals()
+    __wrapper.registerSysCalls(__g)
+    import inspect
+    if inspect.iscoroutinefunction(f := __g.get('sysCall_thread')):
+        import asyncio
+        async def main():
+            spin = asyncio.create_task(__wrapper.spinAsync(), name='spin')
+            poll = asyncio.create_task(f(), name='sysCall_thread')
+            await asyncio.gather(spin, poll)
+        asyncio.run(main())
+    else:
+        __wrapper.spin()
+
+
+__init()
+
 ]] .. (pythonUserCode or '') .. [[
-__g = globals()
-__wrapper.registerSysCalls(__g)
-import inspect
-if inspect.iscoroutinefunction(f := __g.get('sysCall_thread')):
-    import asyncio
-    async def main():
-        spin = asyncio.create_task(__wrapper.spinAsync(), name='spin')
-        poll = asyncio.create_task(f(), name='sysCall_thread')
-        await asyncio.gather(spin, poll)
-    asyncio.run(main())
-else:
-    __wrapper.spin()
+
+__postInit()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
@@ -167,17 +182,17 @@ sim.self:registerFunctionHook('sysCall_thread', '__pythonWrapper_thread', {when 
 sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
 
 function _evalExec(...)
-    rapi:call(nil, 'evalExec', ...)
+    rapi:call(nil, '__pythonWrapper_evalExec', ...)
 end
 
 function _evalExecRet(...)
-    rapi:call(nil, 'evalExecRet', ...)
+    rapi:call(nil, '__pythonWrapper_evalExecRet', ...)
 end
 
 function _getCompletion(...)
-    rapi:call(nil, 'getCompletion', ...)
+    rapi:call(nil, '__pythonWrapper_getCompletion', ...)
 end
 
 function _getCalltip(...)
-    rapi:call(nil, 'getCalltip', ...)
+    rapi:call(nil, '__pythonWrapper_getCalltip', ...)
 end
