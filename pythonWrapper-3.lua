@@ -66,34 +66,40 @@ function __pythonWrapper_init()
 
     code = [[
 def __init():
+    global __init
+    del __init
+
     import sys
     import json
     __args = json.loads(sys.argv[1])
     sys.path.insert(0, __args["pythonPath"])
 
-    global __wrapper
+    global __pythonWrapper
     from sim.zmqremoteapi import PythonWrapper
-    __wrapper = PythonWrapper(**__args)
+    __pythonWrapper = PythonWrapper(globals(), **__args)
 
     global print
-    print = __wrapper.rapi.print
+    print = __pythonWrapper.rapi.print
 
-    __wrapper.registerCmdInterface()
+    __pythonWrapper.registerCmdInterface()
 
 
 def __postInit():
-    __g = globals()
-    __wrapper.registerSysCalls(__g)
+    global __postInit
+    del __postInit
+
+    __pythonWrapper.registerSysCalls()
+
     import inspect
-    if inspect.iscoroutinefunction(f := __g.get('sysCall_thread')):
+    if inspect.iscoroutinefunction(f := __pythonWrapper._g.get('sysCall_thread')):
         import asyncio
         async def main():
-            spin = asyncio.create_task(__wrapper.spinAsync(), name='spin')
+            spin = asyncio.create_task(__pythonWrapper.spinAsync(), name='spin')
             poll = asyncio.create_task(f(), name='sysCall_thread')
             await asyncio.gather(spin, poll)
         asyncio.run(main())
     else:
-        __wrapper.spin()
+        __pythonWrapper.spin()
 
 
 __init()
