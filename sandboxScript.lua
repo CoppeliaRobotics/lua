@@ -79,7 +79,8 @@ sim.self:registerFunctionHook('sysCall_cleanup', 's_cleanup', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_nonSimulation', 's_nonSimulation', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_actuation', 's_actuation', {when = 'after'})
 sim.self:registerFunctionHook('sysCall_suspended', 's_suspended', {when = 'after'})
-if sim.scene.sandboxLua == sim.self then
+
+if sim.app.sandboxLua == sim.self then
     sim.self:registerFunctionHook('sysCall_beforeSimulation', 's_beforeSimulation', {when = 'after'})
     sim.self:registerFunctionHook('sysCall_afterSimulation', 's_afterSimulation', {when = 'after'})
     sim.self:registerFunctionHook('sysCall_sensing', 's_sensing', {when = 'after'})
