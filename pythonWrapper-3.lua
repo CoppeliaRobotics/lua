@@ -93,10 +93,8 @@ def __postInit():
     import inspect
     if inspect.iscoroutinefunction(f := __pythonWrapper._g.get('sysCall_thread')):
         t = __pythonWrapper.registerThread(f)
-        global step
-        step = t.step
-        #global sim_sleep
-        #sim_sleep = t.sim_sleep
+        sim.step = t.step
+        sim.sleep = t.sim_sleep
 
     __pythonWrapper.spin()
 
