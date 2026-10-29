@@ -65,9 +65,9 @@ function __pythonWrapper_init()
     rapi:registerCallback('__print', print)
 
     code = [[
-def __init():
-    global __init
-    del __init
+def __main():
+    global __main
+    del __main
 
     import sys
     import json
@@ -83,10 +83,8 @@ def __init():
 
     __pythonWrapper.registerCmdInterface()
 
-
-def __postInit():
-    global __postInit
-    del __postInit
+    userCode = sys.stdin.read()
+    exec(compile(source, "<stdin>", "exec"), globals())
 
     __pythonWrapper.registerSysCalls()
 
@@ -99,11 +97,7 @@ def __postInit():
     __pythonWrapper.spin()
 
 
-__init()
-
-]] .. (pythonUserCode or '') .. [[
-
-__postInit()
+__main()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
@@ -124,6 +118,9 @@ __postInit()
         if pythonExecutable then src = 'variable "pythonExecutable"' end
         error('The Python interpreter ' .. pyInterp .. ' (from ' .. src .. ') could not be called')
     end
+
+    simSubprocess.writeStdIn(procHandle, pythonUserCode or '')
+    simSubprocess.closeStdIn(procHandle)
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
     local startTime = sim.app.systemTime
