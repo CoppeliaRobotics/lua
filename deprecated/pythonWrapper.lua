@@ -303,7 +303,7 @@ function initPython(p, method)
                                  function()
                     return simSubprocess.execAsync(
                                pyth, {
-                            sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncherV0.py',
+                            sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher-1.py',
                             portStr,
                         }, {useSearchPath = true, openNewConsole = false}
                            )

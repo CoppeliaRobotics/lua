@@ -1086,7 +1086,7 @@ function startPythonClientSubprocess(pythonExec)
     local controlPort = getFreePortStr()
     local args = string.qsplit(pythonExec, ' ')
     local ex = table.remove(args, 1)
-    args[#args + 1] = sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher.py'
+    args[#args + 1] = sim.getStringParam(sim.stringparam_pythondir) .. '/pythonLauncher-2.py'
     args[#args + 1] = controlPort
     args[#args + 1] = tostring(sim.getLongProperty(sim.handle_app, 'pid'))
     local res, ret = pcall(
