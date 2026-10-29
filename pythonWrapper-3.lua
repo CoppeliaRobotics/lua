@@ -50,7 +50,7 @@ function __pythonWrapper_init()
     local port = __pythonWrapper_getFreePort()
 
     rapi = sim.ZMQRemoteAPI{
-        name = 'pythonWrapper-luaServer-' .. port,
+        name = 'pythonWrapper-lua-' .. port .. '-' .. sim.self.handle,
         port = port,
         server = true,
         verbose = verbose or 0,
@@ -92,14 +92,13 @@ def __postInit():
 
     import inspect
     if inspect.iscoroutinefunction(f := __pythonWrapper._g.get('sysCall_thread')):
-        import asyncio
-        async def main():
-            spin = asyncio.create_task(__pythonWrapper.spinAsync(), name='spin')
-            poll = asyncio.create_task(f(), name='sysCall_thread')
-            await asyncio.gather(spin, poll)
-        asyncio.run(main())
-    else:
-        __pythonWrapper.spin()
+        t = __pythonWrapper.registerThread(f)
+        global step
+        step = t.step
+        #global sim_sleep
+        #sim_sleep = t.sim_sleep
+
+    __pythonWrapper.spin()
 
 
 __init()
@@ -138,16 +137,41 @@ __postInit()
             sim.self:registerFunctionHook(sysCall, funcName, opts)
         end
     end
+
+    -- setup also hooks for thread executor:
+    for name, sysCall in pairs{
+        init = 'sysCall_init',
+        tick = 'sysCall_actuation',
+        cleanup = 'sysCall_cleanup',
+    } do
+        local funcName = '__pythonWrapper_threadExec_' .. name
+        local cbName = '_sysCall_thread_' .. name
+        _G[funcName] = function(...)
+            if not rapi._callables[cbName] then return end
+            return rapi:call(nil, cbName, ...)
+        end
+        if rapi._callables[cbName] then
+            local opts = {when = sysCall == 'sysCall_cleanup' and 'before' or 'after'}
+            sim.self:registerFunctionHook(sysCall, funcName, opts)
+        end
+    end
 end
 
-function __pythonWrapper_thread()
-    rapi:log(1, 'thread running')
-    while rapi:isRemoteAlive() do
+function __pythonWrapper_tick()
+    if rapi:isRemoteAlive() then
         rapi:spinSome()
-        sim.self:yield()
+    else
+        rapi:log(1, 'terminating script (handle=' .. sim.self.handle ..') because of inactivity')
+        sim.self:remove()
     end
-    rapi:log(1, 'terminating script (handle=' .. sim.self.handle ..') because of inactivity')
-    sim.self:remove()
+end
+
+function __pythonWrapper_actuation()
+    return __pythonWrapper_tick()
+end
+
+function __pythonWrapper_nonSimulation()
+    return __pythonWrapper_tick()
 end
 
 function __pythonWrapper_cleanup()
@@ -184,7 +208,8 @@ function __pythonWrapper_getFreePort()
 end
 
 sim.self:registerFunctionHook('sysCall_init', '__pythonWrapper_init', {when = 'before'})
-sim.self:registerFunctionHook('sysCall_thread', '__pythonWrapper_thread', {when = 'before'})
+sim.self:registerFunctionHook('sysCall_actuation', '__pythonWrapper_actuation', {when = 'before'})
+sim.self:registerFunctionHook('sysCall_nonSimulation', '__pythonWrapper_nonSimulation', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
 
 function _evalExec(...)
