@@ -64,41 +64,6 @@ function __pythonWrapper_init()
     rapi:registerCallback('__ready', function() ready = true end)
     rapi:registerCallback('__print', print)
 
-    code = [[
-def __main():
-    global __main
-    del __main
-
-    import sys
-    import json
-    __args = json.loads(sys.argv[1])
-    sys.path.insert(0, __args["pythonPath"])
-
-    global __pythonWrapper
-    from sim.zmqremoteapi import PythonWrapper
-    __pythonWrapper = PythonWrapper(globals(), **__args)
-
-    global print
-    print = __pythonWrapper.rapi.print
-
-    __pythonWrapper.registerCmdInterface()
-
-    userCode = sys.stdin.read()
-    exec(compile(source, "<stdin>", "exec"), globals())
-
-    __pythonWrapper.registerSysCalls()
-
-    import inspect
-    if inspect.iscoroutinefunction(f := __pythonWrapper._g.get('sysCall_thread')):
-        t = __pythonWrapper.registerThread(f)
-        sim.step = t.step
-        sim.sleep = t.sim_sleep
-
-    __pythonWrapper.spin()
-
-
-__main()
-]]
     local json = require 'dkjson'
     local args = json.encode{
         pid = sim.app.pid,
@@ -108,18 +73,25 @@ __main()
         sysCalls = sysCalls,
         verbose = rapi.verbose,
         barePrint = not not barePrint,
+        userCode = pythonUserCode or '',
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     local defaultStartTimeout = 10
-    if not pcall(function()
-        procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
-    end) then
+    local ok, err = pcall(function()
+        procHandle = simSubprocess.execAsync(pyInterp, {
+            sim.app.paths.python .. '/pythonLauncher-3.py',
+            -- args provided only for decoration, as already provided via stdin:
+            'coppeliaSim.pid=' .. sim.app.pid,
+            'script.handle=' .. sim.self.handle,
+        })
+    end)
+    if not ok then
         local src = 'setting "defaultPython" in ' .. sim.app.paths.settings .. '/usrset.txt'
         if pythonExecutable then src = 'variable "pythonExecutable"' end
-        error('The Python interpreter ' .. pyInterp .. ' (from ' .. src .. ') could not be called')
+        error('The Python interpreter ' .. pyInterp .. ' (from ' .. src .. ') could not be called: ' .. err)
     end
 
-    simSubprocess.writeStdIn(procHandle, pythonUserCode or '')
+    simSubprocess.writeStdIn(procHandle, args)
     simSubprocess.closeStdIn(procHandle)
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
