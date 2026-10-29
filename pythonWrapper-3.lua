@@ -124,16 +124,30 @@ __postInit()
     end
     rapi:log(1, 'python subprocess is ready')
 
-    for _, sysCall in ipairs(sysCalls) do
-        local funcName = '__pythonWrapper_call_' .. sysCall
-        _G[funcName] = function(...)
-            if not rapi._callables[sysCall] then return end
-            return rapi:call(nil, sysCall, ...)
+    local function registerHook(sysCall, funcName, cbName, when)
+        if cbName == nil then
+            cbName = sysCall
         end
-        if rapi._callables[sysCall] then
-            local opts = {when = sysCall == 'sysCall_cleanup' and 'before' or 'after'}
+        _G[funcName] = function(...)
+            if not rapi._callables[cbName] then return end
+            return rapi:call(nil, cbName, ...)
+        end
+        if rapi._callables[cbName] then
+            local opts = {when = when}
+            if opts.when == nil then
+                if sysCall == 'sysCall_cleanup' then
+                    opts.when = 'before'
+                else
+                    opts.when = 'after'
+                end
+            end
             sim.self:registerFunctionHook(sysCall, funcName, opts)
         end
+    end
+
+    -- setup sysCalls:
+    for _, sysCall in ipairs(sysCalls) do
+        registerHook(sysCall, '__pythonWrapper_call_' .. sysCall)
     end
 
     -- setup also hooks for thread executor:
@@ -142,16 +156,7 @@ __postInit()
         tick = 'sysCall_actuation',
         cleanup = 'sysCall_cleanup',
     } do
-        local funcName = '__pythonWrapper_threadExec_' .. name
-        local cbName = '_sysCall_thread_' .. name
-        _G[funcName] = function(...)
-            if not rapi._callables[cbName] then return end
-            return rapi:call(nil, cbName, ...)
-        end
-        if rapi._callables[cbName] then
-            local opts = {when = sysCall == 'sysCall_cleanup' and 'before' or 'after'}
-            sim.self:registerFunctionHook(sysCall, funcName, opts)
-        end
+        registerHook(sysCall, '__pythonWrapper_threadExec_' .. name, '_sysCall_thread_' .. name)
     end
 end
 
