@@ -107,6 +107,7 @@ __postInit()
 ]]
     local json = require 'dkjson'
     local args = json.encode{
+        pid = sim.app.pid,
         pythonPath = sim.app.paths.python,
         port = port,
         client_id = sim.self.handle,
@@ -115,10 +116,28 @@ __postInit()
         barePrint = not not barePrint,
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
-    procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
+    local defaultStartTimeout = 10
+    if not pcall(function()
+        procHandle = simSubprocess.execAsync(pyInterp, {'-c', code, args})
+    end) then
+        local src = 'setting "defaultPython" in ' .. sim.app.paths.settings .. '/usrset.txt'
+        if pythonExecutable then src = 'variable "pythonExecutable"' end
+        error('The Python interpreter ' .. pyInterp .. ' (from ' .. src .. ') could not be called')
+    end
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
+    local startTime = sim.app.systemTime
     while not ready do
+        simSubprocess.wait(procHandle, 0.05)
+        if not simSubprocess.isRunning(procHandle) then
+            error('The Python interpreter terminated abnormally during initialization')
+        end
+        local elapsed = sim.app.systemTime - startTime
+        if elapsed > (initTimeout or defaultStartTimeout) then
+            local src = 'default timeout of ' .. defaultStartTimeout .. 's'
+            if initTimeout then src = 'specified timeout of ' .. initTimeout .. 's (from variable "initTimeout")' end
+            error('The Python interpreter failed to start within the ' .. src)
+        end
         rapi:spinSome()
         sim.self:yield()
     end
