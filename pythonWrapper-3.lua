@@ -83,7 +83,7 @@ function __pythonWrapper_init()
             -- args provided only for decoration, as already provided via stdin:
             'coppeliaSim.pid=' .. sim.app.pid,
             'script.handle=' .. sim.self.handle,
-        })
+        }, {captureOutput = true})
     end)
     if not ok then
         local src = 'setting "defaultPython" in ' .. sim.app.paths.settings .. '/usrset.txt'
@@ -97,10 +97,7 @@ function __pythonWrapper_init()
     rapi:log(1, 'waiting for python subprocess to be ready...')
     local startTime = sim.app.systemTime
     while not ready do
-        simSubprocess.wait(procHandle, 0.05)
-        if not simSubprocess.isRunning(procHandle) then
-            error('The Python interpreter terminated abnormally during initialization')
-        end
+        __pythonWrapper_pollSubprocess()
         local elapsed = sim.app.systemTime - startTime
         if elapsed > (initTimeout or defaultStartTimeout) then
             local src = 'default timeout of ' .. defaultStartTimeout .. 's'
@@ -148,7 +145,17 @@ function __pythonWrapper_init()
     end
 end
 
+function __pythonWrapper_pollSubprocess()
+    local stdOut, stdErr, running, stdOutClosed, stdErrClosed, exitCode = simSubprocess.poll(procHandle)
+    for _, line in ipairs(stdOut) do print(line) end
+    for _, line in ipairs(stdErr) do print(line) end
+    if not running then
+        error('The Python interpreter terminated with exit code ' .. exitCode)
+    end
+end
+
 function __pythonWrapper_tick()
+    __pythonWrapper_pollSubprocess()
     if rapi:isRemoteAlive() then
         rapi:spinSome()
     else
