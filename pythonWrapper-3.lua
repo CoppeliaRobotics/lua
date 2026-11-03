@@ -184,7 +184,7 @@ function __pythonWrapper_cleanup()
 
     if procHandle then
         if simSubprocess.isRunning(procHandle) then
-            simSubprocess.kill(procHandle)
+            simSubprocess.killEx(procHandle, 3, 5)
         end
         procHandle = nil
     end
