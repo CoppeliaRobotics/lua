@@ -66,7 +66,6 @@ function __pythonWrapper_init()
 
     local json = require 'dkjson'
     local args = json.encode{
-        pid = sim.app.pid,
         pythonPath = sim.app.paths.python,
         port = port,
         client_id = sim.self.handle,
@@ -82,6 +81,7 @@ function __pythonWrapper_init()
             sim.app.paths.python .. '/pythonLauncher-3.py',
             -- args provided only for decoration, as already provided via stdin:
             'coppeliaSim.pid=' .. sim.app.pid,
+            'tcp.port=' .. port,
             'script.handle=' .. sim.self.handle,
         }, {captureOutput = true})
     end)
