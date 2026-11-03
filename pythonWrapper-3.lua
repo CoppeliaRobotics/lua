@@ -216,17 +216,17 @@ sim.self:registerFunctionHook('sysCall_nonSimulation', '__pythonWrapper_nonSimul
 sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
 
 function _evalExec(...)
-    rapi:call(nil, '__pythonWrapper_evalExec', ...)
+    return rapi:call(nil, '__pythonWrapper_evalExec', ...)
 end
 
 function _evalExecRet(...)
-    rapi:call(nil, '__pythonWrapper_evalExecRet', ...)
+    return rapi:call(nil, '__pythonWrapper_evalExecRet', ...)
 end
 
 function _getCompletion(...)
-    rapi:call(nil, '__pythonWrapper_getCompletion', ...)
+    return rapi:call(nil, '__pythonWrapper_getCompletion', ...)
 end
 
 function _getCalltip(...)
-    rapi:call(nil, '__pythonWrapper_getCalltip', ...)
+    return rapi:call(nil, '__pythonWrapper_getCalltip', ...)
 end
