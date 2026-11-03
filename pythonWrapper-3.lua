@@ -168,6 +168,10 @@ function __pythonWrapper_actuation()
     return __pythonWrapper_tick()
 end
 
+function __pythonWrapper_suspended()
+    return __pythonWrapper_tick()
+end
+
 function __pythonWrapper_nonSimulation()
     return __pythonWrapper_tick()
 end
@@ -207,6 +211,7 @@ end
 
 sim.self:registerFunctionHook('sysCall_init', '__pythonWrapper_init', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_actuation', '__pythonWrapper_actuation', {when = 'before'})
+sim.self:registerFunctionHook('sysCall_suspended', '__pythonWrapper_suspended', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_nonSimulation', '__pythonWrapper_nonSimulation', {when = 'before'})
 sim.self:registerFunctionHook('sysCall_cleanup', '__pythonWrapper_cleanup', {when = 'after'})
 
