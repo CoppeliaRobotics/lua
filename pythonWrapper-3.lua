@@ -65,7 +65,7 @@ function __pythonWrapper_init()
     rapi:registerCallback('__print', print)
 
     local json = require 'dkjson'
-    local args = json.encode{
+    local args = {
         pythonPath = sim.app.paths.python,
         port = port,
         client_id = sim.self.handle,
@@ -83,7 +83,7 @@ function __pythonWrapper_init()
             'coppeliaSim.pid=' .. sim.app.pid,
             'tcp.port=' .. port,
             'script.handle=' .. sim.self.handle,
-        }, {captureOutput = true})
+        }, {captureOutput = not barePrint})
     end)
     if not ok then
         local src = 'setting "defaultPython" in ' .. sim.app.paths.settings .. '/usrset.txt'
@@ -91,7 +91,7 @@ function __pythonWrapper_init()
         error('The Python interpreter ' .. pyInterp .. ' (from ' .. src .. ') could not be called: ' .. err)
     end
 
-    simSubprocess.writeStdIn(procHandle, args)
+    simSubprocess.writeStdIn(procHandle, json.encode(args))
     simSubprocess.closeStdIn(procHandle)
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
