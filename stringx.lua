@@ -103,6 +103,17 @@ function string.bytes(s)
     return ret
 end
 
+function string.byteshex(s)
+    local ret = {}
+    for i = 1, #s do
+        if i > 1 then
+            table.insert(ret, ' ')
+        end
+        table.insert(ret, string.format('%02x', string.byte(s:sub(i, i))))
+    end
+    return table.concat(ret)
+end
+
 function string.escpat(x)
     return (x
         :gsub('%%', '%%%%')
