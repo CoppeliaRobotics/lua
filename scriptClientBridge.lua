@@ -5,7 +5,7 @@ function scriptClientBridge.require(n)
 end
 
 function scriptClientBridge.call(b)
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     i = cbor.decode(tostring(b))
     local var = require 'var'
     f = var.getvar(i.func)

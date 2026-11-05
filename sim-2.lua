@@ -454,7 +454,7 @@ end
 --]]
 
 function locals.serialize(target, methodName, data)
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     function fixTable(v)
         local mt = getmetatable(v)
         if type(v) == 'function' or (mt and not mt.__tocbor) then
@@ -473,7 +473,7 @@ function locals.serialize(target, methodName, data)
 end
 
 function locals.deserialize(target, methodName, data)
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     return cbor.decode(data)
 end
 

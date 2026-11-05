@@ -331,7 +331,7 @@ function Color:__tocolor()
 end
 
 function Color:__tocbor(sref, stref)
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     local cbor_c = require 'org.conman.cbor_c'
     local data = table.concat(map(string.char, self:rgba8888table()))
     return cbor_c.encode(0xC0, cbor.Tags.Sim.Color)

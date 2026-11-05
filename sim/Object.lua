@@ -93,7 +93,7 @@ function Object:__tohandle()
 end
 
 function Object:__tocbor()
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     local cbor_c = require 'org.conman.cbor_c'
     return cbor_c.encode(0xC0, cbor.Tags.Sim.Handle)
         .. cbor.encode(self.__handle)
@@ -239,7 +239,7 @@ function Object.static.unittest()
     }
     assert(d2.linkedDummy == d1)
     scene:removeObjects{d1, d2}
-    cbor = require 'simCBOR'
+    cbor = require 'sim.cbor'
     ip = table.fromipairs(f.children)
     assert(cbor.encode(ip) == cbor.encode{b})
     assert(b:getPosition{relativeToObject = f}:norm() < 1e-7)

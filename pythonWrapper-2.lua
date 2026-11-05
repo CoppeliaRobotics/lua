@@ -5,7 +5,7 @@ if _DEVMODE then
 end
 local simZMQ = require('simZMQ')
 local simSubprocess = require('simSubprocess')
-local cbor = require('simCBOR')
+local cbor = require('sim.cbor')
 if _removeLazyLoaders then _removeLazyLoaders() end
 
 sim.callScriptFunction = wrap(sim.callScriptFunction, function(origFunc)

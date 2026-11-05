@@ -104,7 +104,7 @@ function ObjectArray:__isobjectarray()
 end
 
 function ObjectArray:__tocbor()
-    local cbor = require 'simCBOR'
+    local cbor = require 'sim.cbor'
     local cbor_c = require 'org.conman.cbor_c'
     return cbor_c.encode(0xC0, cbor.Tags.Sim.HandleArray)
         .. cbor.TYPE.ARRAY(self.handle)

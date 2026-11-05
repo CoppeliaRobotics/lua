@@ -70,7 +70,7 @@ function Buffer:__todisplay()
 end
 
 function Buffer:__tocbor()
-    local cbor = require('simCBOR')
+    local cbor = require('sim.cbor')
     return cbor.TYPE.BIN(self.__buff__)
 end
 

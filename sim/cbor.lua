@@ -1,6 +1,6 @@
-local simCBOR = {}
+local sim_cbor = {}
 
-simCBOR.Tags = {
+sim_cbor.Tags = {
     Array = {
         Nd          =   40,
         Nd_RowMajor =   40,
@@ -69,7 +69,7 @@ end
 
 
 -- RFC8746 multi-dimensional array tag
-registerTag(simCBOR.Tags.Array.Nd)(function(values)
+registerTag(sim_cbor.Tags.Array.Nd)(function(values)
     local simEigen = require 'simEigen'
     local rows, cols = table.unpack(values[1])
     local data = values[2]
@@ -77,70 +77,70 @@ registerTag(simCBOR.Tags.Array.Nd)(function(values)
 end)
 
 -- RFC8746 typed-arrays: uint8 Typed Array
-registerTag(simCBOR.Tags.Array.U8)(function(values)
+registerTag(sim_cbor.Tags.Array.U8)(function(values)
     return sim1.unpackUInt8Table(values)
 end)
 
 -- RFC8746 typed-arrays: uint16, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.U16LE)(function(values)
+registerTag(sim_cbor.Tags.Array.U16LE)(function(values)
     return sim1.unpackUInt16Table(values)
 end)
 
 -- RFC8746 typed-arrays: uint32, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.U32LE)(function(values)
+registerTag(sim_cbor.Tags.Array.U32LE)(function(values)
     return sim1.unpackUInt32Table(values)
 end)
 
 -- RFC8746 typed-arrays: sint32, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.S32LE)(function(values)
+registerTag(sim_cbor.Tags.Array.S32LE)(function(values)
     return sim1.unpackInt32Table(values)
 end)
 
 -- RFC8746 typed-arrays: sint64, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.S64LE)(function(values)
+registerTag(sim_cbor.Tags.Array.S64LE)(function(values)
     return sim1.unpackInt64Table(values)
 end)
 
 -- RFC8746 typed-arrays: IEEE 754 binary32, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.F32LE)(function(values)
+registerTag(sim_cbor.Tags.Array.F32LE)(function(values)
     return sim1.unpackFloatTable(values)
 end)
 
 -- RFC8746 typed-arrays: IEEE 754 binary64, little endian, Typed Array
-registerTag(simCBOR.Tags.Array.F64LE)(function(values)
+registerTag(sim_cbor.Tags.Array.F64LE)(function(values)
     return sim1.unpackDoubleTable(values)
 end)
 
-registerTag(simCBOR.Tags.Sim.Color)(function(value)
+registerTag(sim_cbor.Tags.Sim.Color)(function(value)
     local rgba = sim1.unpackUInt8Table(value)
     for i = 1, 4 do rgba[i] = rgba[i] / 255. end
     return sim.Color(rgba)
 end)
 
-registerTag(simCBOR.Tags.Sim.Quaternion)(function(value)
+registerTag(sim_cbor.Tags.Sim.Quaternion)(function(value)
     local simEigen = require 'simEigen'
     return simEigen.Quaternion(value)
 end)
 
-registerTag(simCBOR.Tags.Sim.Pose)(function(value)
+registerTag(sim_cbor.Tags.Sim.Pose)(function(value)
     local simEigen = require 'simEigen'
     return simEigen.Pose(value)
 end)
 
-registerTag(simCBOR.Tags.Sim.Handle)(function(value)
+registerTag(sim_cbor.Tags.Sim.Handle)(function(value)
     if value ~= -1 then
         return sim.Object(value)
     end
 end)
 
-registerTag(simCBOR.Tags.Sim.HandleArray)(function(value)
+registerTag(sim_cbor.Tags.Sim.HandleArray)(function(value)
     return map(function(h)
         if h == -1 then return nil end
         return sim.Object(h)
     end, value)
 end)
 
-function simCBOR.decode(data, opts)
+function sim_cbor.decode(data, opts)
     opts = opts or {}
 
     local _type_tags = type_tags
@@ -156,7 +156,7 @@ function simCBOR.decode(data, opts)
     return cbor.decode(data, 1, _type_tags)
 end
 
-function simCBOR.encode(value, opts)
+function sim_cbor.encode(value, opts)
     opts = opts or {}
 
     local old_encode_map
@@ -186,10 +186,10 @@ for _, name in ipairs {
     'TYPE',
     '__ENCODE_MAP',
 } do
-    simCBOR[name] = cbor[name]
+    sim_cbor[name] = cbor[name]
 end
 
-simCBOR.null = setmetatable(
+sim_cbor.null = setmetatable(
     {},
     {
         __tocbor = function() return '\xF6' end,
@@ -197,4 +197,4 @@ simCBOR.null = setmetatable(
     }
 )
 
-return simCBOR
+return sim_cbor
