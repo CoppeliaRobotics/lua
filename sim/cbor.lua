@@ -174,6 +174,13 @@ function sim_cbor.encode(value, opts)
     return ret
 end
 
+function sim_cbor.callMethod(target, name, argsCBOR)
+    local args = sim_cbor.decode(argsCBOR)
+    local array = require 'array'
+    local rets = array:pack(sim.callMethod(target, name, table.unpack(args)))
+    return sim_cbor.encode(rets)
+end
+
 for _, name in ipairs {
     'isfloat',
     'isinteger',
