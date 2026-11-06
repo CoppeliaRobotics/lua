@@ -142,12 +142,12 @@ function Console:cleanup()
     simUI.destroy(self.ui)
     self.ui = ''
 
-    sim.self:removeFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', false)
-    sim.self:removeFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', false)
+    sim.self:removeFunctionHook('sysCall_beforeInstanceSwitch', self.handle .. ':beforeInstanceSwitch', {when = 'after'})
+    sim.self:removeFunctionHook('sysCall_afterInstanceSwitch', self.handle .. ':afterInstanceSwitch', {when = 'after'})
 
     if sim.self.type ~= sim.scriptType.simulation and sim.self.type ~= sim.scriptType.main then
-        sim.self:removeFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', false)
-        sim.self:removeFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', false)
+        sim.self:removeFunctionHook('sysCall_beforeSimulation', self.handle .. ':beforeSimulation', {when = 'after'})
+        sim.self:removeFunctionHook('sysCall_afterSimulation', self.handle .. ':afterSimulation', {when = 'after'})
     end
 end
 

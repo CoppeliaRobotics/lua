@@ -54,15 +54,15 @@ function locals.getMethodProperty(target, methodName, mName)
     return bytecode
 end
 
-function locals.remove(target, methodName, delayed)
+function locals.remove(target, methodName, options)
     target = sim.Object:toobject(target)
     if target:getPropertyInfo('cleanup', {noError = true}) == sim.propertytype_method then
         target:getMethodProperty('cleanup')(target)
     end
-    return callMethod(target, methodName, delayed)
+    return callMethod(target, methodName, options)
 end
 
-function locals.removeObjects(target, methodName, objects, delayed)
+function locals.removeObjects(target, methodName, objects, options)
     local list = {}
     for i = 1, #objects do
         local obj = sim.Object:toobject(objects[i])
@@ -74,7 +74,15 @@ function locals.removeObjects(target, methodName, objects, delayed)
             end
         end
     end
-    callMethod(target, methodName, list, delayed)
+    callMethod(target, methodName, list, options)
+end
+
+function locals.callFunction(target, methodName, func, ...)
+    if _G[func] then
+        return _G[func](...)
+    else
+        return callMethod(target, methodName, func, ...)
+    end
 end
 
 function locals.registerFunctionHook(target, methodName, funcNm, func, opt)
@@ -95,13 +103,17 @@ function locals.registerFunctionHook(target, methodName, funcNm, func, opt)
     end
 end
 
-function locals.removeFunctionHook(target, methodName, funcNm, func, before)
-    if before == nil then before = true end
+function locals.removeFunctionHook(target, methodName, funcNm, func, options)
+    options = checkargs({{type = 'table', default = {}}}, options)
+    if options.when == nil then
+        options.when = 'before'
+    end
+    assert((options.when == 'before') or (options.when == 'after'), 'invalid options argument')
     if type(func) == 'string' then
-        registerScriptFuncHook(funcNm, func, before, true)
+        registerScriptFuncHook(funcNm, func, options.when == 'before', true)
     else
         local str = tostring(func):gsub("[%s:]", "_") -- typical tostring(func) typically produces: "function: xxxxxxx", and : is reserved
-        registerScriptFuncHook(funcNm, '__2.' .. str, before, true)
+        registerScriptFuncHook(funcNm, '__2.' .. str, options.when == 'before', true)
         __2[str] = nil
     end
 end
@@ -111,14 +123,19 @@ function locals.lock(target, methodName, acquire)
 end
 
 function locals.yield(target, methodName)
+    local retVal = false
     if getYieldAllowed() then
         local thread, yieldForbidden = coroutine.running()
-        if not yieldForbidden then coroutine.yield() end
+        if not yieldForbidden then
+            coroutine.yield()
+            retVal = true
+        end
     end
+    return retVal
 end
 
 function locals.step(target, methodName)
-    locals.yield(target, methodName)
+    return locals.yield(target, methodName)
 end
 
 function locals.getAncestors(target, methodName, options, objTypesMap)
@@ -369,11 +386,20 @@ function locals.restoreColor(target, methodName, ...)
 end
 
 function locals.wait(target, methodName, ...)
-    local dt, simTime = checkargs({{type = 'float'}, {type = 'bool', default = true}}, ...)
-
-    if simTime then
-        local st = sim.scene.simulation.time
-        while sim.scene.simulation.time - st < dt do sim.self:step() end
+    local dt, options = checkargs({{type = 'float'}, {type = 'table', default = {}}}, ...)
+    local realTime = options.realTime
+    if realTime then
+        assert(type(realTime) == 'boolean', 'invalid options argument')
+    end
+    if not realTime then
+        if sim.scene.simulation.state ~= sim.simulationState.stopped then
+            local st = sim.scene.simulation.time
+            while sim.scene.simulation.time - st < dt do
+                if not sim.self:step() then
+                    break
+                end
+            end
+        end
     else
         local st = sim.app.systemTime
         while sim.app.systemTime - st < dt do sim.self:step() end
