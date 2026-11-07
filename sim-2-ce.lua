@@ -79,10 +79,8 @@ sim.scriptExecOrder.last
 sim.scriptExecOrder.normal
 
 sim.scriptState.ended
-sim.scriptState.error
 sim.scriptState.initialized
 sim.scriptState.suspended
-sim.scriptState.uninitialized
 sim.scriptState.unloaded
 
 sim.simulationState.lastBeforeStop

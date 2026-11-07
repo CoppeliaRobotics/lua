@@ -81,7 +81,7 @@ function objInit.script(methodName)
 function sysCall_init()
     print('Hello from sysCall_init')
 end]]},
-        {name = 'language', type = 'string', default = 'lua'},
+        {name = 'language', type = 'string', default = 'lua;lua;--;--[=[;--]=]'},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('script.type')
     local code = objInit.extractValueOrDefault('code')
@@ -396,7 +396,7 @@ function objInit.scriptObject(methodName)
     checkargs.checkfields({funcName = methodName}, {
         {name = 'scriptObject.type', enum = sim.scriptType, default = 'simulation'},
         {name = 'code', type = 'string', default = ''},
-        {name = 'language', type = 'string', default = 'lua'},
+        {name = 'language', type = 'string', default = 'lua;lua;--;--[=[;--]=]'},
         {name = 'scriptDisabled', type = 'bool', default = false},
     }, objInit.p)
     local scriptType = objInit.extractValueOrDefault('scriptObject.type')
