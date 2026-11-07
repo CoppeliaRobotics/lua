@@ -72,7 +72,7 @@ function __pythonWrapper_init()
         sysCalls = sysCalls,
         verbose = rapi.verbose,
         barePrint = not not barePrint,
-        userCode = pythonUserCode or '',
+        userCode = __userCode__ or '',
     }
     local pyInterp = pythonExecutable or sim.app.defaultPython
     local defaultStartTimeout = 10

@@ -178,7 +178,7 @@ function sysCall_init(...)
     replyPortStr = getFreePortStr()
     simZMQ.bind(replySocket, replyPortStr)
 
-    local prog = pythonBoilerplate .. pythonUserCode
+    local prog = pythonBoilerplate .. __userCode__
     prog = prog:gsub("XXXconnectionAddress1XXX", replyPortStr)
     prog = prog:gsub("XXXpidXXX", tostring(sim.getLongProperty(sim.handle_app, 'pid')))
     local tmp = ''
@@ -1128,7 +1128,7 @@ function getCleanErrorMsg(inMsg)
             msg = "Traceback (most recent call last):\n" .. msg
         end
         local _, boilerplateLines = string.gsub(pythonBoilerplate, '\n', '')
-        local _, userCodeLines = string.gsub(pythonUserCode, '\n', '')
+        local _, userCodeLines = string.gsub(__userCode__, '\n', '')
         -- print("boilerplateLines", boilerplateLines)
         -- print("userCodeLines", userCodeLines)
         userCodeLines = userCodeLines + 1
@@ -1215,8 +1215,8 @@ function loadExternalFile(file)
         end
     end
     if f == nil then error("include file '" .. file .. "' not found") end
-    if not pythonUserCode then pythonUserCode = '' end
-    pythonUserCode = f:read('*all') .. pythonUserCode
+    if not __userCode__ then __userCode__ = '' end
+    __userCode__ = f:read('*all') .. __userCode__
     f:close()
     while #file > 0 do
         local c = file:sub(#file, #file)
