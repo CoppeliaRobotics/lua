@@ -53,7 +53,13 @@ function Object:__setupPropertyGroups()
 
     local namespaces = self:_callMethod('getStringArrayProperty', 'metaInfo.namespaces')
     for _, ns in pairs(namespaces) do
-        rawset(self, ns, PropertyGroup(self, {prefix = ns, newPropertyForcedType = (ns == 'refs' or ns == 'origRefs') and 22 or nil}))
+        local ft = nil
+        if ns == 'refs' or ns == 'origRefs' then
+            ft = 22 -- sim.propertytype_handlearray
+        elseif _type == 'app' and ns == 'namedParam' then
+            ft = 3 -- sim.propertytype_string
+        end
+        rawset(self, ns, PropertyGroup(self, {prefix = ns, newPropertyForcedType = ft}))
     end
 end
 
