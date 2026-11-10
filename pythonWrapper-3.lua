@@ -45,6 +45,7 @@ sysCalls = {
     'sysCall_vision',
 }
 
+initTimeout = initTimeout or 10
 pythonThreadActive = false -- true while Lua is executing Python's sysCall_thread
 
 -- CoppeliaSim routes custom function calls (sim.callFunction, script
@@ -331,12 +332,13 @@ function __pythonWrapper_init()
         verbose = rapi.verbose,
         barePrint = not not barePrint,
         userCode = __userCode__ or '',
+        additionalPaths = _additionalPaths or {},
     }
     local pyInterp = interpreterExecutable
     if (pyInterp == nil) and sim.app.namedParam.settings.defaultInterpreters then
         pyInterp = sim.app.namedParam.settings.defaultInterpreters.python
     end
-    local defaultStartTimeout = 10
+    local startTimeout = tonumber(initTimeout) or 10
     local ok, err = pcall(function()
         procHandle = simSubprocess.execAsync(pyInterp, {
             sim.app.namedParam.settings.defaultPaths.python .. '/pythonLauncher-3.py',
@@ -360,10 +362,8 @@ function __pythonWrapper_init()
     while not ready do
         __pythonWrapper_pollSubprocess()
         local elapsed = sim.app.systemTime - startTime
-        if elapsed > (initTimeout or defaultStartTimeout) then
-            local src = 'default timeout of ' .. defaultStartTimeout .. 's'
-            if initTimeout then src = 'specified timeout of ' .. initTimeout .. 's (from variable "initTimeout")' end
-            error('The Python interpreter failed to start within the ' .. src)
+        if elapsed > startTimeout then
+            error('The Python interpreter failed to start within ' .. startTimeout .. 's (initTimeout)')
         end
         rapi:spinSome()
         sim.self:yield()
