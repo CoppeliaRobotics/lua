@@ -129,7 +129,6 @@ function loadExternalFile(file)
                 b[#b + 1] = additionalIncludePaths[i]
             end
         end
-        print(b)
         for i = 1, #b, 1 do
             if b[i] ~= '' then
                 f = io.open(b[i] .. '/' .. file, 'rb')
