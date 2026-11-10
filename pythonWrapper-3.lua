@@ -45,8 +45,14 @@ sysCalls = {
     'sysCall_vision',
 }
 
-initTimeout = initTimeout or 10
 pythonThreadActive = false -- true while Lua is executing Python's sysCall_thread
+
+-- Maximum time (in seconds) to wait for the Python process to signal that it is
+-- ready. A script can override it from its header, e.g.:
+--     luaExec initTimeout = 60
+-- or by setting the global before the wrapper is required; adjust the fallback
+-- here if needed.
+initTimeout = initTimeout or 10
 
 -- CoppeliaSim routes custom function calls (sim.callFunction, script
 -- callbacks, UI callbacks, ...) through the global sysCall_ext when it exists;
@@ -118,7 +124,7 @@ function loadExternalFile(file)
         f = io.open(file, 'rb')
     else
         local b = {sim.app.paths.app}
-        if sim.app.namedParam.settings.defaultPaths.python then
+        if sim.app.namedParam.settings.defaultPaths and sim.app.namedParam.settings.defaultPaths.python then
             table.insert(b, sim.app.namedParam.settings.defaultPaths.python)
         end
         table.insert(b, sim.scene.path)
@@ -332,13 +338,11 @@ function __pythonWrapper_init()
         verbose = rapi.verbose,
         barePrint = not not barePrint,
         userCode = __userCode__ or '',
-        additionalPaths = _additionalPaths or {},
     }
     local pyInterp = interpreterExecutable
     if (pyInterp == nil) and sim.app.namedParam.settings.defaultInterpreters then
         pyInterp = sim.app.namedParam.settings.defaultInterpreters.python
     end
-    local startTimeout = tonumber(initTimeout) or 10
     local ok, err = pcall(function()
         procHandle = simSubprocess.execAsync(pyInterp, {
             sim.app.namedParam.settings.defaultPaths.python .. '/pythonLauncher-3.py',
@@ -359,6 +363,9 @@ function __pythonWrapper_init()
 
     rapi:log(1, 'waiting for python subprocess to be ready...')
     local startTime = sim.app.systemTime
+    -- Use the wrapper's initTimeout (already defaulted to 10 above, and possibly
+    -- overridden by the script) instead of a hard-coded value.
+    local startTimeout = tonumber(initTimeout) or 10
     while not ready do
         __pythonWrapper_pollSubprocess()
         local elapsed = sim.app.systemTime - startTime
@@ -441,11 +448,29 @@ function __pythonWrapper_init()
     end
 end
 
+-- Set when the Python process reported a clear package problem (see the
+-- launcher's 'missing-python-packages' marker): the message is then raised as a
+-- clean error instead of "The Python interpreter terminated with exit code ...".
+local missingPackagesError
+
 function __pythonWrapper_pollSubprocess()
     local stdOut, stdErr, running, stdOutClosed, stdErrClosed, exitCode = simSubprocess.poll(procHandle)
     for _, line in ipairs(stdOut) do print(line) end
-    for _, line in ipairs(stdErr) do print(line) end
+    for _, line in ipairs(stdErr) do
+        local msg = line:match('^%[missing%-python%-packages%]%s*(.*)$')
+        if msg then
+            missingPackagesError = msg
+        else
+            print(line)
+        end
+    end
     if not running then
+        if missingPackagesError then
+            -- Do not let the simulation restart this script: the same error would
+            -- repeat forever (the packages are missing for that interpreter).
+            pcall(function() sim.self.restartOnError = false end)
+            error(missingPackagesError, 0)
+        end
         error('The Python interpreter terminated with exit code ' .. exitCode)
     end
 end
