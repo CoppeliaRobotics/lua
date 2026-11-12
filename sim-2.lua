@@ -771,7 +771,7 @@ end
 
 sim.self:registerFunctionHook('sysCall_init', '__2.sysCallEx_init', {when = 'after'}) -- hook on *before* init is incompatible with implicit module load...
 
----[[
+-- Following not used and not available anymore in sim-2:
 sim._qhull = nil
 sim._serialClose = nil
 sim._serialOpen = nil
@@ -1083,7 +1083,6 @@ sim.unpackUInt8Table = nil
 sim.wait = nil
 sim.writeTexture = nil
 
--- constants:
 sim.buffer_base64 = nil
 sim.buffer_clamp = nil
 sim.buffer_double = nil
@@ -1216,6 +1215,26 @@ sim.plugininfo_extversionstr = nil
 sim.plugininfo_statusbarverbosity = nil
 sim.plugininfo_verbosity = nil
 
+sim.verbosity_debug = nil
+sim.verbosity_default = nil
+sim.verbosity_errors = nil
+sim.verbosity_infos = nil
+sim.verbosity_loadinfos = nil
+sim.verbosity_msgs = nil
+sim.verbosity_none = nil
+sim.verbosity_once = nil
+sim.verbosity_onlyterminal = nil
+sim.verbosity_questions = nil
+sim.verbosity_scripterrors = nil
+sim.verbosity_scriptinfos = nil
+sim.verbosity_scriptwarnings = nil
+sim.verbosity_trace = nil
+sim.verbosity_traceall = nil
+sim.verbosity_tracelua = nil
+sim.verbosity_undecorated = nil
+sim.verbosity_useglobal = nil
+sim.verbosity_warnings = nil
+
 sim.primitiveshape_capsule = nil
 sim.primitiveshape_cone = nil
 sim.primitiveshape_cuboid = nil
@@ -1226,6 +1245,9 @@ sim.primitiveshape_none = nil
 sim.primitiveshape_plane = nil
 sim.primitiveshape_spheroid = nil
 
+sim.ruckig_phasesync = nil
+sim.ruckig_timesync = nil
+sim.ruckig_nosync = nil
 sim.ruckig_minaccel = nil
 sim.ruckig_minvel = nil
 
@@ -1310,14 +1332,26 @@ sim.dummytype_default = nil
 sim.dummytype_dynloopclosure = nil
 sim.dummytype_dyntendon = nil
 
-sim.handle.world = nil
-sim.handle_world = nil
+sim.joint_prismatic = nil
+sim.joint_revolute = nil
+sim.joint_spherical = nil
 
---sim.dummyType = nil
---sim.jointType = nil
---sim.lightType = nil
---sim.proximitySensorType = nil
---sim.shapeType = nil
+sim.handle_world = nil
+sim.handle_all = nil
+sim.handle_app = nil
+sim.handle_appstorage = nil
+sim.handle_chain = nil
+sim.handle_default = nil
+sim.handle_inverse = nil
+sim.handle_mainscript = nil
+sim.handle_mesh = nil
+sim.handle_parent = nil
+sim.handle_sandbox = nil
+sim.handle_scene = nil
+sim.handle_sceneobject = nil
+sim.handle_self = nil
+sim.handle_single = nil
+sim.handle_tree = nil
 
 sim.scriptstate_ended = nil
 sim.scriptstate_error = nil
@@ -1326,10 +1360,30 @@ sim.scriptstate_suspended = nil
 sim.scriptstate_uninitialized = nil
 sim.scriptstate_unloaded = nil
 
-
 sim.sceneObjectType = nil
 
-sim.markerOptions = nil
+sim.bullet_constraintsolvertype_dantzig = nil
+sim.bullet_constraintsolvertype_nncg = nil
+sim.bullet_constraintsolvertype_projectedgaussseidel = nil
+sim.bullet_constraintsolvertype_sequentialimpulse = nil
+
+sim.vortex_bodyfrictionmodel_box = nil
+sim.vortex_bodyfrictionmodel_scaledBox = nil
+sim.vortex_bodyfrictionmodel_propLow = nil
+sim.vortex_bodyfrictionmodel_propHigh = nil
+sim.vortex_bodyfrictionmodel_scaledBoxFast = nil
+sim.vortex_bodyfrictionmodel_neutral = nil
+sim.vortex_bodyfrictionmodel_none = nil
+
+sim.vortex_bodyfrictionmodel_prophigh = nil
+sim.vortex_bodyfrictionmodel_proplow = nil
+sim.vortex_bodyfrictionmodel_scaledbox = nil
+sim.vortex_bodyfrictionmodel_scaledboxfast = nil
+
+sim.markeropts_cyclic = nil
+sim.markeropts_local = nil
+sim.markeropts_overlay = nil
+
 sim.materialComponent = nil
 sim.parentingMode = nil
 sim.propertyReturns = nil
@@ -1382,7 +1436,6 @@ sim.platform_linux = nil
 sim.platform_macos = nil
 sim.platform_windows = nil
 
-
 sim.proximitysensor_cone = nil
 sim.proximitysensor_cylinder = nil
 sim.proximitysensor_disc = nil
@@ -1394,7 +1447,6 @@ sim.sceneobject_scriptobject = nil
 sim.scriptexecorder_first = nil
 sim.scriptexecorder_last = nil
 sim.scriptexecorder_normal = nil
-
 
 sim.scripttype_addon = nil
 sim.scripttype_customization = nil
@@ -1408,5 +1460,44 @@ sim.simulation_paused = nil
 sim.simulation_running = nil
 sim.simulation_stopped = nil
 
+--[[ not yet. used extensively in sim.Object, sim-2 and middleclassProperties
+sim.propertyinfo_constant = nil
+sim.propertyinfo_deprecated = nil
+sim.propertyinfo_largedata = nil
+sim.propertyinfo_modelhashexclude = nil
+sim.propertyinfo_notreadable = nil
+sim.propertyinfo_notwritable = nil
+sim.propertyinfo_removable = nil
+sim.propertyinfo_silent = nil
+
+sim.propertytype_array = nil
+sim.propertytype_bool = nil
+sim.propertytype_buffer = nil
+sim.propertytype_color = nil
+sim.propertytype_color3 = nil
+sim.propertytype_enum = nil
+sim.propertytype_float = nil
+sim.propertytype_floatarray = nil
+sim.propertytype_group = nil
+sim.propertytype_handle = nil
+sim.propertytype_handlearray = nil
+sim.propertytype_int = nil
+sim.propertytype_intarray = nil
+sim.propertytype_intarray2 = nil
+sim.propertytype_long = nil
+sim.propertytype_map = nil
+sim.propertytype_matrix = nil
+sim.propertytype_method = nil
+sim.propertytype_null = nil
+sim.propertytype_object = nil
+sim.propertytype_objectarray = nil
+sim.propertytype_objectmap = nil
+sim.propertytype_pose = nil
+sim.propertytype_quaternion = nil
+sim.propertytype_string = nil
+sim.propertytype_stringarray = nil
+sim.propertytype_table = nil
+sim.propertytype_vector3 = nil
 --]]
+
 return sim

@@ -17,7 +17,7 @@ function Object:initialize(handle)
     if Object:isobject(handle) then
         handle = handle.handle
     end
-    if handle == sim.handle_self then
+    if handle == -4 then
         handle = sim_nakedscript_handle
     end
     assert(math.type(handle) == 'integer', 'invalid argument type')
@@ -361,8 +361,8 @@ function Object.static.unittest()
 end
 
 -- definition of constants / static objects:
-Object.scene = Object(sim.handle_scene)
-Object.app = Object(sim.handle_app)
-Object.self = Object(sim.handle_self)
+Object.scene = Object(-12)
+Object.app = Object(-13)
+Object.self = Object(-4)
 
 return Object

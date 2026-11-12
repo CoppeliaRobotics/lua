@@ -28,6 +28,7 @@ function s_init()
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
     end
+    require('simOpenGL3')
 end
 
 function s_cleanup()

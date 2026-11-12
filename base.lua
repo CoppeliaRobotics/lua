@@ -505,7 +505,7 @@ function isbuffer(obj)
         local Buffer = require('sim.Buffer')
         return Buffer:isbuffer(obj)
     else
-        addLog(sim.verbosity_warnings, 'called isbuffer() with useBuffers = false')
+        addLog(300, 'called isbuffer() with useBuffers = false')
     end
 end
 

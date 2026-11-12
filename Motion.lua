@@ -290,7 +290,7 @@ function MoveToConfig:initialize(pparams)
     params.flags = params.flags or -1
 
     if params.flags == -1 then
-        params.flags = sim.ruckig_phasesync
+        params.flags = sim.ruckig.phaseSync
     end
 
     params.flags =
@@ -569,7 +569,7 @@ function MoveToPose:initialize(pparams)
     params.flags = params.flags or -1
 
     if params.flags == -1 then
-        params.flags = sim.ruckig_phasesync
+        params.flags = sim.ruckig.phaseSync
     end
 
     params.flags =

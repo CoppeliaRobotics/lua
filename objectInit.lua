@@ -49,8 +49,8 @@ function objInit.init(target, methodName, initialProperties)
             end
             assert(cls ~= nil, 'unknown type: ' .. _type)
             local targetHandle = sim.Object:tohandle(target)
-            assert(targetHandle == sim.handle_app or targetHandle == sim.handle_scene, 'target can only be app or scene')
-            retVal = sim.Object(cls:makeObject{appScope = (targetHandle == sim.handle_app)})
+            assert(targetHandle == sim.handle.app or targetHandle == sim.handle.scene, 'target can only be app or scene')
+            retVal = sim.Object(cls:makeObject{appScope = (targetHandle == sim.handle.app)})
             retVal:setProperties(objInit.p)
             if retVal:getPropertyInfo('init', {noError = true}) == sim.propertytype_method then
                 retVal:getMethodProperty('init')(retVal)
@@ -146,13 +146,13 @@ function objInit.marker(methodName)
     local itemType = objInit.extractValueOrDefault('marker.type')
     local options = 0
     if objInit.extractValueOrDefault('cyclic') then
-        options = options | sim.markeropts_cyclic
+        options = options | sim.markerOptions.cyclic
     end
     if objInit.extractValueOrDefault('local') then
-        options = options | sim.markeropts_local
+        options = options | sim.markerOptions['local']
     end
     if objInit.extractValueOrDefault('overlay') then
-        options = options | sim.markeropts_overlay
+        options = options | sim.markerOptions.overlay
     end
     local size = objInit.extractValueOrDefault('itemSize')
     local col = objInit.extractValueOrDefault('itemColor')

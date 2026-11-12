@@ -370,7 +370,7 @@ function __pythonWrapper_init()
         __pythonWrapper_pollSubprocess()
         local elapsed = sim.app.systemTime - startTime
         if elapsed > startTimeout then
-            error('The Python interpreter failed to start within ' .. startTimeout .. 's (initTimeout)')
+            error('The Python interpreter failed to start within ' .. startTimeout .. 's (initTimeout). You can modify the default timeout with a luaExec directive, e.g. #luaExec initTimeout = 20.')
         end
         rapi:spinSome()
         sim.self:yield()
