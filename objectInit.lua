@@ -138,6 +138,7 @@ function objInit.marker(methodName)
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
+        {name = 'notShaded', type = 'bool', nullable = true},
         {name = 'itemSize', type = 'vector3', default = simEigen.Vector({0.005, 0.005, 0.005})},
         {name = 'itemColor', type = 'color', default = sim.Color:rgb(1.0, 1.0, 0.0)},
         {name = 'duplicateTolerance', type = 'float', default = 0.0},
@@ -153,6 +154,9 @@ function objInit.marker(methodName)
     end
     if objInit.extractValueOrDefault('overlay') then
         options = options | sim.markerOptions.overlay
+    end
+    if objInit.extractValueOrDefault('notShaded') then
+        options = options | sim.markerOptions.notShaded
     end
     local size = objInit.extractValueOrDefault('itemSize')
     local col = objInit.extractValueOrDefault('itemColor')

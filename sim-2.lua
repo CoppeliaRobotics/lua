@@ -1383,6 +1383,7 @@ sim.vortex_bodyfrictionmodel_scaledboxfast = nil
 sim.markeropts_cyclic = nil
 sim.markeropts_local = nil
 sim.markeropts_overlay = nil
+sim.markeropts_flatshaded = nil
 
 sim.materialComponent = nil
 sim.parentingMode = nil

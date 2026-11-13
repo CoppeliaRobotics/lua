@@ -28,7 +28,8 @@ function s_init()
     if sim.app.headlessMode == 0 then
         require('simURLDrop')
     end
-    require('simOpenGL3')
+    require('simOpenGL3') -- to avoid having the first frame returning black
+    require('simPovRay') -- to avoid having the first frame returning black
 end
 
 function s_cleanup()

@@ -97,12 +97,10 @@ sim.primitiveType.plane
 sim.primitiveType.spheroid
 
 sim.renderMode
-sim.renderMode.codedImg
-sim.renderMode.colorCoded
-sim.renderMode.extRenderer
-sim.renderMode.oglImg
 sim.renderMode.openGl
+sim.renderMode.colorCoded
 sim.renderMode.openGl3
+sim.renderMode.openGl3ColorCoded
 sim.renderMode.povray
 
 sim.scriptExecOrder
@@ -210,10 +208,10 @@ sim.propertyType.vector3
 sim.propertyType.quaternion
 sim.propertyType.pose
 sim.propertyType.color3
-sim.propertyType.floatArray
+sim.propertyType.realArray
 sim.propertyType.table
-sim.propertyType.intArray
-sim.propertyType.intArray2
+sim.propertyType.int32Array
+sim.propertyType.int32Array2
 sim.propertyType.int64
 sim.propertyType.null
 sim.propertyType.matrix
@@ -236,6 +234,7 @@ sim.markerOptions
 sim.markerOptions.local
 sim.markerOptions.cyclic
 sim.markerOptions.overlay
+sim.markerOptions.notShaded
 
 sim.markerType
 sim.markerType.axes
