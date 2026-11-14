@@ -212,6 +212,7 @@ sim.propertyType.realArray
 sim.propertyType.table
 sim.propertyType.int32Array
 sim.propertyType.int32Array2
+sim.propertyType.int64Array
 sim.propertyType.int64
 sim.propertyType.null
 sim.propertyType.matrix

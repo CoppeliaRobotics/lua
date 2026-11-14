@@ -179,7 +179,7 @@ function objInit.marker(methodName)
             mesh.normals = nil
         else
             if simEigen.Matrix:ismatrix(mesh.normals) and mesh.normals:rows() == 3 then
-                mesh.normals = mesh.normals:data()
+                mesh.normals = mesh.normals:data(simEigen.dataOrder.columnMajor)
             end
             if type(mesh.normals) ~= 'table' then
                 mesh.normals = nil
