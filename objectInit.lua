@@ -630,7 +630,7 @@ function objInit.shape(methodName)
                 m.texture = {}
                 m.texture.image = objInit.p.mesh.texture.textureData.image
                 m.texture.resolution = objInit.p.mesh.texture.textureData.resolution
-                m.texture.coordinates = simEigen.Matrix(#objInit.p.mesh.textureCoordinates//2, 2, objInit.p.mesh.textureCoordinates).T
+                m.texture.coordinates = objInit.p.mesh.textureCoordinates
                 m.texture.interpolate = objInit.p.mesh.texture.interpolate
                 m.texture.repeatU = objInit.p.mesh.texture.repeatU
                 m.texture.repeatV = objInit.p.mesh.texture.repeatV
@@ -642,12 +642,12 @@ function objInit.shape(methodName)
             {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
             {name = 'boundingBoxQuaternion', type = 'quaternion', nullable = true},
             {name = 'frameOrigin', type = 'pose', nullable = true},
-            {name = 'shadingAngle', type = 'float', default = 0.0},
-            {name = 'culling', type = 'bool', default = false},
-            {name = 'showEdges', type = 'bool', default = false},
-            {name = 'color.diffuse', type = 'color', default = sim.Color:rgb(1.0, 1.0, 1.0)},
-            {name = 'color.specular', type = 'color', default = sim.Color:rgb(0.2, 0.2, 0.2)},
-            {name = 'color.emission', type = 'color', default = sim.Color:rgb(0.0, 0.0, 0.0)},
+            {name = 'shadingAngle', type = 'float', default = 0.0}, -- possibly shadowed with value further up in the data struct
+            {name = 'culling', type = 'bool', default = false}, -- possibly shadowed with value further up in the data struct
+            {name = 'showEdges', type = 'bool', default = false}, -- possibly shadowed with value further up in the data struct
+            {name = 'color.diffuse', type = 'color', default = sim.Color:rgb(1.0, 1.0, 1.0)}, -- possibly shadowed with value further up in the data struct
+            {name = 'color.specular', type = 'color', default = sim.Color:rgb(0.2, 0.2, 0.2)}, -- possibly shadowed with value further up in the data struct
+            {name = 'color.emission', type = 'color', default = sim.Color:rgb(0.0, 0.0, 0.0)}, -- possibly shadowed with value further up in the data struct
         }, objInit.p.mesh)
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
             {name = 'normals', type = 'matrix', rows = 3, cols = objInit.p.mesh.vertices:cols(), nullable = true},
@@ -673,7 +673,7 @@ function objInit.shape(methodName)
                 {name = 'scalingUV', type = 'table', item_type = 'float', default = {1.0, 1.0}},
                 {name = 'resolution', type = 'table', item_type = 'int', size = 2},
                 {name = 'image', type = 'buffer', nullable = true},
-                {name = 'coordinates', type = 'matrix', rows = 2, cols = #objInit.p.mesh.indices, nullable = true},
+                {name = 'coordinates', type = 'matrix', rows = 2, cols = objInit.p.mesh.vertices:cols(), nullable = true},
             }, objInit.p.mesh.texture)
 
             texture_interpolate = objInit.extractValueOrDefault('interpolate', true, objInit.p.mesh.texture)
