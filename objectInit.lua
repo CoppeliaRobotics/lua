@@ -581,6 +581,13 @@ end
 function objInit.shape(methodName)
     local simEigen = require 'simEigen'
     local retVal = nil
+    local hasShadingAngle = objInit.p.shadingAngle
+    local hasCulling = objInit.p.culling
+    local hasShowEdges = objInit.p.showEdges
+    local hasColorDiffuse = objInit.p['color.diffuse']
+    local hasColorSpecular = objInit.p['color.specular']
+    local hasColorEmission = objInit.p['color.emission']
+
     checkargs.checkfields({funcName = methodName}, {
         {name = 'mesh', type = 'table', nullable = true},
         {name = 'heightField', type = 'table', nullable = true},
@@ -592,14 +599,20 @@ function objInit.shape(methodName)
         {name = 'cone', type = 'table', nullable = true},
         {name = 'capsule', type = 'table', nullable = true},
         {name = 'text', type = 'table', nullable = true},
+        {name = 'dynamics.dynamic', type = 'bool', default = false},
         {name = 'shadingAngle', type = 'float', default = 0.0},
         {name = 'culling', type = 'bool', default = false},
-        {name = 'dynamics.dynamic', type = 'bool', default = false},
         {name = 'showEdges', type = 'bool', default = false},
         {name = 'color.diffuse', type = 'color', default = sim.Color:rgb(1.0, 1.0, 1.0)},
         {name = 'color.specular', type = 'color', default = sim.Color:rgb(0.2, 0.2, 0.2)},
         {name = 'color.emission', type = 'color', default = sim.Color:rgb(0.0, 0.0, 0.0)},
     }, objInit.p)
+    local diffuse = objInit.extractValueOrDefault('color.diffuse', {}, objInit.p)
+    local specular = objInit.extractValueOrDefault('color.specular', {}, objInit.p)
+    local emission = objInit.extractValueOrDefault('color.emission', {}, objInit.p)
+    local shadingAngle = objInit.extractValueOrDefault('shadingAngle', 0.0, objInit.p)
+    local culling = objInit.extractValueOrDefault('culling', false, objInit.p)
+    local showEdges = objInit.extractValueOrDefault('showEdges', false, objInit.p)
     if objInit.p.mesh then
         if objInit.p.mesh.handle then
             -- We have a mesh object
@@ -607,11 +620,17 @@ function objInit.shape(methodName)
             m.vertices = objInit.p.mesh.vertices
             m.indices = objInit.p.mesh.indices
             m.normals = objInit.p.mesh.normals
-            if objInit.p.mesh.texture and #objInit.p.mesh.texture.image > 0 then
+            m.shadingAngle = objInit.p.mesh.shadingAngle
+            m.culling = objInit.p.mesh.culling
+            m.showEdges = objInit.p.mesh.showEdges
+            m['color.diffuse'] = objInit.p.mesh['color.diffuse']
+            m['color.specular'] = objInit.p.mesh['color.specular']
+            m['color.emission'] = objInit.p.mesh['color.emission']
+            if objInit.p.mesh.texture and objInit.p.mesh.texture.textureData and #objInit.p.mesh.texture.textureData.image > 0 then
                 m.texture = {}
-                m.texture.image = objInit.p.mesh.texture.image
-                m.texture.resolution = objInit.p.mesh.texture.resolution
-                m.texture.coordinates = simEigen.Matrix(#objInit.p.mesh.texture.coordinates//2, 2, objInit.p.mesh.texture.coordinates).T
+                m.texture.image = objInit.p.mesh.texture.textureData.image
+                m.texture.resolution = objInit.p.mesh.texture.textureData.resolution
+                m.texture.coordinates = simEigen.Matrix(#objInit.p.mesh.textureCoordinates//2, 2, objInit.p.mesh.textureCoordinates).T
                 m.texture.interpolate = objInit.p.mesh.texture.interpolate
                 m.texture.repeatU = objInit.p.mesh.texture.repeatU
                 m.texture.repeatV = objInit.p.mesh.texture.repeatV
@@ -623,9 +642,15 @@ function objInit.shape(methodName)
             {name = 'indices', type = 'table', item_type = 'int', size = '3..*', default = {0, 1, 2}},
             {name = 'boundingBoxQuaternion', type = 'quaternion', nullable = true},
             {name = 'frameOrigin', type = 'pose', nullable = true},
+            {name = 'shadingAngle', type = 'float', default = 0.0},
+            {name = 'culling', type = 'bool', default = false},
+            {name = 'showEdges', type = 'bool', default = false},
+            {name = 'color.diffuse', type = 'color', default = sim.Color:rgb(1.0, 1.0, 1.0)},
+            {name = 'color.specular', type = 'color', default = sim.Color:rgb(0.2, 0.2, 0.2)},
+            {name = 'color.emission', type = 'color', default = sim.Color:rgb(0.0, 0.0, 0.0)},
         }, objInit.p.mesh)
         checkargs.checkfields({funcName = methodName .. ' (mesh field)'}, {
-            {name = 'normals', type = 'matrix', rows = 3, cols = #objInit.p.mesh.indices, nullable = true},
+            {name = 'normals', type = 'matrix', rows = 3, cols = objInit.p.mesh.vertices:cols(), nullable = true},
         }, objInit.p.mesh)
         local texture_interpolate = true
         local texture_decal = false
@@ -662,25 +687,47 @@ function objInit.shape(methodName)
             texture_coord = objInit.extractValueOrDefault('coordinates', nil, objInit.p.mesh.texture)
             texture_img = objInit.extractValueOrDefault('image', nil, objInit.p.mesh.texture)
         end
-        local options = 0
-            + v(1, objInit.extractValueOrDefault('culling'))
-            + v(2, objInit.extractValueOrDefault('showEdges'))
-        if texture_coord then
-            options = options | 128 -- do not simplify/modify vertices/indices
-        end
-        local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         local vertices = objInit.extractValueOrDefault('vertices', nil, objInit.p.mesh)
         local indices = objInit.extractValueOrDefault('indices', nil, objInit.p.mesh)
         local normals = objInit.extractValueOrDefault('normals', nil, objInit.p.mesh)
+        local options = 0
+        if not hasCulling then
+            culling = objInit.extractValueOrDefault('culling', false, objInit.p.mesh)
+        end
+        if culling then
+            options = options + 1
+        end
+        if not hasShowEdges then
+            showEdges = objInit.extractValueOrDefault('showEdges', false, objInit.p.mesh)
+        end
+        if showEdges then
+            options = options + 2
+        end
+        if texture_coord then
+            options = options | 128 -- do not simplify/modify vertices/indices
+        end
+        if not hasShadingAngle then
+            shadingAngle = objInit.extractValueOrDefault('shadingAngle', 0.0, objInit.p.mesh)
+        end
+        if not hasColorDiffuse then
+            diffuse = objInit.extractValueOrDefault('color.diffuse', {}, objInit.p.mesh)
+            print(diffuse)
+        end
+        if not hasColorSpecular then
+            specular = objInit.extractValueOrDefault('color.specular', {}, objInit.p.mesh)
+        end
+        if not hasColorEmission then
+            emission = objInit.extractValueOrDefault('color.emission', {}, objInit.p.mesh)
+        end
         if normals then
             normals = normals:data(simEigen.dataOrder.columnMajor)
         end
         if texture_coord then
             texture_coord = texture_coord:data(simEigen.dataOrder.columnMajor)
         end
-        retVal = sim.Object(sim1.createShape(options, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals))
+        retVal = sim.Object(sim1.createShape(options + 256, shadingAngle, vertices:data(simEigen.dataOrder.columnMajor), indices, normals)) -- 256: mesh data is per-vertex!
         if texture_img then
-            retVal.meshes[1].texture:set(texture_img, texture_res, {coordinates = texture_coord, interpolate = texture_interpolate, decal = texture_decal, flipH = texture_horizFlip, flipV = texture_vertFlip, repeatU = texture_repeatU, repeatV = texture_repeatV, scalingUV = texture_scalingUV})
+            retVal.meshes[1]:setTexture(texture_img, texture_res, {coordinates = texture_coord, interpolate = texture_interpolate, decal = texture_decal, flipH = texture_horizFlip, flipV = texture_vertFlip, repeatU = texture_repeatU, repeatV = texture_repeatV, scalingUV = texture_scalingUV})
         end
         local bbQuat = objInit.extractValueOrDefault('boundingBoxQuaternion', nil, objInit.p.mesh)
         if bbQuat then
@@ -701,11 +748,13 @@ function objInit.shape(methodName)
             {name = 'cellSize', type = 'float', default = 0.5},
             {name = 'rawMesh', type = 'bool', default = false},
         }, objInit.p.heightField)
-        local options = 0
-            + v(1, objInit.extractValueOrDefault('culling'))
-            + v(2, objInit.extractValueOrDefault('showEdges'))
-            + v(4, objInit.extractValueOrDefault('rawMesh', false, objInit.p.heightField))
-        local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
+        local options = v(4, objInit.extractValueOrDefault('rawMesh', false, objInit.p.heightField))
+        if culling then
+            options = options + 1
+        end
+        if showEdges then
+            options = options + 2
+        end
         local heights = objInit.extractValueOrDefault('heights', nil, objInit.p.heightField)
         local cellSize = objInit.extractValueOrDefault('cellSize', nil, objInit.p.heightField)
         retVal = sim.Object(sim1.createHeightfieldShape(options, shadingAngle, heights:cols(), heights:rows(), cellSize * (heights:cols() - 1), heights:data()))
@@ -719,8 +768,6 @@ function objInit.shape(methodName)
         local text = objInit.extractValueOrDefault('text', nil, objInit.p.string)
         local height = objInit.extractValueOrDefault('height', nil, objInit.p.string)
         local center = objInit.extractValueOrDefault('center', nil, objInit.p.string)
-        local culling = objInit.extractValueOrDefault('culling')
-        objInit.extractValueOrDefault('shadingAngle')
         local textUtils = require('textUtils')
         retVal = sim.Object(textUtils.generateTextShape(text, nil, height, center, nil, nil, true))
         retVal.applyCulling = culling
@@ -805,23 +852,22 @@ function objInit.shape(methodName)
             size = objInit.extractValueOrDefault('size', nil, ff)
         end
         local options = 2
-            + v(1, objInit.extractValueOrDefault('culling'))
             + v(4, open)
             + v(8, objInit.extractValueOrDefault('rawMesh', false, ff))
+        if culling then
+            options = options + 1
+        end
         retVal = sim.Object(sim1.createPrimitiveShape(pt, size, options))
-        local shadingAngle = objInit.extractValueOrDefault('shadingAngle')
         retVal.applyShadingAngle = shadingAngle
     end
     if retVal.dynamics == nil then
         retVal.dynamics = {}
     end
     retVal.dynamics.dynamic = objInit.extractValueOrDefault('dynamics.dynamic', false)
-    if objInit.extractValueOrDefault('showEdges') then
-        retVal:applyShowEdges(true)
-    end
-    retVal.applyColor.diffuse = objInit.extractValueOrDefault('color.diffuse')
-    retVal.applyColor.specular = objInit.extractValueOrDefault('color.specular')
-    retVal.applyColor.emission = objInit.extractValueOrDefault('color.emission')
+    retVal.applyShowEdges = showEdges
+    retVal.applyColor.diffuse = diffuse
+    retVal.applyColor.specular = specular
+    retVal.applyColor.emission = emission
     retVal:setProperties(objInit.p)
     return retVal
 end
