@@ -34,6 +34,8 @@ sim.app
 sim.scene
 sim.self
 
+sim.Buffer
+sim.Color
 sim.Vector
 sim.Matrix
 sim.Quaternion
