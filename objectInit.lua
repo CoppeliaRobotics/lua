@@ -134,7 +134,7 @@ end
 function objInit.marker(methodName)
     local simEigen = require 'simEigen'
     checkargs.checkfields({funcName = methodName}, {
-        {name = 'marker.type', enum = sim.markerType, default = 'spheres'},
+        {name = 'marker.type', type = 'string', default = 'spheres'},
         {name = 'cyclic', type = 'bool', nullable = true},
         {name = 'local', type = 'bool', nullable = true},
         {name = 'overlay', type = 'bool', nullable = true},
@@ -155,14 +155,29 @@ function objInit.marker(methodName)
     if objInit.extractValueOrDefault('overlay') then
         options = options | sim.markerOptions.overlay
     end
-    if objInit.extractValueOrDefault('notShaded') then
-        options = options | sim.markerOptions.notShaded
-    end
+    local notShaded = objInit.extractValueOrDefault('notShaded')
     local size = objInit.extractValueOrDefault('itemSize')
     local col = objInit.extractValueOrDefault('itemColor')
     local duplicateTol = objInit.extractValueOrDefault('duplicateTolerance')
     local cnt = objInit.extractValueOrDefault('itemCnt')
     local vertices, indices, normals
+    if itemType == 'tubes' then
+        itemType = 'cylinders'
+        options = options | sim.markerOptions.tube
+    elseif itemType == 'axes' then
+        itemType = 'lines'
+        options = options | sim.markerOptions.axis
+        if cnt ~= 0 then
+            cnt = cnt * 3
+        end
+    end
+    itemType = sim.markerType[itemType]
+    if notShaded == nil then
+        if itemType == sim.markerType.points or itemType == sim.markerType.lines or itemType == sim.markerType.triangles then
+            options = options | sim.markerOptions.notShaded
+        end
+    end
+    assert(itemType ~= nil, 'invalid marker type.')
     if itemType == sim.markerType.custom then
         local mesh = objInit.extractValueOrDefault('mesh')
         if type(mesh) ~= 'table' then

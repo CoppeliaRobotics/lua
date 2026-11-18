@@ -238,9 +238,10 @@ sim.markerOptions.local
 sim.markerOptions.cyclic
 sim.markerOptions.overlay
 sim.markerOptions.notShaded
+sim.markerOptions.tube
+sim.markerOptions.axis
 
 sim.markerType
-sim.markerType.axes
 sim.markerType.cubes
 sim.markerType.custom
 sim.markerType.cylinders
@@ -250,7 +251,6 @@ sim.markerType.points
 sim.markerType.spheres
 sim.markerType.squares
 sim.markerType.triangles
-sim.markerType.tubes
 
 ]]
 
