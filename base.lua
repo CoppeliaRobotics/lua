@@ -519,21 +519,13 @@ import('functional', '*')
 import('var', '*')
 
 function isbuffer(obj)
-    if auxFunc('useBuffers') then
-        local Buffer = require('sim.Buffer')
-        return Buffer:isbuffer(obj)
-    else
-        addLog(300, 'called isbuffer() with useBuffers = false')
-    end
+    addLog(300, 'isbuffer(x) is deprecated; use isinstance(x, sim.Buffer) instead.')
+    return isinstance(obj, sim.Buffer)
 end
 
 function tobuffer(txt)
-    if auxFunc('useBuffers') then
-        local Buffer = require('sim.Buffer')
-        return Buffer:tobuffer(txt)
-    else
-        return tostring(txt)
-    end
+    addLog(300, 'tobuffer(x) is deprecated; use sim.Buffer(x) instead.')
+    return sim.Buffer(txt)
 end
 
 _S.coroutineAutoYields = {}
