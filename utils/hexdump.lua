@@ -3,7 +3,8 @@ return function(x, opts)
     opts.width = opts.width or 16
     opts.offset = opts.offset ~= false
     opts.printable = opts.printable ~= false
-    assert(isbuffer(x) or type(x) == 'string', 'works only on buffer and strings')
+    local Buffer = require 'sim.Buffer'
+    assert(isinstance(x, Buffer) or type(x) == 'string', 'works only on buffer and strings')
     local s = {}
     local ow = #x > 0 and math.floor(math.log(#x, 16)) + 1 or 1
 

@@ -68,7 +68,8 @@ end
 
 function checkargs.checkarg.string(v, t)
     if not t.strict then
-        if isbuffer(v) then
+        local Buffer = require 'sim.Buffer'
+        if isinstance(v, Buffer) then
             v = tostring(v)
         end
     end
@@ -79,12 +80,13 @@ function checkargs.checkarg.string(v, t)
 end
 
 function checkargs.checkarg.buffer(v, t)
+    local Buffer = require 'sim.Buffer'
     if not t.strict then
         if type(v) == 'string' then
-            v = tobuffer(v)
+            v = Buffer(v)
         end
     end
-    if not isbuffer(v) then
+    if not isinstance(v, Buffer) then
         error('must be a buffer', 0)
     end
     return v

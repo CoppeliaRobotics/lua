@@ -506,7 +506,7 @@ function string.anytostring(x, opts)
     elseif t == 'table' then
         local mt = getmetatable(x) or {}
         if opts.display and mt.__todisplay then return mt.__todisplay(x, opts) end
-        if isbuffer(x) then return mt.__todisplay(x, opts) end
+        if isinstance(x, 'sim.Buffer') then return mt.__todisplay(x, opts) end
         if mt.__tostring then return mt.__tostring(x, opts) end
         -- displays inside table won't render good:
         require 'tablex'
@@ -647,8 +647,8 @@ function string.grep(text, expr, opts)
 end
 
 function string.unittest()
-    -- fix for "attempt to call a nil value (global 'isbuffer')"
-    isbuffer = isbuffer or function(x) return false end
+    -- fix for "attempt to call a nil value (global 'isinstance')"
+    isinstance = isinstance or function(x, y) return false end
 
     require 'tablex'
 

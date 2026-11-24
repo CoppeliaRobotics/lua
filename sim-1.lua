@@ -83,7 +83,7 @@ end)
 function sim.readCustomBufferData(obj, tag)
     local retVal = sim.readCustomStringData(obj, tag)
     if retVal then
-        retVal = tobuffer(retVal)
+        retVal = sim.Buffer(retVal)
     end
     return retVal
 end
@@ -95,7 +95,7 @@ end
 function sim.getBufferSignal(sigName)
     local retVal = sim.getStringSignal(sigName)
     if retVal then
-        retVal = tobuffer(retVal)
+        retVal = sim.Buffer(retVal)
     end
     return retVal
 end
@@ -1203,7 +1203,7 @@ function sim.readCustomTableData(...)
     if data == nil or #data == 0 then
         data = {}
     else
-        if isbuffer(data) then
+        if isinstance(data, sim.Buffer) then
             data = tostring(data)
         end
         if dataType == 'cbor' then
@@ -1757,7 +1757,7 @@ end
 
 function locals.parseBool(v)
     if v == nil then return nil end
-    if isbuffer(v) then
+    if isinstance(v, sim.Buffer) then
         v = tostring(v)
     end
     if v == 'true' then return true end
@@ -1946,20 +1946,20 @@ sim.packTable = wrap(sim.packTable, function(origFunc)
                 return origFunc(data, scheme) -- CoppeliaSim's pack format
             elseif scheme == 1 or scheme == 2 then
                 local cbor = require 'sim.cbor'
-                local buff = tobuffer(cbor.encode(data))
+                local buff = sim.Buffer(cbor.encode(data))
                 return buff
             else
                 error('invalid packing scheme.')
             end
         else
-            return tobuffer('')
+            return sim.Buffer('')
         end
     end
 end)
 
 sim.unpackTable = wrap(sim.unpackTable, function(origFunc)
     return function(data, scheme)
-        if isbuffer(data) then
+        if isinstance(data, sim.Buffer) then
             data = tostring(data)
         end
         if #data == 0 then

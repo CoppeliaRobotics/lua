@@ -495,7 +495,7 @@ function locals.serialize(target, methodName, data)
             return v
         end
     end
-    return tobuffer(cbor.encode(fixTable(data)))
+    return sim.Buffer(cbor.encode(fixTable(data)))
 end
 
 function locals.deserialize(target, methodName, data)
@@ -623,19 +623,19 @@ function locals.setProperty(target, methodName, pname, pvalue, opts)
             ptype = sim.propertytype_method
         elseif ltype == 'table' then
             local simEigen = require 'simEigen'
-            if sim.Buffer:isbuffer(pvalue) then
+            if isinstance(pvalue, sim.Buffer) then
                 ptype = sim.propertytype_buffer
-            elseif sim.Color:iscolor(pvalue) then
+            elseif isinstance(pvalue, sim.Color) then
                 ptype = sim.propertytype_color
-            elseif sim.Object:isobject(pvalue) then
+            elseif isinstance(pvalue, sim.Object) then
                 ptype = sim.propertytype_handle
-            elseif sim.ObjectArray:isobjectarray(pvalue) then
+            elseif isinstance(pvalue, sim.ObjectArray) then
                 ptype = sim.propertytype_handlearray
-            elseif simEigen.Quaternion:isquaternion(pvalue) then
+            elseif isinstance(pvalue, simEigen.Quaternion) then
                 ptype = sim.propertytype_quaternion
-            elseif simEigen.Matrix:ismatrix(pvalue) then
+            elseif isinstance(pvalue, simEigen.Matrix) then
                 ptype = sim.propertytype_matrix
-            elseif simEigen.Pose:ispose(pvalue) then
+            elseif isinstance(pvalue, simEigen.Pose) then
                 ptype = sim.propertytype_pose
             else
                 ptype = sim.propertytype_table

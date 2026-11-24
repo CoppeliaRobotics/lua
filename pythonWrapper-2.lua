@@ -647,7 +647,7 @@ function handleRequest(req)
                             elseif args[i] == 2 and type(ret[i]) == 'string' then
                                 ret[i] = tobin(ret[i])
                             elseif type(ret[i]) == 'table' then
-                                if (not isbuffer(ret[i])) and (getmetatable(ret[i]) ~= cbornil) then
+                                if (not isinstance(ret[i], sim.Buffer)) and (getmetatable(ret[i]) ~= cbornil) then
                                     if table.isarray(ret[i]) then
                                         ret[i] = toarray(ret[i])
                                     else
@@ -696,7 +696,7 @@ function __info__(obj)
     local ret = {}
     for k, v in pairs(obj) do
         if type(v) == 'table' then
-            if getmetatable(v) == nil or isbuffer(v) then -- other objects are not (yet) supported
+            if getmetatable(v) == nil or isinstance(v, sim.Buffer) then -- other objects are not (yet) supported
                 ret[k] = __info__(v)
             end
         elseif type(v) == 'function' then

@@ -277,13 +277,11 @@ function Object.static.unittest()
     assert(type(a.customData.str) == 'string')
 
     a.customData.buf = Buffer 'abc'
-    assert(Buffer:isbuffer(a.customData.buf))
+    assert(isinstance(a.customData.buf, sim.Buffer))
     a:setBufferProperty('customData.buf2', Buffer 'abc')
-    assert(Buffer:isbuffer(a.customData.buf2))
-    assert(isbuffer(a.customData.buf2))
+    assert(isinstance(a.customData.buf2, sim.Buffer))
     a:setProperty('customData.buf3', Buffer 'abc')
-    assert(Buffer:isbuffer(a.customData.buf3))
-    assert(isbuffer(a.customData.buf3))
+    assert(isinstance(a.customData.buf3, sim.Buffer))
 
     a.customData.col = Color 'red'
     assert(Color:iscolor(a.customData.col))

@@ -23,7 +23,7 @@ return function(expr, opts)
     local function processObject(obj, ctx)
         objectContext = ctx
 
-        if isbuffer(expr) and obj.dna == expr then
+        if isinstance(expr, sim.Buffer) and obj.dna == expr then
             reportHit('object\'s "dna" property matches')
         end
 

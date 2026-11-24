@@ -149,7 +149,7 @@ function sim_cbor.decode(data, opts)
         _type_tags = table.update({}, _type_tags, opts.typeTags)
     end
 
-    if isbuffer(data) then
+    if isinstance(data, sim.Buffer) then
         data = tostring(data)
     end
 
