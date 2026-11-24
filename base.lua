@@ -87,6 +87,24 @@ function callmeta(o, mm, d)
     end
 end
 
+function isinstance(x, cls)
+    if cls == nil then
+        return x == nil
+    end
+    if type(cls) == 'table' and cls.isInstanceOf then
+        return cls.isInstanceOf(x, cls)
+    end
+    if cls == string then cls = 'string' end
+    if cls == table then cls = 'table' end
+    if type(cls) == 'string' then
+        local t = type(x)
+        if t == 'table' and x.class and x.class.name then
+            return cls == x.class.name
+        end
+        return t == cls
+    end
+end
+
 require = wrap(require, function(origRequire)
     local lfsx = require 'lfsx'
     return function(...)
