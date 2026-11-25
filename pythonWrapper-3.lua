@@ -211,7 +211,7 @@ function __pythonWrapper_init()
     end)
 
     -- Module members are not all functions: e.g. simUI.curve_type.xy is a
-    -- plain table of constants, Motion.MoveToPose is a *callable table* (a
+    -- plain table of constants, simMotion.MoveToPose is a *callable table* (a
     -- middleclass class), and calling it returns a Lua object (an instance) whose
     -- methods must be callable too. __moduleMember tells the client what an
     -- attribute is (function / CBOR-representable value / sub-table / Lua object),
@@ -244,7 +244,7 @@ function __pythonWrapper_init()
         return false
     end
 
-    -- Lua objects (e.g. a Motion.MoveToPose instance): have a metatable, but are
+    -- Lua objects (e.g. a simMotion.MoveToPose instance): have a metatable, but are
     -- neither CBOR-encodable (sim objects/vectors carry __tocbor) nor callable
     local function isModuleObject(v)
         local t = type(v)

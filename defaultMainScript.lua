@@ -92,7 +92,7 @@ function sysCall_joint(inData)
 end
 
 function jointKinematicMotion(joint, inData)
-    local Motion = require'Motion'
+    local simMotion = require'simMotion'
     local outData = nil
     local dt = sim.scene.simulation.timeStep
     local p = inData.pos
@@ -108,7 +108,7 @@ function jointKinematicMotion(joint, inData)
                 maxAccel = {inData.maxAccel},
                 maxJerk = {inData.maxJerk}
             }
-            local motion = Motion.RuckigPosition(params)
+            local motion = simMotion.RuckigPosition(params)
             local result = motion:step()
             if result >= 0 then
                 local data = motion:data()
@@ -145,7 +145,7 @@ function jointKinematicMotion(joint, inData)
                     maxAccel = {inData.maxAccel},
                     maxJerk = {inData.maxJerk}
                 }
-                local motion = Motion.RuckigVelocity(params)
+                local motion = simMotion.RuckigVelocity(params)
                 local result = motion:step()
                 if result >= 0 then
                     local data = motion:data()
