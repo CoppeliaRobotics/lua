@@ -3,7 +3,11 @@ local class = require('middleclass')
 local copy = require('copy')
 local checkargs = require('checkargs-2')
 local simEigen = require('simEigen')
-local simIK = require('simIK-1')
+
+-- SimIK is only needed to visualize paths defined from joints (see
+-- __updateMarkers/removeMarkers): load it lazily, since simIK-1 itself
+-- pulls in sim-1.
+local simIK
 
 local Path = class('Path')
 
@@ -1995,6 +1999,8 @@ function Path:__updateMarkers(markers, points)
     end
     if points:cols() > 0 then
         if data.opt.joints then
+            simIK = simIK or require('simIK-1')
+
             if data.opt.ik == nil then
                 data.opt.ik = {}
                 data.opt.ik.ikEnv = simIK.createEnvironment()
@@ -2101,6 +2107,7 @@ function Path:removeMarkers()
         data.pathPoints.markers = nil
     end
     if data.opt.ik then
+        simIK = simIK or require('simIK-1')
         simIK.eraseEnvironment(data.opt.ik.ikEnv)
         data.opt.ik = nil
     end
@@ -2122,5 +2129,110 @@ function Path:_removeMarkers(m)
         end
     end
 end
+
+
+function Path.unittest()
+    local simEigen = require('simEigen')
+    local Vector = simEigen.Vector
+    local Matrix = simEigen.Matrix
+
+    local function assertApproxEq(a, b, tol)
+        tol = tol or 1e-6
+        assert(type(a) == 'number' and type(b) == 'number', 'invalid types')
+        assert(math.abs(a - b) < tol,
+            string.format('expected %g, got %g', b, a))
+    end
+
+    local function assertPoint(actual, expected, tol)
+        tol = tol or 1e-2
+        assert(Matrix:ismatrix(actual), 'not a vector')
+        assert(actual:rows() == #expected, 'unexpected size')
+        for i = 1, #expected do
+            assert(math.abs(actual[i] - expected[i]) < tol,
+                string.format('component %d: expected %g, got %g', i, expected[i], actual[i]))
+        end
+    end
+
+    -- A simple 3D path, made of two unit segments (one column per point):
+    local ctrlPts = Matrix(3, 3, {
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0,
+    })
+    local path = Path(ctrlPts, {
+        ctrlPoints = {duplicateThreshold = 0.0, linearityTolerance = 0.0},
+        pathPoints = {type = 'linear', samplingDistance = 0.01},
+    })
+
+    local data = path:data()
+
+    assert(data.ctrlPoints.points:rows() == 3)
+    assert(data.ctrlPoints.points:cols() == 3)
+    assertApproxEq(data.ctrlPoints.pathLength, 2.0, 1e-9)
+    -- resampling is arc-length based, hence slightly shorter than the exact path:
+    assertApproxEq(data.pathPoints.pathLength, 2.0, 0.01)
+
+    -- getPoint():
+    assertPoint(path:getPoint(0.0), {0.0, 0.0, 0.0})
+    assertPoint(path:getPoint(0.25), {0.5, 0.0, 0.0})
+    assertPoint(path:getPoint(0.75), {1.0, 0.5, 0.0})
+    assertPoint(path:getPoint(1.0), {1.0, 1.0, 0.0})
+
+    -- closest():
+    local closestPoint, closestDistance = path:closest(Vector{0.5, 0.25, 0.0})
+    assertPoint(closestPoint, {0.5, 0.0, 0.0})
+    assertApproxEq(closestDistance, 0.25, 1e-2)
+
+    -- distance()/interpolate():
+    assertApproxEq(path:distance(Vector{0.0, 0.0, 0.0}, Vector{3.0, 4.0, 0.0}), 5.0, 1e-9)
+    assertPoint(path:interpolate(Vector{0.0, 0.0, 0.0}, Vector{2.0, 0.0, 0.0}, 0.25),
+        {0.5, 0.0, 0.0}, 1e-9)
+
+    -- appendPoints():
+    path:appendPoints(Matrix(3, 1, {0.0, 2.0, 0.0}))
+    data = path:data()
+    assert(data.ctrlPoints.points:cols() == 4)
+
+    -- toBuffer()/fromBuffer() round-trip:
+    local path2 = Path.fromBuffer(path:toBuffer())
+    local data2 = path2:data()
+    assert(data2.ctrlPoints.points:cols() == 4)
+    assertApproxEq(data2.pathPoints.pathLength, data.pathPoints.pathLength, 1e-9)
+
+    -- 7D path, made of positions and quaternions (one column per point):
+    local posePts = Matrix(7, 3, {
+        0.0, 1.0, 1.0,
+        0.0, 0.0, 1.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0,
+    })
+    local posePath = Path(posePts, {
+        ctrlPoints = {duplicateThreshold = 0.0, linearityTolerance = 0.0},
+        pathPoints = {type = 'linear', samplingDistance = 0.01},
+    })
+    assertApproxEq(posePath:data().pathPoints.pathLength, 2.0, 0.01)
+
+    local midPose = posePath:getPoint(0.75)
+    assertPoint(midPose:block(1, 1, 3, 1), {1.0, 0.5, 0.0})
+    assertApproxEq(midPose:block(4, 1, 4, 1):norm(), 1.0, 1e-9)
+
+    -- angular configurations:
+    local configPath = Path(nil, {
+        types = {'ang'},
+        bounds = {{-2.0 * math.pi, 2.0 * math.pi}},
+    })
+    local configs = configPath:configs(Vector{0.0})
+    assert(configs:rows() == 1)
+    assert(configs:cols() == 3)
+    assertApproxEq(configs:item(1, 1), 0.0, 1e-9)
+    assertApproxEq(configs:item(1, 2), 2.0 * math.pi, 1e-9)
+    assertApproxEq(configs:item(1, 3), 4.0 * math.pi, 1e-9)
+
+    print(debug.getinfo(1, 'S').source, 'tests passed')
+end
+
 
 return Path

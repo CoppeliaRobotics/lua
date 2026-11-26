@@ -9,6 +9,33 @@ sim.Matrix = require 'simEigen.Matrix'
 sim.Quaternion = require 'simEigen.Quaternion'
 sim.Pose = require 'simEigen.Pose'
 
+-- simMotion classes and the Path class are exposed lazily: requiring them
+-- here would be circular (they require this module), and simMotion would pull
+-- in sim-1 for every script that only uses sim-2. They are loaded on first
+-- access, e.g. sim.MoveToConfig or sim.Path.
+-- They are deliberately not listed in sim.__all: that would force-load them
+-- for every 'import 'sim-2.*''; use 'import 'simMotion.*'' or 'import 'Path''
+-- to put them at global scope.
+local lazyModules = {
+    Path = 'Path',
+    Motion = 'simMotion.Motion',
+    MoveToConfig = 'simMotion.MoveToConfig',
+    MoveToPose = 'simMotion.MoveToPose',
+    RuckigPosition = 'simMotion.RuckigPosition',
+    RuckigVelocity = 'simMotion.RuckigVelocity',
+    TimeOptimalTrajectory = 'simMotion.TimeOptimalTrajectory',
+}
+setmetatable(sim, {
+    __index = function(self, k)
+        local moduleName = lazyModules[k]
+        if moduleName then
+            local class = require(moduleName)
+            rawset(self, k, class)
+            return class
+        end
+    end,
+})
+
 local locals = {}
 __2 = {locals = locals, sim = sim} -- sometimes globals are needed (but __2 only for sim-2)
 
