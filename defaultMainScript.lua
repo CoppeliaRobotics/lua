@@ -1,7 +1,8 @@
+import 'sim-2'
+
 -- This is the main script. The main script is not supposed to be modified,
 -- unless there is a very good reason to do it.
 -- Without main script, there is no simulation.
-sim = require('sim-2')
 
 function sysCall_init()
 end
